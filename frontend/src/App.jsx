@@ -1,10 +1,12 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
 const App = () => {
   return (
-    <div>
-      <Button variant="destructive" className="font-mono">Click me</Button>
+    <div >
+      <Header />
+      <Footer />
     </div>
   );
 };
