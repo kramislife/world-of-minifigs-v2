@@ -37,15 +37,29 @@ const Footer = () => {
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                {links.map((item, index) => (
-                  <Link
-                    key={item.id || `${item.label}-${index}`}
-                    to={item.path}
-                    className="text-sm dark:hover:text-accent hover:font-medium transition-colors wrap-break-word cursor-pointer"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+                {links.map((item) => {
+                  if (item.path?.includes("mailto:")) {
+                    return (
+                      <a
+                        key={item.id || `${item.label}`}
+                        href={item.path}
+                        className="text-sm dark:hover:text-accent hover:font-medium transition-colors wrap-break-word cursor-pointer"
+                      >
+                        {item.label}
+                      </a>
+                    );
+                  }
+
+                  return (
+                    <Link
+                      key={item.id || `${item.label}`}
+                      to={item.path}
+                      className="text-sm dark:hover:text-accent hover:font-medium transition-colors wrap-break-word cursor-pointer"
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>

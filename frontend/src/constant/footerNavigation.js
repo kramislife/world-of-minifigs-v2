@@ -5,8 +5,8 @@ export const footerNavigation = [
     id: 1,
     title: "Account",
     links: [
-      { label: "My Account", action: "myAccount" },
-      { label: "Cart", action: "cart" },
+      { label: "My Account", path: "/my-account" },
+      { label: "Cart", path: "/cart" },
       { label: "Contact Us", path: "/contact-us" },
     ],
   },
@@ -25,8 +25,11 @@ export const footerNavigation = [
     id: 3,
     title: "Support",
     links: [
-      { label: "Lehi, Utah 84043", action: "location" },
-      { label: "brickextremeofficial@gmail.com", action: "email" },
+      { label: "Lehi, Utah 84043"},
+      {
+        label: "brickextremeofficial@gmail.com",
+        path: "mailto:brickextremeofficial@gmail.com",
+      },
     ],
   },
   {

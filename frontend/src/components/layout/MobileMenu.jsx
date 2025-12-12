@@ -37,7 +37,7 @@ const MobileMenu = ({ onSignInClick }) => {
           asChild
           onClick={onSignInClick}
         >
-          <Link to="#">Sign In</Link>
+          Sign In
         </Button>
       </SheetClose>
     </SheetContent>
