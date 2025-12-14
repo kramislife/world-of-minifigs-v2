@@ -10,8 +10,30 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Login from "@/components/Auth/Login";
 import Register from "@/components/Auth/Register";
+import { useLogin } from "@/hooks/useLogin";
+import { useRegister } from "@/hooks/useRegister";
 
 const Auth = ({ open, onOpenChange, defaultTab = "login" }) => {
+  const {
+    formData: loginFormData,
+    isLoading: isLoginLoading,
+    isFormValid: isLoginFormValid,
+    handleChange: handleLoginChange,
+    handleSubmit: handleLoginSubmit,
+  } = useLogin();
+
+  const {
+    formData: registerFormData,
+    isLoading: isRegisterLoading,
+    isFormValid: isRegisterFormValid,
+    showPasswordRequirements,
+    passwordRequirements,
+    passwordRequirementsConfig,
+    handleChange: handleRegisterChange,
+    handleCheckboxChange,
+    handleSubmit: handleRegisterSubmit,
+  } = useRegister();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
@@ -37,10 +59,27 @@ const Auth = ({ open, onOpenChange, defaultTab = "login" }) => {
           </TabsList>
 
           <TabsContent value="login">
-            <Login />
+            <Login
+              formData={loginFormData}
+              isLoading={isLoginLoading}
+              isFormValid={isLoginFormValid}
+              handleChange={handleLoginChange}
+              handleSubmit={handleLoginSubmit}
+            />
           </TabsContent>
           <TabsContent value="register">
-            <Register />
+            <Register
+              onLinkClick={() => onOpenChange(false)}
+              formData={registerFormData}
+              isLoading={isRegisterLoading}
+              isFormValid={isRegisterFormValid}
+              showPasswordRequirements={showPasswordRequirements}
+              passwordRequirements={passwordRequirements}
+              passwordRequirementsConfig={passwordRequirementsConfig}
+              handleChange={handleRegisterChange}
+              handleCheckboxChange={handleCheckboxChange}
+              handleSubmit={handleRegisterSubmit}
+            />
           </TabsContent>
         </Tabs>
       </DialogContent>

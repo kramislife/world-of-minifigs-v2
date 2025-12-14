@@ -22,11 +22,6 @@ const userSchema = new mongoose.Schema(
     dateOfBirth: {
       type: Date,
     },
-    gender: {
-      type: String,
-      enum: ["male", "female", "other"],
-      default: "male",
-    },
     email: {
       type: String,
       required: [true, "Email is required"],
