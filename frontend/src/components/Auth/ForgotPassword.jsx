@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 const ForgotPassword = ({
   email,
   isLoading,
-  cooldownSeconds,
   isSubmitDisabled,
   handleChange,
   handleSubmit,
@@ -33,11 +32,7 @@ const ForgotPassword = ({
         className="w-full"
         disabled={isSubmitDisabled}
       >
-        {isLoading
-          ? "Sending..."
-          : cooldownSeconds > 0
-          ? `Try again in ${cooldownSeconds}s`
-          : "Send Reset Link"}
+        {isLoading ? "Sending..." : "Send Reset Link"}
       </Button>
     </form>
   );

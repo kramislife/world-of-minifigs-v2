@@ -22,7 +22,6 @@ const Auth = ({ open, onOpenChange, defaultTab = "login" }) => {
   const {
     formData: loginFormData,
     isLoading: isLoginLoading,
-    cooldownSeconds: loginCooldownSeconds,
     isSubmitDisabled: isLoginDisabled,
     handleChange: handleLoginChange,
     handleSubmit: handleLoginSubmit,
@@ -34,7 +33,6 @@ const Auth = ({ open, onOpenChange, defaultTab = "login" }) => {
     showPasswordRequirements,
     passwordRequirements,
     passwordRequirementsConfig,
-    cooldownSeconds: registerCooldownSeconds,
     isSubmitDisabled: isRegisterDisabled,
     handleChange: handleRegisterChange,
     handleCheckboxChange,
@@ -46,7 +44,6 @@ const Auth = ({ open, onOpenChange, defaultTab = "login" }) => {
   const {
     email: forgotEmail,
     isLoading: isForgotLoading,
-    cooldownSeconds: forgotCooldownSeconds,
     isSubmitDisabled: isForgotDisabled,
     handleChange: handleForgotChange,
     handleSubmit: handleForgotSubmit,
@@ -73,7 +70,6 @@ const Auth = ({ open, onOpenChange, defaultTab = "login" }) => {
           <ForgotPassword
             email={forgotEmail}
             isLoading={isForgotLoading}
-            cooldownSeconds={forgotCooldownSeconds}
             isSubmitDisabled={isForgotDisabled}
             handleChange={handleForgotChange}
             handleSubmit={handleForgotSubmit}
@@ -95,7 +91,6 @@ const Auth = ({ open, onOpenChange, defaultTab = "login" }) => {
               <Login
                 formData={loginFormData}
                 isLoading={isLoginLoading}
-                cooldownSeconds={loginCooldownSeconds}
                 isSubmitDisabled={isLoginDisabled}
                 handleChange={handleLoginChange}
                 handleSubmit={handleLoginSubmit}
@@ -110,7 +105,6 @@ const Auth = ({ open, onOpenChange, defaultTab = "login" }) => {
                 showPasswordRequirements={showPasswordRequirements}
                 passwordRequirements={passwordRequirements}
                 passwordRequirementsConfig={passwordRequirementsConfig}
-                cooldownSeconds={registerCooldownSeconds}
                 isSubmitDisabled={isRegisterDisabled}
                 handleChange={handleRegisterChange}
                 handleCheckboxChange={handleCheckboxChange}

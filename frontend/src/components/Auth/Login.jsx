@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 const Login = ({
   formData,
   isLoading,
-  cooldownSeconds,
   isSubmitDisabled,
   handleChange,
   handleSubmit,
@@ -59,11 +58,7 @@ const Login = ({
         className="w-full"
         disabled={isSubmitDisabled}
       >
-        {isLoading
-          ? "Signing in..."
-          : cooldownSeconds > 0
-          ? `Try again in ${cooldownSeconds}s`
-          : "Sign In"}
+        {isLoading ? "Signing in..." : "Sign In"}
       </Button>
     </form>
   );

@@ -21,7 +21,6 @@ const ResetPassword = () => {
     showPasswordRequirements,
     passwordRequirements,
     passwordRequirementsConfig,
-    cooldownSeconds,
     isSubmitDisabled,
     authOpen,
     setAuthOpen,
@@ -207,11 +206,7 @@ const ResetPassword = () => {
                 className="w-full"
                 disabled={isSubmitDisabled}
               >
-                {isLoading
-                  ? "Resetting..."
-                  : cooldownSeconds > 0
-                  ? `Try again in ${cooldownSeconds}s`
-                  : "Reset Password"}
+                {isLoading ? "Resetting..." : "Reset Password"}
               </Button>
             </form>
           </CardContent>

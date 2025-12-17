@@ -20,7 +20,6 @@ export const useResetPassword = () => {
   const [showPasswordRequirements, setShowPasswordRequirements] =
     useState(false);
   const [resetStatus, setResetStatus] = useState("validating");
-  const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [authOpen, setAuthOpen] = useState(false);
 
   const [resetPassword, { isLoading }] = useResetPasswordMutation();
@@ -88,15 +87,6 @@ export const useResetPassword = () => {
 
     validateToken();
   }, [token, resetPassword]);
-
-  // Cooldown timer
-  useEffect(() => {
-    if (cooldownSeconds <= 0) return;
-    const id = setInterval(() => {
-      setCooldownSeconds((prev) => (prev > 1 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(id);
-  }, [cooldownSeconds]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -199,16 +189,6 @@ export const useResetPassword = () => {
     } catch (error) {
       console.error("Reset password error:", error);
 
-      if (error?.status === 429) {
-        const windowSeconds = Number(error?.data?.windowSeconds) || 15 * 60;
-        setCooldownSeconds(windowSeconds);
-        toast.error(error?.data?.message || "Too many attempts", {
-          description:
-            error?.data?.description || "Please wait before trying again.",
-        });
-        return;
-      }
-
       const message = error?.data?.message?.toLowerCase() || "";
       if (message.includes("expired") || message.includes("invalid")) {
         setResetStatus("error");
@@ -243,16 +223,6 @@ export const useResetPassword = () => {
     } catch (error) {
       console.error("Resend reset link error:", error);
 
-      if (error?.status === 429) {
-        const windowSeconds = Number(error?.data?.windowSeconds) || 15 * 60;
-        setCooldownSeconds(windowSeconds);
-        toast.error(error?.data?.message || "Too many requests", {
-          description:
-            error?.data?.description || "Please wait before trying again.",
-        });
-        return;
-      }
-
       toast.error(error?.data?.message || "Unable to send reset link", {
         description: error?.data?.description || "Please try again later.",
       });
@@ -266,8 +236,7 @@ export const useResetPassword = () => {
     showPasswordRequirements,
     passwordRequirements,
     passwordRequirementsConfig,
-    cooldownSeconds,
-    isSubmitDisabled: isLoading || cooldownSeconds > 0,
+    isSubmitDisabled: isLoading,
     authOpen,
     setAuthOpen,
     resendEmail,

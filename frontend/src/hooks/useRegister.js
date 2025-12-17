@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { useRegisterMutation } from "@/redux/api/authApi";
 import { passwordRequirementsConfig } from "@/constant/passwordRequirements";
@@ -17,7 +17,6 @@ export const useRegister = (onSuccess) => {
 
   const [showPasswordRequirements, setShowPasswordRequirements] =
     useState(false);
-  const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [register, { isLoading }] = useRegisterMutation();
 
   // Password requirement checks
@@ -37,16 +36,6 @@ export const useRegister = (onSuccess) => {
     passwordRequirements.hasSpecialChar;
 
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
-
-  useEffect(() => {
-    if (cooldownSeconds <= 0) return;
-
-    const id = setInterval(() => {
-      setCooldownSeconds((prev) => (prev > 1 ? prev - 1 : 0));
-    }, 1000);
-
-    return () => clearInterval(id);
-  }, [cooldownSeconds]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -231,18 +220,6 @@ export const useRegister = (onSuccess) => {
     } catch (error) {
       console.error("Registration error:", error);
 
-      if (error?.status === 429) {
-        const windowSeconds = Number(error?.data?.windowSeconds) || 15 * 60; // fallback 15 min
-        setCooldownSeconds(windowSeconds);
-
-        toast.error(error?.data?.message || "Too many registration attempts", {
-          description:
-            error?.data?.description ||
-            "You have made too many registration attempts. Please wait a few minutes before trying again.",
-        });
-        return;
-      }
-
       toast.error(error?.data?.message || "Registration error occurred", {
         description:
           error?.data?.description ||
@@ -257,9 +234,7 @@ export const useRegister = (onSuccess) => {
     showPasswordRequirements,
     passwordRequirements,
     passwordRequirementsConfig,
-    cooldownSeconds,
-    isSubmitDisabled:
-      isLoading || cooldownSeconds > 0 || !formData.agreeToTerms,
+    isSubmitDisabled: isLoading || !formData.agreeToTerms,
     handleChange,
     handleCheckboxChange,
     handlePasswordFocus,

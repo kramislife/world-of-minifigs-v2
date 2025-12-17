@@ -3,7 +3,6 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import connectDatabase from "./config/dbConnect.js";
-import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -78,33 +77,8 @@ app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-// Rate limiting
-const authRateLimitWindowMinutes =
-  Number(process.env.AUTH_RATE_LIMIT_WINDOW_MINUTES) || 15;
-const authRateLimitMaxRequests =
-  Number(process.env.AUTH_RATE_LIMIT_MAX_REQUESTS) || 20;
-
-const authLimiter = rateLimit({
-  windowMs: authRateLimitWindowMinutes * 60 * 1000,
-  max: authRateLimitMaxRequests,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (_req, res) => {
-    const windowSeconds = authRateLimitWindowMinutes * 60;
-
-    res.status(429).json({
-      success: false,
-      message: "Too many requests",
-      description:
-        "You have made too many requests in a short period. Please wait a moment and try again.",
-      windowSeconds,
-      maxRequests: authRateLimitMaxRequests,
-    });
-  },
-});
-
 // Routes
-app.use("/api/v1/auth", authLimiter, authRoutes);
+app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/user", userRoutes);
 // 404 handler
 app.use((_req, res) => {
