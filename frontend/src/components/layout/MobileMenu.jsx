@@ -1,6 +1,6 @@
 import React from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { NavLink } from "react-router-dom";
+import { LogOut } from "lucide-react";
 import {
   SheetContent,
   SheetHeader,
@@ -10,22 +10,23 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { headerNavigation } from "@/constant/headerNavigation";
-import { LogOut, User, LayoutDashboard, Settings } from "lucide-react";
-import { useLogout, getInitials } from "@/hooks/useLogin";
 
-const MobileMenu = ({ onSignInClick, user }) => {
-  const { handleLogout, isLoggingOut } = useLogout();
-  const { isAuthenticated } = useSelector((state) => state.auth);
-  
-  const location = useLocation();
-  const isActive = (path) => location.pathname === path;
-
+const MobileMenu = ({
+  onSignInClick,
+  user,
+  headerNavigation,
+  filteredUserMenuItems,
+  isAuthenticated,
+  userInitials,
+  handleLogout,
+  isLoggingOut,
+  isActive,
+}) => {
   return (
     <SheetContent className="flex h-full flex-col p-5">
       <SheetHeader className="p-2">
         <SheetTitle>
-          {isAuthenticated && user && (
+          {isAuthenticated && (
             <div className="flex items-center gap-3">
               <Avatar className="flex border size-10">
                 {user?.profilePicture?.url && (
@@ -34,7 +35,7 @@ const MobileMenu = ({ onSignInClick, user }) => {
                     alt={user.username}
                   />
                 )}
-                <AvatarFallback>{getInitials(user)}</AvatarFallback>
+                <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
                 <span className="font-semibold">
@@ -73,48 +74,22 @@ const MobileMenu = ({ onSignInClick, user }) => {
         {isAuthenticated && (
           <>
             <div className="border-t pt-4 mt-2">
-              <SheetClose asChild>
-                <NavLink
-                  to="/profile"
-                  className={
-                    isActive("/profile")
-                      ? "flex items-center gap-3 px-4 py-3 rounded-lg bg-accent dark:text-secondary-foreground font-semibold transition-colors"
-                      : "flex items-center gap-3 px-4 py-3 rounded-lg text-foreground hover:bg-muted-foreground/10 transition-colors"
-                  }
-                >
-                  <User size={20} />
-                  Profile
-                </NavLink>
-              </SheetClose>
+              {filteredUserMenuItems.map((item) => (
+                <SheetClose asChild key={item.id}>
+                  <NavLink
+                    to={item.path}
+                    className={
+                      isActive(item.path)
+                        ? "flex items-center gap-3 px-4 py-3 rounded-lg bg-accent dark:text-secondary-foreground font-semibold transition-colors"
+                        : "flex items-center gap-3 px-4 py-3 rounded-lg text-foreground hover:bg-muted-foreground/10 transition-colors"
+                    }
+                  >
+                    <item.icon size={20} />
+                    {item.label}
+                  </NavLink>
+                </SheetClose>
+              ))}
             </div>
-            {user?.role === "admin" && (
-              <SheetClose asChild>
-                <NavLink
-                  to="/dashboard"
-                  className={
-                    isActive("/dashboard")
-                      ? "flex items-center gap-3 px-4 py-3 rounded-lg bg-accent dark:text-secondary-foreground font-semibold transition-colors"
-                      : "flex items-center gap-3 px-4 py-3 rounded-lg text-foreground hover:bg-muted-foreground/10 transition-colors"
-                  }
-                >
-                  <LayoutDashboard size={20} />
-                  Dashboard
-                </NavLink>
-              </SheetClose>
-            )}
-            <SheetClose asChild>
-              <NavLink
-                to="/settings"
-                className={
-                  isActive("/settings")
-                    ? "flex items-center gap-3 px-4 py-3 rounded-lg bg-accent dark:text-secondary-foreground font-semibold transition-colors"
-                    : "flex items-center gap-3 px-4 py-3 rounded-lg text-foreground hover:bg-muted-foreground/10 transition-colors"
-                }
-              >
-                <Settings size={20} />
-                Settings
-              </NavLink>
-            </SheetClose>
           </>
         )}
       </nav>

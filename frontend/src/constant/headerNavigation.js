@@ -7,7 +7,6 @@ import {
   ShoppingCart,
   UserRound,
   Settings,
-  LogOut,
   PenTool,
 } from "lucide-react";
 
@@ -68,11 +67,5 @@ export const userMenu = [
     label: "Settings",
     path: "/settings",
     icon: Settings,
-  },
-  {
-    id: "logout",
-    label: "Log out",
-    path: "/logout",
-    icon: LogOut,
   },
 ];

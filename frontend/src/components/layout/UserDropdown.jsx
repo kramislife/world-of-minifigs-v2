@@ -1,6 +1,6 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { LogOut, User, LayoutDashboard, Settings } from "lucide-react";
+import { NavLink } from "react-router-dom";
+import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -10,10 +10,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useLogout, getInitials } from "@/hooks/useLogin";
 
-const UserDropdown = ({ user }) => {
-  const { handleLogout, isLoggingOut } = useLogout();
+const UserDropdown = ({
+  user,
+  filteredUserMenuItems,
+  userInitials,
+  handleLogout,
+  isLoggingOut,
+}) => {
 
   return (
     <DropdownMenu>
@@ -22,7 +26,7 @@ const UserDropdown = ({ user }) => {
           {user?.profilePicture?.url && (
             <AvatarImage src={user.profilePicture.url} alt={user.username} />
           )}
-          <AvatarFallback>{getInitials(user)}</AvatarFallback>
+          <AvatarFallback>{userInitials}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -35,26 +39,14 @@ const UserDropdown = ({ user }) => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to="/profile">
-            <User className="mr-2 size-4" />
-            <span>Profile</span>
-          </Link>
-        </DropdownMenuItem>
-        {user?.role === "admin" && (
-          <DropdownMenuItem asChild>
-            <Link to="/dashboard">
-              <LayoutDashboard className="mr-2 size-4" />
-              <span>Dashboard</span>
-            </Link>
+        {filteredUserMenuItems.map((item) => (
+          <DropdownMenuItem key={item.id} asChild>
+            <NavLink to={item.path}>
+              <item.icon className="mr-2 size-4" />
+              <span>{item.label}</span>
+            </NavLink>
           </DropdownMenuItem>
-        )}
-        <DropdownMenuItem asChild>
-          <Link to="/settings">
-            <Settings className="mr-2 size-4" />
-            <span>Settings</span>
-          </Link>
-        </DropdownMenuItem>
+        ))}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleLogout}
