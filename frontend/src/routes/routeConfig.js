@@ -8,10 +8,21 @@ import TermsOfUse from "@/pages/TermsOfUse";
 import VerifyEmail from "@/components/auth/VerifyEmail";
 import ResetPassword from "@/components/auth/ResetPassword";
 import NotFound from "@/components/layout/NotFound";
-import Dashboard from "@/pages/Dashboard";
 import Profile from "@/pages/Profile";
 import Settings from "@/pages/Settings";
 import Purchase from "@/pages/Purchase";
+import AdminPanel from "@/pages/admin/AdminPanel";
+import Dashboard from "@/pages/admin/components/Dashboard";
+import ProductManagement from "@/pages/admin/components/ProductManagement";
+import ColorManagement from "@/pages/admin/components/ColorManagement";
+import CategoryManagement from "@/pages/admin/components/categories/CategoryManagement";
+import SubCategoryManagement from "@/pages/admin/components/categories/SubCategoryManagement";
+import CollectionManagement from "@/pages/admin/components/collections/CollectionManagement";
+import SubCollectionManagement from "@/pages/admin/components/collections/SubCollectionManagement";
+import SkillLevelManagement from "@/pages/admin/components/SkillLevelManagement";
+import DesignerManagement from "@/pages/admin/components/DesignerManagement";
+import OrderManagement from "@/pages/admin/components/OrderManagement";
+import UserManagement from "@/pages/admin/components/UserManagement";
 
 // Public routes
 export const publicRoutes = [
@@ -53,13 +64,8 @@ export const publicRoutes = [
   },
 ];
 
-// Private routes
+// Private routes (non-admin)
 export const privateRoutes = [
-  {
-    path: "/admin/dashboard",
-    element: Dashboard,
-    requiredRole: "admin",
-  },
   {
     path: "/purchase",
     element: Purchase,
@@ -71,6 +77,61 @@ export const privateRoutes = [
   {
     path: "/settings",
     element: Settings,
+  },
+];
+
+// Admin routes
+export const adminRoutes = [
+  {
+    path: "/admin",
+    element: AdminPanel,
+    requiredRole: "admin",
+    children: [
+      {
+        path: "dashboard",
+        element: Dashboard,
+      },
+      {
+        path: "products",
+        element: ProductManagement,
+      },
+      {
+        path: "product-color",
+        element: ColorManagement,
+      },
+      {
+        path: "categories",
+        element: CategoryManagement,
+      },
+      {
+        path: "sub-categories",
+        element: SubCategoryManagement,
+      },
+      {
+        path: "collections",
+        element: CollectionManagement,
+      },
+      {
+        path: "sub-collections",
+        element: SubCollectionManagement,
+      },
+      {
+        path: "skill-level",
+        element: SkillLevelManagement,
+      },
+      {
+        path: "designers",
+        element: DesignerManagement,
+      },
+      {
+        path: "orders",
+        element: OrderManagement,
+      },
+      {
+        path: "users",
+        element: UserManagement,
+      },
+    ],
   },
 ];
 

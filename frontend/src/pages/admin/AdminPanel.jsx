@@ -1,0 +1,150 @@
+import React, { useState } from "react";
+import { NavLink, Outlet } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { ChevronRight, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { adminNavigation } from "@/constant/adminNavigation";
+import { getInitials } from "@/hooks/useLogin";
+
+const AdminPanel = () => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [expandedItems, setExpandedItems] = useState([]);
+  const { user } = useSelector((state) => state.auth);
+  const userInitials = getInitials(user);
+
+  // toggle the menu item children
+  const toggleExpand = (itemId) => {
+    setExpandedItems((prev) =>
+      prev.includes(itemId)
+        ? prev.filter((id) => id !== itemId)
+        : [...prev, itemId]
+    );
+  };
+
+  // navlink button style
+  const getNavLinkClassName = (isActive, isChild = false) =>
+    `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+      isChild ? "ml-5" : ""
+    } ${
+      isActive
+        ? "bg-accent dark:text-secondary-foreground font-medium"
+        : "text-foreground hover:bg-muted-foreground/10"
+    }`;
+
+  const renderNavItem = (item) => {
+    if (item.children) {
+      const isExpanded = expandedItems.includes(item.id);
+
+      return (
+        <div key={item.id}>
+          {/* toggle the menu item with children */}
+          <button
+            onClick={() => toggleExpand(item.id)}
+            className="w-full flex items-center px-4 py-3 rounded-lg transition-colors text-foreground hover:bg-muted-foreground/10 cursor-pointer justify-between"
+          >
+            <div className="flex items-center gap-3">
+              <item.icon size={20} />
+              {!isCollapsed && <span>{item.label}</span>}
+            </div>
+            {!isCollapsed &&
+              (isExpanded ? (
+                <ChevronDown size={16} />
+              ) : (
+                <ChevronRight size={16} />
+              ))}
+          </button>
+          {/* render the children */}
+          {!isCollapsed && isExpanded && (
+            <div className="space-y-1">
+              {item.children.map((child) => (
+                <NavLink
+                  key={child.id}
+                  to={child.path}
+                  className={({ isActive }) =>
+                    getNavLinkClassName(isActive, true)
+                  }
+                >
+                  <span>{child.label}</span>
+                </NavLink>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      // item with no children
+      <NavLink
+        key={item.id}
+        to={item.path}
+        className={({ isActive }) => getNavLinkClassName(isActive)}
+        title={isCollapsed ? item.label : undefined}
+      >
+        <item.icon size={20} />
+        {!isCollapsed && <span>{item.label}</span>}
+      </NavLink>
+    );
+  };
+
+  return (
+    <div className="flex h-screen bg-background">
+      {/* Sidebar */}
+      <aside
+        className={`bg-input/30 dark:bg-card/30 border-r border-border/30 transition-all duration-300 flex flex-col sticky top-0 h-screen ${
+          isCollapsed ? "w-20" : "w-68"
+        }`}
+      >
+        {/* Sidebar Header */}
+        <div className="p-5 border-b flex items-center gap-3">
+          <Avatar className="size-10">
+            {user?.profilePicture?.url && (
+              <AvatarImage
+                src={user.profilePicture.url}
+                alt={user?.username || "Admin"}
+              />
+            )}
+            <AvatarFallback>{userInitials}</AvatarFallback>
+          </Avatar>
+          {!isCollapsed && (
+            <div className="flex flex-col min-w-0 flex-1">
+              <p className="font-semibold text-sm truncate">
+                {user?.firstName} {user?.lastName}
+              </p>
+              <p className="text-xs text-popover-foreground/80 truncate">
+                {user?.role}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Collapse Button */}
+        <Button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          variant="outline"
+          size="icon-sm"
+          className="absolute top-7 right-0 translate-x-1/2 z-10 rounded-full"
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <ChevronRight
+            size={20}
+            className={!isCollapsed ? "rotate-180" : ""}
+          />
+        </Button>
+
+        {/* Navigation Items */}
+        <nav className="flex-1 overflow-y-auto p-3 space-y-2">
+          {adminNavigation.map(renderNavItem)}
+        </nav>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto p-5">
+        <Outlet />
+      </main>
+    </div>
+  );
+};
+
+export default AdminPanel;
