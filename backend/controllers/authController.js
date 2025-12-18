@@ -106,7 +106,7 @@ export const register = async (req, res) => {
     const verificationTokenExpiry = new Date();
     verificationTokenExpiry.setHours(
       verificationTokenExpiry.getHours() +
-        parseInt(process.env.EMAIL_VERIFICATION_EXPIRY || "24", 10)
+        parseInt(process.env.EMAIL_VERIFICATION_EXPIRY || "1", 10)
     );
 
     // Create user
@@ -423,8 +423,6 @@ export const login = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Login successful",
-      description: "Welcome back!",
       user: userResponse,
     });
   } catch (error) {
@@ -656,9 +654,22 @@ export const refreshToken = async (req, res) => {
 
     // Check if refresh token has expired
     if (!user.refreshTokenExpiry || user.refreshTokenExpiry < new Date()) {
+      // Clear expired refresh token from database
       user.refreshToken = undefined;
       user.refreshTokenExpiry = undefined;
       await user.save();
+
+      // Clear cookies to log out user (with same options as when setting)
+      res.clearCookie("accessToken", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+      });
+      res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+      });
 
       return res.status(401).json({
         success: false,

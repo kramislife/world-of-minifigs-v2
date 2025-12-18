@@ -67,11 +67,6 @@ export const useLogin = (onSuccess) => {
         dispatch(setCredentials(response.user));
       }
 
-      toast.success(response?.message || "Login completed", {
-        description:
-          response?.description || "You have been signed in successfully.",
-      });
-
       // Close auth dialog if callback provided
       if (onSuccess) {
         onSuccess();

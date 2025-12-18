@@ -13,7 +13,7 @@ export const authenticate = async (req, res, next) => {
 
     // Fallback to Authorization header if cookie is not available
     if (!token) {
-      const authHeader = req.headers.authorization;
+    const authHeader = req.headers.authorization;
       if (authHeader && authHeader.startsWith("Bearer ")) {
         token = authHeader.substring(7);
       }
@@ -35,9 +35,9 @@ export const authenticate = async (req, res, next) => {
       // Token expired or invalid - try to refresh if refresh token exists
       const refreshToken = req.cookies?.refreshToken;
       if (!refreshToken) {
-        return res.status(401).json({
-          success: false,
-          message: "Invalid or expired access token",
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired access token",
           description:
             "Your session has expired or the token is invalid. Please sign in again.",
         });
@@ -76,16 +76,29 @@ export const authenticate = async (req, res, next) => {
           !userWithRefresh.refreshTokenExpiry ||
           userWithRefresh.refreshTokenExpiry < new Date()
         ) {
+          // Clear expired refresh token from database
           userWithRefresh.refreshToken = undefined;
           userWithRefresh.refreshTokenExpiry = undefined;
           await userWithRefresh.save();
+
+          // Clear cookies to log out user (with same options as when setting)
+          res.clearCookie("accessToken", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+          });
+          res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+          });
 
           return res.status(401).json({
             success: false,
             message: "Session expired",
             description: "Your session has expired. Please sign in again.",
-          });
-        }
+      });
+    }
 
         // Refresh token is valid - generate new tokens
         const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
@@ -132,7 +145,7 @@ export const authenticate = async (req, res, next) => {
       }
     }
 
-    // Find user
+    // Find user (include refreshTokenExpiry to check expiry, exclude password and refreshToken value)
     const user = await User.findById(decoded.userId).select(
       "-password -refreshToken"
     );
@@ -144,6 +157,44 @@ export const authenticate = async (req, res, next) => {
         description:
           "The user associated with this token no longer exists. Please sign in again.",
       });
+    }
+
+    // Check if refresh token has expired (even if access token is still valid)
+    // Fetch refreshTokenExpiry separately to check expiry
+    const userForExpiryCheck = await User.findById(decoded.userId).select(
+      "refreshToken refreshTokenExpiry"
+    );
+    
+    // If refreshTokenExpiry exists and is expired, or if refreshToken exists but expiry is missing/expired
+    if (userForExpiryCheck) {
+      const isExpired = 
+        userForExpiryCheck.refreshTokenExpiry && 
+        userForExpiryCheck.refreshTokenExpiry < new Date();
+      
+      if (isExpired) {
+        // Refresh token expired - clear it and log out user
+        userForExpiryCheck.refreshToken = undefined;
+        userForExpiryCheck.refreshTokenExpiry = undefined;
+        await userForExpiryCheck.save();
+
+        // Clear cookies to log out user
+        res.clearCookie("accessToken", {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+        });
+        res.clearCookie("refreshToken", {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+        });
+
+        return res.status(401).json({
+          success: false,
+          message: "Session expired",
+          description: "Your session has expired. Please sign in again.",
+        });
+      }
     }
 
     // Check if user is active
@@ -223,8 +274,8 @@ export const optionalAuth = async (req, res, next) => {
     let token = req.cookies?.accessToken;
 
     if (!token) {
-      const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith("Bearer ")) {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
         token = authHeader.substring(7);
       }
     }
