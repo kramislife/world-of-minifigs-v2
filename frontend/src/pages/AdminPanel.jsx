@@ -89,7 +89,7 @@ const AdminPanel = () => {
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <section className="flex">
       {/* Sidebar */}
       <aside
         className={`bg-input/30 dark:bg-card/30 border-r border-border/30 transition-all duration-300 flex flex-col sticky top-0 h-screen ${
@@ -97,7 +97,7 @@ const AdminPanel = () => {
         }`}
       >
         {/* Sidebar Header */}
-        <div className="p-5 border-b flex items-center gap-3">
+        <div className="p-5 border-b flex items-center gap-3 shrink-0 relative">
           <Avatar className="size-10">
             {user?.profilePicture?.url && (
               <AvatarImage
@@ -117,33 +117,30 @@ const AdminPanel = () => {
               </p>
             </div>
           )}
+
+          {/* Collapse Button */}
+          <Button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            variant="outline"
+            size="icon-sm"
+            className="absolute top-7 right-0 translate-x-1/2 z-10 rounded-full"
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <ChevronRight className={!isCollapsed ? "rotate-180" : ""} />
+          </Button>
         </div>
 
-        {/* Collapse Button */}
-        <Button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          variant="outline"
-          size="icon-sm"
-          className="absolute top-7 right-0 translate-x-1/2 z-10 rounded-full"
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          <ChevronRight
-            size={20}
-            className={!isCollapsed ? "rotate-180" : ""}
-          />
-        </Button>
-
         {/* Navigation Items */}
-        <nav className="flex-1 overflow-y-auto p-3 space-y-2">
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-2 min-h-0">
           {adminNavigation.map(renderNavItem)}
         </nav>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-5">
+      <main className="flex-1 overflow-y-auto px-5 py-7">
         <Outlet />
       </main>
-    </div>
+    </section>
   );
 };
 

@@ -6,14 +6,11 @@ const colorSchema = new mongoose.Schema(
       type: String,
       required: [true, "Color name is required"],
       trim: true,
-    },
-    key: {
-      type: String,
-      trim: true,
       unique: true,
     },
     hexCode: {
       type: String,
+      required: [true, "Hex code is required"],
       trim: true,
     },
 
@@ -30,10 +27,6 @@ const colorSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
-// Index for better query performance
-colorSchema.index({ key: 1 });
-colorSchema.index({ colorName: 1 });
 
 const Color = mongoose.model("Color", colorSchema);
 

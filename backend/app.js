@@ -6,6 +6,7 @@ import connectDatabase from "./config/dbConnect.js";
 import helmet from "helmet";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 if ((process.env.NODE_ENV || "").toLowerCase() !== "production") {
   dotenv.config({ path: "./config/config.env", quiet: true });
@@ -81,6 +82,7 @@ app.get("/health", (_req, res) => {
 // Routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/user", userRoutes);
+app.use("/api/v1/admin", adminRoutes);
 // 404 handler
 app.use((_req, res) => {
   res.status(404).json({ message: "Route not found" });

@@ -11,18 +11,18 @@ import NotFound from "@/components/layout/NotFound";
 import Profile from "@/pages/Profile";
 import Settings from "@/pages/Settings";
 import Purchase from "@/pages/Purchase";
-import AdminPanel from "@/pages/admin/AdminPanel";
-import Dashboard from "@/pages/admin/components/Dashboard";
-import ProductManagement from "@/pages/admin/components/ProductManagement";
-import ColorManagement from "@/pages/admin/components/ColorManagement";
-import CategoryManagement from "@/pages/admin/components/categories/CategoryManagement";
-import SubCategoryManagement from "@/pages/admin/components/categories/SubCategoryManagement";
-import CollectionManagement from "@/pages/admin/components/collections/CollectionManagement";
-import SubCollectionManagement from "@/pages/admin/components/collections/SubCollectionManagement";
-import SkillLevelManagement from "@/pages/admin/components/SkillLevelManagement";
-import DesignerManagement from "@/pages/admin/components/DesignerManagement";
-import OrderManagement from "@/pages/admin/components/OrderManagement";
-import UserManagement from "@/pages/admin/components/UserManagement";
+import AdminPanel from "@/pages/AdminPanel";
+import Dashboard from "@/pages/admin/Dashboard";
+import ProductManagement from "@/pages/admin/ProductManagement";
+import ColorManagement from "@/pages/admin/ColorManagement";
+import CategoryManagement from "@/pages/admin/categories/CategoryManagement";
+import SubCategoryManagement from "@/pages/admin/categories/SubCategoryManagement";
+import CollectionManagement from "@/pages/admin/collections/CollectionManagement";
+import SubCollectionManagement from "@/pages/admin/collections/SubCollectionManagement";
+import SkillLevelManagement from "@/pages/admin/SkillLevelManagement";
+import DesignerManagement from "@/pages/admin/DesignerManagement";
+import OrderManagement from "@/pages/admin/OrderManagement";
+import UserManagement from "@/pages/admin/UserManagement";
 
 // Public routes
 export const publicRoutes = [
