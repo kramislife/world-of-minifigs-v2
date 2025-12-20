@@ -247,7 +247,7 @@ const ColorManagement = () => {
         searchFields={["colorName", "hexCode"]}
         renderRow={(color) => (
           <>
-            <TableCell>{color.colorName}</TableCell>
+            <TableCell maxWidth="200px">{color.colorName}</TableCell>
             <TableCell>
               <div className="flex items-center justify-center gap-2">
                 {color.hexCode && (

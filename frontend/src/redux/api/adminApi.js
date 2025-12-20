@@ -6,7 +6,7 @@ export const adminApi = createApi({
     baseUrl: "/api/v1/admin",
     credentials: "include",
   }),
-  tagTypes: ["Color"],
+  tagTypes: ["Color", "Category"],
   endpoints: (builder) => ({
     // ==================== Color Management ====================
     // Get all colors
@@ -55,6 +55,57 @@ export const adminApi = createApi({
       }),
       invalidatesTags: ["Color"],
     }),
+
+    // ==================== Category Management ====================
+    // Get all categories
+    getCategories: builder.query({
+      query: () => ({
+        url: "/categories",
+        method: "GET",
+      }),
+      providesTags: ["Category"],
+    }),
+
+    // Get single category by ID
+    getCategoryById: builder.query({
+      query: (id) => ({
+        url: `/categories/${id}`,
+        method: "GET",
+      }),
+      providesTags: (_, __, id) => [{ type: "Category", id }],
+    }),
+
+    // Create category (admin only)
+    createCategory: builder.mutation({
+      query: (categoryData) => ({
+        url: "/categories",
+        method: "POST",
+        body: categoryData,
+      }),
+      invalidatesTags: ["Category"],
+    }),
+
+    // Update category (admin only)
+    updateCategory: builder.mutation({
+      query: ({ id, ...categoryData }) => ({
+        url: `/categories/${id}`,
+        method: "PUT",
+        body: categoryData,
+      }),
+      invalidatesTags: (_, __, { id }) => [
+        { type: "Category", id },
+        "Category",
+      ],
+    }),
+
+    // Delete category (admin only)
+    deleteCategory: builder.mutation({
+      query: (id) => ({
+        url: `/categories/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Category"],
+    }),
   }),
 });
 
@@ -64,4 +115,9 @@ export const {
   useCreateColorMutation,
   useUpdateColorMutation,
   useDeleteColorMutation,
+  useGetCategoriesQuery,
+  useGetCategoryByIdQuery,
+  useCreateCategoryMutation,
+  useUpdateCategoryMutation,
+  useDeleteCategoryMutation,
 } = adminApi;

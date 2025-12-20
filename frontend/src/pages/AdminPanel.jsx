@@ -92,7 +92,7 @@ const AdminPanel = () => {
     <section className="flex">
       {/* Sidebar */}
       <aside
-        className={`bg-input/30 dark:bg-card/30 border-r border-border/30 transition-all duration-300 flex flex-col sticky top-0 h-screen ${
+        className={`bg-input/30 dark:bg-card/30 border-r border-border/30 transition-all duration-300 flex flex-col sticky top-20 h-screen ${
           isCollapsed ? "w-20" : "w-68"
         }`}
       >

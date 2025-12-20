@@ -10,6 +10,13 @@ import {
   updateColor,
   deleteColor,
 } from "../controllers/colorController.js";
+import {
+  createCategory,
+  getAllCategories,
+  getCategoryById,
+  updateCategory,
+  deleteCategory,
+} from "../controllers/categoryController.js";
 
 const router = express.Router();
 
@@ -22,5 +29,12 @@ router.get("/colors", getAllColors);
 router.get("/colors/:id", getColorById);
 router.put("/colors/:id", updateColor);
 router.delete("/colors/:id", deleteColor);
+
+// Category CRUD routes
+router.post("/categories", createCategory);
+router.get("/categories", getAllCategories);
+router.get("/categories/:id", getCategoryById);
+router.put("/categories/:id", updateCategory);
+router.delete("/categories/:id", deleteCategory);
 
 export default router;

@@ -10,8 +10,27 @@ export const TableHeader = ({ children }) => {
 };
 
 // Helper function to render table cell with standard styling
-export const TableCell = ({ children }) => {
-  return <td className="px-4 py-3 text-center text-sm">{children}</td>;
+export const TableCell = ({
+  children,
+  className = "",
+  maxWidth,
+  truncate = true,
+}) => {
+  return (
+    <td className={`px-4 py-3 text-center text-sm ${className}`}>
+      {truncate ? (
+        <div
+          className="truncate"
+          style={maxWidth ? { maxWidth, margin: "0 auto" } : {}}
+          title={children}
+        >
+          {children}
+        </div>
+      ) : (
+        children
+      )}
+    </td>
+  );
 };
 
 // Actions Column Component

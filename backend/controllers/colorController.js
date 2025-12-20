@@ -1,6 +1,6 @@
 import Color from "../models/color.model.js";
 
-// Create Color
+//------------------------------------------------ Create Color ------------------------------------------
 export const createColor = async (req, res) => {
   try {
     const { colorName, hexCode } = req.body;
@@ -90,7 +90,7 @@ export const createColor = async (req, res) => {
   }
 };
 
-// Get All Colors
+//------------------------------------------------ Get All Colors ------------------------------------------
 export const getAllColors = async (req, res) => {
   try {
     const colors = await Color.find()
@@ -114,7 +114,7 @@ export const getAllColors = async (req, res) => {
   }
 };
 
-// Get Single Color
+//------------------------------------------------ Get Single Color ------------------------------------------
 export const getColorById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -146,7 +146,7 @@ export const getColorById = async (req, res) => {
   }
 };
 
-// Update Color
+//------------------------------------------------ Update Color ------------------------------------------
 export const updateColor = async (req, res) => {
   try {
     const { id } = req.params;
@@ -211,7 +211,9 @@ export const updateColor = async (req, res) => {
             "Hex code must be in format #RRGGBB or RRGGBB (e.g., #FF5733 or FF5733).",
         });
       }
-      color.hexCode = hexCodeStr.startsWith("#") ? hexCodeStr : `#${hexCodeStr}`;
+      color.hexCode = hexCodeStr.startsWith("#")
+        ? hexCodeStr
+        : `#${hexCodeStr}`;
     }
 
     // Update updatedBy
@@ -239,7 +241,7 @@ export const updateColor = async (req, res) => {
   }
 };
 
-// Delete Color
+//------------------------------------------------ Delete Color ------------------------------------------
 export const deleteColor = async (req, res) => {
   try {
     const { id } = req.params;
@@ -269,6 +271,3 @@ export const deleteColor = async (req, res) => {
     });
   }
 };
-
-
-
