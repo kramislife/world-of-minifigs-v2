@@ -24,6 +24,13 @@ import {
   updateSubCategory,
   deleteSubCategory,
 } from "../controllers/subCategoryController.js";
+import {
+  createSkillLevel,
+  getAllSkillLevels,
+  getSkillLevelById,
+  updateSkillLevel,
+  deleteSkillLevel,
+} from "../controllers/skillLevelController.js";
 
 const router = express.Router();
 
@@ -44,11 +51,18 @@ router.get("/categories/:id", getCategoryById);
 router.put("/categories/:id", updateCategory);
 router.delete("/categories/:id", deleteCategory);
 
-// SubCategory CRUD routes
+// Sub-category CRUD routes
 router.post("/subCategories", createSubCategory);
 router.get("/subCategories", getAllSubCategories);
 router.get("/subCategories/:id", getSubCategoryById);
 router.put("/subCategories/:id", updateSubCategory);
 router.delete("/subCategories/:id", deleteSubCategory);
+
+// SkillLevel CRUD routes
+router.post("/skillLevels", createSkillLevel);
+router.get("/skillLevels", getAllSkillLevels);
+router.get("/skillLevels/:id", getSkillLevelById);
+router.put("/skillLevels/:id", updateSkillLevel);
+router.delete("/skillLevels/:id", deleteSkillLevel);
 
 export default router;

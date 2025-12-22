@@ -6,7 +6,7 @@ export const adminApi = createApi({
     baseUrl: "/api/v1/admin",
     credentials: "include",
   }),
-  tagTypes: ["Color", "Category", "SubCategory"],
+  tagTypes: ["Color", "Category", "SubCategory", "SkillLevel"],
   endpoints: (builder) => ({
     // ==================== Color Management ====================
     // Get all colors
@@ -157,6 +157,57 @@ export const adminApi = createApi({
       }),
       invalidatesTags: ["SubCategory"],
     }),
+
+    // ==================== SkillLevel Management ====================
+    // Get all skillLevels
+    getSkillLevels: builder.query({
+      query: () => ({
+        url: "/skillLevels",
+        method: "GET",
+      }),
+      providesTags: ["SkillLevel"],
+    }),
+
+    // Get single skillLevel by ID
+    getSkillLevelById: builder.query({
+      query: (id) => ({
+        url: `/skillLevels/${id}`,
+        method: "GET",
+      }),
+      providesTags: (_, __, id) => [{ type: "SkillLevel", id }],
+    }),
+
+    // Create skillLevel (admin only)
+    createSkillLevel: builder.mutation({
+      query: (skillLevelData) => ({
+        url: "/skillLevels",
+        method: "POST",
+        body: skillLevelData,
+      }),
+      invalidatesTags: ["SkillLevel"],
+    }),
+
+    // Update skillLevel (admin only)
+    updateSkillLevel: builder.mutation({
+      query: ({ id, ...skillLevelData }) => ({
+        url: `/skillLevels/${id}`,
+        method: "PUT",
+        body: skillLevelData,
+      }),
+      invalidatesTags: (_, __, { id }) => [
+        { type: "SkillLevel", id },
+        "SkillLevel",
+      ],
+    }),
+
+    // Delete skillLevel (admin only)
+    deleteSkillLevel: builder.mutation({
+      query: (id) => ({
+        url: `/skillLevels/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["SkillLevel"],
+    }),
   }),
 });
 
@@ -176,4 +227,9 @@ export const {
   useCreateSubCategoryMutation,
   useUpdateSubCategoryMutation,
   useDeleteSubCategoryMutation,
+  useGetSkillLevelsQuery,
+  useGetSkillLevelByIdQuery,
+  useCreateSkillLevelMutation,
+  useUpdateSkillLevelMutation,
+  useDeleteSkillLevelMutation,
 } = adminApi;
