@@ -4,13 +4,8 @@ const subCollectionSchema = new mongoose.Schema(
   {
     subCollectionName: {
       type: String,
-      required: [true, "SubCollection name is required"],
+      required: true,
       trim: true,
-    },
-    key: {
-      type: String,
-      trim: true,
-      unique: true,
     },
     description: {
       type: String,
@@ -20,11 +15,11 @@ const subCollectionSchema = new mongoose.Schema(
       {
         publicId: {
           type: String,
-          required: [true, "Image public ID is required"],
+          required: true,
         },
         url: {
           type: String,
-          required: [true, "Image URL is required"],
+          required: true,
         },
       },
     ],
@@ -32,15 +27,19 @@ const subCollectionSchema = new mongoose.Schema(
     collection: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Collection",
+      required: true,
+      index: true,
     },
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      index: true,
     },
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      index: true,
     },
   },
   {
@@ -48,10 +47,19 @@ const subCollectionSchema = new mongoose.Schema(
   }
 );
 
-// Index for better query performance
-subCollectionSchema.index({ key: 1 });
-subCollectionSchema.index({ subCollectionName: 1 });
-subCollectionSchema.index({ collection: 1 });
+// Indexes
+
+// Fast lookup + uniqueness guarantee
+subCollectionSchema.index(
+  { collection: 1, subCollectionName: 1 },
+  {
+    unique: true,
+    collation: { locale: "en", strength: 2 }, // case-insensitive
+  }
+);
+
+// Faster sorting for getAllSubCollections
+subCollectionSchema.index({ createdAt: -1 });
 
 const SubCollection = mongoose.model("SubCollection", subCollectionSchema);
 

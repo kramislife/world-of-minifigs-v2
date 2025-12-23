@@ -6,7 +6,7 @@ export const adminApi = createApi({
     baseUrl: "/api/v1/admin",
     credentials: "include",
   }),
-  tagTypes: ["Color", "Category", "SubCategory", "SkillLevel", "User"],
+  tagTypes: ["Color", "Category", "SubCategory", "SkillLevel", "Collection", "User"],
   endpoints: (builder) => ({
     // ==================== Color Management ====================
     // Get all colors
@@ -209,6 +209,57 @@ export const adminApi = createApi({
       invalidatesTags: ["SkillLevel"],
     }),
 
+    // ==================== Collection Management ====================
+    // Get all collections
+    getCollections: builder.query({
+      query: () => ({
+        url: "/collections",
+        method: "GET",
+      }),
+      providesTags: ["Collection"],
+    }),
+
+    // Get single collection by ID
+    getCollectionById: builder.query({
+      query: (id) => ({
+        url: `/collections/${id}`,
+        method: "GET",
+      }),
+      providesTags: (_, __, id) => [{ type: "Collection", id }],
+    }),
+
+    // Create collection (admin only)
+    createCollection: builder.mutation({
+      query: (collectionData) => ({
+        url: "/collections",
+        method: "POST",
+        body: collectionData,
+      }),
+      invalidatesTags: ["Collection"],
+    }),
+
+    // Update collection (admin only)
+    updateCollection: builder.mutation({
+      query: ({ id, ...collectionData }) => ({
+        url: `/collections/${id}`,
+        method: "PUT",
+        body: collectionData,
+      }),
+      invalidatesTags: (_, __, { id }) => [
+        { type: "Collection", id },
+        "Collection",
+      ],
+    }),
+
+    // Delete collection (admin only)
+    deleteCollection: builder.mutation({
+      query: (id) => ({
+        url: `/collections/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Collection"],
+    }),
+
     // ==================== User Management ====================
     // Get all users
     getUsers: builder.query({
@@ -242,5 +293,10 @@ export const {
   useCreateSkillLevelMutation,
   useUpdateSkillLevelMutation,
   useDeleteSkillLevelMutation,
+  useGetCollectionsQuery,
+  useGetCollectionByIdQuery,
+  useCreateCollectionMutation,
+  useUpdateCollectionMutation,
+  useDeleteCollectionMutation,
   useGetUsersQuery,
 } = adminApi;

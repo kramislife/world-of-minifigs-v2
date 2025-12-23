@@ -39,15 +39,16 @@ const subCategorySchema = new mongoose.Schema(
 
 // Indexes
 
+// Fast lookup + uniqueness guarantee
 subCategorySchema.index(
   { category: 1, subCategoryName: 1 },
   {
     unique: true,
-    collation: { locale: "en", strength: 2 },
+    collation: { locale: "en", strength: 2 }, // case-insensitive
   }
 );
 
-// Fast sorting for admin tables
+// Fast sorting for getAllSubCategories
 subCategorySchema.index({ createdAt: -1 });
 
 const SubCategory = mongoose.model("SubCategory", subCategorySchema);

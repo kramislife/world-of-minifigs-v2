@@ -4,30 +4,23 @@ const collectionSchema = new mongoose.Schema(
   {
     collectionName: {
       type: String,
-      required: [true, "Collection name is required"],
+      required: true,
       trim: true,
-    },
-    key: {
-      type: String,
-      trim: true,
-      unique: true,
     },
     description: {
       type: String,
       trim: true,
     },
-    images: [
-      {
-        publicId: {
-          type: String,
-          required: [true, "Image public ID is required"],
-        },
-        url: {
-          type: String,
-          required: [true, "Image URL is required"],
-        },
+    image: {
+      publicId: {
+        type: String,
+        required: true,
       },
-    ],
+      url: {
+        type: String,
+        required: true,
+      },
+    },
 
     isFeatured: {
       type: Boolean,
@@ -37,10 +30,12 @@ const collectionSchema = new mongoose.Schema(
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      index: true,
     },
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      index: true,
     },
   },
   {
@@ -48,9 +43,21 @@ const collectionSchema = new mongoose.Schema(
   }
 );
 
-// Index for better query performance
-collectionSchema.index({ key: 1 });
-collectionSchema.index({ collectionName: 1 });
+// Indexes
+
+// Fast lookup + uniqueness guarantee
+collectionSchema.index(
+  { collectionName: 1 },
+  {
+    unique: true,
+    collation: { locale: "en", strength: 2 }, // case-insensitive
+  }
+);
+
+// Faster sorting for getAllCollections
+collectionSchema.index({ createdAt: -1 });
+
+collectionSchema.index({ isFeatured: 1, createdAt: -1 });
 
 const Collection = mongoose.model("Collection", collectionSchema);
 

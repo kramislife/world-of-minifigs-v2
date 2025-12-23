@@ -21,6 +21,9 @@ const validateEnv = () => {
     "SMTP_USER",
     "SMTP_PASSWORD",
     "SMTP_FROM_EMAIL",
+    "CLOUDINARY_CLOUD_NAME",
+    "CLOUDINARY_API_KEY",
+    "CLOUDINARY_API_SECRET",
   ];
 
   const missing = requiredVars.filter((name) => !process.env[name]);
@@ -71,7 +74,8 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "10mb" })); 
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(cookieParser());
 
 // Health check

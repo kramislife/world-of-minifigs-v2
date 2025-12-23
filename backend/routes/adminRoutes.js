@@ -31,6 +31,13 @@ import {
   updateSkillLevel,
   deleteSkillLevel,
 } from "../controllers/skillLevelController.js";
+import {
+  createCollection,
+  getAllCollections,
+  getCollectionById,
+  updateCollection,
+  deleteCollection,
+} from "../controllers/collectionController.js";
 import { getAllUsers } from "../controllers/authController.js";
 
 const router = express.Router();
@@ -65,6 +72,13 @@ router.get("/skillLevels", getAllSkillLevels);
 router.get("/skillLevels/:id", getSkillLevelById);
 router.put("/skillLevels/:id", updateSkillLevel);
 router.delete("/skillLevels/:id", deleteSkillLevel);
+
+// Collection CRUD routes
+router.post("/collections", createCollection);
+router.get("/collections", getAllCollections);
+router.get("/collections/:id", getCollectionById);
+router.put("/collections/:id", updateCollection);
+router.delete("/collections/:id", deleteCollection);
 
 // User Management GET routes
 router.get("/users", getAllUsers);

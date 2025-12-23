@@ -4,29 +4,44 @@ const colorSchema = new mongoose.Schema(
   {
     colorName: {
       type: String,
-      required: [true, "Color name is required"],
+      required: true,
       trim: true,
-      unique: true,
     },
     hexCode: {
       type: String,
-      required: [true, "Hex code is required"],
+      required: true,
       trim: true,
     },
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      index: true,
     },
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      index: true,
     },
   },
   {
     timestamps: true,
   }
 );
+
+// Indexes
+
+// Fast lookup + uniqueness guarantee
+colorSchema.index(
+  { colorName: 1 },
+  {
+    unique: true,
+    collation: { locale: "en", strength: 2 }, // case-insensitive
+  }
+);
+
+// Faster sorting for getAllColors
+colorSchema.index({ createdAt: -1 });
 
 const Color = mongoose.model("Color", colorSchema);
 
