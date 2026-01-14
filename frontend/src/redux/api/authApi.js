@@ -1,11 +1,27 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { clearCredentials } from "@/redux/slices/authSlice";
+
+// Base query with auth credentials
+const baseQuery = fetchBaseQuery({
+  baseUrl: "/api/v1/auth",
+  credentials: "include",
+});
+
+// Wrapper that handles 401 responses globally
+const baseQueryWithAuth = async (args, api, extraOptions) => {
+  const result = await baseQuery(args, api, extraOptions);
+
+  // If we get a 401, clear credentials (session expired)
+  if (result?.error?.status === 401) {
+    api.dispatch(clearCredentials());
+  }
+
+  return result;
+};
 
 export const authApi = createApi({
   reducerPath: "authApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "/api/v1/auth",
-    credentials: "include",
-  }),
+  baseQuery: baseQueryWithAuth,
   tagTypes: ["User"],
   endpoints: (builder) => ({
     // ==================== Authentication ====================

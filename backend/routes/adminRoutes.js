@@ -46,6 +46,13 @@ import {
   deleteSubCollection,
 } from "../controllers/subCollectionController.js";
 import { getAllUsers } from "../controllers/authController.js";
+import {
+  createProduct,
+  getAllProducts,
+  getProductById,
+  updateProduct,
+  deleteProduct,
+} from "../controllers/productController.js";
 
 const router = express.Router();
 
@@ -93,6 +100,13 @@ router.get("/subCollections", getAllSubCollections);
 router.get("/subCollections/:id", getSubCollectionById);
 router.put("/subCollections/:id", updateSubCollection);
 router.delete("/subCollections/:id", deleteSubCollection);
+
+// Product CRUD routes
+router.post("/products", createProduct);
+router.get("/products", getAllProducts);
+router.get("/products/:id", getProductById);
+router.put("/products/:id", updateProduct);
+router.delete("/products/:id", deleteProduct);
 
 // User Management GET routes
 router.get("/users", getAllUsers);

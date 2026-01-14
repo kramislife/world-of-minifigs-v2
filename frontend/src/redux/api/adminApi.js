@@ -1,12 +1,37 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { clearCredentials } from "@/redux/slices/authSlice";
+
+// Base query with auth credentials
+const baseQuery = fetchBaseQuery({
+  baseUrl: "/api/v1/admin",
+  credentials: "include",
+});
+
+// Wrapper that handles 401 responses globally
+const baseQueryWithAuth = async (args, api, extraOptions) => {
+  const result = await baseQuery(args, api, extraOptions);
+
+  // If we get a 401, clear credentials (session expired)
+  if (result?.error?.status === 401) {
+    api.dispatch(clearCredentials());
+  }
+
+  return result;
+};
 
 export const adminApi = createApi({
   reducerPath: "adminApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "/api/v1/admin",
-    credentials: "include",
-  }),
-  tagTypes: ["Color", "Category", "SubCategory", "SkillLevel", "Collection", "SubCollection", "User"],
+  baseQuery: baseQueryWithAuth,
+  tagTypes: [
+    "Color",
+    "Category",
+    "SubCategory",
+    "SkillLevel",
+    "Collection",
+    "SubCollection",
+    "User",
+    "Product",
+  ],
   endpoints: (builder) => ({
     // ==================== Color Management ====================
     // Get all colors
@@ -311,6 +336,54 @@ export const adminApi = createApi({
       invalidatesTags: ["SubCollection"],
     }),
 
+    // ==================== Product Management ====================
+    // Get all products
+    getProducts: builder.query({
+      query: () => ({
+        url: "/products",
+        method: "GET",
+      }),
+      providesTags: ["Product"],
+    }),
+
+    // Get single product by ID
+    getProductById: builder.query({
+      query: (id) => ({
+        url: `/products/${id}`,
+        method: "GET",
+      }),
+      providesTags: (_, __, id) => [{ type: "Product", id }],
+    }),
+
+    // Create product (admin only)
+    createProduct: builder.mutation({
+      query: (productData) => ({
+        url: "/products",
+        method: "POST",
+        body: productData,
+      }),
+      invalidatesTags: ["Product"],
+    }),
+
+    // Update product (admin only)
+    updateProduct: builder.mutation({
+      query: ({ id, ...productData }) => ({
+        url: `/products/${id}`,
+        method: "PUT",
+        body: productData,
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: "Product", id }, "Product"],
+    }),
+
+    // Delete product (admin only)
+    deleteProduct: builder.mutation({
+      query: (id) => ({
+        url: `/products/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Product"],
+    }),
+
     // ==================== User Management ====================
     // Get all users
     getUsers: builder.query({
@@ -354,5 +427,10 @@ export const {
   useCreateSubCollectionMutation,
   useUpdateSubCollectionMutation,
   useDeleteSubCollectionMutation,
+  useGetProductsQuery,
+  useGetProductByIdQuery,
+  useCreateProductMutation,
+  useUpdateProductMutation,
+  useDeleteProductMutation,
   useGetUsersQuery,
 } = adminApi;

@@ -45,7 +45,7 @@ const Login = ({
         <Button
           variant="link"
           type="button"
-          className="text-destructive dark:text-accent"
+          className="text-destructive dark:text-accent px-0"
           onClick={onForgotPassword}
         >
           Forgot Password?

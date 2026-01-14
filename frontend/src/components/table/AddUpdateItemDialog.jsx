@@ -19,6 +19,7 @@ const AddUpdateItemDialog = ({
   isLoading = false,
   submitButtonText,
   children,
+  className = "sm:max-w-xl", // Default size
 }) => {
   // Default titles and descriptions based on mode
   const defaultTitle = mode === "edit" ? "Edit Item" : "Add New Item";
@@ -35,7 +36,7 @@ const AddUpdateItemDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className={className}>
         <DialogHeader>
           <DialogTitle>{dialogTitle}</DialogTitle>
           {dialogDescription && (
