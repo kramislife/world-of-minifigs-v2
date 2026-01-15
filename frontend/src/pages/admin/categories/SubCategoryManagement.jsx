@@ -35,13 +35,21 @@ const SubCategoryManagement = () => {
     category: "",
   });
 
-  // Fetch data
+  // Pagination and search state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState("10");
+  const [search, setSearch] = useState("");
+
+  // Fetch data with pagination and search
   const { data: subCategoriesData, isLoading: isLoadingSubCategories } =
-    useGetSubCategoriesQuery();
+    useGetSubCategoriesQuery({
+      page,
+      limit,
+      search: search || undefined, // Only send if not empty
+    });
   const { data: categoriesData, isLoading: isLoadingCategories } =
     useGetCategoriesQuery();
 
-  // Mutations
   const [createSubCategory, { isLoading: isCreating }] =
     useCreateSubCategoryMutation();
   const [updateSubCategory, { isLoading: isUpdating }] =
@@ -49,12 +57,10 @@ const SubCategoryManagement = () => {
   const [deleteSubCategory, { isLoading: isDeleting }] =
     useDeleteSubCategoryMutation();
 
-  // Calculate total items for TableLayout
-  const totalItems =
-    subCategoriesData?.count || subCategoriesData?.subCategories?.length || 0;
-
-  // Displayed data - TableLayout handles pagination and search
-  const displayedSubCategories = subCategoriesData?.subCategories || [];
+  // Extract data from server response
+  const subCategories = subCategoriesData?.subCategories || [];
+  const totalItems = subCategoriesData?.pagination?.totalItems || 0;
+  const totalPages = subCategoriesData?.pagination?.totalPages || 1;
 
   // Get categories list
   const categories = categoriesData?.categories || [];
@@ -239,6 +245,21 @@ const SubCategoryManagement = () => {
     }
   };
 
+  // Handle pagination and search changes
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setLimit(newLimit);
+    setPage(1); // Reset to first page when changing limit
+  };
+
+  const handleSearchChange = (value) => {
+    setSearch(value);
+    setPage(1); // Reset to first page when searching
+  };
+
   return (
     <div className="space-y-5">
       {/* Header with Add Button */}
@@ -257,17 +278,19 @@ const SubCategoryManagement = () => {
 
       <TableLayout
         searchPlaceholder="Search subcategories..."
+        searchValue={search}
+        onSearchChange={handleSearchChange}
+        entriesValue={limit}
+        onEntriesChange={handleLimitChange}
+        page={page}
+        onPageChange={handlePageChange}
         totalItems={totalItems}
+        totalPages={totalPages}
         columns={columns}
-        data={displayedSubCategories}
+        data={subCategories}
         isLoading={isLoadingSubCategories}
         loadingMessage="Loading subcategories..."
         emptyMessage="No sub-category found..."
-        searchFields={[
-          "subCategoryName",
-          "description",
-          "categoryId.categoryName",
-        ]}
         renderRow={(subCategory) => (
           <>
             <TableCell maxWidth="200px">
@@ -391,3 +414,4 @@ const SubCategoryManagement = () => {
 };
 
 export default SubCategoryManagement;
+

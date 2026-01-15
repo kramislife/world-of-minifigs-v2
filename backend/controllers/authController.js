@@ -5,6 +5,12 @@ import sendEmail from "../utils/sendEmail.js";
 import { getVerificationEmailTemplate } from "../utils/Email/verifyEmail.js";
 import { getResetPasswordTemplate } from "../utils/Email/passwordEmail.js";
 import { generateTokens, verifyRefreshToken } from "../utils/generateToken.js";
+import {
+  normalizePagination,
+  buildSearchQuery,
+  paginateQuery,
+  createPaginationResponse,
+} from "../utils/pagination.js";
 
 const MIN_RESPONSE_TIME_MS = 3000; // minimum response time
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -889,18 +895,55 @@ export const resetPassword = async (req, res) => {
 //------------------------------------------------ Get All Users (Admin) ------------------------------------------
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find()
-      .select(
-        "-password -verificationToken -verificationTokenExpiry -resetPasswordToken -resetPasswordTokenExpiry -refreshToken -refreshTokenExpiry -__v"
-      )
-      .sort({ createdAt: -1 })
-      .lean();
-
-    return res.status(200).json({
-      success: true,
-      count: users.length,
-      users,
+    // Extract and normalize pagination parameters
+    const { page, limit, search } = normalizePagination({
+      page: req.query.page,
+      limit: req.query.limit,
+      search: req.query.search,
     });
+
+    // Build search query
+    const searchFields = [
+      "firstName",
+      "lastName",
+      "username",
+      "email",
+      "contactNumber",
+    ];
+    const searchQuery = buildSearchQuery(search, searchFields);
+
+    // Apply pagination
+    const result = await paginateQuery(User, searchQuery, {
+      page,
+      limit,
+      sort: { createdAt: -1 },
+      populate: "",
+    });
+
+    // Select fields and exclude sensitive data
+    const users = result.data.map((user) => {
+      const {
+        password,
+        verificationToken,
+        verificationTokenExpiry,
+        resetPasswordToken,
+        resetPasswordTokenExpiry,
+        refreshToken,
+        refreshTokenExpiry,
+        __v,
+        ...userData
+      } = user;
+      return userData;
+    });
+
+    return res
+      .status(200)
+      .json(
+        createPaginationResponse(
+          { data: users, pagination: result.pagination },
+          "users"
+        )
+      );
   } catch (error) {
     console.error("Get all users error:", error);
     res.status(500).json({

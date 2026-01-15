@@ -1,5 +1,11 @@
 import SubCategory from "../models/subCategory.model.js";
 import Category from "../models/category.model.js";
+import {
+  normalizePagination,
+  buildSearchQuery,
+  paginateQuery,
+  createPaginationResponse,
+} from "../utils/pagination.js";
 
 //------------------------------------------------ Create Sub-category ------------------------------------------
 export const createSubCategory = async (req, res) => {
@@ -99,19 +105,61 @@ export const createSubCategory = async (req, res) => {
 //------------------------------------------------ Get All SubCategories ------------------------------------------
 export const getAllSubCategories = async (req, res) => {
   try {
-    const subCategories = await SubCategory.find()
-      .select("-__v")
-      .populate("categoryId", "categoryName")
-      .populate("createdBy", "firstName lastName username")
-      .populate("updatedBy", "firstName lastName username")
-      .sort({ createdAt: -1 })
-      .lean();
-
-    return res.status(200).json({
-      success: true,
-      count: subCategories.length,
-      subCategories,
+    // Extract and normalize pagination parameters
+    const { page, limit, search } = normalizePagination({
+      page: req.query.page,
+      limit: req.query.limit,
+      search: req.query.search,
     });
+
+    // Build search query
+    let searchQuery = {};
+    if (search) {
+      // Search in subCategory fields
+      const subCategorySearchFields = ["subCategoryName", "description"];
+      const subCategoryQuery = buildSearchQuery(
+        search,
+        subCategorySearchFields
+      );
+
+      // Search in category names
+      const categorySearchQuery = buildSearchQuery(search, ["categoryName"]);
+      const matchingCategories = await Category.find(categorySearchQuery)
+        .select("_id")
+        .lean();
+
+      const matchingCategoryIds = matchingCategories.map((cat) => cat._id);
+
+      // Combine both searches using $or
+      if (
+        Object.keys(subCategoryQuery).length > 0 &&
+        matchingCategoryIds.length > 0
+      ) {
+        searchQuery = {
+          $or: [subCategoryQuery, { categoryId: { $in: matchingCategoryIds } }],
+        };
+      } else if (Object.keys(subCategoryQuery).length > 0) {
+        searchQuery = subCategoryQuery;
+      } else if (matchingCategoryIds.length > 0) {
+        searchQuery = { categoryId: { $in: matchingCategoryIds } };
+      }
+    }
+
+    // Apply pagination
+    const result = await paginateQuery(SubCategory, searchQuery, {
+      page,
+      limit,
+      sort: { createdAt: -1 },
+      populate: [
+        { path: "categoryId", select: "categoryName" },
+        { path: "createdBy", select: "firstName lastName username" },
+        { path: "updatedBy", select: "firstName lastName username" },
+      ],
+    });
+
+    return res
+      .status(200)
+      .json(createPaginationResponse(result, "subCategories"));
   } catch (error) {
     console.error("Get all subcategories error:", error);
     res.status(500).json({

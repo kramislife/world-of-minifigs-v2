@@ -38,9 +38,18 @@ const SubCollectionManagement = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Fetch data
+  // Pagination and search state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState("10");
+  const [search, setSearch] = useState("");
+
+  // Fetch data with pagination and search
   const { data: subCollectionsData, isLoading: isLoadingSubCollections } =
-    useGetSubCollectionsQuery();
+    useGetSubCollectionsQuery({
+      page,
+      limit,
+      search: search || undefined, // Only send if not empty
+    });
   const { data: collectionsData, isLoading: isLoadingCollections } =
     useGetCollectionsQuery();
 
@@ -52,14 +61,10 @@ const SubCollectionManagement = () => {
   const [deleteSubCollection, { isLoading: isDeleting }] =
     useDeleteSubCollectionMutation();
 
-  // Calculate total items for TableLayout
-  const totalItems =
-    subCollectionsData?.count ||
-    subCollectionsData?.subCollections?.length ||
-    0;
-
-  // Displayed data - TableLayout handles pagination and search
-  const displayedSubCollections = subCollectionsData?.subCollections || [];
+  // Extract data from server response
+  const subCollections = subCollectionsData?.subCollections || [];
+  const totalItems = subCollectionsData?.pagination?.totalItems || 0;
+  const totalPages = subCollectionsData?.pagination?.totalPages || 1;
 
   // Get collections list
   const collections = collectionsData?.collections || [];
@@ -324,6 +329,21 @@ const SubCollectionManagement = () => {
     }
   };
 
+  // Handle pagination and search changes
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setLimit(newLimit);
+    setPage(1); // Reset to first page when changing limit
+  };
+
+  const handleSearchChange = (value) => {
+    setSearch(value);
+    setPage(1); // Reset to first page when searching
+  };
+
   return (
     <div className="space-y-5">
       {/* Header with Add Button */}
@@ -342,17 +362,19 @@ const SubCollectionManagement = () => {
 
       <TableLayout
         searchPlaceholder="Search sub-collections..."
+        searchValue={search}
+        onSearchChange={handleSearchChange}
+        entriesValue={limit}
+        onEntriesChange={handleLimitChange}
+        page={page}
+        onPageChange={handlePageChange}
         totalItems={totalItems}
+        totalPages={totalPages}
         columns={columns}
-        data={displayedSubCollections}
+        data={subCollections}
         isLoading={isLoadingSubCollections}
         loadingMessage="Loading sub-collections..."
         emptyMessage="No sub-collection found..."
-        searchFields={[
-          "subCollectionName",
-          "description",
-          "collectionId.collectionName",
-        ]}
         renderRow={(subCollection) => (
           <>
             <TableCell maxWidth="200px">
@@ -528,3 +550,5 @@ const SubCollectionManagement = () => {
 };
 
 export default SubCollectionManagement;
+
+

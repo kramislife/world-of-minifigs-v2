@@ -32,8 +32,19 @@ const CollectionManagement = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
 
-  const { data: collectionsData, isLoading: isLoadingCollections } =
-    useGetCollectionsQuery();
+  // Pagination and search state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState("10");
+  const [search, setSearch] = useState("");
+
+  // Fetch data with pagination and search
+  const { data: collectionsResponse, isLoading: isLoadingCollections } =
+    useGetCollectionsQuery({
+      page,
+      limit,
+      search: search || undefined, // Only send if not empty
+    });
+
   const [createCollection, { isLoading: isCreating }] =
     useCreateCollectionMutation();
   const [updateCollection, { isLoading: isUpdating }] =
@@ -41,12 +52,10 @@ const CollectionManagement = () => {
   const [deleteCollection, { isLoading: isDeleting }] =
     useDeleteCollectionMutation();
 
-  // Calculate total items for TableLayout
-  const totalItems =
-    collectionsData?.count || collectionsData?.collections?.length || 0;
-
-  // Displayed data - already sorted by backend (featured first, then by date)
-  const displayedCollections = collectionsData?.collections || [];
+  // Extract data from server response
+  const collections = collectionsResponse?.collections || [];
+  const totalItems = collectionsResponse?.pagination?.totalItems || 0;
+  const totalPages = collectionsResponse?.pagination?.totalPages || 1;
 
   // Column definitions based on Collection model
   const columns = [
@@ -259,6 +268,21 @@ const CollectionManagement = () => {
     }
   };
 
+  // Handle pagination and search changes
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setLimit(newLimit);
+    setPage(1); // Reset to first page when changing limit
+  };
+
+  const handleSearchChange = (value) => {
+    setSearch(value);
+    setPage(1); // Reset to first page when searching
+  };
+
   return (
     <div className="space-y-5">
       {/* Header with Add Button */}
@@ -277,13 +301,19 @@ const CollectionManagement = () => {
 
       <TableLayout
         searchPlaceholder="Search collections..."
+        searchValue={search}
+        onSearchChange={handleSearchChange}
+        entriesValue={limit}
+        onEntriesChange={handleLimitChange}
+        page={page}
+        onPageChange={handlePageChange}
         totalItems={totalItems}
+        totalPages={totalPages}
         columns={columns}
-        data={displayedCollections}
+        data={collections}
         isLoading={isLoadingCollections}
         loadingMessage="Loading collections..."
         emptyMessage="No collection found..."
-        searchFields={["collectionName", "description"]}
         renderRow={(collection) => (
           <>
             <TableCell maxWidth="200px">{collection.collectionName}</TableCell>

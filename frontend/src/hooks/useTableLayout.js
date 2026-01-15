@@ -1,147 +1,89 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState } from "react";
 
 const useTableLayout = ({
-  // Search props
-  searchValue: externalSearchValue,
+  page: externalPage,
+  onPageChange,
+
+  limit: externalLimit,
+  onLimitChange,
+
+  search: externalSearch,
   onSearchChange,
 
-  // Entries props
-  entriesValue: externalEntriesValue,
-  onEntriesChange,
-
-  // Pagination props
-  totalItems: externalTotalItems,
-
-  // Table props
-  data = [],
-  searchFields = [],
+  // Pagination info from server
+  totalItems = 0,
 }) => {
-  // Internal state management
-  const [internalSearchValue, setInternalSearchValue] = useState("");
-  const [internalEntriesValue, setInternalEntriesValue] = useState("10");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [internalPage, setInternalPage] = useState(1);
+  const [internalLimit, setInternalLimit] = useState("10");
+  const [internalSearch, setInternalSearch] = useState("");
 
-  // Use external values if provided, otherwise use internal state
-  const searchValue =
-    externalSearchValue !== undefined
-      ? externalSearchValue
-      : internalSearchValue;
-  const entriesValue =
-    externalEntriesValue !== undefined
-      ? externalEntriesValue
-      : internalEntriesValue;
+  const page = externalPage !== undefined ? externalPage : internalPage;
+  const limit = externalLimit !== undefined ? externalLimit : internalLimit;
+  const search = externalSearch !== undefined ? externalSearch : internalSearch;
 
-  // Filter data based on search
-  const filteredData = useMemo(() => {
-    if (!searchValue.trim() || searchFields.length === 0) {
-      return data;
-    }
-
-    const searchLower = searchValue.toLowerCase().trim();
-    return data.filter((item) => {
-      return searchFields.some((field) => {
-        const fieldValue = item[field];
-        if (fieldValue === null || fieldValue === undefined) return false;
-        return String(fieldValue).toLowerCase().includes(searchLower);
-      });
-    });
-  }, [data, searchValue, searchFields]);
-
-  // Calculate total items (use filtered data count if data is provided, otherwise use external totalItems)
-  const totalItems =
-    externalTotalItems !== undefined && data.length === 0
-      ? externalTotalItems
-      : filteredData.length;
-
-  // Calculate pagination values
+  // Calculate display values for pagination UI
   const entriesPerPage =
-    entriesValue === "all" ? totalItems : parseInt(entriesValue, 10);
-  const totalPages =
-    entriesValue === "all" || entriesPerPage === 0
-      ? 1
-      : Math.ceil(totalItems / entriesPerPage);
+    limit === "all" ? totalItems : parseInt(limit, 10) || 10;
+  const startItem = totalItems === 0 ? 0 : (page - 1) * entriesPerPage + 1;
+  const endItem = Math.min(page * entriesPerPage, totalItems);
 
-  // Slice data based on current page and entries per page
-  const paginatedData = useMemo(() => {
-    if (entriesValue === "all" || entriesPerPage === 0) {
-      return filteredData;
-    }
-    const startIndex = (currentPage - 1) * entriesPerPage;
-    const endIndex = startIndex + entriesPerPage;
-    return filteredData.slice(startIndex, endIndex);
-  }, [filteredData, currentPage, entriesPerPage, entriesValue]);
-
-  // Calculate pagination display values
-  const startItem =
-    totalItems === 0
-      ? 0
-      : entriesValue === "all"
-      ? 1
-      : (currentPage - 1) * entriesPerPage + 1;
-  const endItem =
-    entriesValue === "all"
-      ? totalItems
-      : Math.min(currentPage * entriesPerPage, totalItems);
-
-  // Reset to page 1 if current page is out of bounds
-  useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(1);
-    }
-  }, [currentPage, totalPages]);
-
-  // Handle pagination navigation
-  const handlePrevious = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    if (onPageChange) {
+      onPageChange(newPage);
+    } else {
+      setInternalPage(newPage);
     }
   };
 
-  const handleNext = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
+  // Handle limit change
+  const handleLimitChange = (value) => {
+    if (onLimitChange) {
+      onLimitChange(value);
+    } else {
+      setInternalLimit(value);
     }
+    // Reset to page 1 when changing limit
+    handlePageChange(1);
   };
 
   // Handle search change
   const handleSearchChange = (e) => {
     const value = e.target.value;
     if (onSearchChange) {
-      onSearchChange(e);
+      onSearchChange(value);
     } else {
-      setInternalSearchValue(value);
+      setInternalSearch(value);
     }
-    setCurrentPage(1); // Reset to first page on search
+    // Reset to page 1 when searching
+    handlePageChange(1);
   };
 
-  // Handle entries change
-  const handleEntriesChange = (value) => {
-    if (onEntriesChange) {
-      onEntriesChange(value);
-    } else {
-      setInternalEntriesValue(value);
+  // Navigation handlers
+  const handlePrevious = () => {
+    if (page > 1) {
+      handlePageChange(page - 1);
     }
-    setCurrentPage(1); // Reset to first page when changing entries per page
+  };
+
+  const handleNext = (maxPage) => {
+    if (maxPage && page < maxPage) {
+      handlePageChange(page + 1);
+    }
   };
 
   return {
     // State values
-    searchValue,
-    entriesValue,
-    currentPage,
-    
-    // Calculated values
-    filteredData,
-    paginatedData,
-    totalItems,
-    entriesPerPage,
-    totalPages,
+    limit,
+    search,
+
+    // Calculated display values
     startItem,
     endItem,
-    
+
     // Handlers
+    handleLimitChange,
     handleSearchChange,
-    handleEntriesChange,
     handlePrevious,
     handleNext,
   };

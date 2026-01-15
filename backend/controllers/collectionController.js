@@ -5,6 +5,12 @@ import {
   deleteImage,
   validateImage,
 } from "../utils/cloudinary.js";
+import {
+  normalizePagination,
+  buildSearchQuery,
+  paginateQuery,
+  createPaginationResponse,
+} from "../utils/pagination.js";
 
 const FEATURED_COLLECTION_LIMIT = 2;
 
@@ -137,18 +143,31 @@ export const createCollection = async (req, res) => {
 //------------------------------------------------ Get All Collections ------------------------------------------
 export const getAllCollections = async (req, res) => {
   try {
-    const collections = await Collection.find()
-      .select("-__v")
-      .populate("createdBy", "firstName lastName username")
-      .populate("updatedBy", "firstName lastName username")
-      .sort({ isFeatured: -1, createdAt: -1 }) // Featured first, then by date
-      .lean();
-
-    return res.status(200).json({
-      success: true,
-      count: collections.length,
-      collections,
+    // Extract and normalize pagination parameters
+    const { page, limit, search } = normalizePagination({
+      page: req.query.page,
+      limit: req.query.limit,
+      search: req.query.search,
     });
+
+    // Build search query
+    const searchFields = ["collectionName", "description"];
+    const searchQuery = buildSearchQuery(search, searchFields);
+
+    // Apply pagination
+    const result = await paginateQuery(Collection, searchQuery, {
+      page,
+      limit,
+      sort: { isFeatured: -1, createdAt: -1 }, // Featured first, then by date
+      populate: [
+        { path: "createdBy", select: "firstName lastName username" },
+        { path: "updatedBy", select: "firstName lastName username" },
+      ],
+    });
+
+    return res.status(200).json(
+      createPaginationResponse(result, "collections")
+    );
   } catch (error) {
     console.error("Get all collections error:", error);
     res.status(500).json({

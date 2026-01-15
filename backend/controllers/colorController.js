@@ -1,4 +1,10 @@
 import Color from "../models/color.model.js";
+import {
+  normalizePagination,
+  buildSearchQuery,
+  paginateQuery,
+  createPaginationResponse,
+} from "../utils/pagination.js";
 
 //------------------------------------------------ Create Color ------------------------------------------
 export const createColor = async (req, res) => {
@@ -93,17 +99,42 @@ export const createColor = async (req, res) => {
 //------------------------------------------------ Get All Colors ------------------------------------------
 export const getAllColors = async (req, res) => {
   try {
-    const colors = await Color.find()
-      .select("-__v")
-      .populate("createdBy", "firstName lastName username")
-      .populate("updatedBy", "firstName lastName username")
-      .sort({ createdAt: -1 });
-
-    return res.status(200).json({
-      success: true,
-      count: colors.length,
-      colors,
+    // Extract and normalize pagination parameters
+    const { page, limit, search } = normalizePagination({
+      page: req.query.page,
+      limit: req.query.limit,
+      search: req.query.search,
     });
+
+    // Build search query
+    const searchFields = ["colorName", "hexCode"];
+    const searchQuery = buildSearchQuery(search, searchFields);
+
+    // Apply pagination
+    const result = await paginateQuery(Color, searchQuery, {
+      page,
+      limit,
+      sort: { createdAt: -1 },
+      populate: [
+        { path: "createdBy", select: "firstName lastName username" },
+        { path: "updatedBy", select: "firstName lastName username" },
+      ],
+    });
+
+    // Select fields (exclude __v)
+    const colors = result.data.map((color) => {
+      const { __v, ...colorData } = color;
+      return colorData;
+    });
+
+    return res
+      .status(200)
+      .json(
+        createPaginationResponse(
+          { data: colors, pagination: result.pagination },
+          "colors"
+        )
+      );
   } catch (error) {
     console.error("Get all colors error:", error);
     res.status(500).json({

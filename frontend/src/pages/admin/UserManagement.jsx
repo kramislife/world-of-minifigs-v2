@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { Badge } from "@/components/ui/badge";
 import TableLayout from "@/components/table/TableLayout";
@@ -7,30 +7,23 @@ import { useGetUsersQuery } from "@/redux/api/adminApi";
 
 const UserManagement = () => {
   const { user: currentUser } = useSelector((state) => state.auth);
-  const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery();
 
-  // Sort users: current admin first, then others
-  const sortedUsers = useMemo(() => {
-    if (!usersData?.users || !currentUser) return [];
+  // Pagination and search state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState("10");
+  const [search, setSearch] = useState("");
 
-    const users = [...usersData.users];
-    const currentUserId = currentUser._id || currentUser.id;
+  // Fetch data with pagination and search
+  const { data: usersResponse, isLoading: isLoadingUsers } = useGetUsersQuery({
+    page,
+    limit,
+    search: search || undefined, // Only send if not empty
+  });
 
-    const currentUserIndex = users.findIndex((user) => {
-      const userId = user._id || user.id;
-      return userId === currentUserId;
-    });
-
-    if (currentUserIndex > -1) {
-      const [adminUser] = users.splice(currentUserIndex, 1);
-      return [adminUser, ...users];
-    }
-
-    return users;
-  }, [usersData, currentUser]);
-
-  // Calculate total items
-  const totalItems = usersData?.count || sortedUsers.length || 0;
+  // Extract data from server response
+  const users = usersResponse?.users || [];
+  const totalItems = usersResponse?.pagination?.totalItems || 0;
+  const totalPages = usersResponse?.pagination?.totalPages || 1;
 
   // Column definitions
   const columns = [
@@ -63,6 +56,21 @@ const UserManagement = () => {
     }
   };
 
+  // Handle pagination and search changes
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setLimit(newLimit);
+    setPage(1); // Reset to first page when changing limit
+  };
+
+  const handleSearchChange = (value) => {
+    setSearch(value);
+    setPage(1); // Reset to first page when searching
+  };
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -77,13 +85,19 @@ const UserManagement = () => {
 
       <TableLayout
         searchPlaceholder="Search users..."
+        searchValue={search}
+        onSearchChange={handleSearchChange}
+        entriesValue={limit}
+        onEntriesChange={handleLimitChange}
+        page={page}
+        onPageChange={handlePageChange}
         totalItems={totalItems}
+        totalPages={totalPages}
         columns={columns}
-        data={sortedUsers}
+        data={users}
         isLoading={isLoadingUsers}
         loadingMessage="Loading users..."
         emptyMessage="No users found..."
-        searchFields={["firstName", "lastName", "username", "email", "role"]}
         renderRow={(user) => (
           <>
             {/* User (Avatar + Name) */}

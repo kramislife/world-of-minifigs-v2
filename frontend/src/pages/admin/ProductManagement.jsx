@@ -72,9 +72,18 @@ const ProductManagement = () => {
   const [imagesChanged, setImagesChanged] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Fetch data
+  // Pagination and search state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState("10");
+  const [search, setSearch] = useState("");
+
+  // Fetch data with pagination and search
   const { data: productsData, isLoading: isLoadingProducts } =
-    useGetProductsQuery();
+    useGetProductsQuery({
+      page,
+      limit,
+      search: search || undefined, // Only send if not empty
+    });
   const { data: categoriesData } = useGetCategoriesQuery();
   const { data: subCategoriesData } = useGetSubCategoriesQuery();
   const { data: collectionsData } = useGetCollectionsQuery();
@@ -82,16 +91,14 @@ const ProductManagement = () => {
   const { data: colorsData } = useGetColorsQuery();
   const { data: skillLevelsData } = useGetSkillLevelsQuery();
 
-  // Mutations
+  // Extract data from server response
+  const products = productsData?.products || [];
+  const totalItems = productsData?.pagination?.totalItems || 0;
+  const totalPages = productsData?.pagination?.totalPages || 1;
+
   const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
   const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
   const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation();
-
-  // Calculate total items for TableLayout
-  const totalItems = productsData?.count || productsData?.products?.length || 0;
-
-  // Displayed data - TableLayout handles pagination and search
-  const displayedProducts = productsData?.products || [];
 
   // Get options lists
   const categories = categoriesData?.categories || [];
@@ -617,6 +624,21 @@ const ProductManagement = () => {
     }
   };
 
+  // Handle pagination and search changes
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setLimit(newLimit);
+    setPage(1); // Reset to first page when changing limit
+  };
+
+  const handleSearchChange = (value) => {
+    setSearch(value);
+    setPage(1); // Reset to first page when searching
+  };
+
   return (
     <div className="space-y-5">
       {/* Header with Add Button */}
@@ -635,13 +657,19 @@ const ProductManagement = () => {
 
       <TableLayout
         searchPlaceholder="Search products..."
+        searchValue={search}
+        onSearchChange={handleSearchChange}
+        entriesValue={limit}
+        onEntriesChange={handleLimitChange}
+        page={page}
+        onPageChange={handlePageChange}
         totalItems={totalItems}
+        totalPages={totalPages}
         columns={columns}
-        data={displayedProducts}
+        data={products}
         isLoading={isLoadingProducts}
         loadingMessage="Loading products..."
         emptyMessage="No product found..."
-        searchFields={["productName", "partId", "itemId"]}
         renderRow={(product) => (
           <>
             <TableCell maxWidth="200px" className="font-medium">

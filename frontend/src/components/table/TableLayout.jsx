@@ -11,36 +11,34 @@ const TableLayout = ({
   onSearchChange,
   entriesValue,
   onEntriesChange,
+  page,
+  onPageChange,
   totalItems,
+  totalPages,
   columns = [],
   data = [],
   renderRow,
   isLoading = false,
   loadingMessage = "Loading...",
   emptyMessage = "No items found...",
-  searchFields = [],
 }) => {
   const {
-    searchValue: finalSearchValue,
-    entriesValue: finalEntriesValue,
-    currentPage,
-    paginatedData,
-    totalItems: finalTotalItems,
-    totalPages,
+    search,
+    limit,
     startItem,
     endItem,
     handleSearchChange,
-    handleEntriesChange,
+    handleLimitChange,
     handlePrevious,
     handleNext,
   } = useTableLayout({
-    searchValue,
+    page,
+    onPageChange,
+    limit: entriesValue,
+    onLimitChange: onEntriesChange,
+    search: searchValue,
     onSearchChange,
-    entriesValue,
-    onEntriesChange,
     totalItems,
-    data,
-    searchFields,
   });
 
   return (
@@ -48,13 +46,12 @@ const TableLayout = ({
       {/* Table Controls - Top */}
       <div className="flex items-center justify-between">
         <ShowEntries
-          value={finalEntriesValue}
-          onValueChange={handleEntriesChange}
-          defaultValue={finalEntriesValue}
+          value={limit}
+          onValueChange={handleLimitChange}
         />
         <SearchBar
           placeholder={searchPlaceholder}
-          value={finalSearchValue}
+          value={search}
           onChange={handleSearchChange}
         />
       </div>
@@ -65,9 +62,7 @@ const TableLayout = ({
           <thead className="bg-input dark:bg-card/30">
             <tr>
               {columns.map((column) => (
-                <TableHeader key={column.key}>
-                  {column.label}
-                </TableHeader>
+                <TableHeader key={column.key}>{column.label}</TableHeader>
               ))}
             </tr>
           </thead>
@@ -82,8 +77,8 @@ const TableLayout = ({
                   {loadingMessage}
                 </td>
               </tr>
-            ) : paginatedData.length > 0 ? (
-              paginatedData.map((item) => (
+            ) : data.length > 0 ? (
+              data.map((item) => (
                 <tr key={item._id || item.id} className="border-t text-sm">
                   {renderRow(item)}
                 </tr>
@@ -104,13 +99,13 @@ const TableLayout = ({
 
       {/* Table Controls - Bottom */}
       <Pagination
-        currentPage={currentPage}
+        currentPage={page}
         totalPages={totalPages}
-        totalItems={finalTotalItems}
+        totalItems={totalItems}
         startItem={startItem}
         endItem={endItem}
-        onPrevious={handlePrevious}
-        onNext={handleNext}
+        onPrevious={() => handlePrevious()}
+        onNext={() => handleNext(totalPages)}
       />
     </div>
   );

@@ -1,5 +1,11 @@
 import Category from "../models/category.model.js";
 import SubCategory from "../models/subCategory.model.js";
+import {
+  normalizePagination,
+  buildSearchQuery,
+  paginateQuery,
+  createPaginationResponse,
+} from "../utils/pagination.js";
 
 //------------------------------------------------ Create Category ------------------------------------------
 export const createCategory = async (req, res) => {
@@ -74,18 +80,31 @@ export const createCategory = async (req, res) => {
 //------------------------------------------------ Get All Categories ------------------------------------------
 export const getAllCategories = async (req, res) => {
   try {
-    const categories = await Category.find()
-      .select("-__v")
-      .populate("createdBy", "firstName lastName username")
-      .populate("updatedBy", "firstName lastName username")
-      .sort({ createdAt: -1 })
-      .lean();
-
-    return res.status(200).json({
-      success: true,
-      count: categories.length,
-      categories,
+    // Extract and normalize pagination parameters
+    const { page, limit, search } = normalizePagination({
+      page: req.query.page,
+      limit: req.query.limit,
+      search: req.query.search,
     });
+
+    // Build search query
+    const searchFields = ["categoryName", "description"];
+    const searchQuery = buildSearchQuery(search, searchFields);
+
+    // Apply pagination
+    const result = await paginateQuery(Category, searchQuery, {
+      page,
+      limit,
+      sort: { createdAt: -1 },
+      populate: [
+        { path: "createdBy", select: "firstName lastName username" },
+        { path: "updatedBy", select: "firstName lastName username" },
+      ],
+    });
+
+    return res.status(200).json(
+      createPaginationResponse(result, "categories")
+    );
   } catch (error) {
     console.error("Get all categories error:", error);
     res.status(500).json({

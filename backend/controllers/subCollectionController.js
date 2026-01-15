@@ -5,6 +5,12 @@ import {
   deleteImage,
   validateImage,
 } from "../utils/cloudinary.js";
+import {
+  normalizePagination,
+  buildSearchQuery,
+  paginateQuery,
+  createPaginationResponse,
+} from "../utils/pagination.js";
 
 //------------------------------------------------ Create Sub-collection ------------------------------------------
 export const createSubCollection = async (req, res) => {
@@ -144,19 +150,66 @@ export const createSubCollection = async (req, res) => {
 //------------------------------------------------ Get All Sub-collections ------------------------------------------
 export const getAllSubCollections = async (req, res) => {
   try {
-    const subCollections = await SubCollection.find()
-      .select("-__v")
-      .populate("collectionId", "collectionName")
-      .populate("createdBy", "firstName lastName username")
-      .populate("updatedBy", "firstName lastName username")
-      .sort({ createdAt: -1 })
-      .lean();
-
-    return res.status(200).json({
-      success: true,
-      count: subCollections.length,
-      subCollections,
+    // Extract and normalize pagination parameters
+    const { page, limit, search } = normalizePagination({
+      page: req.query.page,
+      limit: req.query.limit,
+      search: req.query.search,
     });
+
+    // Build search query
+    let searchQuery = {};
+    if (search) {
+      // Search in subCollection fields
+      const subCollectionSearchFields = ["subCollectionName", "description"];
+      const subCollectionQuery = buildSearchQuery(
+        search,
+        subCollectionSearchFields
+      );
+
+      // Search in collection names
+      const collectionSearchQuery = buildSearchQuery(search, [
+        "collectionName",
+      ]);
+      const matchingCollections = await Collection.find(collectionSearchQuery)
+        .select("_id")
+        .lean();
+
+      const matchingCollectionIds = matchingCollections.map((col) => col._id);
+
+      // Combine both searches using $or
+      if (
+        Object.keys(subCollectionQuery).length > 0 &&
+        matchingCollectionIds.length > 0
+      ) {
+        searchQuery = {
+          $or: [
+            subCollectionQuery,
+            { collectionId: { $in: matchingCollectionIds } },
+          ],
+        };
+      } else if (Object.keys(subCollectionQuery).length > 0) {
+        searchQuery = subCollectionQuery;
+      } else if (matchingCollectionIds.length > 0) {
+        searchQuery = { collectionId: { $in: matchingCollectionIds } };
+      }
+    }
+
+    // Apply pagination
+    const result = await paginateQuery(SubCollection, searchQuery, {
+      page,
+      limit,
+      sort: { createdAt: -1 },
+      populate: [
+        { path: "collectionId", select: "collectionName" },
+        { path: "createdBy", select: "firstName lastName username" },
+        { path: "updatedBy", select: "firstName lastName username" },
+      ],
+    });
+
+    return res
+      .status(200)
+      .json(createPaginationResponse(result, "subCollections"));
   } catch (error) {
     console.error("Get all sub-collections error:", error);
     res.status(500).json({

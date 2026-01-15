@@ -19,6 +19,17 @@ const baseQueryWithAuth = async (args, api, extraOptions) => {
   return result;
 };
 
+// Helper function to build pagination and search params
+const buildPaginationParams = ({ page, limit, search }) => {
+  return {
+    ...(page && { page }),
+    ...(limit && { limit }),
+    ...(search &&
+      typeof search === "string" &&
+      search.trim() && { search: search.trim() }),
+  };
+};
+
 export const adminApi = createApi({
   reducerPath: "adminApi",
   baseQuery: baseQueryWithAuth,
@@ -36,9 +47,10 @@ export const adminApi = createApi({
     // ==================== Color Management ====================
     // Get all colors
     getColors: builder.query({
-      query: () => ({
+      query: (params = {}) => ({
         url: "/colors",
         method: "GET",
+        params: buildPaginationParams(params),
       }),
       providesTags: ["Color"],
     }),
@@ -84,9 +96,10 @@ export const adminApi = createApi({
     // ==================== Category Management ====================
     // Get all categories
     getCategories: builder.query({
-      query: () => ({
+      query: (params = {}) => ({
         url: "/categories",
         method: "GET",
+        params: buildPaginationParams(params),
       }),
       providesTags: ["Category"],
     }),
@@ -135,9 +148,10 @@ export const adminApi = createApi({
     // ==================== SubCategory Management ====================
     // Get all subCategories
     getSubCategories: builder.query({
-      query: () => ({
+      query: (params = {}) => ({
         url: "/subCategories",
         method: "GET",
+        params: buildPaginationParams(params),
       }),
       providesTags: ["SubCategory"],
     }),
@@ -186,9 +200,10 @@ export const adminApi = createApi({
     // ==================== SkillLevel Management ====================
     // Get all skillLevels
     getSkillLevels: builder.query({
-      query: () => ({
+      query: (params = {}) => ({
         url: "/skillLevels",
         method: "GET",
+        params: buildPaginationParams(params),
       }),
       providesTags: ["SkillLevel"],
     }),
@@ -237,9 +252,10 @@ export const adminApi = createApi({
     // ==================== Collection Management ====================
     // Get all collections
     getCollections: builder.query({
-      query: () => ({
+      query: (params = {}) => ({
         url: "/collections",
         method: "GET",
+        params: buildPaginationParams(params),
       }),
       providesTags: ["Collection"],
     }),
@@ -288,9 +304,10 @@ export const adminApi = createApi({
     // ==================== SubCollection Management ====================
     // Get all subCollections
     getSubCollections: builder.query({
-      query: () => ({
+      query: (params = {}) => ({
         url: "/subCollections",
         method: "GET",
+        params: buildPaginationParams(params),
       }),
       providesTags: ["SubCollection"],
     }),
@@ -339,9 +356,10 @@ export const adminApi = createApi({
     // ==================== Product Management ====================
     // Get all products
     getProducts: builder.query({
-      query: () => ({
+      query: (params = {}) => ({
         url: "/products",
         method: "GET",
+        params: buildPaginationParams(params),
       }),
       providesTags: ["Product"],
     }),
@@ -387,9 +405,10 @@ export const adminApi = createApi({
     // ==================== User Management ====================
     // Get all users
     getUsers: builder.query({
-      query: () => ({
+      query: (params = {}) => ({
         url: "/users",
         method: "GET",
+        params: buildPaginationParams(params),
       }),
       providesTags: ["User"],
     }),

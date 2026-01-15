@@ -4,11 +4,18 @@ import SubCategory from "../models/subCategory.model.js";
 import Collection from "../models/collection.model.js";
 import SubCollection from "../models/subCollection.model.js";
 import Color from "../models/color.model.js";
+import SkillLevel from "../models/skillLevel.model.js";
 import {
   uploadImage,
   deleteImage,
   validateImage,
 } from "../utils/cloudinary.js";
+import {
+  normalizePagination,
+  buildSearchQuery,
+  paginateQuery,
+  createPaginationResponse,
+} from "../utils/pagination.js";
 
 //------------------------------------------------ Create Product ------------------------------------------
 export const createProduct = async (req, res) => {
@@ -461,7 +468,7 @@ export const createProduct = async (req, res) => {
     if (subCollectionIds && subCollectionIds.length > 0) {
       productData.subCollectionIds = subCollectionIds;
     }
-    
+
     if (
       skillLevelIds &&
       Array.isArray(skillLevelIds) &&
@@ -559,22 +566,118 @@ export const createProduct = async (req, res) => {
 //------------------------------------------------ Get All Products ------------------------------------------
 export const getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find()
-      .select("-__v")
-      .populate("categoryIds", "categoryName")
-      .populate("subCategoryIds", "subCategoryName")
-      .populate("collectionIds", "collectionName")
-      .populate("subCollectionIds", "subCollectionName")
-      .populate("colorId", "colorName hexCode")
-      .populate("skillLevelIds", "skillLevelName")
-      .populate("createdBy", "firstName lastName username")
-      .populate("updatedBy", "firstName lastName username")
-      .populate("variants.colorId", "colorName hexCode")
-      .sort({ createdAt: -1 })
-      .lean();
+    // Extract and normalize pagination parameters
+    const { page, limit, search } = normalizePagination({
+      page: req.query.page,
+      limit: req.query.limit,
+      search: req.query.search,
+    });
+
+    // Build search query
+    let searchQuery = {};
+    if (search) {
+      // Search in product fields
+      const productSearchFields = ["productName", "partId", "itemId"];
+      const productQuery = buildSearchQuery(search, productSearchFields);
+
+      // Search in related entities to get matching IDs
+      const [
+        matchingCategories,
+        matchingSubCategories,
+        matchingCollections,
+        matchingSubCollections,
+        matchingColors,
+        matchingSkillLevels,
+      ] = await Promise.all([
+        Category.find(buildSearchQuery(search, ["categoryName"]))
+          .select("_id")
+          .lean(),
+        SubCategory.find(buildSearchQuery(search, ["subCategoryName"]))
+          .select("_id")
+          .lean(),
+        Collection.find(buildSearchQuery(search, ["collectionName"]))
+          .select("_id")
+          .lean(),
+        SubCollection.find(buildSearchQuery(search, ["subCollectionName"]))
+          .select("_id")
+          .lean(),
+        Color.find(buildSearchQuery(search, ["colorName"]))
+          .select("_id")
+          .lean(),
+        SkillLevel.find(buildSearchQuery(search, ["skillLevelName"]))
+          .select("_id")
+          .lean(),
+      ]);
+
+      const matchingCategoryIds = matchingCategories.map((cat) => cat._id);
+      const matchingSubCategoryIds = matchingSubCategories.map(
+        (sub) => sub._id
+      );
+      const matchingCollectionIds = matchingCollections.map((col) => col._id);
+      const matchingSubCollectionIds = matchingSubCollections.map(
+        (sub) => sub._id
+      );
+      const matchingColorIds = matchingColors.map((color) => color._id);
+      const matchingSkillLevelIds = matchingSkillLevels.map(
+        (skill) => skill._id
+      );
+
+      // Build $or array with all search conditions
+      const orConditions = [];
+
+      // Add product field searches
+      if (Object.keys(productQuery).length > 0) {
+        orConditions.push(productQuery);
+      }
+
+      // Add related entity searches
+      if (matchingCategoryIds.length > 0) {
+        orConditions.push({ categoryIds: { $in: matchingCategoryIds } });
+      }
+      if (matchingSubCategoryIds.length > 0) {
+        orConditions.push({ subCategoryIds: { $in: matchingSubCategoryIds } });
+      }
+      if (matchingCollectionIds.length > 0) {
+        orConditions.push({ collectionIds: { $in: matchingCollectionIds } });
+      }
+      if (matchingSubCollectionIds.length > 0) {
+        orConditions.push({
+          subCollectionIds: { $in: matchingSubCollectionIds },
+        });
+      }
+      if (matchingColorIds.length > 0) {
+        orConditions.push({ colorId: { $in: matchingColorIds } });
+      }
+      if (matchingSkillLevelIds.length > 0) {
+        orConditions.push({ skillLevelIds: { $in: matchingSkillLevelIds } });
+      }
+
+      // Combine all searches using $or
+      if (orConditions.length > 0) {
+        searchQuery = { $or: orConditions };
+      }
+    }
+
+    // Apply pagination
+    const result = await paginateQuery(Product, searchQuery, {
+      page,
+      limit,
+      sort: { createdAt: -1 },
+      populate: [
+        { path: "categoryIds", select: "categoryName" },
+        { path: "subCategoryIds", select: "subCategoryName" },
+        { path: "collectionIds", select: "collectionName" },
+        { path: "subCollectionIds", select: "subCollectionName" },
+        { path: "colorId", select: "colorName hexCode" },
+        { path: "skillLevelIds", select: "skillLevelName" },
+        { path: "createdBy", select: "firstName lastName username" },
+        { path: "updatedBy", select: "firstName lastName username" },
+        { path: "variants.colorId", select: "colorName hexCode" },
+      ],
+    });
 
     // Filter out fields based on productType for clarity
-    const processedProducts = products.map((product) => {
+    const processedProducts = result.data.map((product) => {
       if (product.productType === "standalone") {
         // Remove variant-specific fields
         const { variants, ...productWithoutVariants } = product;
@@ -594,11 +697,14 @@ export const getAllProducts = async (req, res) => {
       return product;
     });
 
-    return res.status(200).json({
-      success: true,
-      count: processedProducts.length,
-      products: processedProducts,
-    });
+    return res
+      .status(200)
+      .json(
+        createPaginationResponse(
+          { data: processedProducts, pagination: result.pagination },
+          "products"
+        )
+      );
   } catch (error) {
     console.error("Get all products error:", error);
     res.status(500).json({

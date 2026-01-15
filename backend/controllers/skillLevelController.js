@@ -1,4 +1,10 @@
 import SkillLevel from "../models/skillLevel.model.js";
+import {
+  normalizePagination,
+  buildSearchQuery,
+  paginateQuery,
+  createPaginationResponse,
+} from "../utils/pagination.js";
 
 //------------------------------------------------ Create SkillLevel ------------------------------------------
 export const createSkillLevel = async (req, res) => {
@@ -73,18 +79,31 @@ export const createSkillLevel = async (req, res) => {
 //------------------------------------------------ Get All SkillLevels ------------------------------------------
 export const getAllSkillLevels = async (req, res) => {
   try {
-    const skillLevels = await SkillLevel.find()
-      .select("-__v")
-      .populate("createdBy", "firstName lastName username")
-      .populate("updatedBy", "firstName lastName username")
-      .sort({ createdAt: -1 })
-      .lean();
-
-    return res.status(200).json({
-      success: true,
-      count: skillLevels.length,
-      skillLevels,
+    // Extract and normalize pagination parameters
+    const { page, limit, search } = normalizePagination({
+      page: req.query.page,
+      limit: req.query.limit,
+      search: req.query.search,
     });
+
+    // Build search query
+    const searchFields = ["skillLevelName", "description"];
+    const searchQuery = buildSearchQuery(search, searchFields);
+
+    // Apply pagination
+    const result = await paginateQuery(SkillLevel, searchQuery, {
+      page,
+      limit,
+      sort: { createdAt: -1 },
+      populate: [
+        { path: "createdBy", select: "firstName lastName username" },
+        { path: "updatedBy", select: "firstName lastName username" },
+      ],
+    });
+
+    return res.status(200).json(
+      createPaginationResponse(result, "skillLevels")
+    );
   } catch (error) {
     console.error("Get all skill levels error:", error);
     res.status(500).json({

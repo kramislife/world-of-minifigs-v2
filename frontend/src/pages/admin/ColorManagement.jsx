@@ -12,8 +12,8 @@ import {
   useCreateColorMutation,
   useUpdateColorMutation,
   useGetColorsQuery,
+  useDeleteColorMutation,
 } from "@/redux/api/adminApi";
-import { useDeleteColorMutation } from "@/redux/api/adminApi";
 
 const ColorManagement = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -24,21 +24,32 @@ const ColorManagement = () => {
     colorName: "",
     hexCode: "",
   });
-  const { data: colorsData, isLoading: isLoadingColors } = useGetColorsQuery();
+
+  // Pagination and search state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState("10");
+  const [search, setSearch] = useState("");
+
+  // Fetch data with pagination and search
+  const { data: colorsResponse, isLoading: isLoadingColors } = useGetColorsQuery({
+    page,
+    limit,
+    search: search || undefined, // Only send if not empty
+  });
+
   const [createColor, { isLoading: isCreating }] = useCreateColorMutation();
   const [updateColor, { isLoading: isUpdating }] = useUpdateColorMutation();
   const [deleteColor, { isLoading: isDeleting }] = useDeleteColorMutation();
 
-  // Calculate total items for TableLayout
-  const totalItems = colorsData?.count || colorsData?.colors?.length || 0;
+  // Extract data from server response
+  const colors = colorsResponse?.colors || [];
+  const totalItems = colorsResponse?.pagination?.totalItems || 0;
+  const totalPages = colorsResponse?.pagination?.totalPages || 1;
 
-  // Displayed data - TableLayout handles pagination and search
-  const displayedColors = colorsData?.colors || [];
-
-  // Column definitions based on Color model
+  // Column definitions
   const columns = [
-    { key: "colorName", label: "Name" },
-    { key: "hexCode", label: "Color" },
+    { key: "colorName", label: "Color Name" },
+    { key: "hexCode", label: "Hex Code" },
     { key: "createdAt", label: "Created At" },
     { key: "updatedAt", label: "Updated At" },
     { key: "actions", label: "Actions" },
@@ -220,6 +231,21 @@ const ColorManagement = () => {
     }
   };
 
+  // Handle pagination and search changes
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setLimit(newLimit);
+    setPage(1); // Reset to first page when changing limit
+  };
+
+  const handleSearchChange = (value) => {
+    setSearch(value);
+    setPage(1); // Reset to first page when searching
+  };
+
   return (
     <div className="space-y-5">
       {/* Header with Add Button */}
@@ -238,13 +264,19 @@ const ColorManagement = () => {
 
       <TableLayout
         searchPlaceholder="Search colors..."
+        searchValue={search}
+        onSearchChange={handleSearchChange}
+        entriesValue={limit}
+        onEntriesChange={handleLimitChange}
+        page={page}
+        onPageChange={handlePageChange}
         totalItems={totalItems}
+        totalPages={totalPages}
         columns={columns}
-        data={displayedColors}
+        data={colors}
         isLoading={isLoadingColors}
         loadingMessage="Loading colors..."
         emptyMessage="No color found..."
-        searchFields={["colorName", "hexCode"]}
         renderRow={(color) => (
           <>
             <TableCell maxWidth="200px">{color.colorName}</TableCell>

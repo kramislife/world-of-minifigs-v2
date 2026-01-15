@@ -25,8 +25,20 @@ const CategoryManagement = () => {
     categoryName: "",
     description: "",
   });
-  const { data: categoriesData, isLoading: isLoadingCategories } =
-    useGetCategoriesQuery();
+
+  // Pagination and search state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState("10");
+  const [search, setSearch] = useState("");
+
+  // Fetch data with pagination and search
+  const { data: categoriesResponse, isLoading: isLoadingCategories } =
+    useGetCategoriesQuery({
+      page,
+      limit,
+      search: search || undefined, // Only send if not empty
+    });
+
   const [createCategory, { isLoading: isCreating }] =
     useCreateCategoryMutation();
   const [updateCategory, { isLoading: isUpdating }] =
@@ -34,12 +46,10 @@ const CategoryManagement = () => {
   const [deleteCategory, { isLoading: isDeleting }] =
     useDeleteCategoryMutation();
 
-  // Calculate total items for TableLayout
-  const totalItems =
-    categoriesData?.count || categoriesData?.categories?.length || 0;
-
-  // Displayed data - TableLayout handles pagination and search
-  const displayedCategories = categoriesData?.categories || [];
+  // Extract data from server response
+  const categories = categoriesResponse?.categories || [];
+  const totalItems = categoriesResponse?.pagination?.totalItems || 0;
+  const totalPages = categoriesResponse?.pagination?.totalPages || 1;
 
   // Column definitions based on Category model
   const columns = [
@@ -192,6 +202,21 @@ const CategoryManagement = () => {
     }
   };
 
+  // Handle pagination and search changes
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setLimit(newLimit);
+    setPage(1); // Reset to first page when changing limit
+  };
+
+  const handleSearchChange = (value) => {
+    setSearch(value);
+    setPage(1); // Reset to first page when searching
+  };
+
   return (
     <div className="space-y-5">
       {/* Header with Add Button */}
@@ -210,13 +235,19 @@ const CategoryManagement = () => {
 
       <TableLayout
         searchPlaceholder="Search categories..."
+        searchValue={search}
+        onSearchChange={handleSearchChange}
+        entriesValue={limit}
+        onEntriesChange={handleLimitChange}
+        page={page}
+        onPageChange={handlePageChange}
         totalItems={totalItems}
+        totalPages={totalPages}
         columns={columns}
-        data={displayedCategories}
+        data={categories}
         isLoading={isLoadingCategories}
         loadingMessage="Loading categories..."
         emptyMessage="No category found..."
-        searchFields={["categoryName", "description"]}
         renderRow={(category) => (
           <>
             <TableCell maxWidth="200px">{category.categoryName}</TableCell>

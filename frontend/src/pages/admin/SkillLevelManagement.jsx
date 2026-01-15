@@ -26,8 +26,19 @@ const SkillLevelManagement = () => {
     description: "",
   });
 
-  const { data: skillLevelsData, isLoading: isLoadingSkillLevels } =
-    useGetSkillLevelsQuery();
+  // Pagination and search state
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState("10");
+  const [search, setSearch] = useState("");
+
+  // Fetch data with pagination and search
+  const { data: skillLevelsResponse, isLoading: isLoadingSkillLevels } =
+    useGetSkillLevelsQuery({
+      page,
+      limit,
+      search: search || undefined,
+    });
+
   const [createSkillLevel, { isLoading: isCreating }] =
     useCreateSkillLevelMutation();
   const [updateSkillLevel, { isLoading: isUpdating }] =
@@ -35,12 +46,10 @@ const SkillLevelManagement = () => {
   const [deleteSkillLevel, { isLoading: isDeleting }] =
     useDeleteSkillLevelMutation();
 
-  // Calculate total items for TableLayout
-  const totalItems =
-    skillLevelsData?.count || skillLevelsData?.skillLevels?.length || 0;
-
-  // Displayed data - TableLayout handles pagination and search
-  const displayedSkillLevels = skillLevelsData?.skillLevels || [];
+  // Extract data from server response
+  const skillLevels = skillLevelsResponse?.skillLevels || [];
+  const totalItems = skillLevelsResponse?.pagination?.totalItems || 0;
+  const totalPages = skillLevelsResponse?.pagination?.totalPages || 1;
 
   // Column definitions based on SkillLevel model
   const columns = [
@@ -201,6 +210,21 @@ const SkillLevelManagement = () => {
     }
   };
 
+  // Handle pagination and search changes
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setLimit(newLimit);
+    setPage(1); // Reset to first page when changing limit
+  };
+
+  const handleSearchChange = (value) => {
+    setSearch(value);
+    setPage(1); // Reset to first page when searching
+  };
+
   return (
     <div className="space-y-5">
       {/* Header with Add Button */}
@@ -219,13 +243,19 @@ const SkillLevelManagement = () => {
 
       <TableLayout
         searchPlaceholder="Search skill levels..."
+        searchValue={search}
+        onSearchChange={handleSearchChange}
+        entriesValue={limit}
+        onEntriesChange={handleLimitChange}
+        page={page}
+        onPageChange={handlePageChange}
         totalItems={totalItems}
+        totalPages={totalPages}
         columns={columns}
-        data={displayedSkillLevels}
+        data={skillLevels}
         isLoading={isLoadingSkillLevels}
         loadingMessage="Loading skill levels..."
         emptyMessage="No skill level found..."
-        searchFields={["skillLevelName", "description"]}
         renderRow={(skillLevel) => (
           <>
             <TableCell maxWidth="200px">{skillLevel.skillLevelName}</TableCell>
