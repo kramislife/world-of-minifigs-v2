@@ -3,6 +3,7 @@ import Products from "@/pages/Products";
 import Contact from "@/pages/Contact";
 import About from "@/pages/About";
 import Designer from "@/pages/Designer";
+import Dealers from "@/pages/Dealers";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfUse from "@/pages/TermsOfUse";
 import VerifyEmail from "@/components/auth/VerifyEmail";
@@ -23,6 +24,7 @@ import SkillLevelManagement from "@/pages/admin/SkillLevelManagement";
 import DesignerManagement from "@/pages/admin/DesignerManagement";
 import OrderManagement from "@/pages/admin/OrderManagement";
 import UserManagement from "@/pages/admin/UserManagement";
+import DealerManagement from "@/pages/admin/DealerManagement";
 
 // Public routes
 export const publicRoutes = [
@@ -78,6 +80,11 @@ export const privateRoutes = [
     path: "/settings",
     element: Settings,
   },
+  {
+    path: "/dealers",
+    element: Dealers,
+    requiredRoles: ["dealer", "admin"],
+  },
 ];
 
 // Admin routes
@@ -130,6 +137,10 @@ export const adminRoutes = [
       {
         path: "users",
         element: UserManagement,
+      },
+      {
+        path: "dealers",
+        element: DealerManagement,
       },
     ],
   },

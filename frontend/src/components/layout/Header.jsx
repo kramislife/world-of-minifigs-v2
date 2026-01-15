@@ -30,6 +30,15 @@ const Header = () => {
     return true;
   });
 
+  // Dealer page should only be visible for authenticated users with either dealer or admin role
+  const filteredHeaderNavigation = headerNavigation.filter((item) => {
+    if (item.id === "dealer") {
+      if (!isAuthenticated) return false;
+      return user?.role === "dealer" || user?.role === "admin";
+    }
+    return true;
+  });
+
   // Get user initials
   const userInitials = getInitials(user);
 
@@ -46,7 +55,7 @@ const Header = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-10">
-          {headerNavigation.map((item) => (
+          {filteredHeaderNavigation.map((item) => (
             <NavLink
               key={item.id}
               to={item.path}
@@ -134,7 +143,7 @@ const Header = () => {
             <MobileMenu
               onSignInClick={() => setAuthOpen(true)}
               user={user}
-              headerNavigation={headerNavigation}
+              headerNavigation={filteredHeaderNavigation}
               filteredUserMenuItems={filteredUserMenuItems}
               isAuthenticated={isAuthenticated}
               userInitials={userInitials}

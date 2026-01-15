@@ -8,6 +8,7 @@ import {
   UserRound,
   Settings,
   PenTool,
+  Handshake,
 } from "lucide-react";
 
 export const headerNavigation = [
@@ -40,6 +41,12 @@ export const headerNavigation = [
     label: "Designer",
     path: "/designer",
     icon: PenTool,
+  },
+  {
+    id: "dealers",
+    label: "Dealers",
+    path: "/dealers",
+    icon: Handshake,
   },
 ];
 

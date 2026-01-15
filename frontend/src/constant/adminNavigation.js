@@ -8,6 +8,7 @@ import {
   PenTool,
   ShoppingCart,
   Users,
+  Handshake,
 } from "lucide-react";
 
 export const adminNavigation = [
@@ -74,6 +75,12 @@ export const adminNavigation = [
     label: "Designers",
     path: "designers",
     icon: PenTool,
+  },
+  {
+    id: "dealers",
+    label: "Dealers",
+    path: "dealers",
+    icon: Handshake,
   },
   {
     id: "orders",

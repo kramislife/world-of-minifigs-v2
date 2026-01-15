@@ -3,21 +3,47 @@ import { Navigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 const ProtectedRoute = ({ children, requiredRole, requiredRoles }) => {
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, isLoading } = useSelector(
+    (state) => state.auth
+  );
+
+  // Wait for auth initialization to complete before checking
+  if (isLoading) {
+    return null;
+  }
 
   // Check if authentication is required
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     return <Navigate to="/" replace />;
   }
 
   // Check if specific role(s) is required
-  // Support both single role (requiredRole) or multiple roles (requiredRoles array)
   const rolesToCheck = requiredRoles || (requiredRole ? [requiredRole] : []);
-  
-  if (rolesToCheck.length > 0 && !rolesToCheck.includes(user?.role)) {
-    return <Navigate to="/" replace />;
+
+  // If roles are specified, user must have one of them
+  if (rolesToCheck.length > 0) {
+    // Ensure user.role exists and is a string
+    const userRole = user?.role;
+
+    // Strict check: role must exist, be a string, and match one of the required roles
+    if (!userRole || typeof userRole !== "string") {
+      // Invalid or missing role - redirect to home
+      return <Navigate to="/" replace />;
+    }
+
+    // Check if user role is in the allowed roles list (case-sensitive)
+    const normalizedUserRole = userRole.toLowerCase().trim();
+    const normalizedRequiredRoles = rolesToCheck.map((role) =>
+      typeof role === "string" ? role.toLowerCase().trim() : ""
+    );
+
+    if (!normalizedRequiredRoles.includes(normalizedUserRole)) {
+      // User role doesn't match required roles - redirect to home
+      return <Navigate to="/" replace />;
+    }
   }
 
+  // All checks passed - render children
   return children;
 };
 
