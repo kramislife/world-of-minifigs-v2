@@ -1,75 +1,35 @@
-import React, { useState } from "react";
-import { useSelector } from "react-redux";
+import React from "react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import TableLayout from "@/components/table/TableLayout";
 import { TableCell } from "@/components/table/BaseColumn";
-import { useGetUsersQuery } from "@/redux/api/adminApi";
+import useUserManagement from "@/hooks/admin/useUserManagement";
 
 const UserManagement = () => {
-  const { user: currentUser } = useSelector((state) => state.auth);
-
-  // Pagination and search state
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState("10");
-  const [search, setSearch] = useState("");
-
-  // Fetch data with pagination and search
-  const { data: usersResponse, isLoading: isLoadingUsers } = useGetUsersQuery({
+  const {
     page,
     limit,
-    search: search || undefined, // Only send if not empty
-  });
-
-  // Extract data from server response
-  const users = usersResponse?.users || [];
-  const totalItems = usersResponse?.pagination?.totalItems || 0;
-  const totalPages = usersResponse?.pagination?.totalPages || 1;
-
-  // Column definitions
-  const columns = [
-    { key: "user", label: "User" },
-    { key: "username", label: "Username" },
-    { key: "email", label: "Email" },
-    { key: "contactNumber", label: "Contact" },
-    { key: "role", label: "Role" },
-    { key: "status", label: "Status" },
-    { key: "verified", label: "Verified" },
-    { key: "createdAt", label: "Joined" },
-  ];
-
-  const isCurrentUser = (user) => {
-    const currentUserId = currentUser?._id || currentUser?.id;
-    const userId = user._id || user.id;
-    return userId === currentUserId;
-  };
-
-  const getRoleBadgeVariant = (role) => {
-    switch (role) {
-      case "admin":
-        return "destructive";
-      case "seller":
-        return "default";
-      case "customer":
-        return "secondary";
-      default:
-        return "outline";
-    }
-  };
-
-  // Handle pagination and search changes
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
-  };
-
-  const handleLimitChange = (newLimit) => {
-    setLimit(newLimit);
-    setPage(1); // Reset to first page when changing limit
-  };
-
-  const handleSearchChange = (value) => {
-    setSearch(value);
-    setPage(1); // Reset to first page when searching
-  };
+    search,
+    users,
+    totalItems,
+    totalPages,
+    columns,
+    isLoadingUsers,
+    isUpdatingRole,
+    handlePageChange,
+    handleLimitChange,
+    handleSearchChange,
+    handleUpdateRole,
+    isCurrentUser,
+    getRoleBadgeVariant,
+    canUpdateRole,
+  } = useUserManagement();
 
   return (
     <div className="space-y-5">
@@ -124,10 +84,31 @@ const UserManagement = () => {
             <TableCell maxWidth="150px">{user.contactNumber || "-"}</TableCell>
 
             {/* Role */}
-            <TableCell>
-              <Badge variant={getRoleBadgeVariant(user.role)}>
-                {user.role}
-              </Badge>
+            <TableCell className="text-center">
+              {canUpdateRole(user) ? (
+                <div className="flex justify-center">
+                  <Select
+                    value={user.role}
+                    onValueChange={(newRole) => {
+                      const userId = user._id || user.id;
+                      handleUpdateRole(userId, newRole);
+                    }}
+                    disabled={isUpdatingRole}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="customer">Customer</SelectItem>
+                      <SelectItem value="dealer">Dealer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <Badge variant={getRoleBadgeVariant(user.role)}>
+                  {user.role}
+                </Badge>
+              )}
             </TableCell>
 
             {/* Status */}

@@ -412,6 +412,16 @@ export const adminApi = createApi({
       }),
       providesTags: ["User"],
     }),
+
+    // Update user role
+    updateUserRole: builder.mutation({
+      query: ({ id, role }) => ({
+        url: `/users/${id}/role`,
+        method: "PUT",
+        body: { role },
+      }),
+      invalidatesTags: ["User"],
+    }),
   }),
 });
 
@@ -452,4 +462,5 @@ export const {
   useUpdateProductMutation,
   useDeleteProductMutation,
   useGetUsersQuery,
+  useUpdateUserRoleMutation,
 } = adminApi;

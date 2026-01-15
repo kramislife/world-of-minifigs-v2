@@ -45,7 +45,7 @@ import {
   updateSubCollection,
   deleteSubCollection,
 } from "../controllers/subCollectionController.js";
-import { getAllUsers } from "../controllers/authController.js";
+import { getAllUsers, updateUserRole } from "../controllers/authController.js";
 import {
   createProduct,
   getAllProducts,
@@ -108,7 +108,8 @@ router.get("/products/:id", getProductById);
 router.put("/products/:id", updateProduct);
 router.delete("/products/:id", deleteProduct);
 
-// User Management GET routes
+// User Management routes
 router.get("/users", getAllUsers);
+router.put("/users/:id/role", updateUserRole);
 
 export default router;

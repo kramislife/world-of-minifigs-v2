@@ -912,43 +912,145 @@ export const getAllUsers = async (req, res) => {
     ];
     const searchQuery = buildSearchQuery(search, searchFields);
 
+    const allUsers = await User.find(searchQuery)
+      .select(
+        "-password -verificationToken -verificationTokenExpiry -resetPasswordToken -resetPasswordTokenExpiry -refreshToken -refreshTokenExpiry -__v"
+      )
+      .lean();
+
+    // Sort: admins first, then by creation date (newest first)
+    const sortedUsers = allUsers.sort((a, b) => {
+      // Admin users first
+      if (a.role === "admin" && b.role !== "admin") return -1;
+      if (b.role === "admin" && a.role !== "admin") return 1;
+      // Others by creation date (newest first)
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
     // Apply pagination
-    const result = await paginateQuery(User, searchQuery, {
-      page,
-      limit,
-      sort: { createdAt: -1 },
-      populate: "",
-    });
+    const totalItems = sortedUsers.length;
+    const skip = (page - 1) * limit;
+    const users = sortedUsers.slice(skip, skip + limit);
 
-    // Select fields and exclude sensitive data
-    const users = result.data.map((user) => {
-      const {
-        password,
-        verificationToken,
-        verificationTokenExpiry,
-        resetPasswordToken,
-        resetPasswordTokenExpiry,
-        refreshToken,
-        refreshTokenExpiry,
-        __v,
-        ...userData
-      } = user;
-      return userData;
-    });
+    // Create pagination response
+    const totalPages = Math.ceil(totalItems / limit);
+    const result = {
+      data: users,
+      pagination: {
+        page,
+        limit,
+        totalItems,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    };
 
-    return res
-      .status(200)
-      .json(
-        createPaginationResponse(
-          { data: users, pagination: result.pagination },
-          "users"
-        )
-      );
+    return res.status(200).json(createPaginationResponse(result, "users"));
   } catch (error) {
     console.error("Get all users error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch users",
+      description: "An unexpected error occurred. Please try again.",
+    });
+  }
+};
+
+//------------------------------------------------ Update User Role ------------------------------------------
+export const updateUserRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+        description: "Please provide a valid user ID.",
+      });
+    }
+
+    if (!role) {
+      return res.status(400).json({
+        success: false,
+        message: "Role is required",
+        description: "Please provide a valid role.",
+      });
+    }
+
+    // Validate role
+    const validRoles = ["admin", "customer", "dealer"];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid role",
+        description: `Role must be one of: ${validRoles.join(", ")}.`,
+      });
+    }
+
+    // Find user
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        description: "The requested user does not exist.",
+      });
+    }
+
+    // Prevent updating admin role - admins cannot change other admins' roles
+    if (user.role === "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Cannot update admin role",
+        description: "Admin roles cannot be modified.",
+      });
+    }
+
+    // Prevent assigning admin role through this endpoint
+    if (role === "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Cannot assign admin role",
+        description: "Admin role cannot be assigned through this endpoint.",
+      });
+    }
+
+    // Update role
+    user.role = role;
+    await user.save();
+
+    // Remove sensitive data from response
+    const {
+      password,
+      verificationToken,
+      verificationTokenExpiry,
+      resetPasswordToken,
+      resetPasswordTokenExpiry,
+      refreshToken,
+      refreshTokenExpiry,
+      __v,
+      ...userData
+    } = user.toObject();
+
+    const userName =
+      `${userData.firstName} ${userData.lastName}`.trim() ||
+      userData.username ||
+      "User";
+
+    return res.status(200).json({
+      success: true,
+      message: "User role updated successfully",
+      description: `${userName}'s role has been updated to ${role}.`,
+      user: userData,
+    });
+  } catch (error) {
+    console.error("Update user role error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update user role",
       description: "An unexpected error occurred. Please try again.",
     });
   }
