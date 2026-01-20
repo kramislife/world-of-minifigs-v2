@@ -32,7 +32,7 @@ const Header = () => {
 
   // Dealer page should only be visible for authenticated users with either dealer or admin role
   const filteredHeaderNavigation = headerNavigation.filter((item) => {
-    if (item.id === "dealer") {
+    if (item.id === "dealers") {
       if (!isAuthenticated) return false;
       return user?.role === "dealer" || user?.role === "admin";
     }

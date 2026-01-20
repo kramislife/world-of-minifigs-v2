@@ -12,10 +12,37 @@ import {
 } from "../utils/cloudinary.js";
 import {
   normalizePagination,
-  buildSearchQuery,
   paginateQuery,
   createPaginationResponse,
 } from "../utils/pagination.js";
+import {
+  buildSortObject,
+  buildPublicProductQuery,
+  buildProductSearchQuery,
+} from "../utils/Products/productQueryBuilder.js";
+import {
+  processProductsForListing,
+  filterProductByType,
+  removeSensitiveFields,
+} from "../utils/Products/productProcessor.js";
+import {
+  getCategoryCounts,
+  getCollectionCounts,
+  getColorCounts,
+  getSkillLevelCounts,
+} from "../utils/Products/productCountUtils.js";
+import {
+  validateForeignKeys,
+  checkProductExists,
+  checkVariantExists,
+  calculateDiscountPrice,
+} from "../utils/Products/productValidation.js";
+import {
+  validatePriceParams,
+  validateSortBy,
+  validateAndFilterIds,
+  validatePublicProductLimit,
+} from "../utils/Products/productQueryValidator.js";
 
 //------------------------------------------------ Create Product ------------------------------------------
 export const createProduct = async (req, res) => {
@@ -107,12 +134,7 @@ export const createProduct = async (req, res) => {
       }
 
       // Check uniqueness for standalone products
-      const existingProduct = await Product.findOne({
-        partId: partId.trim(),
-        itemId: itemId.trim(),
-      })
-        .collation({ locale: "en", strength: 2 })
-        .lean();
+      const existingProduct = await checkProductExists(partId, itemId);
 
       if (existingProduct) {
         return res.status(409).json({
@@ -181,12 +203,10 @@ export const createProduct = async (req, res) => {
         }
 
         // Check uniqueness for each variant's partId/itemId combination
-        const existingVariantProduct = await Product.findOne({
-          "variants.partId": variant.partId.trim(),
-          "variants.itemId": variant.itemId.trim(),
-        })
-          .collation({ locale: "en", strength: 2 })
-          .lean();
+        const existingVariantProduct = await checkVariantExists(
+          variant.partId,
+          variant.itemId,
+        );
 
         if (existingVariantProduct) {
           return res.status(409).json({
@@ -207,68 +227,22 @@ export const createProduct = async (req, res) => {
       }
     }
 
-    // Validate foreign key references
-    if (categoryIds && categoryIds.length > 0) {
-      const validCategories = await Category.countDocuments({
-        _id: { $in: categoryIds },
-      });
-      if (validCategories !== categoryIds.length) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid category IDs",
-          description: "One or more category IDs are invalid.",
-        });
-      }
-    }
+    // Validate foreign key references using utility function
+    const validationErrors = await validateForeignKeys({
+      categoryIds,
+      subCategoryIds,
+      collectionIds,
+      subCollectionIds,
+      colorId,
+    });
 
-    if (subCategoryIds && subCategoryIds.length > 0) {
-      const validSubCategories = await SubCategory.countDocuments({
-        _id: { $in: subCategoryIds },
+    if (validationErrors.length > 0) {
+      const error = validationErrors[0];
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+        description: error.description,
       });
-      if (validSubCategories !== subCategoryIds.length) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid sub-category IDs",
-          description: "One or more sub-category IDs are invalid.",
-        });
-      }
-    }
-
-    if (collectionIds && collectionIds.length > 0) {
-      const validCollections = await Collection.countDocuments({
-        _id: { $in: collectionIds },
-      });
-      if (validCollections !== collectionIds.length) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid collection IDs",
-          description: "One or more collection IDs are invalid.",
-        });
-      }
-    }
-
-    if (subCollectionIds && subCollectionIds.length > 0) {
-      const validSubCollections = await SubCollection.countDocuments({
-        _id: { $in: subCollectionIds },
-      });
-      if (validSubCollections !== subCollectionIds.length) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid sub-collection IDs",
-          description: "One or more sub-collection IDs are invalid.",
-        });
-      }
-    }
-
-    if (colorId) {
-      const validColor = await Color.findById(colorId);
-      if (!validColor) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid color ID",
-          description: "The provided color ID is invalid.",
-        });
-      }
     }
 
     // Upload images for standalone products
@@ -287,7 +261,7 @@ export const createProduct = async (req, res) => {
 
           const uploadResult = await uploadImage(
             image,
-            "world-of-minifigs-v2/products"
+            "world-of-minifigs-v2/products",
           );
           uploadedImages.push({
             publicId: uploadResult.public_id,
@@ -338,7 +312,7 @@ export const createProduct = async (req, res) => {
                     } catch (deleteError) {
                       console.error(
                         "Error deleting variant image:",
-                        deleteError
+                        deleteError,
                       );
                     }
                   }
@@ -360,7 +334,7 @@ export const createProduct = async (req, res) => {
 
               const uploadResult = await uploadImage(
                 variant.image,
-                "world-of-minifigs-v2/products/variants"
+                "world-of-minifigs-v2/products/variants",
               );
               variantImage = {
                 publicId: uploadResult.public_id,
@@ -412,14 +386,11 @@ export const createProduct = async (req, res) => {
     }
 
     // Calculate discount price if discount is provided
-    let discountPrice = null;
     const discountValue =
       discount !== undefined && discount !== null && discount !== ""
         ? Number(discount)
         : 0;
-    if (discountValue > 0) {
-      discountPrice = Math.round(price * (1 - discountValue / 100) * 100) / 100;
-    }
+    const discountPrice = calculateDiscountPrice(price, discountValue);
 
     // Create product
     const productData = {
@@ -573,90 +544,8 @@ export const getAllProducts = async (req, res) => {
       search: req.query.search,
     });
 
-    // Build search query
-    let searchQuery = {};
-    if (search) {
-      // Search in product fields
-      const productSearchFields = ["productName", "partId", "itemId"];
-      const productQuery = buildSearchQuery(search, productSearchFields);
-
-      // Search in related entities to get matching IDs
-      const [
-        matchingCategories,
-        matchingSubCategories,
-        matchingCollections,
-        matchingSubCollections,
-        matchingColors,
-        matchingSkillLevels,
-      ] = await Promise.all([
-        Category.find(buildSearchQuery(search, ["categoryName"]))
-          .select("_id")
-          .lean(),
-        SubCategory.find(buildSearchQuery(search, ["subCategoryName"]))
-          .select("_id")
-          .lean(),
-        Collection.find(buildSearchQuery(search, ["collectionName"]))
-          .select("_id")
-          .lean(),
-        SubCollection.find(buildSearchQuery(search, ["subCollectionName"]))
-          .select("_id")
-          .lean(),
-        Color.find(buildSearchQuery(search, ["colorName"]))
-          .select("_id")
-          .lean(),
-        SkillLevel.find(buildSearchQuery(search, ["skillLevelName"]))
-          .select("_id")
-          .lean(),
-      ]);
-
-      const matchingCategoryIds = matchingCategories.map((cat) => cat._id);
-      const matchingSubCategoryIds = matchingSubCategories.map(
-        (sub) => sub._id
-      );
-      const matchingCollectionIds = matchingCollections.map((col) => col._id);
-      const matchingSubCollectionIds = matchingSubCollections.map(
-        (sub) => sub._id
-      );
-      const matchingColorIds = matchingColors.map((color) => color._id);
-      const matchingSkillLevelIds = matchingSkillLevels.map(
-        (skill) => skill._id
-      );
-
-      // Build $or array with all search conditions
-      const orConditions = [];
-
-      // Add product field searches
-      if (Object.keys(productQuery).length > 0) {
-        orConditions.push(productQuery);
-      }
-
-      // Add related entity searches
-      if (matchingCategoryIds.length > 0) {
-        orConditions.push({ categoryIds: { $in: matchingCategoryIds } });
-      }
-      if (matchingSubCategoryIds.length > 0) {
-        orConditions.push({ subCategoryIds: { $in: matchingSubCategoryIds } });
-      }
-      if (matchingCollectionIds.length > 0) {
-        orConditions.push({ collectionIds: { $in: matchingCollectionIds } });
-      }
-      if (matchingSubCollectionIds.length > 0) {
-        orConditions.push({
-          subCollectionIds: { $in: matchingSubCollectionIds },
-        });
-      }
-      if (matchingColorIds.length > 0) {
-        orConditions.push({ colorId: { $in: matchingColorIds } });
-      }
-      if (matchingSkillLevelIds.length > 0) {
-        orConditions.push({ skillLevelIds: { $in: matchingSkillLevelIds } });
-      }
-
-      // Combine all searches using $or
-      if (orConditions.length > 0) {
-        searchQuery = { $or: orConditions };
-      }
-    }
+    // Build search query using utility function
+    const searchQuery = await buildProductSearchQuery(search);
 
     // Apply pagination
     const result = await paginateQuery(Product, searchQuery, {
@@ -676,34 +565,16 @@ export const getAllProducts = async (req, res) => {
       ],
     });
 
-    // Filter out fields based on productType for clarity
-    const processedProducts = result.data.map((product) => {
-      if (product.productType === "standalone") {
-        // Remove variant-specific fields
-        const { variants, ...productWithoutVariants } = product;
-        return productWithoutVariants;
-      } else if (product.productType === "variant") {
-        // Remove standalone-specific fields
-        const {
-          partId,
-          itemId,
-          images,
-          colorId,
-          stock,
-          ...productWithoutStandalone
-        } = product;
-        return productWithoutStandalone;
-      }
-      return product;
-    });
+    // Filter out fields based on productType using utility function
+    const processedProducts = result.data.map(filterProductByType);
 
     return res
       .status(200)
       .json(
         createPaginationResponse(
           { data: processedProducts, pagination: result.pagination },
-          "products"
-        )
+          "products",
+        ),
       );
   } catch (error) {
     console.error("Get all products error:", error);
@@ -749,24 +620,8 @@ export const getProductById = async (req, res) => {
       });
     }
 
-    // Filter out fields based on productType for clarity
-    let processedProduct = product;
-    if (product.productType === "standalone") {
-      // Remove variant-specific fields
-      const { variants, ...productWithoutVariants } = product;
-      processedProduct = productWithoutVariants;
-    } else if (product.productType === "variant") {
-      // Remove standalone-specific fields
-      const {
-        partId,
-        itemId,
-        images,
-        colorId,
-        stock,
-        ...productWithoutStandalone
-      } = product;
-      processedProduct = productWithoutStandalone;
-    }
+    // Filter out fields based on productType using utility function
+    const processedProduct = filterProductByType(product);
 
     return res.status(200).json({
       success: true,
@@ -835,8 +690,8 @@ export const updateProduct = async (req, res) => {
     const inferredProductType = hasVariants
       ? "variant"
       : product.variants?.length > 0
-      ? "variant"
-      : "standalone";
+        ? "variant"
+        : "standalone";
     const finalProductType = productType || inferredProductType;
 
     // Validate productType if provided
@@ -906,13 +761,11 @@ export const updateProduct = async (req, res) => {
         const checkPartId = partId ? partId.trim() : product.partId;
         const checkItemId = itemId ? itemId.trim() : product.itemId;
 
-        const existingProduct = await Product.findOne({
-          partId: checkPartId,
-          itemId: checkItemId,
-          _id: { $ne: id },
-        })
-          .collation({ locale: "en", strength: 2 })
-          .lean();
+        const existingProduct = await checkProductExists(
+          checkPartId,
+          checkItemId,
+          id,
+        );
 
         if (existingProduct) {
           return res.status(409).json({
@@ -966,13 +819,11 @@ export const updateProduct = async (req, res) => {
         }
 
         // Check uniqueness for variant partId/itemId (excluding current product)
-        const existingVariantProduct = await Product.findOne({
-          "variants.partId": variant.partId.trim(),
-          "variants.itemId": variant.itemId.trim(),
-          _id: { $ne: id },
-        })
-          .collation({ locale: "en", strength: 2 })
-          .lean();
+        const existingVariantProduct = await checkVariantExists(
+          variant.partId,
+          variant.itemId,
+          id,
+        );
 
         if (existingVariantProduct) {
           return res.status(409).json({
@@ -991,7 +842,7 @@ export const updateProduct = async (req, res) => {
     if (isStandalone && images) {
       // Separate existing images (objects with publicId) from new images (base64 strings)
       const existingImages = images.filter(
-        (img) => typeof img === "object" && img.publicId
+        (img) => typeof img === "object" && img.publicId,
       );
       const newImages = images.filter((img) => typeof img === "string");
 
@@ -1000,8 +851,8 @@ export const updateProduct = async (req, res) => {
         imagesToDelete = product.images.filter(
           (existingImg) =>
             !existingImages.some(
-              (img) => img.publicId === existingImg.publicId.toString()
-            )
+              (img) => img.publicId === existingImg.publicId.toString(),
+            ),
         );
       }
 
@@ -1020,7 +871,7 @@ export const updateProduct = async (req, res) => {
 
             const uploadResult = await uploadImage(
               image,
-              "world-of-minifigs-v2/products"
+              "world-of-minifigs-v2/products",
             );
             uploadedImages.push({
               publicId: uploadResult.public_id,
@@ -1085,7 +936,7 @@ export const updateProduct = async (req, res) => {
                     } catch (deleteError) {
                       console.error(
                         "Error deleting variant image:",
-                        deleteError
+                        deleteError,
                       );
                     }
                   }
@@ -1099,7 +950,7 @@ export const updateProduct = async (req, res) => {
 
               const uploadResult = await uploadImage(
                 variant.image,
-                "world-of-minifigs-v2/products/variants"
+                "world-of-minifigs-v2/products/variants",
               );
               variantImage = {
                 publicId: uploadResult.public_id,
@@ -1160,15 +1011,9 @@ export const updateProduct = async (req, res) => {
     let discountPrice = product.discountPrice;
     if (discount !== undefined) {
       const finalPrice = price !== undefined ? price : product.price;
-      if (discount > 0) {
-        discountPrice =
-          Math.round(finalPrice * (1 - discount / 100) * 100) / 100;
-      } else {
-        discountPrice = null;
-      }
+      discountPrice = calculateDiscountPrice(finalPrice, discount);
     } else if (price !== undefined && product.discount) {
-      discountPrice =
-        Math.round(price * (1 - product.discount / 100) * 100) / 100;
+      discountPrice = calculateDiscountPrice(price, product.discount);
     }
 
     // Update product fields
@@ -1428,6 +1273,352 @@ export const deleteProduct = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to delete product",
+      description: "An unexpected error occurred. Please try again.",
+    });
+  }
+};
+
+//------------------------------------------------ Public Product Controllers ------------------------------------------
+
+// Get all public products (minimal fields for listing)
+export const getPublicProducts = async (req, res) => {
+  try {
+    // Validate and normalize pagination parameters
+    const validatedLimit = validatePublicProductLimit(req.query.limit);
+    const { page, search } = normalizePagination({
+      page: req.query.page,
+      limit: validatedLimit,
+      search: req.query.search,
+    });
+    const limit = validatedLimit;
+
+    // Validate price parameters
+    const priceValidation = validatePriceParams(
+      req.query.priceMin,
+      req.query.priceMax,
+    );
+    if (!priceValidation.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid price range",
+        description: priceValidation.error,
+      });
+    }
+
+    // Validate and filter IDs
+    const validatedCategoryIds = validateAndFilterIds(
+      req.query.categoryIds?.split(",").filter(Boolean),
+    );
+    const validatedSubCategoryIds = validateAndFilterIds(
+      req.query.subCategoryIds?.split(",").filter(Boolean),
+    );
+    const validatedCollectionIds = validateAndFilterIds(
+      req.query.collectionIds?.split(",").filter(Boolean),
+    );
+    const validatedSubCollectionIds = validateAndFilterIds(
+      req.query.subCollectionIds?.split(",").filter(Boolean),
+    );
+    const validatedColorIds = validateAndFilterIds(
+      req.query.colorIds?.split(",").filter(Boolean),
+    );
+    const validatedSkillLevelIds = validateAndFilterIds(
+      req.query.skillLevelIds?.split(",").filter(Boolean),
+    );
+
+    // Build query using utility function
+    const query = await buildPublicProductQuery({
+      search,
+      priceMin: priceValidation.priceMin,
+      priceMax: priceValidation.priceMax,
+      categoryIds:
+        validatedCategoryIds.length > 0
+          ? validatedCategoryIds.join(",")
+          : undefined,
+      subCategoryIds:
+        validatedSubCategoryIds.length > 0
+          ? validatedSubCategoryIds.join(",")
+          : undefined,
+      collectionIds:
+        validatedCollectionIds.length > 0
+          ? validatedCollectionIds.join(",")
+          : undefined,
+      subCollectionIds:
+        validatedSubCollectionIds.length > 0
+          ? validatedSubCollectionIds.join(",")
+          : undefined,
+      colorIds:
+        validatedColorIds.length > 0 ? validatedColorIds.join(",") : undefined,
+      skillLevelIds:
+        validatedSkillLevelIds.length > 0
+          ? validatedSkillLevelIds.join(",")
+          : undefined,
+    });
+
+    // Validate and get sort parameter
+    const sortBy = validateSortBy(req.query.sortBy);
+    const sort = buildSortObject(sortBy);
+
+    // Apply pagination with minimal field selection
+    const skip = (page - 1) * limit;
+    const selectFields =
+      "_id productName price discountPrice productType createdAt images variants";
+
+    // Build query with minimal fields
+    let mongooseQuery = Product.find(query)
+      .select(selectFields)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    // Populate only essential fields
+    mongooseQuery = mongooseQuery
+      .populate("categoryIds", "categoryName")
+      .populate("subCategoryIds", "subCategoryName")
+      .populate("collectionIds", "collectionName")
+      .populate("subCollectionIds", "subCollectionName")
+      .populate("colorId", "colorName hexCode")
+      .populate("skillLevelIds", "skillLevelName")
+      .populate("variants.colorId", "colorName hexCode");
+
+    // Execute queries in parallel
+    const [totalItems, products] = await Promise.all([
+      Product.countDocuments(query),
+      mongooseQuery.exec(),
+    ]);
+
+    // Process products using utility function
+    const processedProducts = processProductsForListing(products);
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return res.status(200).json({
+      success: true,
+      products: processedProducts,
+      pagination: {
+        page,
+        limit,
+        totalItems,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    });
+  } catch (error) {
+    console.error("Get public products error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch products",
+      description: "An unexpected error occurred. Please try again.",
+    });
+  }
+};
+
+// Get single public product (full details for detail page)
+export const getPublicProductById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Product ID is required",
+        description: "Please provide a valid product ID.",
+      });
+    }
+
+    const product = await Product.findOne({ _id: id, isActive: true })
+      .select("-__v")
+      .populate("categoryIds", "categoryName")
+      .populate("subCategoryIds", "subCategoryName")
+      .populate("collectionIds", "collectionName")
+      .populate("subCollectionIds", "subCollectionName")
+      .populate("colorId", "colorName hexCode")
+      .populate("skillLevelIds", "skillLevelName")
+      .populate("variants.colorId", "colorName hexCode")
+      .lean();
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+        description:
+          "The requested product does not exist or is not available.",
+      });
+    }
+
+    // Remove sensitive/admin fields using utility
+    const publicProduct = removeSensitiveFields(product);
+
+    return res.status(200).json({
+      success: true,
+      product: publicProduct,
+    });
+  } catch (error) {
+    console.error("Get public product by ID error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch product",
+      description: "An unexpected error occurred. Please try again.",
+    });
+  }
+};
+
+// Get public categories with nested subcategories and product counts
+export const getPublicCategories = async (req, res) => {
+  try {
+    const categories = await Category.find()
+      .select("_id categoryName")
+      .sort({ categoryName: 1 })
+      .lean();
+
+    const subCategories = await SubCategory.find()
+      .select("_id subCategoryName categoryId")
+      .sort({ subCategoryName: 1 })
+      .lean();
+
+    // Get counts using utility function
+    const { categoryCountMap, subCategoryCountMap } = await getCategoryCounts();
+
+    // Nest subcategories under their parent categories
+    const categoriesWithSubs = categories.map((category) => {
+      const subCats = subCategories
+        .filter((sub) => sub.categoryId.toString() === category._id.toString())
+        .map(({ _id, subCategoryName }) => ({
+          _id,
+          subCategoryName,
+          count: subCategoryCountMap.get(_id.toString()) || 0,
+        }));
+
+      return {
+        _id: category._id,
+        categoryName: category.categoryName,
+        count: categoryCountMap.get(category._id.toString()) || 0,
+        subCategories: subCats,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      categories: categoriesWithSubs,
+    });
+  } catch (error) {
+    console.error("Get public categories error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch categories",
+      description: "An unexpected error occurred. Please try again.",
+    });
+  }
+};
+
+// Get public collections with nested subcollections and product counts
+export const getPublicCollections = async (req, res) => {
+  try {
+    const collections = await Collection.find()
+      .select("_id collectionName")
+      .sort({ collectionName: 1 })
+      .lean();
+
+    const subCollections = await SubCollection.find()
+      .select("_id subCollectionName collectionId")
+      .sort({ subCollectionName: 1 })
+      .lean();
+
+    // Get counts using utility function
+    const { collectionCountMap, subCollectionCountMap } =
+      await getCollectionCounts();
+
+    // Nest subcollections under their parent collections
+    const collectionsWithSubs = collections.map((collection) => {
+      const subCols = subCollections
+        .filter(
+          (sub) => sub.collectionId.toString() === collection._id.toString(),
+        )
+        .map(({ _id, subCollectionName }) => ({
+          _id,
+          subCollectionName,
+          count: subCollectionCountMap.get(_id.toString()) || 0,
+        }));
+
+      return {
+        _id: collection._id,
+        collectionName: collection.collectionName,
+        count: collectionCountMap.get(collection._id.toString()) || 0,
+        subCollections: subCols,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      collections: collectionsWithSubs,
+    });
+  } catch (error) {
+    console.error("Get public collections error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch collections",
+      description: "An unexpected error occurred. Please try again.",
+    });
+  }
+};
+
+// Get public colors with product counts
+export const getPublicColors = async (req, res) => {
+  try {
+    const colors = await Color.find()
+      .select("_id colorName hexCode")
+      .sort({ colorName: 1 })
+      .lean();
+
+    // Get counts using utility function
+    const colorCountMap = await getColorCounts();
+
+    // Add counts to colors
+    const colorsWithCounts = colors.map((color) => ({
+      ...color,
+      count: colorCountMap.get(color._id.toString()) || 0,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      colors: colorsWithCounts,
+    });
+  } catch (error) {
+    console.error("Get public colors error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch colors",
+      description: "An unexpected error occurred. Please try again.",
+    });
+  }
+};
+
+// Get public skill levels with product counts
+export const getPublicSkillLevels = async (req, res) => {
+  try {
+    const skillLevels = await SkillLevel.find()
+      .select("_id skillLevelName")
+      .sort({ skillLevelName: 1 })
+      .lean();
+
+    // Get counts using utility function
+    const skillLevelCountMap = await getSkillLevelCounts();
+
+    // Add counts to skill levels
+    const skillLevelsWithCounts = skillLevels.map((skillLevel) => ({
+      ...skillLevel,
+      count: skillLevelCountMap.get(skillLevel._id.toString()) || 0,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      skillLevels: skillLevelsWithCounts,
+    });
+  } catch (error) {
+    console.error("Get public skill levels error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch skill levels",
       description: "An unexpected error occurred. Please try again.",
     });
   }

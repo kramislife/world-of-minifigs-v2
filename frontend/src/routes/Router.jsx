@@ -22,7 +22,7 @@ const Router = () => {
           key={route.path}
           path={route.path}
           element={
-            <ProtectedRoute 
+            <ProtectedRoute
               requiredRole={route.requiredRole}
               requiredRoles={route.requiredRoles}
             >
