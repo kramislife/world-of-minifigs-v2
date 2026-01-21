@@ -99,13 +99,20 @@ app.use("/api/v1/public", publicRoutes);
 if ((process.env.NODE_ENV || "").toLowerCase() === "production") {
   const frontendDistPath = path.join(__dirname, "../frontend/dist");
   
+  console.log("Production mode - serving static files from:", frontendDistPath);
+  
   app.use(express.static(frontendDistPath));
   
-  // Handle React routing - return all non-API requests to React app
-  app.get("*", (_req, res) => {
+  app.use((req, res, next) => {
+    // Skip API routes
+    if (req.path.startsWith("/api")) {
+      return next();
+    }
+    // Serve index.html for all other routes (SPA routing)
     res.sendFile(path.join(frontendDistPath, "index.html"));
   });
 } else {
+  console.log("Development mode - API only, no static files served");
   // 404 handler for development (API routes only)
   app.use((_req, res) => {
     res.status(404).json({ message: "Route not found" });
