@@ -96,7 +96,7 @@ app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/public", publicRoutes);
 
 // Serve static files from React app in production
-if (process.env.NODE_ENV === "production") {
+if ((process.env.NODE_ENV || "").toLowerCase() === "production") {
   const frontendDistPath = path.join(__dirname, "../frontend/dist");
   
   app.use(express.static(frontendDistPath));
