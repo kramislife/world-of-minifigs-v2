@@ -1,9 +1,10 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { clearCredentials } from "@/redux/slices/authSlice";
+import { API_URLS } from "../apiConfig";
 
 // Base query with auth credentials
 const baseQuery = fetchBaseQuery({
-  baseUrl: "/api/v1/user",
+  baseUrl: API_URLS.USER,
   credentials: "include",
 });
 
