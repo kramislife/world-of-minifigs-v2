@@ -59,11 +59,6 @@ const validateEnv = () => {
 
 validateEnv();
 
-// Log CORS configuration on startup
-const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-console.log(`CORS configured for frontend: ${frontendUrl}`);
-console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
-
 const app = express();
 
 // Security headers
@@ -73,39 +68,13 @@ app.use(
   })
 );
 
-// Middleware - CORS configuration
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      return callback(null, true);
-    }
-
-    const allowedOrigins = [
-      process.env.FRONTEND_URL,
-      "http://localhost:5173",
-      "http://localhost:3000",
-    ].filter(Boolean); // Remove undefined values
-
-    // Normalize origins (remove trailing slashes)
-    const normalizedOrigin = origin.replace(/\/$/, "");
-    const normalizedAllowed = allowedOrigins.map((url) => url?.replace(/\/$/, ""));
-
-    if (normalizedAllowed.includes(normalizedOrigin)) {
-      callback(null, true);
-    } else {
-      console.warn(`CORS blocked origin: ${origin}`);
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
-  exposedHeaders: ["Set-Cookie"],
-  optionsSuccessStatus: 200,
-};
-
-app.use(cors(corsOptions));
+// Middleware
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: "10mb" })); 
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(cookieParser());

@@ -16,11 +16,8 @@ export const useAuthInit = () => {
   // This ensures expired sessions are detected even if user exists in localStorage
   const { data, isLoading, error, isError, isFetching } =
     useGetCurrentUserQuery(undefined, {
-      // Skip only if we've verified once and user is authenticated
-      // This prevents unnecessary refetches but allows verification on first load
+      // Only skip after we've verified once and user is authenticated
       skip: hasVerified.current && !!user,
-      // Refetch on mount to verify session after login
-      refetchOnMountOrArgChange: true,
     });
 
   useEffect(() => {
@@ -39,7 +36,6 @@ export const useAuthInit = () => {
       // The 401 handler in baseQuery will also trigger this
       dispatch(clearCredentials());
     } else if (data?.success && data?.user) {
-      // Update credentials with fresh data from server
       dispatch(setCredentials(data.user));
     }
   }, [data, isLoading, isFetching, error, isError, dispatch]);

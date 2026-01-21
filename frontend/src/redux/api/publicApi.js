@@ -1,9 +1,8 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { API_URLS } from "../apiConfig";
 
 // Base query for public API (no auth required)
 const baseQuery = fetchBaseQuery({
-  baseUrl: API_URLS.PUBLIC,
+  baseUrl: "/api/v1/public",
   credentials: "include",
 });
 

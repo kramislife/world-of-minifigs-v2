@@ -64,7 +64,6 @@ export const useLogin = (onSuccess) => {
 
       // Store user in Redux state
       if (response?.user) {
-        console.log("Login successful, setting credentials:", response.user);
         dispatch(setCredentials(response.user));
         
         // Close auth dialog first
@@ -73,7 +72,6 @@ export const useLogin = (onSuccess) => {
         }
         
         // Small delay to ensure cookies are set before navigation
-        // useAuthInit will verify the session on next render
         setTimeout(() => {
           // Redirect based on user role
           if (response.user.role === "admin") {

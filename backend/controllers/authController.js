@@ -8,32 +8,12 @@ import { generateTokens, verifyRefreshToken } from "../utils/generateToken.js";
 import {
   normalizePagination,
   buildSearchQuery,
+  paginateQuery,
   createPaginationResponse,
 } from "../utils/pagination.js";
 
 const MIN_RESPONSE_TIME_MS = 3000; // minimum response time
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// Cookie options helper - handles cross-domain cookies in production
-const getCookieOptions = (maxAge) => {
-  const isProduction = process.env.NODE_ENV === "production";
-  return {
-    httpOnly: true,
-    secure: isProduction, // Required for sameSite: "none"
-    sameSite: isProduction ? "none" : "strict", // "none" allows cross-domain cookies
-    maxAge: maxAge,
-  };
-};
-
-// Cookie options for clearing cookies
-const getClearCookieOptions = () => {
-  const isProduction = process.env.NODE_ENV === "production";
-  return {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? "none" : "strict",
-  };
-};
 
 //------------------------------------------------ Register User ------------------------------------------
 export const register = async (req, res) => {
@@ -432,10 +412,20 @@ export const login = async (req, res) => {
     };
 
     // Set access token as httpOnly cookie
-    res.cookie("accessToken", accessToken, getCookieOptions(accessTokenDays * 24 * 60 * 60 * 1000));
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: accessTokenDays * 24 * 60 * 60 * 1000,
+    });
 
     // Set refresh token as httpOnly cookie
-    res.cookie("refreshToken", refreshToken, getCookieOptions(refreshTokenDays * 24 * 60 * 60 * 1000));
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: refreshTokenDays * 24 * 60 * 60 * 1000,
+    });
 
     res.status(200).json({
       success: true,
@@ -547,10 +537,18 @@ export const logout = async (req, res) => {
     }
 
     // Clear access token cookie
-    res.clearCookie("accessToken", getClearCookieOptions());
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
 
     // Clear refresh token cookie
-    res.clearCookie("refreshToken", getClearCookieOptions());
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
 
     res.status(200).json({
       success: true,
@@ -666,8 +664,16 @@ export const refreshToken = async (req, res) => {
       await user.save();
 
       // Clear cookies to log out user (with same options as when setting)
-      res.clearCookie("accessToken", getClearCookieOptions());
-      res.clearCookie("refreshToken", getClearCookieOptions());
+      res.clearCookie("accessToken", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+      });
+      res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+      });
 
       return res.status(401).json({
         success: false,
@@ -694,10 +700,20 @@ export const refreshToken = async (req, res) => {
     await user.save();
 
     // Set access token as httpOnly cookie
-    res.cookie("accessToken", accessToken, getCookieOptions(accessTokenDays * 24 * 60 * 60 * 1000));
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: accessTokenDays * 24 * 60 * 60 * 1000,
+    });
 
     // Update refresh token cookie
-    res.cookie("refreshToken", newRefreshToken, getCookieOptions(refreshTokenDays * 24 * 60 * 60 * 1000));
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: refreshTokenDays * 24 * 60 * 60 * 1000,
+    });
 
     return res.status(200).json({
       success: true,
