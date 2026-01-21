@@ -9,9 +9,9 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { APP_NAME } from "@/constant/appConfig";
-import Login from "@/components/Auth/Login";
-import Register from "@/components/Auth/Register";
-import ForgotPassword from "@/components/Auth/ForgotPassword";
+import Login from "@/components/auth/Login";
+import Register from "@/components/auth/Register";
+import ForgotPassword from "@/components/auth/ForgotPassword";
 import { useLogin } from "@/hooks/useLogin";
 import { useRegister } from "@/hooks/useRegister";
 import { useForgotPassword } from "@/hooks/useForgotPassword";
