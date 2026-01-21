@@ -5,6 +5,27 @@ import {
   generateTokens,
 } from "../utils/generateToken.js";
 
+// Cookie options helper - handles cross-domain cookies in production
+const getCookieOptions = (maxAge) => {
+  const isProduction = process.env.NODE_ENV === "production";
+  return {
+    httpOnly: true,
+    secure: isProduction, // Required for sameSite: "none"
+    sameSite: isProduction ? "none" : "strict", // "none" allows cross-domain cookies
+    maxAge: maxAge,
+  };
+};
+
+// Cookie options for clearing cookies
+const getClearCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === "production";
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "strict",
+  };
+};
+
 // Middleware to authenticate user using JWT access token with automatic refresh
 export const authenticate = async (req, res, next) => {
   try {
@@ -82,16 +103,8 @@ export const authenticate = async (req, res, next) => {
           await userWithRefresh.save();
 
           // Clear cookies to log out user (with same options as when setting)
-          res.clearCookie("accessToken", {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-          });
-          res.clearCookie("refreshToken", {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-          });
+          res.clearCookie("accessToken", getClearCookieOptions());
+          res.clearCookie("refreshToken", getClearCookieOptions());
 
           return res.status(401).json({
             success: false,
@@ -118,20 +131,10 @@ export const authenticate = async (req, res, next) => {
         await userWithRefresh.save();
 
         // Set new access token as httpOnly cookie
-        res.cookie("accessToken", newAccessToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-          maxAge: accessTokenDays * 24 * 60 * 60 * 1000,
-        });
+        res.cookie("accessToken", newAccessToken, getCookieOptions(accessTokenDays * 24 * 60 * 60 * 1000));
 
         // Update refresh token cookie
-        res.cookie("refreshToken", newRefreshToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-          maxAge: refreshTokenDays * 24 * 60 * 60 * 1000,
-        });
+        res.cookie("refreshToken", newRefreshToken, getCookieOptions(refreshTokenDays * 24 * 60 * 60 * 1000));
 
         // Use the new decoded token
         decoded = { userId: userWithRefresh._id };
@@ -178,16 +181,8 @@ export const authenticate = async (req, res, next) => {
         await userForExpiryCheck.save();
 
         // Clear cookies to log out user
-        res.clearCookie("accessToken", {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-        });
-        res.clearCookie("refreshToken", {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-        });
+        res.clearCookie("accessToken", getClearCookieOptions());
+        res.clearCookie("refreshToken", getClearCookieOptions());
 
         return res.status(401).json({
           success: false,

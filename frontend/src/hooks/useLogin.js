@@ -64,6 +64,7 @@ export const useLogin = (onSuccess) => {
 
       // Store user in Redux state
       if (response?.user) {
+        console.log("Login successful, setting credentials:", response.user);
         dispatch(setCredentials(response.user));
         
         // Close auth dialog first
@@ -71,15 +72,43 @@ export const useLogin = (onSuccess) => {
           onSuccess();
         }
         
-        // Small delay to ensure cookies are set before navigation
-        setTimeout(() => {
+        // Wait a bit for cookies to be set, then verify with /me endpoint
+        setTimeout(async () => {
+          try {
+            // Fetch current user to ensure cookies are working
+            console.log("Verifying user session after login...");
+            const verifyResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || ""}/api/v1/auth/me`, {
+              method: "GET",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            });
+            
+            if (verifyResponse.ok) {
+              const userData = await verifyResponse.json();
+              console.log("User verification response:", userData);
+              if (userData?.success && userData?.user) {
+                // Update with fresh user data from server
+                console.log("User verified, updating credentials");
+                dispatch(setCredentials(userData.user));
+              }
+            } else {
+              console.warn("User verification failed, but keeping login response");
+            }
+          } catch (error) {
+            console.error("Failed to verify user after login:", error);
+            // Even if verification fails, keep the user from login response
+            // The user is already authenticated, cookies just need time to sync
+          }
+          
           // Redirect based on user role
           if (response.user.role === "admin") {
             navigate("/admin/dashboard");
           } else {
             navigate("/");
           }
-        }, 100);
+        }, 300);
       } else {
         // Fallback to home if no user data
         if (onSuccess) {
