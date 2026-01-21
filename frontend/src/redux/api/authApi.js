@@ -33,6 +33,18 @@ export const authApi = createApi({
         body: credentials,
       }),
       invalidatesTags: ["User"],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // Small delay to ensure cookies are set before refetching
+          setTimeout(() => {
+            // Refetch current user after successful login to ensure auth state is synced
+            dispatch(authApi.endpoints.getCurrentUser.initiate(undefined, { forceRefetch: true }));
+          }, 100);
+        } catch (error) {
+          // Login failed, don't refetch
+        }
+      },
     }),
 
     register: builder.mutation({

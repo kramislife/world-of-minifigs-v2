@@ -10,6 +10,7 @@ export const getCookieOptions = () => {
     httpOnly: true,
     secure: isProduction, // Must be true for SameSite: "none"
     sameSite: isProduction ? "none" : "strict", // "none" for cross-domain, "strict" for same-domain
+    path: "/", // Ensure cookies are sent with all requests
   };
 
   return baseOptions;
