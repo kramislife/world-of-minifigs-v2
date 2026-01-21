@@ -71,8 +71,33 @@ app.use(
 // Middleware
 app.use(
   cors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins = [
+        process.env.FRONTEND_URL,
+        // Add any other allowed origins here
+      ].filter(Boolean);
+
+      // In development, allow localhost origins
+      if (process.env.NODE_ENV !== "production") {
+        allowedOrigins.push(
+          "http://localhost:5173",
+          "http://localhost:3000",
+          "http://127.0.0.1:5173",
+          "http://127.0.0.1:3000"
+        );
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
+    optionsSuccessStatus: 200,
   })
 );
 app.use(express.json({ limit: "10mb" })); 

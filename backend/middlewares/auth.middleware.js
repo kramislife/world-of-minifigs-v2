@@ -4,6 +4,11 @@ import {
   verifyRefreshToken,
   generateTokens,
 } from "../utils/generateToken.js";
+import {
+  getCookieOptions,
+  getAccessTokenCookieOptions,
+  getRefreshTokenCookieOptions,
+} from "../utils/cookieOptions.js";
 
 // Middleware to authenticate user using JWT access token with automatic refresh
 export const authenticate = async (req, res, next) => {
@@ -82,16 +87,8 @@ export const authenticate = async (req, res, next) => {
           await userWithRefresh.save();
 
           // Clear cookies to log out user (with same options as when setting)
-          res.clearCookie("accessToken", {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-          });
-          res.clearCookie("refreshToken", {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-          });
+          res.clearCookie("accessToken", getCookieOptions());
+          res.clearCookie("refreshToken", getCookieOptions());
 
           return res.status(401).json({
             success: false,
@@ -110,7 +107,7 @@ export const authenticate = async (req, res, next) => {
           Number(process.env.JWT_ACCESS_TOKEN_EXPIRY) || 1;
         const newRefreshTokenExpiry = new Date();
         newRefreshTokenExpiry.setDate(
-          newRefreshTokenExpiry.getDate() + refreshTokenDays
+          newRefreshTokenExpiry.getDate() + refreshTokenDays,
         );
 
         userWithRefresh.refreshToken = newRefreshToken;
@@ -118,20 +115,18 @@ export const authenticate = async (req, res, next) => {
         await userWithRefresh.save();
 
         // Set new access token as httpOnly cookie
-        res.cookie("accessToken", newAccessToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-          maxAge: accessTokenDays * 24 * 60 * 60 * 1000,
-        });
+        res.cookie(
+          "accessToken",
+          newAccessToken,
+          getAccessTokenCookieOptions(accessTokenDays),
+        );
 
         // Update refresh token cookie
-        res.cookie("refreshToken", newRefreshToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-          maxAge: refreshTokenDays * 24 * 60 * 60 * 1000,
-        });
+        res.cookie(
+          "refreshToken",
+          newRefreshToken,
+          getRefreshTokenCookieOptions(refreshTokenDays),
+        );
 
         // Use the new decoded token
         decoded = { userId: userWithRefresh._id };
@@ -147,7 +142,7 @@ export const authenticate = async (req, res, next) => {
 
     // Find user (include refreshTokenExpiry to check expiry, exclude password and refreshToken value)
     const user = await User.findById(decoded.userId).select(
-      "-password -refreshToken"
+      "-password -refreshToken",
     );
 
     if (!user) {
@@ -162,7 +157,7 @@ export const authenticate = async (req, res, next) => {
     // Check if refresh token has expired (even if access token is still valid)
     // Fetch refreshTokenExpiry separately to check expiry
     const userForExpiryCheck = await User.findById(decoded.userId).select(
-      "refreshToken refreshTokenExpiry"
+      "refreshToken refreshTokenExpiry",
     );
 
     // If refreshTokenExpiry exists and is expired, or if refreshToken exists but expiry is missing/expired
@@ -178,16 +173,8 @@ export const authenticate = async (req, res, next) => {
         await userForExpiryCheck.save();
 
         // Clear cookies to log out user
-        res.clearCookie("accessToken", {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-        });
-        res.clearCookie("refreshToken", {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-        });
+        res.clearCookie("accessToken", getCookieOptions());
+        res.clearCookie("refreshToken", getCookieOptions());
 
         return res.status(401).json({
           success: false,
@@ -287,7 +274,7 @@ export const optionalAuth = async (req, res, next) => {
       try {
         const decoded = verifyAccessToken(token);
         const user = await User.findById(decoded.userId).select(
-          "-password -refreshToken"
+          "-password -refreshToken",
         );
 
         if (user && user.isActive) {

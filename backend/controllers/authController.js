@@ -6,6 +6,11 @@ import { getVerificationEmailTemplate } from "../utils/Email/verifyEmail.js";
 import { getResetPasswordTemplate } from "../utils/Email/passwordEmail.js";
 import { generateTokens, verifyRefreshToken } from "../utils/generateToken.js";
 import {
+  getCookieOptions,
+  getAccessTokenCookieOptions,
+  getRefreshTokenCookieOptions,
+} from "../utils/cookieOptions.js";
+import {
   normalizePagination,
   buildSearchQuery,
   paginateQuery,
@@ -112,7 +117,7 @@ export const register = async (req, res) => {
     const verificationTokenExpiry = new Date();
     verificationTokenExpiry.setHours(
       verificationTokenExpiry.getHours() +
-        parseInt(process.env.EMAIL_VERIFICATION_EXPIRY || "1", 10)
+        parseInt(process.env.EMAIL_VERIFICATION_EXPIRY || "1", 10),
     );
 
     // Create user
@@ -275,7 +280,7 @@ export const resendVerification = async (req, res) => {
         const verificationTokenExpiry = new Date();
         verificationTokenExpiry.setHours(
           verificationTokenExpiry.getHours() +
-            parseInt(process.env.EMAIL_VERIFICATION_EXPIRY || "1", 10)
+            parseInt(process.env.EMAIL_VERIFICATION_EXPIRY || "1", 10),
         );
 
         user.verificationToken = verificationToken;
@@ -412,20 +417,18 @@ export const login = async (req, res) => {
     };
 
     // Set access token as httpOnly cookie
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: accessTokenDays * 24 * 60 * 60 * 1000,
-    });
+    res.cookie(
+      "accessToken",
+      accessToken,
+      getAccessTokenCookieOptions(accessTokenDays),
+    );
 
     // Set refresh token as httpOnly cookie
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: refreshTokenDays * 24 * 60 * 60 * 1000,
-    });
+    res.cookie(
+      "refreshToken",
+      refreshToken,
+      getRefreshTokenCookieOptions(refreshTokenDays),
+    );
 
     res.status(200).json({
       success: true,
@@ -537,18 +540,10 @@ export const logout = async (req, res) => {
     }
 
     // Clear access token cookie
-    res.clearCookie("accessToken", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
+    res.clearCookie("accessToken", getCookieOptions());
 
     // Clear refresh token cookie
-    res.clearCookie("refreshToken", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
+    res.clearCookie("refreshToken", getCookieOptions());
 
     res.status(200).json({
       success: true,
@@ -664,16 +659,8 @@ export const refreshToken = async (req, res) => {
       await user.save();
 
       // Clear cookies to log out user (with same options as when setting)
-      res.clearCookie("accessToken", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-      });
-      res.clearCookie("refreshToken", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-      });
+      res.clearCookie("accessToken", getCookieOptions());
+      res.clearCookie("refreshToken", getCookieOptions());
 
       return res.status(401).json({
         success: false,
@@ -685,14 +672,14 @@ export const refreshToken = async (req, res) => {
 
     // Rotate refresh token: generate new access + refresh tokens
     const { accessToken, refreshToken: newRefreshToken } = generateTokens(
-      user._id
+      user._id,
     );
 
     const accessTokenDays = Number(process.env.JWT_ACCESS_TOKEN_EXPIRY) || 1;
     const refreshTokenDays = Number(process.env.JWT_REFRESH_TOKEN_EXPIRY) || 7;
     const newRefreshTokenExpiry = new Date();
     newRefreshTokenExpiry.setDate(
-      newRefreshTokenExpiry.getDate() + refreshTokenDays
+      newRefreshTokenExpiry.getDate() + refreshTokenDays,
     );
 
     user.refreshToken = newRefreshToken;
@@ -700,20 +687,18 @@ export const refreshToken = async (req, res) => {
     await user.save();
 
     // Set access token as httpOnly cookie
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: accessTokenDays * 24 * 60 * 60 * 1000,
-    });
+    res.cookie(
+      "accessToken",
+      accessToken,
+      getAccessTokenCookieOptions(accessTokenDays),
+    );
 
     // Update refresh token cookie
-    res.cookie("refreshToken", newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: refreshTokenDays * 24 * 60 * 60 * 1000,
-    });
+    res.cookie(
+      "refreshToken",
+      newRefreshToken,
+      getRefreshTokenCookieOptions(refreshTokenDays),
+    );
 
     return res.status(200).json({
       success: true,
@@ -757,7 +742,7 @@ export const forgotPassword = async (req, res) => {
       const resetTokenExpiry = new Date();
       resetTokenExpiry.setMinutes(
         resetTokenExpiry.getMinutes() +
-          parseInt(process.env.PASSWORD_RESET_EXPIRY || "30", 10)
+          parseInt(process.env.PASSWORD_RESET_EXPIRY || "30", 10),
       );
 
       user.resetPasswordToken = resetToken;
@@ -914,7 +899,7 @@ export const getAllUsers = async (req, res) => {
 
     const allUsers = await User.find(searchQuery)
       .select(
-        "-password -verificationToken -verificationTokenExpiry -resetPasswordToken -resetPasswordTokenExpiry -refreshToken -refreshTokenExpiry -__v"
+        "-password -verificationToken -verificationTokenExpiry -resetPasswordToken -resetPasswordTokenExpiry -refreshToken -refreshTokenExpiry -__v",
       )
       .lean();
 
