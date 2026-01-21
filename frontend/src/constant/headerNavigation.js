@@ -7,8 +7,8 @@ import {
   ShoppingCart,
   UserRound,
   Settings,
-  LogOut,
   PenTool,
+  Handshake,
 } from "lucide-react";
 
 export const headerNavigation = [
@@ -42,6 +42,12 @@ export const headerNavigation = [
     path: "/designer",
     icon: PenTool,
   },
+  {
+    id: "dealers",
+    label: "Dealers",
+    path: "/dealers",
+    icon: Handshake,
+  },
 ];
 
 export const userMenu = [
@@ -52,9 +58,9 @@ export const userMenu = [
     icon: LayoutDashboard,
   },
   {
-    id: "orders",
-    label: "Orders",
-    path: "/orders",
+    id: "purchase",
+    label: "My Purchases",
+    path: "/purchase",
     icon: ShoppingCart,
   },
   {
@@ -68,11 +74,5 @@ export const userMenu = [
     label: "Settings",
     path: "/settings",
     icon: Settings,
-  },
-  {
-    id: "logout",
-    label: "Log out",
-    path: "/logout",
-    icon: LogOut,
   },
 ];

@@ -1,0 +1,153 @@
+import Home from "@/pages/Home";
+import Products from "@/pages/Products";
+import Contact from "@/pages/Contact";
+import About from "@/pages/About";
+import Designer from "@/pages/Designer";
+import Dealers from "@/pages/Dealers";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsOfUse from "@/pages/TermsOfUse";
+import VerifyEmail from "@/components/auth/VerifyEmail";
+import ResetPassword from "@/components/auth/ResetPassword";
+import NotFound from "@/components/layout/NotFound";
+import Profile from "@/pages/Profile";
+import Settings from "@/pages/Settings";
+import Purchase from "@/pages/Purchase";
+import AdminPanel from "@/pages/AdminPanel";
+import Dashboard from "@/pages/admin/Dashboard";
+import ProductManagement from "@/pages/admin/ProductManagement";
+import ColorManagement from "@/pages/admin/ColorManagement";
+import CategoryManagement from "@/pages/admin/categories/CategoryManagement";
+import SubCategoryManagement from "@/pages/admin/categories/SubCategoryManagement";
+import CollectionManagement from "@/pages/admin/collections/CollectionManagement";
+import SubCollectionManagement from "@/pages/admin/collections/SubCollectionManagement";
+import SkillLevelManagement from "@/pages/admin/SkillLevelManagement";
+import DesignerManagement from "@/pages/admin/DesignerManagement";
+import OrderManagement from "@/pages/admin/OrderManagement";
+import UserManagement from "@/pages/admin/UserManagement";
+import DealerManagement from "@/pages/admin/DealerManagement";
+
+// Public routes
+export const publicRoutes = [
+  {
+    path: "/",
+    element: Home,
+  },
+  {
+    path: "/products",
+    element: Products,
+  },
+  {
+    path: "/contact-us",
+    element: Contact,
+  },
+  {
+    path: "/about",
+    element: About,
+  },
+  {
+    path: "/designer",
+    element: Designer,
+  },
+  {
+    path: "/privacy-policy",
+    element: PrivacyPolicy,
+  },
+  {
+    path: "/terms-of-use",
+    element: TermsOfUse,
+  },
+  {
+    path: "/verify-email",
+    element: VerifyEmail,
+  },
+  {
+    path: "/reset-password",
+    element: ResetPassword,
+  },
+];
+
+// Private routes (non-admin)
+export const privateRoutes = [
+  {
+    path: "/purchase",
+    element: Purchase,
+  },
+  {
+    path: "/profile",
+    element: Profile,
+  },
+  {
+    path: "/settings",
+    element: Settings,
+  },
+  {
+    path: "/dealers",
+    element: Dealers,
+    requiredRoles: ["dealer", "admin"],
+  },
+];
+
+// Admin routes
+export const adminRoutes = [
+  {
+    path: "/admin",
+    element: AdminPanel,
+    requiredRole: "admin",
+    children: [
+      {
+        path: "dashboard",
+        element: Dashboard,
+      },
+      {
+        path: "products",
+        element: ProductManagement,
+      },
+      {
+        path: "product-color",
+        element: ColorManagement,
+      },
+      {
+        path: "categories",
+        element: CategoryManagement,
+      },
+      {
+        path: "sub-categories",
+        element: SubCategoryManagement,
+      },
+      {
+        path: "collections",
+        element: CollectionManagement,
+      },
+      {
+        path: "sub-collections",
+        element: SubCollectionManagement,
+      },
+      {
+        path: "skill-level",
+        element: SkillLevelManagement,
+      },
+      {
+        path: "designers",
+        element: DesignerManagement,
+      },
+      {
+        path: "orders",
+        element: OrderManagement,
+      },
+      {
+        path: "users",
+        element: UserManagement,
+      },
+      {
+        path: "dealers",
+        element: DealerManagement,
+      },
+    ],
+  },
+];
+
+// 404 route
+export const notFoundRoute = {
+  path: "*",
+  element: NotFound,
+};

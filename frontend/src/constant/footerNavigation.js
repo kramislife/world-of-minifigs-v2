@@ -1,8 +1,8 @@
 import { Facebook, Instagram } from "lucide-react";
+import { APP_NAME, APP_EMAIL, APP_ADDRESS, APP_SOCIAL_LINKS } from "@/constant/appConfig";
 
 export const footerNavigation = [
   {
-    id: 1,
     title: "Account",
     links: [
       { label: "My Account", path: "/my-account" },
@@ -11,7 +11,6 @@ export const footerNavigation = [
     ],
   },
   {
-    id: 2,
     title: "Quick Links",
     links: [
       { label: "Products", path: "/products" },
@@ -22,33 +21,29 @@ export const footerNavigation = [
     ],
   },
   {
-    id: 3,
     title: "Support",
     links: [
-      { label: "Lehi, Utah 84043"},
+      { label: APP_ADDRESS},
       {
-        label: "brickextremeofficial@gmail.com",
-        path: "mailto:brickextremeofficial@gmail.com",
+        label: APP_EMAIL,
+        path: `mailto: ${APP_EMAIL}`,
       },
     ],
   },
   {
-    id: 4,
-    title: "World of Minifigs",
+    title: APP_NAME,
     description:
       "Follow us on social media to stay updated on new releases, exclusive promotions, and our latest collections.",
     isSocial: true,
     links: [
       {
-        id: "facebook",
         icon: Facebook,
-        href: "https://www.facebook.com/profile.php?id=61552234252330",
+        path: APP_SOCIAL_LINKS.facebook,
         label: "Facebook",
       },
       {
-        id: "instagram",
         icon: Instagram,
-        href: "https://www.instagram.com/theworldofminifigs/",
+        path: APP_SOCIAL_LINKS.instagram,
         label: "Instagram",
       },
     ],

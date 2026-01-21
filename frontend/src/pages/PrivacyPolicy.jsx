@@ -1,5 +1,4 @@
 import React from "react";
-import { policyMetadata, policyData } from "@/constant/policyData";
 import { ChevronRight } from "lucide-react";
 import {
   Card,
@@ -8,10 +7,11 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { policyMetadata, policyData } from "@/constant/policyData";
 
 const PrivacyPolicy = () => {
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 py-10 px-5">
       {/* Header with Icon */}
       <div className="flex flex-col items-center text-center space-y-5">
         <h1 className="text-5xl font-bold">{policyMetadata.title}</h1>
@@ -137,11 +137,8 @@ const PrivacyPolicy = () => {
             </div>
             <div className="flex items-start gap-3">
               <policyMetadata.cta.email.icon className="text-accent shrink-0 mt-0.5" />
-              <a
-                href={`mailto:${policyMetadata.cta.email.email}`}
-                className="hover:text-accent transition-colors"
-              >
-                <span className="text-accent-foreground dark:text-foreground">
+              <a href={policyMetadata.cta.email.emailPath}>
+                <span className="text-accent-foreground dark:text-foreground hover:underline dark:hover:text-accent transition-colors">
                   {policyMetadata.cta.email.email}
                 </span>
               </a>

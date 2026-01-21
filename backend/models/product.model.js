@@ -2,31 +2,28 @@ import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
   {
+    productType: {
+      type: String,
+      enum: ["standalone", "variant"],
+      required: true,
+      default: "standalone",
+    },
     productName: {
       type: String,
-      required: [true, "Product name is required"],
+      required: true,
       trim: true,
-    },
-    key: {
-      type: String,
-      trim: true,
-      unique: true,
     },
     partId: {
       type: String,
-      required: [true, "Part ID is required"],
       trim: true,
-      unique: true,
     },
     itemId: {
       type: String,
-      required: [true, "Item ID is required"],
       trim: true,
-      unique: true,
     },
     price: {
       type: Number,
-      required: [true, "Price is required"],
+      required: true,
       min: [0, "Price must be a positive number"],
     },
     discount: {
@@ -40,7 +37,7 @@ const productSchema = new mongoose.Schema(
     },
     description1: {
       type: String,
-      required: [true, "Product description 1 is required"],
+      required: true,
       trim: true,
     },
     description2: {
@@ -53,39 +50,84 @@ const productSchema = new mongoose.Schema(
     },
     images: [
       {
+        _id: false,
         publicId: {
           type: String,
-          required: [true, "Image public ID is required"],
+          required: true,
         },
         url: {
           type: String,
-          required: [true, "Image URL is required"],
+          required: true,
         },
       },
     ],
-    category: {
+    // Variants
+    variants: [
+      {
+        _id: false,
+        colorId: {
       type: mongoose.Schema.Types.ObjectId,
+          ref: "Color",
+          required: true,
+        },
+        partId: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        itemId: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        stock: {
+          type: Number,
+          default: 0,
+          min: [0, "Stock cannot be negative"],
+        },
+        image: {
+          publicId: {
+            type: String,
+            required: true,
+          },
+          url: {
+            type: String,
+            required: true,
+          },
+        },
+      },
+    ],
+    categoryIds: {
+      type: [mongoose.Schema.Types.ObjectId],
       ref: "Category",
     },
-    subCategory: {
-      type: mongoose.Schema.Types.ObjectId,
+    subCategoryIds: {
+      type: [mongoose.Schema.Types.ObjectId],
       ref: "SubCategory",
     },
-    collections: {
+    collectionIds: {
       type: [mongoose.Schema.Types.ObjectId],
       ref: "Collection",
     },
-    subCollections: {
+    subCollectionIds: {
       type: [mongoose.Schema.Types.ObjectId],
       ref: "SubCollection",
+    },
+    skillLevelIds: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "SkillLevel",
+    },
+    colorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Color",
     },
     pieceCount: {
       type: Number,
       min: [0, "Piece count must be a positive number"],
     },
-    productLength: {
+    length: {
       type: Number,
-      min: [0, "Product length must be a positive number"],
+      min: [0, "Length must be a positive number"],
     },
     width: {
       type: Number,
@@ -95,43 +137,14 @@ const productSchema = new mongoose.Schema(
       type: Number,
       min: [0, "Height must be a positive number"],
     },
-    color: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Color",
-    },
-    includes: {
-      type: [String],
-      default: [],
-    },
-    skillLevels: {
-      type: [mongoose.Schema.Types.ObjectId],
-      ref: "SkillLevel",
-      default: [],
-    },
-    designer: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Designer",
-    },
-    manufacturer: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Manufacturer",
-    },
-    stocks: {
+    stock: {
       type: Number,
       default: 0,
-      min: [0, "Stocks cannot be negative"],
+      min: [0, "Stock cannot be negative"],
     },
     isActive: {
       type: Boolean,
       default: true,
-    },
-    isAvailable: {
-      type: Boolean,
-      default: true,
-    },
-    forPreOrder: {
-      type: Boolean,
-      default: false,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -147,22 +160,28 @@ const productSchema = new mongoose.Schema(
   }
 );
 
-// Index for better query performance
-productSchema.index({ partId: 1 });
-productSchema.index({ itemId: 1 });
-productSchema.index({ category: 1 });
-productSchema.index({ subCategory: 1 });
-productSchema.index({ manufacturer: 1 });
-productSchema.index({ designer: 1 });
-productSchema.index({ color: 1 });
-productSchema.index({ isActive: 1 });
-productSchema.index({ isAvailable: 1 });
-productSchema.index({ isActive: 1, isAvailable: 1 });
-productSchema.index({ productName: 1 });
-productSchema.index({ key: 1 });
-productSchema.index({ price: 1 });
-productSchema.index({ stocks: 1 });
+// Indexes
 
+// Fast lookup + uniqueness guarantee for standalone products
+productSchema.index(
+  { partId: 1, itemId: 1 },
+  {
+    unique: true,
+    sparse: true, // Only index documents where partId and itemId exist
+    collation: { locale: "en", strength: 2 }, // case-insensitive
+  }
+);
+
+// Filtering indexes
+productSchema.index({ productType: 1 });
+productSchema.index({ categoryIds: 1 });
+productSchema.index({ subCategoryIds: 1 });
+productSchema.index({ colorId: 1 });
+productSchema.index({ isActive: 1 });
+productSchema.index({ createdAt: -1 });
+productSchema.index({ categoryIds: 1, isActive: 1, price: 1 });
+productSchema.index({ isActive: 1, createdAt: -1 });
+productSchema.index({ productType: 1, isActive: 1 });
 
 const Product = mongoose.model("Product", productSchema);
 

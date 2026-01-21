@@ -4,16 +4,12 @@ const colorSchema = new mongoose.Schema(
   {
     colorName: {
       type: String,
-      required: [true, "Color name is required"],
+      required: true,
       trim: true,
-    },
-    key: {
-      type: String,
-      trim: true,
-      unique: true,
     },
     hexCode: {
       type: String,
+      required: true,
       trim: true,
     },
 
@@ -31,9 +27,19 @@ const colorSchema = new mongoose.Schema(
   }
 );
 
-// Index for better query performance
-colorSchema.index({ key: 1 });
-colorSchema.index({ colorName: 1 });
+// Indexes
+
+// Fast lookup + uniqueness guarantee
+colorSchema.index(
+  { colorName: 1 },
+  {
+    unique: true,
+    collation: { locale: "en", strength: 2 }, // case-insensitive
+  }
+);
+
+// Faster sorting for getAllColors
+colorSchema.index({ createdAt: -1 });
 
 const Color = mongoose.model("Color", colorSchema);
 

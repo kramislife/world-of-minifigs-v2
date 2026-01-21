@@ -4,34 +4,20 @@ const subCategorySchema = new mongoose.Schema(
   {
     subCategoryName: {
       type: String,
-      required: [true, "SubCategory name is required"],
+      required: true,
       trim: true,
     },
-    key: {
-      type: String,
-      trim: true,
-      unique: true,
-    },
+
     description: {
       type: String,
       trim: true,
     },
-    images: [
-      {
-        publicId: {
-          type: String,
-          required: [true, "Image public ID is required"],
-        },
-        url: {
-          type: String,
-          required: [true, "Image URL is required"],
-        },
-      },
-    ],
 
-    category: {
+    categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
+      required: true,
+      index: true,
     },
 
     createdBy: {
@@ -48,12 +34,20 @@ const subCategorySchema = new mongoose.Schema(
   }
 );
 
-// Index for better query performance
-subCategorySchema.index({ key: 1 });
-subCategorySchema.index({ subCategoryName: 1 });
-subCategorySchema.index({ category: 1 });
+// Indexes
+
+// Fast lookup + uniqueness guarantee
+subCategorySchema.index(
+  { categoryId: 1, subCategoryName: 1 },
+  {
+    unique: true,
+    collation: { locale: "en", strength: 2 }, // case-insensitive
+  }
+);
+
+// Fast sorting for getAllSubCategories
+subCategorySchema.index({ createdAt: -1 });
 
 const SubCategory = mongoose.model("SubCategory", subCategorySchema);
 
 export default SubCategory;
-

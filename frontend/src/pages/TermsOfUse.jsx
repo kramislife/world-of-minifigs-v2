@@ -1,5 +1,4 @@
 import React from "react";
-import { termsMetadata, termsData } from "@/constant/termsData";
 import { ChevronRight } from "lucide-react";
 import {
   Card,
@@ -8,10 +7,11 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { termsMetadata, termsData } from "@/constant/termsData";
 
 const TermsOfUse = () => {
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 py-10 px-5">
       {/* Header */}
       <div className="flex flex-col items-center text-center space-y-5">
         <h1 className="text-5xl font-bold">{termsMetadata.title}</h1>
@@ -106,24 +106,11 @@ const TermsOfUse = () => {
             <div className="flex items-start gap-3">
               <termsMetadata.cta.email.icon className="text-accent shrink-0 mt-0.5" />
               <div className="flex flex-col gap-1">
-                <a
-                  href={`mailto:${termsMetadata.cta.email.email}`}
-                  className="hover:text-accent transition-colors"
-                >
-                  <span className="text-accent-foreground dark:text-foreground">
+                <a href={termsMetadata.cta.email.emailPath}>
+                  <span className="text-accent-foreground dark:text-foreground hover:underline dark:hover:text-accent transition-colors">
                     {termsMetadata.cta.email.email}
                   </span>
                 </a>
-                {termsMetadata.cta.email.email2 && (
-                  <a
-                    href={`mailto:${termsMetadata.cta.email.email2}`}
-                    className="hover:text-accent transition-colors"
-                  >
-                    <span className="text-accent-foreground dark:text-foreground">
-                      {termsMetadata.cta.email.email2}
-                    </span>
-                  </a>
-                )}
               </div>
             </div>
           </div>

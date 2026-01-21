@@ -4,14 +4,10 @@ const skillLevelSchema = new mongoose.Schema(
   {
     skillLevelName: {
       type: String,
-      required: [true, "Skill level name is required"],
+      required: true,
       trim: true,
     },
-    key: {
-      type: String,
-      trim: true,
-      unique: true,
-    },
+
     description: {
       type: String,
       trim: true,
@@ -31,9 +27,19 @@ const skillLevelSchema = new mongoose.Schema(
   }
 );
 
-// Index for better query performance
-skillLevelSchema.index({ key: 1 });
-skillLevelSchema.index({ skillLevelName: 1 });
+// Indexes
+
+// Fast lookup + uniqueness guarantee
+skillLevelSchema.index(
+  { skillLevelName: 1 },
+  {
+    unique: true,
+    collation: { locale: "en", strength: 2 }, // case-insensitive
+  }
+);
+
+// Faster sorting for getAllSkillLevels
+skillLevelSchema.index({ createdAt: -1 });
 
 const SkillLevel = mongoose.model("SkillLevel", skillLevelSchema);
 

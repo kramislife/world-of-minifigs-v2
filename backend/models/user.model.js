@@ -4,40 +4,41 @@ const userSchema = new mongoose.Schema(
   {
     firstName: {
       type: String,
-      required: [true, "First name is required"],
+      required: true,
       trim: true,
+      maxlength: 50,
     },
     lastName: {
       type: String,
-      required: [true, "Last name is required"],
+      required: true,
       trim: true,
+      maxlength: 50,
     },
     username: {
       type: String,
-      required: [true, "Username is required"],
+      required: true,
       trim: true,
-      unique: true,
       lowercase: true,
+      minlength: 3,
+      maxlength: 30,
+      match: /^[a-z0-9_]+$/,
     },
     dateOfBirth: {
       type: Date,
     },
-    gender: {
-      type: String,
-      enum: ["male", "female", "other"],
-      default: "male",
-    },
     email: {
       type: String,
-      required: [true, "Email is required"],
+      required: true,
       trim: true,
-      unique: true,
       lowercase: true,
+      maxlength: 254,
+      match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     },
     contactNumber: {
       type: String,
-      required: [true, "Contact number is required"],
+      required: true,
       trim: true,
+      match: /^[0-9]{11}$/,
     },
     addresses: {
       type: [mongoose.Schema.Types.ObjectId],
@@ -45,11 +46,13 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
+      required: true,
+      minlength: 6,
+      maxlength: 128,
     },
     role: {
       type: String,
-      enum: ["admin", "customer", "seller"],
+      enum: ["admin", "customer", "dealer"],
       default: "customer",
     },
     isActive: {
@@ -95,12 +98,30 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Index for better query performance
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
+// Indexes
+
+// Fast lookup + uniqueness guarantee 
+userSchema.index(
+  { username: 1 },
+  {
+    unique: true,
+    collation: { locale: "en", strength: 2 }, // case-insensitive
+  }
+);
+
+userSchema.index(
+  { email: 1 },
+  {
+    unique: true,
+    collation: { locale: "en", strength: 2 },
+  }
+);
+
+// Faster sorting and filtering
 userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1 });
 userSchema.index({ isVerified: 1 });
+userSchema.index({ createdAt: -1 });
 
 const User = mongoose.model("User", userSchema);
 

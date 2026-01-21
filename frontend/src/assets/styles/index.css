@@ -15,13 +15,19 @@
   scrollbar-width: none; /* Firefox */
 }
 
+/* Sonner toast icon alignment - align with title instead of center */
+[data-sonner-toast] [data-icon] {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.2177 0.0356 251.2935);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.2177 0.0356 251.2935);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.224 0 0);
+  --popover-foreground: oklch(0.24 0 0);
   --primary: oklch(0.6231 0.188 259.8145);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.8823 0.0571 254.1284);
@@ -32,6 +38,8 @@
   --accent-foreground: oklch(0.2781 0.0296 256.848);
   --destructive: oklch(0.6368 0.2078 25.3313);
   --destructive-foreground: oklch(1 0 0);
+  --success: oklch(0.6 0.18 142);
+  --success-foreground: oklch(1 0 0);
   --border: oklch(0.8717 0.0093 258.3382);
   --input: oklch(0.967 0.0029 264.5419);
   --ring: oklch(0.6231 0.188 259.8145);
@@ -82,16 +90,18 @@
   --card-foreground: oklch(1 0 0);
   --popover: oklch(0.2604 0.0398 253.6616);
   --popover-foreground: oklch(1 0 0);
-  --primary: oklch(0.3911 0.0488 252.3418);
+  --primary: oklch(0.6231 0.188 259.8145);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.9027 0.1869 98.6713);
-  --secondary-foreground: oklch(0 0 0);
+  --secondary-foreground: oklch(0.24 0 0);
   --muted: oklch(0.9515 0.2044 107.3247);
   --muted-foreground: oklch(0.7572 0 0);
   --accent: oklch(0.9515 0.2044 107.3247);
   --accent-foreground: oklch(1 0 0);
   --destructive: oklch(0.6368 0.2078 25.3313);
   --destructive-foreground: oklch(1 0 0);
+  --success: oklch(0.6 0.18 142);
+  --success-foreground: oklch(1 0 0);
   --border: oklch(0.4904 0.0675 260.1952);
   --input: oklch(0.2604 0.0398 253.6616);
   --ring: oklch(0.9515 0.2044 107.3247);
@@ -150,6 +160,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
