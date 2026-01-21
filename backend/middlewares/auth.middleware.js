@@ -13,6 +13,11 @@ import {
 // Middleware to authenticate user using JWT access token with automatic refresh
 export const authenticate = async (req, res, next) => {
   try {
+    // Debug: Log cookie information (remove in production if needed)
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Cookies received:", Object.keys(req.cookies || {}));
+    }
+
     // Try to get token from httpOnly cookie first, then fallback to Authorization header
     let token = req.cookies?.accessToken;
 
@@ -25,6 +30,11 @@ export const authenticate = async (req, res, next) => {
     }
 
     if (!token) {
+      // Debug: Log why authentication failed
+      if (process.env.NODE_ENV !== "production") {
+        console.log("No token found. Cookies:", req.cookies);
+        console.log("Authorization header:", req.headers.authorization);
+      }
       return res.status(401).json({
         success: false,
         message: "Access token is required",

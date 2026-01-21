@@ -417,18 +417,20 @@ export const login = async (req, res) => {
     };
 
     // Set access token as httpOnly cookie
-    res.cookie(
-      "accessToken",
-      accessToken,
-      getAccessTokenCookieOptions(accessTokenDays),
-    );
+    const accessTokenCookieOptions = getAccessTokenCookieOptions(accessTokenDays);
+    res.cookie("accessToken", accessToken, accessTokenCookieOptions);
 
     // Set refresh token as httpOnly cookie
-    res.cookie(
-      "refreshToken",
-      refreshToken,
-      getRefreshTokenCookieOptions(refreshTokenDays),
-    );
+    const refreshTokenCookieOptions = getRefreshTokenCookieOptions(refreshTokenDays);
+    res.cookie("refreshToken", refreshToken, refreshTokenCookieOptions);
+
+    // Debug: Log cookie settings in development
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Cookie options:", {
+        accessToken: accessTokenCookieOptions,
+        refreshToken: refreshTokenCookieOptions,
+      });
+    }
 
     res.status(200).json({
       success: true,

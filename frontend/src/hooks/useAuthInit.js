@@ -32,13 +32,18 @@ export const useAuthInit = () => {
     hasVerified.current = true;
 
     if (isError || error || !data?.success || !data?.user) {
-      // Session invalid or expired - clear credentials
-      // The 401 handler in baseQuery will also trigger this
-      dispatch(clearCredentials());
+      // Only clear credentials if user doesn't exist in state
+      // This prevents clearing credentials immediately after login
+      // when cookies haven't been processed yet
+      if (!user) {
+        dispatch(clearCredentials());
+      }
+      // If user exists but /me failed, it might be a cookie timing issue
+      // Don't clear credentials immediately - let it retry on next page load
     } else if (data?.success && data?.user) {
       dispatch(setCredentials(data.user));
     }
-  }, [data, isLoading, isFetching, error, isError, dispatch]);
+  }, [data, isLoading, isFetching, error, isError, dispatch, user]);
 
   return { isLoading: isLoading || isFetching };
 };

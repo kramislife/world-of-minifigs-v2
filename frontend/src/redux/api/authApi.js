@@ -13,8 +13,15 @@ const baseQueryWithAuth = async (args, api, extraOptions) => {
   const result = await baseQuery(args, api, extraOptions);
 
   // If we get a 401, clear credentials (session expired)
+  // But only if it's not the /me endpoint (which might fail due to cookie timing)
+  // The /me endpoint failure will be handled by useAuthInit
   if (result?.error?.status === 401) {
-    api.dispatch(clearCredentials());
+    const url = typeof args === 'string' ? args : args?.url || '';
+    // Don't clear credentials on /me 401 immediately after login
+    // Let useAuthInit handle it with proper timing
+    if (!url.includes('/me')) {
+      api.dispatch(clearCredentials());
+    }
   }
 
   return result;
@@ -33,18 +40,10 @@ export const authApi = createApi({
         body: credentials,
       }),
       invalidatesTags: ["User"],
-      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
-        try {
-          await queryFulfilled;
-          // Small delay to ensure cookies are set before refetching
-          setTimeout(() => {
-            // Refetch current user after successful login to ensure auth state is synced
-            dispatch(authApi.endpoints.getCurrentUser.initiate(undefined, { forceRefetch: true }));
-          }, 100);
-        } catch (error) {
-          // Login failed, don't refetch
-        }
-      },
+      // Note: We don't refetch /me here because:
+      // 1. Login response already contains user data
+      // 2. Cookies need time to be processed by the browser
+      // 3. useAuthInit will verify session on next app load
     }),
 
     register: builder.mutation({
