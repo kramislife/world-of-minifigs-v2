@@ -263,8 +263,9 @@ export const useProducts = () => {
 
   // Calculate pagination display values
   const startItem = useMemo(() => {
+    if (pagination.totalItems === 0) return 0;
     return pagination.page > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0;
-  }, [pagination.page, pagination.limit]);
+  }, [pagination.page, pagination.limit, pagination.totalItems]);
 
   const endItem = useMemo(() => {
     return Math.min(pagination.page * pagination.limit, pagination.totalItems);
