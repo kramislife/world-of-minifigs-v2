@@ -4,20 +4,11 @@ import {
   verifyRefreshToken,
   generateTokens,
 } from "../utils/generateToken.js";
-import {
-  getCookieOptions,
-  getAccessTokenCookieOptions,
-  getRefreshTokenCookieOptions,
-} from "../utils/cookieOptions.js";
+import { setAuthCookies, clearAuthCookies } from "../utils/cookieConfig.js";
 
 // Middleware to authenticate user using JWT access token with automatic refresh
 export const authenticate = async (req, res, next) => {
   try {
-    // Debug: Log cookie information (remove in production if needed)
-    if (process.env.NODE_ENV !== "production") {
-      console.log("Cookies received:", Object.keys(req.cookies || {}));
-    }
-
     // Try to get token from httpOnly cookie first, then fallback to Authorization header
     let token = req.cookies?.accessToken;
 
@@ -30,11 +21,6 @@ export const authenticate = async (req, res, next) => {
     }
 
     if (!token) {
-      // Debug: Log why authentication failed
-      if (process.env.NODE_ENV !== "production") {
-        console.log("No token found. Cookies:", req.cookies);
-        console.log("Authorization header:", req.headers.authorization);
-      }
       return res.status(401).json({
         success: false,
         message: "Access token is required",
@@ -96,9 +82,7 @@ export const authenticate = async (req, res, next) => {
           userWithRefresh.refreshTokenExpiry = undefined;
           await userWithRefresh.save();
 
-          // Clear cookies to log out user (with same options as when setting)
-          res.clearCookie("accessToken", getCookieOptions());
-          res.clearCookie("refreshToken", getCookieOptions());
+          clearAuthCookies(res);
 
           return res.status(401).json({
             success: false,
@@ -117,25 +101,19 @@ export const authenticate = async (req, res, next) => {
           Number(process.env.JWT_ACCESS_TOKEN_EXPIRY) || 1;
         const newRefreshTokenExpiry = new Date();
         newRefreshTokenExpiry.setDate(
-          newRefreshTokenExpiry.getDate() + refreshTokenDays,
+          newRefreshTokenExpiry.getDate() + refreshTokenDays
         );
 
         userWithRefresh.refreshToken = newRefreshToken;
         userWithRefresh.refreshTokenExpiry = newRefreshTokenExpiry;
         await userWithRefresh.save();
 
-        // Set new access token as httpOnly cookie
-        res.cookie(
-          "accessToken",
+        setAuthCookies(
+          res,
           newAccessToken,
-          getAccessTokenCookieOptions(accessTokenDays),
-        );
-
-        // Update refresh token cookie
-        res.cookie(
-          "refreshToken",
           newRefreshToken,
-          getRefreshTokenCookieOptions(refreshTokenDays),
+          accessTokenDays,
+          refreshTokenDays
         );
 
         // Use the new decoded token
@@ -152,7 +130,7 @@ export const authenticate = async (req, res, next) => {
 
     // Find user (include refreshTokenExpiry to check expiry, exclude password and refreshToken value)
     const user = await User.findById(decoded.userId).select(
-      "-password -refreshToken",
+      "-password -refreshToken"
     );
 
     if (!user) {
@@ -167,7 +145,7 @@ export const authenticate = async (req, res, next) => {
     // Check if refresh token has expired (even if access token is still valid)
     // Fetch refreshTokenExpiry separately to check expiry
     const userForExpiryCheck = await User.findById(decoded.userId).select(
-      "refreshToken refreshTokenExpiry",
+      "refreshToken refreshTokenExpiry"
     );
 
     // If refreshTokenExpiry exists and is expired, or if refreshToken exists but expiry is missing/expired
@@ -183,8 +161,7 @@ export const authenticate = async (req, res, next) => {
         await userForExpiryCheck.save();
 
         // Clear cookies to log out user
-        res.clearCookie("accessToken", getCookieOptions());
-        res.clearCookie("refreshToken", getCookieOptions());
+        clearAuthCookies(res);
 
         return res.status(401).json({
           success: false,
@@ -284,7 +261,7 @@ export const optionalAuth = async (req, res, next) => {
       try {
         const decoded = verifyAccessToken(token);
         const user = await User.findById(decoded.userId).select(
-          "-password -refreshToken",
+          "-password -refreshToken"
         );
 
         if (user && user.isActive) {

@@ -4,10 +4,15 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import connectDatabase from "./config/dbConnect.js";
 import helmet from "helmet";
+import path from "path";
+import { fileURLToPath } from "url";
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import publicRoutes from "./routes/publicRoutes.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 if ((process.env.NODE_ENV || "").toLowerCase() !== "production") {
   dotenv.config({ path: "./config/config.env", quiet: true });
@@ -71,33 +76,8 @@ app.use(
 // Middleware
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, Postman, etc.)
-      if (!origin) return callback(null, true);
-
-      const allowedOrigins = [
-        process.env.FRONTEND_URL,
-        // Add any other allowed origins here
-      ].filter(Boolean);
-
-      // In development, allow localhost origins
-      if (process.env.NODE_ENV !== "production") {
-        allowedOrigins.push(
-          "http://localhost:5173",
-          "http://localhost:3000",
-          "http://127.0.0.1:5173",
-          "http://127.0.0.1:3000"
-        );
-      }
-
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
     credentials: true,
-    optionsSuccessStatus: 200,
   })
 );
 app.use(express.json({ limit: "10mb" })); 
@@ -109,15 +89,28 @@ app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-// Routes
+// API Routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/public", publicRoutes);
-// 404 handler
-app.use((_req, res) => {
-  res.status(404).json({ message: "Route not found" });
-});
+
+// Serve static files from React app in production
+if (process.env.NODE_ENV === "production") {
+  const frontendDistPath = path.join(__dirname, "../frontend/dist");
+  
+  app.use(express.static(frontendDistPath));
+  
+  // Handle React routing - return all non-API requests to React app
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(frontendDistPath, "index.html"));
+  });
+} else {
+  // 404 handler for development (API routes only)
+  app.use((_req, res) => {
+    res.status(404).json({ message: "Route not found" });
+  });
+}
 
 // Start server after DB connects
 const PORT = process.env.PORT || 4000;
