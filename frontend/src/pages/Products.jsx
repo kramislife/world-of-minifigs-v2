@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { Filter } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import ProductFilters from "@/components/products/ProductFilters";
 import ProductSort from "@/components/products/ProductSort";
@@ -121,6 +126,7 @@ const Products = () => {
             className="w-[400px] overflow-y-auto pl-3 py-5"
           >
             <div>{filterContent}</div>
+            <SheetTitle className="sr-only">Mobile Filter Sidebar</SheetTitle>
           </SheetContent>
         </Sheet>
         <div className="flex-1">

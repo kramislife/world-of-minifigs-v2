@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Check, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Logo from "@/assets/media/Logo.png";
@@ -17,14 +17,19 @@ const ProductDetails = () => {
     currentImageUrl,
     features,
     colorVariants,
-    selectedImageIndex,
-    selectedVariantIndex,
     thumbnailScrollRef,
     displayPrice,
     hasDiscount,
     stockAlert,
-    currentPartId,
-    currentItemId,
+    formattedPartItemId,
+    hasPartOrItemId,
+    descriptions,
+    hasDescriptions,
+    hasMultipleImages,
+    hasFeatures,
+    hasColorVariants,
+    isThumbnailSelected,
+    isColorVariantSelected,
     handleThumbnailClick,
     handlePreviousImage,
     handleNextImage,
@@ -80,7 +85,7 @@ const ProductDetails = () => {
                 )}
 
                 {/* Navigation Arrows */}
-                {allImages.length > 1 && (
+                {hasMultipleImages && (
                   <>
                     <Button
                       variant="outline"
@@ -113,41 +118,29 @@ const ProductDetails = () => {
           </div>
 
           {/* Thumbnail Gallery */}
-          {allImages.length > 1 && (
+          {hasMultipleImages && (
             <div
               ref={thumbnailScrollRef}
               className="flex lg:flex-col gap-2 overflow-y-auto max-h-[600px] lg:max-h-none lg:h-[610px] order-2 lg:order-1"
             >
-              {allImages.map((img, index) => {
-                const isSelected =
-                  (product.productType === "variant" &&
-                    selectedVariantIndex === index) ||
-                  (product.productType === "standalone" &&
-                    selectedImageIndex === index);
-
-                return (
-                  <button
-                    key={`${img.url}-${index}`}
-                    onClick={() =>
-                      handleThumbnailClick(
-                        index,
-                        product.productType === "variant",
-                      )
-                    }
-                    className={`relative shrink-0 size-20 w-28 h-28 rounded-md overflow-hidden border-4 cursor-pointer transition-all ${
-                      isSelected
-                        ? "border-accent"
-                        : "border-border hover:border-destructive"
-                    }`}
-                  >
-                    <img
-                      src={img.url || Logo}
-                      alt={`Thumbnail ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                );
-              })}
+              {allImages.map((img, index) => (
+                <Button
+                  key={`${img.url}-${index}`}
+                  variant="ghost"
+                  onClick={() => handleThumbnailClick(index)}
+                  className={`relative w-28 h-28 border-4 transition-all p-0 hover:bg-transparent ${
+                    isThumbnailSelected(index)
+                      ? "border-accent"
+                      : "border-border hover:border-destructive"
+                  }`}
+                >
+                  <img
+                    src={img.url || Logo}
+                    alt={`Thumbnail ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </Button>
+              ))}
             </div>
           )}
         </div>
@@ -157,11 +150,9 @@ const ProductDetails = () => {
           {/* Product Name */}
           <div>
             <h1 className="text-3xl font-bold mb-3">{product.productName}</h1>
-            {(currentPartId || currentItemId) && (
+            {hasPartOrItemId && (
               <p className="text-sm text-muted-foreground">
-                {currentItemId && `Item ID: ${currentItemId}`}
-                {currentItemId && currentPartId && " • "}
-                {currentPartId && `Part ID: ${currentPartId}`}
+                {formattedPartItemId}
               </p>
             )}
           </div>
@@ -171,9 +162,9 @@ const ProductDetails = () => {
             <span className="text-5xl font-bold text-success dark:text-accent">
               ${displayPrice?.toFixed(2) || "0.00"}
             </span>
-            {hasDiscount && (
+            {hasDiscount && product.price && (
               <span className="text-sm text-muted-foreground line-through">
-                ${product.price?.toFixed(2)}
+                ${product.price.toFixed(2)}
               </span>
             )}
           </div>
@@ -192,8 +183,7 @@ const ProductDetails = () => {
           )}
 
           {/* Features & Classifications */}
-          {(features.categories.length > 0 ||
-            features.collections.length > 0) && (
+          {hasFeatures && (
             <div className="space-y-3">
               <h3 className="text-lg font-semibold">
                 Features & Classifications
@@ -232,65 +222,46 @@ const ProductDetails = () => {
           </div>
 
           {/* Color Variants */}
-          {colorVariants.length > 0 && (
+          {hasColorVariants && (
             <div className="space-y-3">
               <h3 className="text-lg font-semibold">Color Variants</h3>
               <div className="flex flex-wrap gap-2">
-                {colorVariants.map((variant, index) => {
-                  const isSelected = selectedVariantIndex === index;
-                  return (
-                    <button
-                      key={variant.colorId}
-                      onClick={() =>
-                        handleColorVariantClick(variant.colorId, index)
-                      }
-                      className={`relative size-6 rounded-full border-2 cursor-pointer transition-all ${
-                        isSelected
-                          ? "border-accent"
-                          : "border-border hover:border-destructive"
-                      }`}
-                      style={{
-                        backgroundColor: variant.hexCode || "#ccc",
-                      }}
-                      title={variant.colorName}
-                    />
-                  );
-                })}
+                {colorVariants.map((variant, index) => (
+                  <Button
+                    key={variant.colorId}
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleColorVariantClick(index)}
+                    className={`relative size-6 rounded-full border-2 transition-all p-0 hover:bg-transparent ${
+                      isColorVariantSelected(index)
+                        ? "border-accent"
+                        : "border-border hover:border-destructive"
+                    }`}
+                    style={{
+                      backgroundColor: variant.hexCode || "#ccc",
+                    }}
+                    title={variant.colorName}
+                  />
+                ))}
               </div>
             </div>
           )}
 
           {/* Description */}
-          {(product.description1 ||
-            product.description2 ||
-            product.description3) && (
+          {hasDescriptions && (
             <div className="space-y-2 text-sm">
-              {product.description1 && (
-                <div className="flex items-start gap-2">
+              {descriptions.map((description, index) => (
+                <div key={index} className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
-                  <span>{product.description1}</span>
+                  <span>{description}</span>
                 </div>
-              )}
-              {product.description2 && (
-                <div className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
-                  <span>{product.description2}</span>
-                </div>
-              )}
-              {product.description3 && (
-                <div className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
-                  <span>{product.description3}</span>
-                </div>
-              )}
+              ))}
             </div>
           )}
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-2 pt-5">
-            <Button  className="flex-1">
-              Add to Cart
-            </Button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button className="flex-1">Add to Cart</Button>
             <Button variant="accent" className="flex-1">
               Buy Now
             </Button>

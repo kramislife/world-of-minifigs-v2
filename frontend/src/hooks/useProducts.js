@@ -51,7 +51,7 @@ const toggleSetItem = (set, item) => {
 
 export const useProducts = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-
+  
   // UI state for filter expansion
   const [expandedCategories, setExpandedCategories] = useState(new Set());
   const [expandedCollections, setExpandedCollections] = useState(new Set());
@@ -98,17 +98,17 @@ export const useProducts = () => {
       skillLevelIds: buildArrayParam(skillLevelIds),
     };
   }, [
-    page,
-    limit,
-    search,
-    sortBy,
-    priceParams,
-    categoryIds,
-    subCategoryIds,
-    collectionIds,
-    subCollectionIds,
-    colorIds,
-    skillLevelIds,
+      page,
+      limit,
+      search,
+      sortBy,
+      priceParams,
+      categoryIds,
+      subCategoryIds,
+      collectionIds,
+      subCollectionIds,
+      colorIds,
+      skillLevelIds,
   ]);
 
   // Fetch products
@@ -134,7 +134,7 @@ export const useProducts = () => {
   const updateSearchParams = useCallback(
     (updates) => {
       const newParams = new URLSearchParams(searchParams);
-
+      
       Object.entries(updates).forEach(([key, value]) => {
         if (
           value === null ||
@@ -563,7 +563,8 @@ export const useProductDetails = (id) => {
 
   // Handle thumbnail click
   const handleThumbnailClick = useCallback(
-    (index, isVariant = false) => {
+    (index) => {
+      const isVariant = product?.productType === "variant";
       if (isVariant) {
         setSelectedVariantIndex(index);
         setSelectedImageIndex(0);
@@ -574,7 +575,7 @@ export const useProductDetails = (id) => {
 
       scrollThumbnailIntoView(index);
     },
-    [scrollThumbnailIntoView],
+    [product?.productType, scrollThumbnailIntoView],
   );
 
   // Generic image navigation handler
@@ -606,7 +607,6 @@ export const useProductDetails = (id) => {
       selectedImageIndex,
       allImages.length,
       product?.productType,
-      scrollThumbnailIntoView,
     ],
   );
 
@@ -623,7 +623,7 @@ export const useProductDetails = (id) => {
 
   // Handle color variant click
   const handleColorVariantClick = useCallback(
-    (colorId, variantIndex) => {
+    (variantIndex) => {
       if (!product || product.productType !== "variant") return;
 
       const variant = product.variants[variantIndex];
@@ -635,7 +635,7 @@ export const useProductDetails = (id) => {
       // Scroll to top of page
       window.scrollTo({ top: 0, behavior: "smooth" });
     },
-    [product, scrollThumbnailIntoView],
+    [product],
   );
 
   // Scroll thumbnail into view when selected index changes (from navigation or color click)
@@ -754,6 +754,55 @@ export const useProductDetails = (id) => {
     return null;
   }, [product, selectedVariantIndex]);
 
+  // Helper function to check if a thumbnail is selected
+  const isThumbnailSelected = useCallback(
+    (index) => {
+      if (!product) return false;
+      return (
+        (product.productType === "variant" &&
+          selectedVariantIndex === index) ||
+        (product.productType === "standalone" && selectedImageIndex === index)
+      );
+    },
+    [product, selectedVariantIndex, selectedImageIndex],
+  );
+
+  // Helper function to check if a color variant is selected
+  const isColorVariantSelected = useCallback(
+    (index) => {
+      return selectedVariantIndex === index;
+    },
+    [selectedVariantIndex],
+  );
+
+  // Computed UI values
+  const hasMultipleImages = allImages.length > 1;
+  const hasFeatures =
+    features.categories.length > 0 || features.collections.length > 0;
+  const hasColorVariants = colorVariants.length > 0;
+  const hasDescriptions =
+    product?.description1 || product?.description2 || product?.description3;
+  const hasPartOrItemId = Boolean(currentPartId || currentItemId);
+
+  // Formatted part/item ID string
+  const formattedPartItemId = useMemo(() => {
+    if (!hasPartOrItemId) return null;
+    const parts = [];
+    if (currentItemId) parts.push(`Item ID: ${currentItemId}`);
+    if (currentPartId) parts.push(`Part ID: ${currentPartId}`);
+    return parts.join(" • ");
+  }, [currentItemId, currentPartId, hasPartOrItemId]);
+
+  // Description array
+  const descriptions = useMemo(() => {
+    if (!product) return [];
+    const descs = [];
+    if (product.description1) descs.push(product.description1);
+    if (product.description2) descs.push(product.description2);
+    if (product.description3) descs.push(product.description3);
+    return descs;
+  }, [product]);
+
   return {
     product,
     isLoading,
@@ -762,15 +811,19 @@ export const useProductDetails = (id) => {
     currentImageUrl,
     features,
     colorVariants,
-    selectedImageIndex,
-    selectedVariantIndex,
     thumbnailScrollRef,
     displayPrice,
     hasDiscount,
-    currentStock,
     stockAlert,
-    currentPartId,
-    currentItemId,
+    formattedPartItemId,
+    hasPartOrItemId,
+    descriptions,
+    hasDescriptions,
+    hasMultipleImages,
+    hasFeatures,
+    hasColorVariants,
+    isThumbnailSelected,
+    isColorVariantSelected,
     handleThumbnailClick,
     handlePreviousImage,
     handleNextImage,
