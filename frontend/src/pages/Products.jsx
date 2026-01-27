@@ -47,7 +47,6 @@ const Products = () => {
     handleCategoryExpansion,
     handleCollectionExpansion,
     handleSortChange,
-    handlePageChange,
     handlePreviousPage,
     handleNextPage,
     handlePageNumberClick,

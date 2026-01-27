@@ -1,7 +1,8 @@
-import { useMemo, useCallback, useState } from "react";
+import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   useGetProductsQuery,
+  useGetProductByIdQuery,
   useGetPublicCategoriesQuery,
   useGetPublicCollectionsQuery,
   useGetPublicColorsQuery,
@@ -12,9 +13,45 @@ import { PRICE_RANGES, DEFAULT_SORT } from "@/constant/filterOptions";
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 12;
 
+const DEFAULT_PAGINATION = {
+  page: 1,
+  limit: DEFAULT_LIMIT,
+  totalItems: 0,
+  totalPages: 0,
+  hasNextPage: false,
+  hasPreviousPage: false,
+};
+
+// Utility: Parse comma-separated URL param to array
+const parseArrayParam = (param) =>
+  param?.split(",").filter(Boolean) || [];
+
+// Utility: Calculate display price and discount
+const getProductDisplayInfo = (product) => ({
+  displayPrice: product?.discountPrice ?? product?.price,
+  hasDiscount: Boolean(product?.discountPrice),
+});
+
+// Utility: Toggle item in array
+const toggleArrayItem = (array, item) =>
+  array.includes(item)
+    ? array.filter((id) => id !== item)
+    : [...array, item];
+
+// Utility: Toggle item in Set
+const toggleSetItem = (set, item) => {
+  const newSet = new Set(set);
+  if (newSet.has(item)) {
+    newSet.delete(item);
+  } else {
+    newSet.add(item);
+  }
+  return newSet;
+};
+
 export const useProducts = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   // UI state for filter expansion
   const [expandedCategories, setExpandedCategories] = useState(new Set());
   const [expandedCollections, setExpandedCollections] = useState(new Set());
@@ -25,12 +62,12 @@ export const useProducts = () => {
   const search = searchParams.get("search") || "";
   const sortBy = searchParams.get("sortBy") || DEFAULT_SORT;
   const priceRange = searchParams.get("priceRange") || "";
-  const categoryIds = searchParams.get("categoryIds")?.split(",").filter(Boolean) || [];
-  const subCategoryIds = searchParams.get("subCategoryIds")?.split(",").filter(Boolean) || [];
-  const collectionIds = searchParams.get("collectionIds")?.split(",").filter(Boolean) || [];
-  const subCollectionIds = searchParams.get("subCollectionIds")?.split(",").filter(Boolean) || [];
-  const colorIds = searchParams.get("colorIds")?.split(",").filter(Boolean) || [];
-  const skillLevelIds = searchParams.get("skillLevelIds")?.split(",").filter(Boolean) || [];
+  const categoryIds = parseArrayParam(searchParams.get("categoryIds"));
+  const subCategoryIds = parseArrayParam(searchParams.get("subCategoryIds"));
+  const collectionIds = parseArrayParam(searchParams.get("collectionIds"));
+  const subCollectionIds = parseArrayParam(searchParams.get("subCollectionIds"));
+  const colorIds = parseArrayParam(searchParams.get("colorIds"));
+  const skillLevelIds = parseArrayParam(searchParams.get("skillLevelIds"));
 
   // Calculate price range
   const priceParams = useMemo(() => {
@@ -44,34 +81,35 @@ export const useProducts = () => {
   }, [priceRange]);
 
   // Build query params for API
-  const queryParams = useMemo(
-    () => ({
+  const queryParams = useMemo(() => {
+    const buildArrayParam = (arr) => (arr.length > 0 ? arr : undefined);
+    
+    return {
       page,
       limit,
       search: search || undefined,
       sortBy,
       ...priceParams,
-      categoryIds: categoryIds.length > 0 ? categoryIds : undefined,
-      subCategoryIds: subCategoryIds.length > 0 ? subCategoryIds : undefined,
-      collectionIds: collectionIds.length > 0 ? collectionIds : undefined,
-      subCollectionIds: subCollectionIds.length > 0 ? subCollectionIds : undefined,
-      colorIds: colorIds.length > 0 ? colorIds : undefined,
-      skillLevelIds: skillLevelIds.length > 0 ? skillLevelIds : undefined,
-    }),
-    [
-      page,
-      limit,
-      search,
-      sortBy,
-      priceParams,
-      categoryIds,
-      subCategoryIds,
-      collectionIds,
-      subCollectionIds,
-      colorIds,
-      skillLevelIds,
-    ]
-  );
+      categoryIds: buildArrayParam(categoryIds),
+      subCategoryIds: buildArrayParam(subCategoryIds),
+      collectionIds: buildArrayParam(collectionIds),
+      subCollectionIds: buildArrayParam(subCollectionIds),
+      colorIds: buildArrayParam(colorIds),
+      skillLevelIds: buildArrayParam(skillLevelIds),
+    };
+  }, [
+    page,
+    limit,
+    search,
+    sortBy,
+    priceParams,
+    categoryIds,
+    subCategoryIds,
+    collectionIds,
+    subCollectionIds,
+    colorIds,
+    skillLevelIds,
+  ]);
 
   // Fetch products
   const {
@@ -96,9 +134,14 @@ export const useProducts = () => {
   const updateSearchParams = useCallback(
     (updates) => {
       const newParams = new URLSearchParams(searchParams);
-      
+
       Object.entries(updates).forEach(([key, value]) => {
-        if (value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) {
+        if (
+          value === null ||
+          value === undefined ||
+          value === "" ||
+          (Array.isArray(value) && value.length === 0)
+        ) {
           newParams.delete(key);
         } else if (Array.isArray(value)) {
           newParams.set(key, value.join(","));
@@ -114,7 +157,16 @@ export const useProducts = () => {
 
       setSearchParams(newParams, { replace: true });
     },
-    [searchParams, setSearchParams]
+    [searchParams, setSearchParams],
+  );
+
+  // Generic filter toggle handler factory
+  const createFilterToggleHandler = useCallback(
+    (currentIds, paramKey) => (id) => {
+      const newIds = toggleArrayItem(currentIds, id);
+      updateSearchParams({ [paramKey]: newIds });
+    },
+    [updateSearchParams],
   );
 
   // Filter handlers
@@ -122,137 +174,80 @@ export const useProducts = () => {
     (rangeValue) => {
       updateSearchParams({ priceRange: rangeValue || null, page: 1 });
     },
-    [updateSearchParams]
+    [updateSearchParams],
   );
 
-  const handleCategoryToggle = useCallback(
-    (categoryId) => {
-      const newCategoryIds = categoryIds.includes(categoryId)
-        ? categoryIds.filter((id) => id !== categoryId)
-        : [...categoryIds, categoryId];
-      updateSearchParams({ categoryIds: newCategoryIds });
-    },
-    [categoryIds, updateSearchParams]
+  const handleCategoryToggle = useMemo(
+    () => createFilterToggleHandler(categoryIds, "categoryIds"),
+    [categoryIds, createFilterToggleHandler],
   );
 
-  const handleSubCategoryToggle = useCallback(
-    (subCategoryId) => {
-      const newSubCategoryIds = subCategoryIds.includes(subCategoryId)
-        ? subCategoryIds.filter((id) => id !== subCategoryId)
-        : [...subCategoryIds, subCategoryId];
-      updateSearchParams({ subCategoryIds: newSubCategoryIds });
-    },
-    [subCategoryIds, updateSearchParams]
+  const handleSubCategoryToggle = useMemo(
+    () => createFilterToggleHandler(subCategoryIds, "subCategoryIds"),
+    [subCategoryIds, createFilterToggleHandler],
   );
 
-  const handleCollectionToggle = useCallback(
-    (collectionId) => {
-      const newCollectionIds = collectionIds.includes(collectionId)
-        ? collectionIds.filter((id) => id !== collectionId)
-        : [...collectionIds, collectionId];
-      updateSearchParams({ collectionIds: newCollectionIds });
-    },
-    [collectionIds, updateSearchParams]
+  const handleCollectionToggle = useMemo(
+    () => createFilterToggleHandler(collectionIds, "collectionIds"),
+    [collectionIds, createFilterToggleHandler],
   );
 
-  const handleSubCollectionToggle = useCallback(
-    (subCollectionId) => {
-      const newSubCollectionIds = subCollectionIds.includes(subCollectionId)
-        ? subCollectionIds.filter((id) => id !== subCollectionId)
-        : [...subCollectionIds, subCollectionId];
-      updateSearchParams({ subCollectionIds: newSubCollectionIds });
-    },
-    [subCollectionIds, updateSearchParams]
+  const handleSubCollectionToggle = useMemo(
+    () => createFilterToggleHandler(subCollectionIds, "subCollectionIds"),
+    [subCollectionIds, createFilterToggleHandler],
   );
 
-  const handleColorToggle = useCallback(
-    (colorId) => {
-      const newColorIds = colorIds.includes(colorId)
-        ? colorIds.filter((id) => id !== colorId)
-        : [...colorIds, colorId];
-      updateSearchParams({ colorIds: newColorIds });
-    },
-    [colorIds, updateSearchParams]
+  const handleColorToggle = useMemo(
+    () => createFilterToggleHandler(colorIds, "colorIds"),
+    [colorIds, createFilterToggleHandler],
   );
 
-  const handleSkillLevelToggle = useCallback(
-    (skillLevelId) => {
-      const newSkillLevelIds = skillLevelIds.includes(skillLevelId)
-        ? skillLevelIds.filter((id) => id !== skillLevelId)
-        : [...skillLevelIds, skillLevelId];
-      updateSearchParams({ skillLevelIds: newSkillLevelIds });
-    },
-    [skillLevelIds, updateSearchParams]
+  const handleSkillLevelToggle = useMemo(
+    () => createFilterToggleHandler(skillLevelIds, "skillLevelIds"),
+    [skillLevelIds, createFilterToggleHandler],
   );
 
   const handleSortChange = useCallback(
     (newSortBy) => {
       updateSearchParams({ sortBy: newSortBy });
     },
-    [updateSearchParams]
+    [updateSearchParams],
   );
 
   const handlePageChange = useCallback(
     (newPage) => {
       updateSearchParams({ page: newPage });
     },
-    [updateSearchParams]
+    [updateSearchParams],
   );
 
   const handleSearchChange = useCallback(
     (searchValue) => {
       updateSearchParams({ search: searchValue || null, page: 1 });
     },
-    [updateSearchParams]
+    [updateSearchParams],
   );
 
   const handleClearFilters = useCallback(() => {
     setSearchParams(new URLSearchParams(), { replace: true });
   }, [setSearchParams]);
 
-  // Utility functions for product data processing
-  const getProductImageUrl = useCallback((product) => {
-    if (product.productType === "standalone") {
-      return product.images?.[0]?.url || null;
-    }
-    if (product.productType === "variant") {
-      return product.variants?.[0]?.image?.url || null;
-    }
-    return null;
-  }, []);
-
-  const getProductDisplayPrice = useCallback((product) => {
-    return product.discountPrice ?? product.price;
-  }, []);
-
-  const hasProductDiscount = useCallback((product) => {
-    return Boolean(product.discountPrice);
-  }, []);
-
-  // Process products to include computed fields
   const products = useMemo(() => {
     const rawProducts = productsData?.products || [];
     return rawProducts.map((product) => ({
       ...product,
-      imageUrl: getProductImageUrl(product),
-      displayPrice: getProductDisplayPrice(product),
-      hasDiscount: hasProductDiscount(product),
+      ...getProductDisplayInfo(product),
     }));
-  }, [productsData?.products, getProductImageUrl, getProductDisplayPrice, hasProductDiscount]);
+  }, [productsData?.products]);
 
-  const pagination = productsData?.pagination || {
-    page: 1,
-    limit: DEFAULT_LIMIT,
-    totalItems: 0,
-    totalPages: 0,
-    hasNextPage: false,
-    hasPreviousPage: false,
-  };
+  const pagination = productsData?.pagination || DEFAULT_PAGINATION;
 
-  const categories = categoriesData?.categories || [];
-  const collections = collectionsData?.collections || [];
-  const colors = colorsData?.colors || [];
-  const skillLevels = skillLevelsData?.skillLevels || [];
+  // Extract data from API responses with fallback
+  const extractData = (data, key) => data?.[key] || [];
+  const categories = extractData(categoriesData, "categories");
+  const collections = extractData(collectionsData, "collections");
+  const colors = extractData(colorsData, "colors");
+  const skillLevels = extractData(skillLevelsData, "skillLevels");
 
   const isLoading =
     isLoadingProducts ||
@@ -264,7 +259,9 @@ export const useProducts = () => {
   // Calculate pagination display values
   const startItem = useMemo(() => {
     if (pagination.totalItems === 0) return 0;
-    return pagination.page > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0;
+    return pagination.page > 0
+      ? (pagination.page - 1) * pagination.limit + 1
+      : 0;
   }, [pagination.page, pagination.limit, pagination.totalItems]);
 
   const endItem = useMemo(() => {
@@ -292,30 +289,21 @@ export const useProducts = () => {
     skillLevelIds,
   ]);
 
-  // Filter expansion handlers
-  const handleCategoryExpansion = useCallback((categoryId) => {
-    setExpandedCategories((prev) => {
-      const newExpanded = new Set(prev);
-      if (newExpanded.has(categoryId)) {
-        newExpanded.delete(categoryId);
-      } else {
-        newExpanded.add(categoryId);
-      }
-      return newExpanded;
-    });
+  // Generic expansion handler factory
+  const createExpansionHandler = useCallback((setter) => (id) => {
+    setter((prev) => toggleSetItem(prev, id));
   }, []);
 
-  const handleCollectionExpansion = useCallback((collectionId) => {
-    setExpandedCollections((prev) => {
-      const newExpanded = new Set(prev);
-      if (newExpanded.has(collectionId)) {
-        newExpanded.delete(collectionId);
-      } else {
-        newExpanded.add(collectionId);
-      }
-      return newExpanded;
-    });
-  }, []);
+  // Filter expansion handlers
+  const handleCategoryExpansion = useMemo(
+    () => createExpansionHandler(setExpandedCategories),
+    [createExpansionHandler],
+  );
+
+  const handleCollectionExpansion = useMemo(
+    () => createExpansionHandler(setExpandedCollections),
+    [createExpansionHandler],
+  );
 
   // Pagination logic
   const getPageNumbers = useCallback(() => {
@@ -379,7 +367,7 @@ export const useProducts = () => {
         handlePageChange(pageNumber);
       }
     },
-    [pagination.page, pagination.totalPages, handlePageChange]
+    [pagination.page, pagination.totalPages, handlePageChange],
   );
 
   // Computed display values
@@ -456,3 +444,336 @@ export const useProducts = () => {
   };
 };
 
+// Per-card hover image cycling
+export const useProductCardHoverImages = (
+  product,
+  { hoverDelayMs = 1000, cycleIntervalMs = 1500 } = {},
+) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const hoverTimeoutRef = useRef(null);
+  const cycleIntervalRef = useRef(null);
+
+  const imageUrls = useMemo(() => {
+    if (product?.productType === "standalone" && product?.images?.length) {
+      return product.images.map((img) => img?.url).filter(Boolean);
+    }
+
+    if (product?.productType === "variant" && product?.variants?.length) {
+      return product.variants
+        .map((variant) => variant?.image?.url)
+        .filter(Boolean);
+    }
+
+    return product?.imageUrl ? [product.imageUrl] : [];
+  }, [product]);
+
+  const hasMultipleImages = imageUrls.length > 1;
+
+  const stopImageCycling = useCallback(() => {
+    if (cycleIntervalRef.current) {
+      clearInterval(cycleIntervalRef.current);
+      cycleIntervalRef.current = null;
+    }
+  }, []);
+
+  const startImageCycling = useCallback(() => {
+    if (!hasMultipleImages) return;
+    stopImageCycling();
+
+    cycleIntervalRef.current = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % imageUrls.length);
+    }, cycleIntervalMs);
+  }, [cycleIntervalMs, hasMultipleImages, imageUrls.length, stopImageCycling]);
+
+  const handleMouseEnter = useCallback(() => {
+    if (!hasMultipleImages) return;
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    hoverTimeoutRef.current = setTimeout(() => {
+      startImageCycling();
+    }, hoverDelayMs);
+  }, [hasMultipleImages, hoverDelayMs, startImageCycling]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    stopImageCycling();
+    setCurrentImageIndex(0);
+  }, [stopImageCycling]);
+
+  // Cleanup + reset when product changes
+  useEffect(() => {
+    setCurrentImageIndex(0);
+    return () => {
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+      stopImageCycling();
+    };
+  }, [product?._id, stopImageCycling]);
+
+  return {
+    imageUrls,
+    currentImageIndex,
+    hasMultipleImages,
+    handleMouseEnter,
+    handleMouseLeave,
+  };
+};
+
+// ------------------------------------ Product Details Page ---------------------------------------------
+export const useProductDetails = (id) => {
+  const {
+    data: productData,
+    isLoading,
+    error,
+  } = useGetProductByIdQuery(id, {
+    skip: !id,
+  });
+
+  const product = productData?.product;
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(null);
+  const thumbnailScrollRef = useRef(null);
+
+  const allImages = product?.allImages || [];
+  const features = product?.features || { categories: [], collections: [] };
+  const colorVariants = product?.colorVariants || [];
+
+  // Get current image URL
+  const currentImageUrl = useMemo(() => {
+    if (allImages.length === 0) return null;
+    if (selectedVariantIndex !== null && product?.productType === "variant") {
+      return allImages[selectedVariantIndex]?.url || allImages[0]?.url;
+    }
+    return allImages[selectedImageIndex]?.url || allImages[0]?.url;
+  }, [allImages, selectedImageIndex, selectedVariantIndex, product]);
+
+  // Helper function to scroll thumbnail into view
+  const scrollThumbnailIntoView = useCallback((index) => {
+    if (thumbnailScrollRef.current) {
+      const thumbnailElement = thumbnailScrollRef.current.children[index];
+      if (thumbnailElement) {
+        thumbnailElement.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+        });
+      }
+    }
+  }, []);
+
+  // Handle thumbnail click
+  const handleThumbnailClick = useCallback(
+    (index, isVariant = false) => {
+      if (isVariant) {
+        setSelectedVariantIndex(index);
+        setSelectedImageIndex(0);
+      } else {
+        setSelectedImageIndex(index);
+        setSelectedVariantIndex(null);
+      }
+
+      scrollThumbnailIntoView(index);
+    },
+    [scrollThumbnailIntoView],
+  );
+
+  // Generic image navigation handler
+  const navigateImage = useCallback(
+    (direction) => {
+      const isVariantMode =
+        selectedVariantIndex !== null && product?.productType === "variant";
+      const currentIndex = isVariantMode
+        ? selectedVariantIndex
+        : selectedImageIndex;
+      const maxIndex = allImages.length - 1;
+
+      let newIndex;
+      if (direction === "prev") {
+        newIndex = currentIndex > 0 ? currentIndex - 1 : maxIndex;
+      } else {
+        newIndex = (currentIndex + 1) % allImages.length;
+      }
+
+      if (isVariantMode) {
+        setSelectedVariantIndex(newIndex);
+        setSelectedImageIndex(0);
+      } else {
+        setSelectedImageIndex(newIndex);
+      }
+    },
+    [
+      selectedVariantIndex,
+      selectedImageIndex,
+      allImages.length,
+      product?.productType,
+      scrollThumbnailIntoView,
+    ],
+  );
+
+  // Handle arrow navigation
+  const handlePreviousImage = useCallback(
+    () => navigateImage("prev"),
+    [navigateImage],
+  );
+
+  const handleNextImage = useCallback(
+    () => navigateImage("next"),
+    [navigateImage],
+  );
+
+  // Handle color variant click
+  const handleColorVariantClick = useCallback(
+    (colorId, variantIndex) => {
+      if (!product || product.productType !== "variant") return;
+
+      const variant = product.variants[variantIndex];
+      if (!variant) return;
+
+      setSelectedVariantIndex(variantIndex);
+      setSelectedImageIndex(0);
+
+      // Scroll to top of page
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    [product, scrollThumbnailIntoView],
+  );
+
+  // Scroll thumbnail into view when selected index changes (from navigation or color click)
+  useEffect(() => {
+    if (product?.productType === "variant" && selectedVariantIndex !== null) {
+      scrollThumbnailIntoView(selectedVariantIndex);
+    } else if (
+      product?.productType === "standalone" &&
+      selectedImageIndex !== null
+    ) {
+      scrollThumbnailIntoView(selectedImageIndex);
+    }
+  }, [
+    selectedImageIndex,
+    selectedVariantIndex,
+    product?.productType,
+    scrollThumbnailIntoView,
+  ]);
+
+  // Reset to first image/variant when product changes
+  useEffect(() => {
+    setSelectedImageIndex(0);
+    // For variant products, default to first variant (index 0)
+    // For standalone products, set to null
+    if (product?.productType === "variant" && product.variants?.length > 0) {
+      setSelectedVariantIndex(0);
+    } else {
+      setSelectedVariantIndex(null);
+    }
+  }, [product?._id, product?.productType]);
+
+  // Simple display helpers
+  const { displayPrice, hasDiscount } = getProductDisplayInfo(product);
+
+  // Get stock based on product type and selected variant
+  const currentStock = useMemo(() => {
+    if (!product) return undefined;
+
+    // For standalone products, stock is at product level
+    if (product.productType === "standalone") {
+      return product.stock;
+    }
+
+    // For variant products, get stock from selected variant
+    if (product.productType === "variant" && product.variants?.length > 0) {
+      // Use selected variant index (defaults to 0 for variant products)
+      const variantIndex = selectedVariantIndex ?? 0;
+      const variant = product.variants[variantIndex];
+      return variant?.stock;
+    }
+
+    return undefined;
+  }, [product, selectedVariantIndex]);
+
+  // Get stock alert info (status, color, message)
+  const stockAlert = useMemo(() => {
+    if (currentStock === undefined) return null;
+
+    if (currentStock === 0) {
+      return {
+        dotColor: "bg-destructive",
+        textColor: "text-destructive",
+        message: "Out of stock",
+      };
+    }
+
+    if (currentStock <= 10) {
+      return {
+        dotColor: "bg-primary dark:bg-accent",
+        textColor: "text-primary dark:text-accent",
+        message: `Hurry up, ${currentStock} stock${currentStock === 1 ? "" : "s"} left!`,
+      };
+    }
+
+    return {
+      dotColor: "bg-success",
+      textColor: "text-success",
+      message: `${currentStock} available, Get it now!`,
+    };
+  }, [currentStock]);
+
+  // Get partId and itemId based on product type and selected variant
+  const currentPartId = useMemo(() => {
+    if (!product) return null;
+
+    // For standalone products, partId is at product level
+    if (product.productType === "standalone") {
+      return product.partId || null;
+    }
+
+    // For variant products, get partId from selected variant
+    if (product.productType === "variant" && product.variants?.length > 0) {
+      const variantIndex = selectedVariantIndex ?? 0;
+      const variant = product.variants[variantIndex];
+      return variant?.partId || null;
+    }
+
+    return null;
+  }, [product, selectedVariantIndex]);
+
+  const currentItemId = useMemo(() => {
+    if (!product) return null;
+
+    // For standalone products, itemId is at product level
+    if (product.productType === "standalone") {
+      return product.itemId || null;
+    }
+
+    // For variant products, get itemId from selected variant
+    if (product.productType === "variant" && product.variants?.length > 0) {
+      const variantIndex = selectedVariantIndex ?? 0;
+      const variant = product.variants[variantIndex];
+      return variant?.itemId || null;
+    }
+
+    return null;
+  }, [product, selectedVariantIndex]);
+
+  return {
+    product,
+    isLoading,
+    error,
+    allImages,
+    currentImageUrl,
+    features,
+    colorVariants,
+    selectedImageIndex,
+    selectedVariantIndex,
+    thumbnailScrollRef,
+    displayPrice,
+    hasDiscount,
+    currentStock,
+    stockAlert,
+    currentPartId,
+    currentItemId,
+    handleThumbnailClick,
+    handlePreviousImage,
+    handleNextImage,
+    handleColorVariantClick,
+  };
+};

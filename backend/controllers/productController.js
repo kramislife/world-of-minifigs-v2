@@ -23,7 +23,7 @@ import {
 import {
   processProductsForListing,
   filterProductByType,
-  removeSensitiveFields,
+  processProductForDetails,
 } from "../utils/Products/productProcessor.js";
 import {
   getCategoryCounts,
@@ -1361,7 +1361,7 @@ export const getPublicProducts = async (req, res) => {
     // Apply pagination with minimal field selection
     const skip = (page - 1) * limit;
     const selectFields =
-      "_id productName price discountPrice productType createdAt images variants";
+      "_id productName price discount discountPrice productType createdAt images variants";
 
     // Build query with minimal fields
     let mongooseQuery = Product.find(query)
@@ -1427,7 +1427,7 @@ export const getPublicProductById = async (req, res) => {
     }
 
     const product = await Product.findOne({ _id: id, isActive: true })
-      .select("-__v")
+      .select("-__v -createdBy -updatedBy")
       .populate("categoryIds", "categoryName")
       .populate("subCategoryIds", "subCategoryName")
       .populate("collectionIds", "collectionName")
@@ -1446,12 +1446,11 @@ export const getPublicProductById = async (req, res) => {
       });
     }
 
-    // Remove sensitive/admin fields using utility
-    const publicProduct = removeSensitiveFields(product);
+    const processedProduct = processProductForDetails(product);
 
     return res.status(200).json({
       success: true,
-      product: publicProduct,
+      product: processedProduct,
     });
   } catch (error) {
     console.error("Get public product by ID error:", error);
