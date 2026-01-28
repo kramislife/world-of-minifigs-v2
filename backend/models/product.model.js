@@ -35,18 +35,9 @@ const productSchema = new mongoose.Schema(
       type: Number,
       min: [0, "Discount price must be a positive number"],
     },
-    description1: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    description2: {
-      type: String,
-      trim: true,
-    },
-    description3: {
-      type: String,
-      trim: true,
+    descriptions: {
+      type: [String],
+      required: [true, "At least one description is required"],
     },
     images: [
       {

@@ -781,18 +781,14 @@ export const useProductDetails = (id) => {
     features.categories.length > 0 || features.collections.length > 0;
   const hasColorVariants = colorVariants.length > 0;
   const hasDescriptions =
-    product?.description1 || product?.description2 || product?.description3;
+    product?.descriptions && product.descriptions.length > 0;
   const hasPartId = Boolean(currentPartId);
   const hasItemId = Boolean(currentItemId);
 
   // Description array
   const descriptions = useMemo(() => {
-    if (!product) return [];
-    const descs = [];
-    if (product.description1) descs.push(product.description1);
-    if (product.description2) descs.push(product.description2);
-    if (product.description3) descs.push(product.description3);
-    return descs;
+    if (!product || !product.descriptions) return [];
+    return product.descriptions.filter(d => d && d.trim());
   }, [product]);
 
   return {

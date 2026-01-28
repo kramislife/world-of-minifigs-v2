@@ -54,9 +54,7 @@ export const createProduct = async (req, res) => {
       itemId,
       price,
       discount,
-      description1,
-      description2,
-      description3,
+      descriptions,
       images, // For standalone products - array of base64 strings
       categoryIds,
       subCategoryIds,
@@ -90,11 +88,24 @@ export const createProduct = async (req, res) => {
       });
     }
 
-    if (!description1 || !description1.trim()) {
+    if (
+      !descriptions ||
+      !Array.isArray(descriptions) ||
+      descriptions.length === 0 ||
+      !descriptions[0]?.trim()
+    ) {
       return res.status(400).json({
         success: false,
         message: "Description is required",
         description: "Please provide at least one description.",
+      });
+    }
+
+    if (descriptions.length > 3) {
+      return res.status(400).json({
+        success: false,
+        message: "Too many descriptions",
+        description: "Maximum of 3 descriptions are allowed.",
       });
     }
 
@@ -389,44 +400,43 @@ export const createProduct = async (req, res) => {
     const discountValue =
       discount !== undefined && discount !== null && discount !== ""
         ? Number(discount)
-        : 0;
-    const discountPrice = calculateDiscountPrice(price, discountValue);
+        : null;
+    const discountPrice = discountValue
+      ? calculateDiscountPrice(price, discountValue)
+      : null;
 
     // Create product
     const productData = {
       productType: finalProductType,
       productName: productName.trim(),
       price: Number(price),
-      description1: description1.trim(),
+      descriptions: descriptions
+        .filter((d) => d && d.trim())
+        .map((d) => d.trim())
+        .slice(0, 3),
       discount: discountValue,
       discountPrice: discountPrice,
       pieceCount:
         pieceCount !== undefined && pieceCount !== null && pieceCount !== ""
           ? Number(pieceCount)
-          : 0,
+          : null,
       length:
         length !== undefined && length !== null && length !== ""
           ? Number(length)
-          : 0,
+          : null,
       width:
         width !== undefined && width !== null && width !== ""
           ? Number(width)
-          : 0,
+          : null,
       height:
         height !== undefined && height !== null && height !== ""
           ? Number(height)
-          : 0,
+          : null,
       isActive: isActive !== undefined ? Boolean(isActive) : true,
       createdBy: req.user._id,
     };
 
     // Add optional fields
-    if (description2 && description2.trim()) {
-      productData.description2 = description2.trim();
-    }
-    if (description3 && description3.trim()) {
-      productData.description3 = description3.trim();
-    }
     if (categoryIds && categoryIds.length > 0) {
       productData.categoryIds = categoryIds;
     }
@@ -496,9 +506,7 @@ export const createProduct = async (req, res) => {
         price: product.price,
         discount: product.discount,
         discountPrice: product.discountPrice,
-        description1: product.description1,
-        description2: product.description2,
-        description3: product.description3,
+        descriptions: product.descriptions,
         ...(product.productType === "standalone" && {
           partId: product.partId,
           itemId: product.itemId,
@@ -648,9 +656,7 @@ export const updateProduct = async (req, res) => {
       itemId,
       price,
       discount,
-      description1,
-      description2,
-      description3,
+      descriptions,
       images, // For standalone products - array of base64 strings or existing image objects
       categoryIds,
       subCategoryIds,
@@ -730,12 +736,25 @@ export const updateProduct = async (req, res) => {
       });
     }
 
-    if (description1 !== undefined && !description1.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "Description is required",
-        description: "Please provide at least one description.",
-      });
+    if (descriptions !== undefined) {
+      if (
+        !Array.isArray(descriptions) ||
+        descriptions.length === 0 ||
+        !descriptions[0]?.trim()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Description is required",
+          description: "Please provide at least one description.",
+        });
+      }
+      if (descriptions.length > 3) {
+        return res.status(400).json({
+          success: false,
+          message: "Too many descriptions",
+          description: "Maximum of 3 descriptions are allowed.",
+        });
+      }
     }
 
     // Validate standalone product fields if switching to standalone or updating standalone
@@ -1011,7 +1030,8 @@ export const updateProduct = async (req, res) => {
     let discountPrice = product.discountPrice;
     if (discount !== undefined) {
       const finalPrice = price !== undefined ? price : product.price;
-      discountPrice = calculateDiscountPrice(finalPrice, discount);
+      discountPrice =
+        discount > 0 ? calculateDiscountPrice(finalPrice, discount) : null;
     } else if (price !== undefined && product.discount) {
       discountPrice = calculateDiscountPrice(price, product.discount);
     }
@@ -1030,14 +1050,11 @@ export const updateProduct = async (req, res) => {
       product.discount = discount > 0 ? Number(discount) : null;
       product.discountPrice = discountPrice;
     }
-    if (description1 !== undefined) {
-      product.description1 = description1.trim();
-    }
-    if (description2 !== undefined) {
-      product.description2 = description2.trim() || null;
-    }
-    if (description3 !== undefined) {
-      product.description3 = description3.trim() || null;
+    if (descriptions !== undefined) {
+      product.descriptions = descriptions
+        .filter((d) => d && d.trim())
+        .map((d) => d.trim())
+        .slice(0, 3);
     }
     if (categoryIds !== undefined) {
       product.categoryIds = categoryIds;
@@ -1052,16 +1069,17 @@ export const updateProduct = async (req, res) => {
       product.subCollectionIds = subCollectionIds;
     }
     if (pieceCount !== undefined) {
-      product.pieceCount = pieceCount !== null ? Number(pieceCount) : null;
+      product.pieceCount =
+        pieceCount !== null && pieceCount !== "" ? Number(pieceCount) : null;
     }
     if (length !== undefined) {
-      product.length = length !== null ? Number(length) : null;
+      product.length = length !== null && length !== "" ? Number(length) : null;
     }
     if (width !== undefined) {
-      product.width = width !== null ? Number(width) : null;
+      product.width = width !== null && width !== "" ? Number(width) : null;
     }
     if (height !== undefined) {
-      product.height = height !== null ? Number(height) : null;
+      product.height = height !== null && height !== "" ? Number(height) : null;
     }
     if (skillLevelIds !== undefined) {
       product.skillLevelIds = skillLevelIds;
@@ -1177,9 +1195,7 @@ export const updateProduct = async (req, res) => {
         price: product.price,
         discount: product.discount,
         discountPrice: product.discountPrice,
-        description1: product.description1,
-        description2: product.description2,
-        description3: product.description3,
+        descriptions: product.descriptions,
         productType: product.productType,
         ...(product.productType === "standalone" && {
           partId: product.partId,
