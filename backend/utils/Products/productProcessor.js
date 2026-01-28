@@ -126,7 +126,7 @@ export const processProductForDetails = (product) => {
     collections,
   };
 
-  // Process color variants for variant products
+  // Process color variants for variant products or single color for standalone
   if (product.productType === "variant" && product.variants?.length > 0) {
     processedProduct.colorVariants = product.variants
       .map((variant, index) => ({
@@ -136,6 +136,14 @@ export const processProductForDetails = (product) => {
         index,
       }))
       .filter((v) => v.colorId);
+  } else if (product.productType === "standalone" && product.colorId) {
+    // For standalone products, create a single color entry if colorId exists
+    processedProduct.colorVariants = [{
+      colorId: product.colorId?._id || product.colorId,
+      colorName: product.colorId?.colorName,
+      hexCode: product.colorId?.hexCode,
+      index: 0,
+    }].filter((v) => v.colorId && v.colorName);
   } else {
     processedProduct.colorVariants = [];
   }

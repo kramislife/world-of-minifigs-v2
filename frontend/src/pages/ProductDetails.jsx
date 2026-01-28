@@ -155,137 +155,161 @@ const ProductDetails = () => {
         </div>
 
         {/* Right Column - Product Details */}
-        <div className="space-y-5">
-          {/* Product Name */}
-          <div>
-            <h1 className="text-3xl font-bold mb-3">
-              {product.productName}
-              {hasPartId && (
-                <span className="text-sm text-muted-foreground font-normal ml-2">
-                  #{currentPartId}
-                </span>
-              )}
-            </h1>
-            {/* Star Rating */}
-            <div className="flex items-center gap-1 mb-3">
-              {[...Array(5)].map((_, i) => (
-                <Star
-                  key={i}
-                  className="size-4 fill-yellow-400 text-yellow-400"
-                />
-              ))}
-              <span className="text-xs text-primary leading-none">(0)</span>
-            </div>
-          </div>
-
-          {/* Price */}
-          <div className="flex items-center gap-2">
-            <span className="text-5xl font-bold text-success dark:text-accent">
-              ${displayPrice?.toFixed(2) || "0.00"}
-            </span>
-            {hasDiscount && product.price && (
-              <span className="text-sm text-muted-foreground line-through">
-                ${product.price.toFixed(2)}
-              </span>
-            )}
-          </div>
-
-          {/* Stock Alert */}
-          {stockAlert && (
-            <div className="flex items-center gap-2 relative">
-              <span
-                className={`w-2 h-2 rounded-full ${stockAlert.dotColor} animate-ping absolute`}
-              />
-              <span className={`w-2 h-2 rounded-full ${stockAlert.dotColor}`} />
-              <span className={`text-sm font-medium ${stockAlert.textColor}`}>
-                {stockAlert.message}
-              </span>
-            </div>
-          )}
-
-          {/* Features & Classifications */}
-          {hasFeatures && (
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold">
-                Features & Classifications
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {features.categories.map((cat, index) => (
-                  <Badge
-                    key={`cat-${index}`}
-                    variant="outline"
-                    className="px-3 py-1"
-                  >
-                    {cat.name}
-                  </Badge>
-                ))}
-                {features.collections.map((col, index) => (
-                  <Badge
-                    key={`col-${index}`}
-                    variant="outline"
-                    className="px-3 py-1"
-                  >
-                    {col.name}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Minifig Guide and Instructions */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold">Includes</h3>
-            <div className="text-sm text-muted-foreground space-y-2">
-              <Badge variant="outline" className="px-3 py-1">
-                Minifig Guide and Instructions
-              </Badge>
-            </div>
-          </div>
-
-          {/* Color Variants */}
-          {hasColorVariants && (
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold">Color Variants</h3>
-              <div className="flex flex-wrap gap-2">
-                {colorVariants.map((variant, index) => (
-                  <Button
-                    key={variant.colorId}
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleColorVariantClick(index)}
-                    className={`relative size-6 rounded-full border-2 transition-all p-0 hover:bg-transparent ${
-                      isColorVariantSelected(index)
-                        ? "border-accent"
-                        : "border-border hover:border-destructive"
-                    }`}
-                    style={{
-                      backgroundColor: variant.hexCode || "#ccc",
-                    }}
-                    title={variant.colorName}
+        <div className="flex items-center">
+          <div className="space-y-5 w-full">
+            {/* Product Name */}
+            <div>
+              <h1 className="text-3xl font-bold mb-3">
+                {product.productName}
+                {hasPartId && (
+                  <span className="text-sm text-muted-foreground font-normal ml-2">
+                    #{currentPartId}
+                  </span>
+                )}
+              </h1>
+              {/* Star Rating */}
+              <div className="flex items-center gap-1 mb-3">
+                {[...Array(5)].map((_, i) => (
+                  <Star
+                    key={i}
+                    className="size-4 fill-yellow-400 text-yellow-400"
                   />
                 ))}
+                <span className="text-xs text-primary leading-none">(0)</span>
               </div>
             </div>
-          )}
 
-          {/* Description */}
-          {hasDescriptions && (
-            <div className="space-y-2 text-sm">
-              {descriptions.map((description, index) => (
-                <div key={index} className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
-                  <span>{description}</span>
-                </div>
-              ))}
+            {/* Price */}
+            <div className="flex items-center gap-2">
+              <span className="text-5xl font-bold text-success dark:text-accent">
+                ${displayPrice?.toFixed(2) || "0.00"}
+              </span>
+              {hasDiscount && product.price && (
+                <span className="text-sm text-muted-foreground line-through">
+                  ${product.price.toFixed(2)}
+                </span>
+              )}
             </div>
-          )}
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button className="flex-1">Add to Cart</Button>
-            <Button variant="accent" className="flex-1">
-              Buy Now
-            </Button>
+            {/* Stock Alert */}
+            {stockAlert && (
+              <div className="flex items-center gap-2 relative">
+                <span
+                  className={`w-2 h-2 rounded-full ${stockAlert.dotColor} animate-ping absolute`}
+                />
+                <span
+                  className={`w-2 h-2 rounded-full ${stockAlert.dotColor}`}
+                />
+                <span className={`text-sm font-medium ${stockAlert.textColor}`}>
+                  {stockAlert.message}
+                </span>
+              </div>
+            )}
+
+            {/* Features & Classifications */}
+            {hasFeatures && (
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold">
+                  Features & Classifications
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {features.categories.map((cat, index) => (
+                    <Badge
+                      key={`cat-${index}`}
+                      variant="outline"
+                      className="px-3 py-1"
+                    >
+                      {cat.name}
+                    </Badge>
+                  ))}
+                  {features.collections.map((col, index) => (
+                    <Badge
+                      key={`col-${index}`}
+                      variant="outline"
+                      className="px-3 py-1"
+                    >
+                      {col.name}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Minifig Guide and Instructions */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold">Includes</h3>
+              <div className="text-sm text-muted-foreground space-y-2">
+                <Badge variant="outline" className="px-3 py-1">
+                  Minifig Guide and Instructions
+                </Badge>
+              </div>
+            </div>
+
+            {/* Color Variants / Color */}
+            {hasColorVariants && (
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold">
+                  {product.productType === "standalone"
+                    ? "Color"
+                    : "Color Variants"}
+                </h3>
+                <div className="flex flex-wrap gap-2 items-center">
+                  {product.productType === "standalone" ? (
+                    // Standalone product - show single color as indicator
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="size-6 rounded-full border-2 border-border"
+                        style={{
+                          backgroundColor: colorVariants[0]?.hexCode || "#ccc",
+                        }}
+                      />
+                      <span className="text-sm">
+                        {colorVariants[0]?.colorName}
+                      </span>
+                    </div>
+                  ) : (
+                    // Variant product - show clickable color options
+                    colorVariants.map((variant, index) => (
+                      <Button
+                        key={variant.colorId}
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleColorVariantClick(index)}
+                        className={`relative size-6 rounded-full border-2 transition-all p-0 hover:bg-transparent ${
+                          isColorVariantSelected(index)
+                            ? "border-accent"
+                            : "border-border hover:border-destructive"
+                        }`}
+                        style={{
+                          backgroundColor: variant.hexCode || "#ccc",
+                        }}
+                        title={variant.colorName}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Description */}
+            {hasDescriptions && (
+              <div className="space-y-2 text-sm">
+                {descriptions.map((description, index) => (
+                  <div key={index} className="flex items-start gap-2">
+                    <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
+                    <span>{description}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button className="flex-1">Add to Cart</Button>
+              <Button variant="accent" className="flex-1">
+                Buy Now
+              </Button>
+            </div>
           </div>
         </div>
       </div>

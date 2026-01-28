@@ -1,6 +1,7 @@
 import Home from "@/pages/Home";
 import Products from "@/pages/Products";
 import ProductDetails from "@/pages/ProductDetails";
+import Collections from "@/pages/Collections";
 import Contact from "@/pages/Contact";
 import About from "@/pages/About";
 import Designer from "@/pages/Designer";
@@ -40,6 +41,10 @@ export const publicRoutes = [
   {
     path: "/products/:id",
     element: ProductDetails,
+  },
+  {
+    path: "/collections",
+    element: Collections,
   },
   {
     path: "/contact-us",

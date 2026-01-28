@@ -1530,7 +1530,7 @@ export const getPublicCategories = async (req, res) => {
 export const getPublicCollections = async (req, res) => {
   try {
     const collections = await Collection.find()
-      .select("_id collectionName")
+      .select("_id collectionName image isFeatured")
       .sort({ collectionName: 1 })
       .lean();
 
@@ -1558,6 +1558,8 @@ export const getPublicCollections = async (req, res) => {
       return {
         _id: collection._id,
         collectionName: collection.collectionName,
+        image: collection.image,
+        isFeatured: collection.isFeatured,
         count: collectionCountMap.get(collection._id.toString()) || 0,
         subCollections: subCols,
       };

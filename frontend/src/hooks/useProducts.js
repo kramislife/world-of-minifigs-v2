@@ -23,8 +23,7 @@ const DEFAULT_PAGINATION = {
 };
 
 // Utility: Parse comma-separated URL param to array
-const parseArrayParam = (param) =>
-  param?.split(",").filter(Boolean) || [];
+const parseArrayParam = (param) => param?.split(",").filter(Boolean) || [];
 
 // Utility: Calculate display price and discount
 const getProductDisplayInfo = (product) => ({
@@ -34,9 +33,7 @@ const getProductDisplayInfo = (product) => ({
 
 // Utility: Toggle item in array
 const toggleArrayItem = (array, item) =>
-  array.includes(item)
-    ? array.filter((id) => id !== item)
-    : [...array, item];
+  array.includes(item) ? array.filter((id) => id !== item) : [...array, item];
 
 // Utility: Toggle item in Set
 const toggleSetItem = (set, item) => {
@@ -51,7 +48,7 @@ const toggleSetItem = (set, item) => {
 
 export const useProducts = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   // UI state for filter expansion
   const [expandedCategories, setExpandedCategories] = useState(new Set());
   const [expandedCollections, setExpandedCollections] = useState(new Set());
@@ -65,7 +62,9 @@ export const useProducts = () => {
   const categoryIds = parseArrayParam(searchParams.get("categoryIds"));
   const subCategoryIds = parseArrayParam(searchParams.get("subCategoryIds"));
   const collectionIds = parseArrayParam(searchParams.get("collectionIds"));
-  const subCollectionIds = parseArrayParam(searchParams.get("subCollectionIds"));
+  const subCollectionIds = parseArrayParam(
+    searchParams.get("subCollectionIds"),
+  );
   const colorIds = parseArrayParam(searchParams.get("colorIds"));
   const skillLevelIds = parseArrayParam(searchParams.get("skillLevelIds"));
 
@@ -83,7 +82,7 @@ export const useProducts = () => {
   // Build query params for API
   const queryParams = useMemo(() => {
     const buildArrayParam = (arr) => (arr.length > 0 ? arr : undefined);
-    
+
     return {
       page,
       limit,
@@ -98,17 +97,17 @@ export const useProducts = () => {
       skillLevelIds: buildArrayParam(skillLevelIds),
     };
   }, [
-      page,
-      limit,
-      search,
-      sortBy,
-      priceParams,
-      categoryIds,
-      subCategoryIds,
-      collectionIds,
-      subCollectionIds,
-      colorIds,
-      skillLevelIds,
+    page,
+    limit,
+    search,
+    sortBy,
+    priceParams,
+    categoryIds,
+    subCategoryIds,
+    collectionIds,
+    subCollectionIds,
+    colorIds,
+    skillLevelIds,
   ]);
 
   // Fetch products
@@ -134,7 +133,7 @@ export const useProducts = () => {
   const updateSearchParams = useCallback(
     (updates) => {
       const newParams = new URLSearchParams(searchParams);
-      
+
       Object.entries(updates).forEach(([key, value]) => {
         if (
           value === null ||
@@ -290,9 +289,12 @@ export const useProducts = () => {
   ]);
 
   // Generic expansion handler factory
-  const createExpansionHandler = useCallback((setter) => (id) => {
-    setter((prev) => toggleSetItem(prev, id));
-  }, []);
+  const createExpansionHandler = useCallback(
+    (setter) => (id) => {
+      setter((prev) => toggleSetItem(prev, id));
+    },
+    [],
+  );
 
   // Filter expansion handlers
   const handleCategoryExpansion = useMemo(
@@ -447,10 +449,9 @@ export const useProducts = () => {
 // Per-card hover image cycling
 export const useProductCardHoverImages = (
   product,
-  { hoverDelayMs = 1000, cycleIntervalMs = 1500 } = {},
+  { cycleIntervalMs = 1000 } = {},
 ) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const hoverTimeoutRef = useRef(null);
   const cycleIntervalRef = useRef(null);
 
   const imageUrls = useMemo(() => {
@@ -480,6 +481,9 @@ export const useProductCardHoverImages = (
     if (!hasMultipleImages) return;
     stopImageCycling();
 
+    // Immediately show second image on hover
+    setCurrentImageIndex(1);
+
     cycleIntervalRef.current = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % imageUrls.length);
     }, cycleIntervalMs);
@@ -487,17 +491,11 @@ export const useProductCardHoverImages = (
 
   const handleMouseEnter = useCallback(() => {
     if (!hasMultipleImages) return;
-    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    hoverTimeoutRef.current = setTimeout(() => {
-      startImageCycling();
-    }, hoverDelayMs);
-  }, [hasMultipleImages, hoverDelayMs, startImageCycling]);
+    // Start cycling immediately without delay
+    startImageCycling();
+  }, [hasMultipleImages, startImageCycling]);
 
   const handleMouseLeave = useCallback(() => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
     stopImageCycling();
     setCurrentImageIndex(0);
   }, [stopImageCycling]);
@@ -506,7 +504,6 @@ export const useProductCardHoverImages = (
   useEffect(() => {
     setCurrentImageIndex(0);
     return () => {
-      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
       stopImageCycling();
     };
   }, [product?._id, stopImageCycling]);
@@ -713,7 +710,7 @@ export const useProductDetails = (id) => {
     return {
       dotColor: "bg-success",
       textColor: "text-success",
-      message: `${currentStock} available, Get it now!`,
+      message: "Available now",
     };
   }, [currentStock]);
 
@@ -759,8 +756,7 @@ export const useProductDetails = (id) => {
     (index) => {
       if (!product) return false;
       return (
-        (product.productType === "variant" &&
-          selectedVariantIndex === index) ||
+        (product.productType === "variant" && selectedVariantIndex === index) ||
         (product.productType === "standalone" && selectedImageIndex === index)
       );
     },
@@ -788,7 +784,7 @@ export const useProductDetails = (id) => {
   // Description array
   const descriptions = useMemo(() => {
     if (!product || !product.descriptions) return [];
-    return product.descriptions.filter(d => d && d.trim());
+    return product.descriptions.filter((d) => d && d.trim());
   }, [product]);
 
   return {
