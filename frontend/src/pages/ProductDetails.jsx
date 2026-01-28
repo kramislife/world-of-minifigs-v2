@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Logo from "@/assets/media/Logo.png";
@@ -21,8 +21,10 @@ const ProductDetails = () => {
     displayPrice,
     hasDiscount,
     stockAlert,
-    formattedPartItemId,
-    hasPartOrItemId,
+    currentPartId,
+    hasPartId,
+    currentItemId,
+    hasItemId,
     descriptions,
     hasDescriptions,
     hasMultipleImages,
@@ -84,6 +86,13 @@ const ProductDetails = () => {
                   </Badge>
                 )}
 
+                {/* Item ID */}
+                {hasItemId && (
+                  <span className="absolute bottom-3 right-3 z-10 text-sm">
+                    # {currentItemId}
+                  </span>
+                )}
+
                 {/* Navigation Arrows */}
                 {hasMultipleImages && (
                   <>
@@ -121,7 +130,7 @@ const ProductDetails = () => {
           {hasMultipleImages && (
             <div
               ref={thumbnailScrollRef}
-              className="flex lg:flex-col gap-2 overflow-y-auto max-h-[600px] lg:max-h-none lg:h-[610px] order-2 lg:order-1"
+              className="flex lg:flex-col gap-2 overflow-y-auto lg:h-[620px] order-2 lg:order-1"
             >
               {allImages.map((img, index) => (
                 <Button
@@ -149,12 +158,24 @@ const ProductDetails = () => {
         <div className="space-y-5">
           {/* Product Name */}
           <div>
-            <h1 className="text-3xl font-bold mb-3">{product.productName}</h1>
-            {hasPartOrItemId && (
-              <p className="text-sm text-muted-foreground">
-                {formattedPartItemId}
-              </p>
-            )}
+            <h1 className="text-3xl font-bold mb-3">
+              {product.productName}
+              {hasPartId && (
+                <span className="text-sm text-muted-foreground font-normal ml-2">
+                  #{currentPartId}
+                </span>
+              )}
+            </h1>
+            {/* Star Rating */}
+            <div className="flex items-center gap-1 mb-3">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className="size-4 fill-yellow-400 text-yellow-400"
+                />
+              ))}
+              <span className="text-xs text-primary leading-none">(0)</span>
+            </div>
           </div>
 
           {/* Price */}

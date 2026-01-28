@@ -782,16 +782,8 @@ export const useProductDetails = (id) => {
   const hasColorVariants = colorVariants.length > 0;
   const hasDescriptions =
     product?.description1 || product?.description2 || product?.description3;
-  const hasPartOrItemId = Boolean(currentPartId || currentItemId);
-
-  // Formatted part/item ID string
-  const formattedPartItemId = useMemo(() => {
-    if (!hasPartOrItemId) return null;
-    const parts = [];
-    if (currentItemId) parts.push(`Item ID: ${currentItemId}`);
-    if (currentPartId) parts.push(`Part ID: ${currentPartId}`);
-    return parts.join(" • ");
-  }, [currentItemId, currentPartId, hasPartOrItemId]);
+  const hasPartId = Boolean(currentPartId);
+  const hasItemId = Boolean(currentItemId);
 
   // Description array
   const descriptions = useMemo(() => {
@@ -815,8 +807,10 @@ export const useProductDetails = (id) => {
     displayPrice,
     hasDiscount,
     stockAlert,
-    formattedPartItemId,
-    hasPartOrItemId,
+    currentPartId,
+    hasPartId,
+    currentItemId,
+    hasItemId,
     descriptions,
     hasDescriptions,
     hasMultipleImages,
