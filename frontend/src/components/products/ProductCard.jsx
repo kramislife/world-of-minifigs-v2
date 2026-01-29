@@ -28,11 +28,12 @@ const ProductCard = ({ product }) => {
     <Card
       role="button"
       tabIndex={0}
+      aria-label={`View product ${product.productName}`}
       onClick={handleNavigate}
       onKeyDown={(e) => e.key === "Enter" && handleNavigate()}
-      className="group cursor-pointer overflow-hidden transition-shadow hover:shadow-lg p-0 gap-2"
+      className="group cursor-pointer hover:shadow-lg p-0 gap-2"
     >
-      <CardHeader className="p-0">
+      <CardHeader className="p-0 gap-0">
         <div
           className="relative aspect-square overflow-hidden border-b border-border"
           onMouseEnter={handleMouseEnter}
@@ -44,14 +45,16 @@ const ProductCard = ({ product }) => {
                 <img
                   key={`${product._id}-${url}-${index}`}
                   src={url}
-                  alt={`${product.productName}${hasMultipleImages ? ` - Image ${index + 1}` : ""}`}
+                  alt={`${product.productName}${
+                    hasMultipleImages ? ` - Image ${index + 1}` : ""
+                  }`}
+                  title={`Go to ${product.productName}`}
                   className={[
                     "absolute inset-0 h-full w-full object-cover transition-opacity duration-500",
                     index === currentImageIndex
                       ? "opacity-100 z-10"
                       : "opacity-0 z-0",
                   ].join(" ")}
-                  style={{ transition: "opacity 0.5s ease-in-out" }}
                 />
               ))}
             </div>
@@ -60,6 +63,7 @@ const ProductCard = ({ product }) => {
               <img
                 src={Logo}
                 alt="Product placeholder"
+                title={product.productName}
                 className="max-h-40 max-w-40 object-contain opacity-80"
               />
             </div>
@@ -72,19 +76,19 @@ const ProductCard = ({ product }) => {
             </Badge>
           )}
 
-          {/* Bottom CTA (on top of image) */}
-          <div className="absolute inset-x-0 bottom-0 z-20 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none">
-            <div className="absolute inset-x-0 bottom-0 h-28 bg-linear-to-t from-black/70 to-transparent" />
-            <div className="relative flex justify-center pb-5">
+          {/* Button CTA */}
+          <div className="absolute inset-x-0 bottom-0 z-20 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <div className="relative flex justify-center px-2 pb-2">
               <Button
-                variant="accent"
-                className="pointer-events-auto"
+                variant="dark"
+                className="w-full rounded-none uppercase font-semibold translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleNavigate();
                 }}
               >
-                View Details
+                {product.productType === "variant"
+                  ? "Choose Options"
+                  : "Add to Cart"}
               </Button>
             </div>
           </div>

@@ -870,7 +870,7 @@ export const updateProduct = async (req, res) => {
         imagesToDelete = product.images.filter(
           (existingImg) =>
             !existingImages.some(
-              (img) => img.publicId === existingImg.publicId.toString(),
+              (img) => String(img.publicId) === String(existingImg.publicId),
             ),
         );
       }
@@ -932,6 +932,19 @@ export const updateProduct = async (req, res) => {
         variantImagesToDelete = [...product.images];
       }
 
+      // Collect ALL existing variant images first - they'll be removed from deletion list if kept
+      const allOldVariantImages = [];
+      if (product.variants && product.variants.length > 0) {
+        for (const oldVariant of product.variants) {
+          if (oldVariant.image && oldVariant.image.publicId) {
+            allOldVariantImages.push(oldVariant.image);
+          }
+        }
+      }
+
+      // Track which old images are being kept
+      const keptImagePublicIds = new Set();
+
       try {
         for (let i = 0; i < variantsToProcess.length; i++) {
           const variant = variantsToProcess[i];
@@ -941,8 +954,9 @@ export const updateProduct = async (req, res) => {
           if (variant.image) {
             // Check if it's an existing image (object) or new image (base64 string)
             if (typeof variant.image === "object" && variant.image.publicId) {
-              // Existing image
+              // Existing image - mark as kept
               variantImage = variant.image;
+              keptImagePublicIds.add(String(variant.image.publicId));
             } else if (typeof variant.image === "string") {
               // New image - upload it
               const validation = validateImage(variant.image);
@@ -978,20 +992,6 @@ export const updateProduct = async (req, res) => {
             }
           }
 
-          // Find old variant image to delete if it's being replaced
-          if (product.variants && product.variants[i]) {
-            const oldVariant = product.variants[i];
-            if (oldVariant.image && oldVariant.image.publicId) {
-              const oldImage = oldVariant.image;
-              const isImageKept =
-                variantImage &&
-                variantImage.publicId === oldImage.publicId.toString();
-              if (!isImageKept) {
-                variantImagesToDelete.push(oldImage);
-              }
-            }
-          }
-
           processedVariants.push({
             colorId: variant.colorId,
             partId: variant.partId.trim(),
@@ -1004,6 +1004,13 @@ export const updateProduct = async (req, res) => {
                 : 0,
             image: variantImage,
           });
+        }
+
+        // Add all old variant images that aren't being kept to the delete list
+        for (const oldImage of allOldVariantImages) {
+          if (!keptImagePublicIds.has(String(oldImage.publicId))) {
+            variantImagesToDelete.push(oldImage);
+          }
         }
       } catch (error) {
         console.error("Variant image upload error:", error);

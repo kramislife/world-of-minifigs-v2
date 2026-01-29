@@ -67,7 +67,9 @@ const ProductDetails = () => {
         {/* Left Column - Images */}
         <div className="flex flex-col lg:flex-row gap-3">
           {/* Main Image */}
-          <div className="relative flex-1 aspect-square border-4 border-border rounded-lg overflow-hidden group order-1 lg:order-2">
+          <div
+            className={`relative flex-1 border-4 border-border rounded-lg overflow-hidden group order-1 lg:order-2 ${!hasMultipleImages ? "flex items-center justify-center" : "aspect-square"}`}
+          >
             {currentImageUrl ? (
               <>
                 <img
