@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { useCollections } from "@/hooks/useCollections";
+import Logo from "@/assets/media/Logo.png";
+import { useCollections, getCollectionLink } from "@/hooks/useCollections";
 
 const Collections = () => {
   const { collections, isLoading, isError, hasCollections } = useCollections();
@@ -53,25 +54,38 @@ const Collections = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-3 gap-y-7">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-2 gap-y-7">
             {collections.map((collection) => (
               <Link
                 key={collection._id}
-                to={`/products?collectionIds=${collection._id}`}
+                to={getCollectionLink(collection)}
                 className="group"
               >
                 {/* Image Container */}
-                <div className="aspect-square overflow-hidden mb-2">
-                  <img
-                    src={collection.image?.url}
-                    alt={collection.collectionName}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
+                <div className="aspect-square overflow-hidden mb-2 flex items-center justify-center border">
+                  {collection.image?.url ? (
+                    <img
+                      src={collection.image.url}
+                      alt={collection.collectionName}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <img
+                      src={Logo}
+                      alt="Placeholder"
+                      className="max-h-40 max-w-40 object-contain opacity-80"
+                    />
+                  )}
                 </div>
 
                 {/* Collection Name */}
-                <h3 className="text-2xl font-black tracking-tight">
+                <h3 className="text-3xl font-black tracking-tight">
                   {collection.collectionName}
+                  {collection.count > 0 && (
+                    <sup className="text-sm font-bold text-muted-foreground ml-2">
+                      {collection.count}
+                    </sup>
+                  )}
                 </h3>
               </Link>
             ))}

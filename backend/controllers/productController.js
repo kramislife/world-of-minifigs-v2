@@ -1530,13 +1530,13 @@ export const getPublicCategories = async (req, res) => {
 export const getPublicCollections = async (req, res) => {
   try {
     const collections = await Collection.find()
-      .select("_id collectionName image isFeatured")
-      .sort({ collectionName: 1 })
+      .select("_id collectionName description image isFeatured createdAt")
+      .sort({ createdAt: -1 })
       .lean();
 
     const subCollections = await SubCollection.find()
-      .select("_id subCollectionName collectionId")
-      .sort({ subCollectionName: 1 })
+      .select("_id subCollectionName image collectionId createdAt")
+      .sort({ createdAt: -1 })
       .lean();
 
     // Get counts using utility function
@@ -1549,15 +1549,17 @@ export const getPublicCollections = async (req, res) => {
         .filter(
           (sub) => sub.collectionId.toString() === collection._id.toString(),
         )
-        .map(({ _id, subCollectionName }) => ({
+        .map(({ _id, subCollectionName, image }) => ({
           _id,
           subCollectionName,
+          image,
           count: subCollectionCountMap.get(_id.toString()) || 0,
         }));
 
       return {
         _id: collection._id,
         collectionName: collection.collectionName,
+        description: collection.description,
         image: collection.image,
         isFeatured: collection.isFeatured,
         count: collectionCountMap.get(collection._id.toString()) || 0,

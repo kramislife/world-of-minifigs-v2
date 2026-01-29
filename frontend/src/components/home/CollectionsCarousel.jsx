@@ -7,7 +7,11 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
-import { useCollectionsCarousel } from "@/hooks/useCollections";
+import Logo from "@/assets/media/Logo.png";
+import {
+  useCollectionsCarousel,
+  getCollectionLink,
+} from "@/hooks/useCollections";
 
 const CollectionsCarousel = () => {
   const {
@@ -88,24 +92,26 @@ const CollectionsCarousel = () => {
               key={collection._id}
               className="pl-2 basis-1/2 sm:basis-1/3 md:basis-1/4"
             >
-              <Link
-                to={`/products?collectionIds=${collection._id}`}
-                className="block group"
-              >
-                <div className="relative aspect-auto overflow-hidden rounded-md">
+              <Link to={getCollectionLink(collection)} className="block group">
+                <div className="relative aspect-square overflow-hidden flex items-center justify-center border">
                   {/* Background Image */}
-                  <img
-                    src={collection.image?.url}
-                    alt={collection.collectionName}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-
-                  {/* Overlay */}
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors" />
+                  {collection.image?.url ? (
+                    <img
+                      src={collection.image.url}
+                      alt={collection.collectionName}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <img
+                      src={Logo}
+                      alt="Placeholder"
+                      className="max-h-40 max-w-40 object-contain opacity-80"
+                    />
+                  )}
 
                   {/* Collection Name */}
-                  <div className="absolute inset-x-0 top-4 px-3">
-                    <h3 className="text-background dark:text-foreground font-black text-2xl  uppercase drop-shadow-2xl">
+                  <div className="absolute inset-x-0 bottom-2 px-2">
+                    <h3 className="text-background dark:text-foreground font-bold text-2xl  uppercase text-center">
                       {collection.collectionName}
                     </h3>
                   </div>
