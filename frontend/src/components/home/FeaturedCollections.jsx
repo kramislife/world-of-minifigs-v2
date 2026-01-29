@@ -23,7 +23,7 @@ const FeaturedCollections = () => {
   }
 
   return (
-    <section className="px-5 py-10">
+    <section className="p-5">
       <div className="flex flex-col gap-2">
         {collections.slice(0, 2).map((collection) => (
           <Link
@@ -32,7 +32,7 @@ const FeaturedCollections = () => {
             className="group relative block overflow-hidden"
           >
             {/* Banner Image */}
-            <div className="aspect-16/5 flex items-center justify-center border">
+            <div className="aspect-[4/3] sm:aspect-[16/5] flex items-center justify-center border">
               {collection.image?.url ? (
                 <img
                   src={collection.image.url}
@@ -53,11 +53,11 @@ const FeaturedCollections = () => {
 
             {/* Content */}
             <div className="absolute inset-0 flex flex-col justify-end p-5">
-              <h2 className="text-5xl font-bold text-background dark:text-foreground uppercase mb-2">
+              <h2 className="text-3xl sm:text-4xl font-bold text-background dark:text-foreground uppercase mb-2">
                 {collection.collectionName}
               </h2>
               {collection.description && (
-                <p className="text-background dark:text-foreground max-w-xl">
+                <p className="text-xs sm:text-sm text-background dark:text-foreground max-w-xl">
                   {collection.description}
                 </p>
               )}

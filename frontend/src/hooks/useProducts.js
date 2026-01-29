@@ -9,6 +9,7 @@ import {
   useGetPublicSkillLevelsQuery,
 } from "@/redux/api/publicApi";
 import { PRICE_RANGES, DEFAULT_SORT } from "@/constant/filterOptions";
+import { useCarousel } from "./useCarousel";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 12;
@@ -814,5 +815,52 @@ export const useProductDetails = (id) => {
     handlePreviousImage,
     handleNextImage,
     handleColorVariantClick,
+  };
+};
+
+// ------------------------------------ Latest Products -------------------------------------
+export const useLatestProducts = ({ limit = 12 } = {}) => {
+  const {
+    data: productsData,
+    isLoading,
+    error,
+  } = useGetProductsQuery(
+    {
+      page: 1,
+      limit,
+      sortBy: "date_desc", // Latest products: newest to oldest
+    },
+    {
+      skip: false,
+    },
+  );
+
+  const products = useMemo(() => {
+    const rawProducts = productsData?.products || [];
+    return rawProducts.map((product) => ({
+      ...product,
+      ...getProductDisplayInfo(product),
+    }));
+  }, [productsData?.products]);
+
+  const { setApi, canScrollPrev, canScrollNext, scrollPrev, scrollNext } =
+    useCarousel({
+      autoScroll: false, // No auto-scroll for latest products
+      itemCount: products.length,
+    });
+
+  const hasProducts = products.length > 0;
+  const isError = Boolean(error);
+
+  return {
+    products,
+    isLoading,
+    isError,
+    hasProducts,
+    setApi,
+    canScrollPrev,
+    canScrollNext,
+    scrollPrev,
+    scrollNext,
   };
 };

@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useGetPublicCollectionsQuery } from "@/redux/api/publicApi";
+import { useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
+import { useCarousel } from "./useCarousel";
+import { useGetPublicCollectionsQuery } from "@/redux/api/publicApi";
 
 const AUTO_SCROLL_INTERVAL = 3000; // 3 seconds
 
@@ -41,52 +42,12 @@ export const useCollections = () => {
 export const useCollectionsCarousel = () => {
   const { collections, isLoading, isError, hasCollections } = useCollections();
 
-  const [api, setApi] = useState(null);
-  const [canScrollPrev, setCanScrollPrev] = useState(false);
-  const [canScrollNext, setCanScrollNext] = useState(false);
-
-  const scrollPrev = useCallback(() => {
-    api?.scrollPrev();
-  }, [api]);
-
-  const scrollNext = useCallback(() => {
-    api?.scrollNext();
-  }, [api]);
-
-  const onSelect = useCallback(() => {
-    if (!api) return;
-    setCanScrollPrev(api.canScrollPrev());
-    setCanScrollNext(api.canScrollNext());
-  }, [api]);
-
-  // Setup carousel event listeners
-  useEffect(() => {
-    if (!api) return;
-
-    onSelect();
-    api.on("select", onSelect);
-    api.on("reInit", onSelect);
-
-    return () => {
-      api.off("select", onSelect);
-      api.off("reInit", onSelect);
-    };
-  }, [api, onSelect]);
-
-  // Auto-scroll effect
-  useEffect(() => {
-    if (!api || collections.length <= 1) return;
-
-    const autoScroll = setInterval(() => {
-      if (api.canScrollNext()) {
-        api.scrollNext();
-      } else {
-        api.scrollTo(0); // Loop back to start
-      }
-    }, AUTO_SCROLL_INTERVAL);
-
-    return () => clearInterval(autoScroll);
-  }, [api, collections.length]);
+  const { setApi, canScrollPrev, canScrollNext, scrollPrev, scrollNext } =
+    useCarousel({
+      autoScroll: true,
+      autoScrollInterval: AUTO_SCROLL_INTERVAL,
+      itemCount: collections.length,
+    });
 
   return {
     // Data
