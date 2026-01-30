@@ -9,7 +9,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary dark:bg-primary text-primary-foreground hover:bg-primary/90",
+        default:
+          "bg-primary dark:bg-primary text-primary-foreground hover:bg-primary/90",
         destructive: "bg-destructive text-white hover:bg-destructive/90",
         outline:
           "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:hover:bg-input/50",
@@ -19,6 +20,7 @@ const buttonVariants = cva(
           "hover:bg-accent hover:text-accent-foreground text-background dark:text-foreground dark:hover:text-secondary-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         accent: "bg-accent dark:text-secondary-foreground hover:bg-accent/90",
+        dark: "bg-popover-foreground dark:bg-accent text-background dark:text-secondary-foreground",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
@@ -33,7 +35,7 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
+  },
 );
 
 function Button({ className, variant, size, asChild = false, ...props }) {

@@ -23,7 +23,7 @@ import {
 import {
   processProductsForListing,
   filterProductByType,
-  removeSensitiveFields,
+  processProductForDetails,
 } from "../utils/Products/productProcessor.js";
 import {
   getCategoryCounts,
@@ -54,9 +54,7 @@ export const createProduct = async (req, res) => {
       itemId,
       price,
       discount,
-      description1,
-      description2,
-      description3,
+      descriptions,
       images, // For standalone products - array of base64 strings
       categoryIds,
       subCategoryIds,
@@ -90,11 +88,24 @@ export const createProduct = async (req, res) => {
       });
     }
 
-    if (!description1 || !description1.trim()) {
+    if (
+      !descriptions ||
+      !Array.isArray(descriptions) ||
+      descriptions.length === 0 ||
+      !descriptions[0]?.trim()
+    ) {
       return res.status(400).json({
         success: false,
         message: "Description is required",
         description: "Please provide at least one description.",
+      });
+    }
+
+    if (descriptions.length > 3) {
+      return res.status(400).json({
+        success: false,
+        message: "Too many descriptions",
+        description: "Maximum of 3 descriptions are allowed.",
       });
     }
 
@@ -389,44 +400,43 @@ export const createProduct = async (req, res) => {
     const discountValue =
       discount !== undefined && discount !== null && discount !== ""
         ? Number(discount)
-        : 0;
-    const discountPrice = calculateDiscountPrice(price, discountValue);
+        : null;
+    const discountPrice = discountValue
+      ? calculateDiscountPrice(price, discountValue)
+      : null;
 
     // Create product
     const productData = {
       productType: finalProductType,
       productName: productName.trim(),
       price: Number(price),
-      description1: description1.trim(),
+      descriptions: descriptions
+        .filter((d) => d && d.trim())
+        .map((d) => d.trim())
+        .slice(0, 3),
       discount: discountValue,
       discountPrice: discountPrice,
       pieceCount:
         pieceCount !== undefined && pieceCount !== null && pieceCount !== ""
           ? Number(pieceCount)
-          : 0,
+          : null,
       length:
         length !== undefined && length !== null && length !== ""
           ? Number(length)
-          : 0,
+          : null,
       width:
         width !== undefined && width !== null && width !== ""
           ? Number(width)
-          : 0,
+          : null,
       height:
         height !== undefined && height !== null && height !== ""
           ? Number(height)
-          : 0,
+          : null,
       isActive: isActive !== undefined ? Boolean(isActive) : true,
       createdBy: req.user._id,
     };
 
     // Add optional fields
-    if (description2 && description2.trim()) {
-      productData.description2 = description2.trim();
-    }
-    if (description3 && description3.trim()) {
-      productData.description3 = description3.trim();
-    }
     if (categoryIds && categoryIds.length > 0) {
       productData.categoryIds = categoryIds;
     }
@@ -496,9 +506,7 @@ export const createProduct = async (req, res) => {
         price: product.price,
         discount: product.discount,
         discountPrice: product.discountPrice,
-        description1: product.description1,
-        description2: product.description2,
-        description3: product.description3,
+        descriptions: product.descriptions,
         ...(product.productType === "standalone" && {
           partId: product.partId,
           itemId: product.itemId,
@@ -648,9 +656,7 @@ export const updateProduct = async (req, res) => {
       itemId,
       price,
       discount,
-      description1,
-      description2,
-      description3,
+      descriptions,
       images, // For standalone products - array of base64 strings or existing image objects
       categoryIds,
       subCategoryIds,
@@ -730,12 +736,25 @@ export const updateProduct = async (req, res) => {
       });
     }
 
-    if (description1 !== undefined && !description1.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: "Description is required",
-        description: "Please provide at least one description.",
-      });
+    if (descriptions !== undefined) {
+      if (
+        !Array.isArray(descriptions) ||
+        descriptions.length === 0 ||
+        !descriptions[0]?.trim()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Description is required",
+          description: "Please provide at least one description.",
+        });
+      }
+      if (descriptions.length > 3) {
+        return res.status(400).json({
+          success: false,
+          message: "Too many descriptions",
+          description: "Maximum of 3 descriptions are allowed.",
+        });
+      }
     }
 
     // Validate standalone product fields if switching to standalone or updating standalone
@@ -851,7 +870,7 @@ export const updateProduct = async (req, res) => {
         imagesToDelete = product.images.filter(
           (existingImg) =>
             !existingImages.some(
-              (img) => img.publicId === existingImg.publicId.toString(),
+              (img) => String(img.publicId) === String(existingImg.publicId),
             ),
         );
       }
@@ -913,6 +932,19 @@ export const updateProduct = async (req, res) => {
         variantImagesToDelete = [...product.images];
       }
 
+      // Collect ALL existing variant images first - they'll be removed from deletion list if kept
+      const allOldVariantImages = [];
+      if (product.variants && product.variants.length > 0) {
+        for (const oldVariant of product.variants) {
+          if (oldVariant.image && oldVariant.image.publicId) {
+            allOldVariantImages.push(oldVariant.image);
+          }
+        }
+      }
+
+      // Track which old images are being kept
+      const keptImagePublicIds = new Set();
+
       try {
         for (let i = 0; i < variantsToProcess.length; i++) {
           const variant = variantsToProcess[i];
@@ -922,8 +954,9 @@ export const updateProduct = async (req, res) => {
           if (variant.image) {
             // Check if it's an existing image (object) or new image (base64 string)
             if (typeof variant.image === "object" && variant.image.publicId) {
-              // Existing image
+              // Existing image - mark as kept
               variantImage = variant.image;
+              keptImagePublicIds.add(String(variant.image.publicId));
             } else if (typeof variant.image === "string") {
               // New image - upload it
               const validation = validateImage(variant.image);
@@ -959,20 +992,6 @@ export const updateProduct = async (req, res) => {
             }
           }
 
-          // Find old variant image to delete if it's being replaced
-          if (product.variants && product.variants[i]) {
-            const oldVariant = product.variants[i];
-            if (oldVariant.image && oldVariant.image.publicId) {
-              const oldImage = oldVariant.image;
-              const isImageKept =
-                variantImage &&
-                variantImage.publicId === oldImage.publicId.toString();
-              if (!isImageKept) {
-                variantImagesToDelete.push(oldImage);
-              }
-            }
-          }
-
           processedVariants.push({
             colorId: variant.colorId,
             partId: variant.partId.trim(),
@@ -985,6 +1004,13 @@ export const updateProduct = async (req, res) => {
                 : 0,
             image: variantImage,
           });
+        }
+
+        // Add all old variant images that aren't being kept to the delete list
+        for (const oldImage of allOldVariantImages) {
+          if (!keptImagePublicIds.has(String(oldImage.publicId))) {
+            variantImagesToDelete.push(oldImage);
+          }
         }
       } catch (error) {
         console.error("Variant image upload error:", error);
@@ -1011,7 +1037,8 @@ export const updateProduct = async (req, res) => {
     let discountPrice = product.discountPrice;
     if (discount !== undefined) {
       const finalPrice = price !== undefined ? price : product.price;
-      discountPrice = calculateDiscountPrice(finalPrice, discount);
+      discountPrice =
+        discount > 0 ? calculateDiscountPrice(finalPrice, discount) : null;
     } else if (price !== undefined && product.discount) {
       discountPrice = calculateDiscountPrice(price, product.discount);
     }
@@ -1030,14 +1057,11 @@ export const updateProduct = async (req, res) => {
       product.discount = discount > 0 ? Number(discount) : null;
       product.discountPrice = discountPrice;
     }
-    if (description1 !== undefined) {
-      product.description1 = description1.trim();
-    }
-    if (description2 !== undefined) {
-      product.description2 = description2.trim() || null;
-    }
-    if (description3 !== undefined) {
-      product.description3 = description3.trim() || null;
+    if (descriptions !== undefined) {
+      product.descriptions = descriptions
+        .filter((d) => d && d.trim())
+        .map((d) => d.trim())
+        .slice(0, 3);
     }
     if (categoryIds !== undefined) {
       product.categoryIds = categoryIds;
@@ -1052,16 +1076,17 @@ export const updateProduct = async (req, res) => {
       product.subCollectionIds = subCollectionIds;
     }
     if (pieceCount !== undefined) {
-      product.pieceCount = pieceCount !== null ? Number(pieceCount) : null;
+      product.pieceCount =
+        pieceCount !== null && pieceCount !== "" ? Number(pieceCount) : null;
     }
     if (length !== undefined) {
-      product.length = length !== null ? Number(length) : null;
+      product.length = length !== null && length !== "" ? Number(length) : null;
     }
     if (width !== undefined) {
-      product.width = width !== null ? Number(width) : null;
+      product.width = width !== null && width !== "" ? Number(width) : null;
     }
     if (height !== undefined) {
-      product.height = height !== null ? Number(height) : null;
+      product.height = height !== null && height !== "" ? Number(height) : null;
     }
     if (skillLevelIds !== undefined) {
       product.skillLevelIds = skillLevelIds;
@@ -1177,9 +1202,7 @@ export const updateProduct = async (req, res) => {
         price: product.price,
         discount: product.discount,
         discountPrice: product.discountPrice,
-        description1: product.description1,
-        description2: product.description2,
-        description3: product.description3,
+        descriptions: product.descriptions,
         productType: product.productType,
         ...(product.productType === "standalone" && {
           partId: product.partId,
@@ -1361,7 +1384,7 @@ export const getPublicProducts = async (req, res) => {
     // Apply pagination with minimal field selection
     const skip = (page - 1) * limit;
     const selectFields =
-      "_id productName price discountPrice productType createdAt images variants";
+      "_id productName price discount discountPrice productType createdAt images variants";
 
     // Build query with minimal fields
     let mongooseQuery = Product.find(query)
@@ -1427,7 +1450,7 @@ export const getPublicProductById = async (req, res) => {
     }
 
     const product = await Product.findOne({ _id: id, isActive: true })
-      .select("-__v")
+      .select("-__v -createdBy -updatedBy")
       .populate("categoryIds", "categoryName")
       .populate("subCategoryIds", "subCategoryName")
       .populate("collectionIds", "collectionName")
@@ -1446,12 +1469,11 @@ export const getPublicProductById = async (req, res) => {
       });
     }
 
-    // Remove sensitive/admin fields using utility
-    const publicProduct = removeSensitiveFields(product);
+    const processedProduct = processProductForDetails(product);
 
     return res.status(200).json({
       success: true,
-      product: publicProduct,
+      product: processedProduct,
     });
   } catch (error) {
     console.error("Get public product by ID error:", error);
@@ -1515,13 +1537,13 @@ export const getPublicCategories = async (req, res) => {
 export const getPublicCollections = async (req, res) => {
   try {
     const collections = await Collection.find()
-      .select("_id collectionName")
-      .sort({ collectionName: 1 })
+      .select("_id collectionName description image isFeatured createdAt")
+      .sort({ createdAt: -1 })
       .lean();
 
     const subCollections = await SubCollection.find()
-      .select("_id subCollectionName collectionId")
-      .sort({ subCollectionName: 1 })
+      .select("_id subCollectionName image collectionId createdAt")
+      .sort({ createdAt: -1 })
       .lean();
 
     // Get counts using utility function
@@ -1534,15 +1556,19 @@ export const getPublicCollections = async (req, res) => {
         .filter(
           (sub) => sub.collectionId.toString() === collection._id.toString(),
         )
-        .map(({ _id, subCollectionName }) => ({
+        .map(({ _id, subCollectionName, image }) => ({
           _id,
           subCollectionName,
+          image,
           count: subCollectionCountMap.get(_id.toString()) || 0,
         }));
 
       return {
         _id: collection._id,
         collectionName: collection.collectionName,
+        description: collection.description,
+        image: collection.image,
+        isFeatured: collection.isFeatured,
         count: collectionCountMap.get(collection._id.toString()) || 0,
         subCollections: subCols,
       };

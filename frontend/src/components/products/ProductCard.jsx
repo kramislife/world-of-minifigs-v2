@@ -2,11 +2,23 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Logo from "@/assets/media/Logo.png";
+import { useProductCardHoverImages } from "@/hooks/useProducts";
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
+  const {
+    imageUrls,
+    currentImageIndex,
+    hasMultipleImages,
+    handleMouseEnter,
+    handleMouseLeave,
+  } = useProductCardHoverImages(product, {
+    hoverDelayMs: 1000,
+    cycleIntervalMs: 1500,
+  });
 
   const handleNavigate = () => {
     navigate(`/products/${product._id}`);
@@ -16,46 +28,79 @@ const ProductCard = ({ product }) => {
     <Card
       role="button"
       tabIndex={0}
+      aria-label={`View product ${product.productName}`}
       onClick={handleNavigate}
       onKeyDown={(e) => e.key === "Enter" && handleNavigate()}
-      className="group cursor-pointer overflow-hidden transition-shadow hover:shadow-lg p-0 gap-2"
+      className="group cursor-pointer hover:shadow-lg p-0 gap-2"
     >
-      <CardHeader className="p-0">
-        <div className="relative aspect-square overflow-hidden border-b border-border">
-          {product.imageUrl ? (
-            <img
-              src={product.imageUrl}
-              alt={product.productName}
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            />
+      <CardHeader className="p-0 gap-0">
+        <div
+          className="relative aspect-square overflow-hidden border-b border-border"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          {imageUrls.length > 0 ? (
+            <div className="relative h-full w-full">
+              {imageUrls.map((url, index) => (
+                <img
+                  key={`${product._id}-${url}-${index}`}
+                  src={url}
+                  alt={`${product.productName}${
+                    hasMultipleImages ? ` - Image ${index + 1}` : ""
+                  }`}
+                  title={`Go to ${product.productName}`}
+                  className={[
+                    "absolute inset-0 h-full w-full object-cover transition-opacity duration-500",
+                    index === currentImageIndex
+                      ? "opacity-100 z-10"
+                      : "opacity-0 z-0",
+                  ].join(" ")}
+                />
+              ))}
+            </div>
           ) : (
             <div className="flex h-full w-full items-center justify-center">
               <img
                 src={Logo}
                 alt="Product placeholder"
+                title={product.productName}
                 className="max-h-40 max-w-40 object-contain opacity-80"
               />
             </div>
           )}
 
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-black/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-center justify-center">
-            <Button
-              variant="accent"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleNavigate();
-              }}
-            >
-              View Details
-            </Button>
+          {/* Discount Badge */}
+          {product.discount && (
+            <Badge variant="accent" className="absolute top-2 right-2 z-10">
+              {product.discount}% OFF
+            </Badge>
+          )}
+
+          {/* Button CTA */}
+          <div className="absolute inset-x-0 bottom-0 z-20 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            <div className="relative flex justify-center px-2 pb-2">
+              <Button
+                variant="dark"
+                className="w-full rounded-none uppercase font-semibold translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                {product.productType === "variant"
+                  ? "Choose Options"
+                  : "Add to Cart"}
+              </Button>
+            </div>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-2 px-3 pb-5">
         {/* Product Name */}
-        <h2 className="text-lg font-semibold line-clamp-2">
+        <h2
+          className="text-lg font-semibold line-clamp-1"
+          title={product.productName}
+        >
           {product.productName}
         </h2>
 

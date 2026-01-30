@@ -95,7 +95,7 @@ const useProductManagement = () => {
     return categories.map((category) => {
       const categoryId = category._id || category.id;
       const subs = subCategories.filter(
-        (sub) => (sub.categoryId?._id || sub.categoryId) === categoryId
+        (sub) => (sub.categoryId?._id || sub.categoryId) === categoryId,
       );
       return { ...category, subCategories: subs };
     });
@@ -106,7 +106,7 @@ const useProductManagement = () => {
     return collections.map((collection) => {
       const collectionId = collection._id || collection.id;
       const subs = subCollections.filter(
-        (sub) => (sub.collectionId?._id || sub.collectionId) === collectionId
+        (sub) => (sub.collectionId?._id || sub.collectionId) === collectionId,
       );
       return { ...collection, subCollections: subs };
     });
@@ -293,7 +293,7 @@ const useProductManagement = () => {
       }
     } else if (productType === "variant") {
       const variantWithoutImageIndex = variants.findIndex(
-        (variant) => !variant.image && !variant.imagePreview
+        (variant) => !variant.image && !variant.imagePreview,
       );
       if (variantWithoutImageIndex !== -1) {
         toast.error("Variant image is required", {
@@ -311,7 +311,7 @@ const useProductManagement = () => {
       const productData = {
         productName: formData.productName.trim(),
         price: parseFloat(formData.price),
-        description1: validDescriptions[0]?.trim() || "",
+        descriptions: validDescriptions.map((d) => d.trim()).slice(0, 3),
         isActive: formData.isActive,
       };
 
@@ -341,12 +341,6 @@ const useProductManagement = () => {
       // Add optional fields
       if (formData.discount) {
         productData.discount = parseFloat(formData.discount);
-      }
-      if (validDescriptions[1]) {
-        productData.description2 = validDescriptions[1].trim();
-      }
-      if (validDescriptions[2]) {
-        productData.description3 = validDescriptions[2].trim();
       }
       if (formData.categoryIds.length > 0) {
         productData.categoryIds = formData.categoryIds;
@@ -406,7 +400,7 @@ const useProductManagement = () => {
     } catch (error) {
       console.error(
         `${dialogMode === "edit" ? "Update" : "Create"} product error:`,
-        error
+        error,
       );
       toast.error(
         error?.data?.message ||
@@ -415,7 +409,7 @@ const useProductManagement = () => {
           description:
             error?.data?.description ||
             "An unexpected error occurred. Please try again.",
-        }
+        },
       );
     }
   };
@@ -475,11 +469,10 @@ const useProductManagement = () => {
     setDialogMode("edit");
     setSelectedProduct(product);
 
-    const existingDescriptions = [
-      product.description1 || "",
-      product.description2 || "",
-      product.description3 || "",
-    ].filter((d) => d);
+    const existingDescriptions =
+      product.descriptions && product.descriptions.length > 0
+        ? product.descriptions.filter((d) => d)
+        : [""];
 
     setFormData({
       productName: product.productName || "",
@@ -561,7 +554,7 @@ const useProductManagement = () => {
                 image: "",
                 imagePreview: "",
               },
-            ]
+            ],
       );
     } else {
       setProductType("standalone");
