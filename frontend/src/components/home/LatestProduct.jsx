@@ -40,7 +40,7 @@ const LatestProduct = () => {
       {/* Header */}
       <div className="flex items-end justify-between mb-8">
         <div>
-          <p className="font-semibold tracking-widest uppercase text-xs sm:text-sm block mb-2">
+          <p className="tracking-widest uppercase text-xs sm:text-sm mb-1">
             Stay on-trend with new products
           </p>
           <h2 className="text-3xl sm:text-4xl font-black tracking-tighter uppercase">
