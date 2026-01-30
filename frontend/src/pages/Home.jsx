@@ -1,12 +1,14 @@
 import React from "react";
-import FeaturedCollections from "@/components/home/FeaturedCollections";
 import CollectionsCarousel from "@/components/home/CollectionsCarousel";
+import LatestProduct from "@/components/home/LatestProduct";
+import FeaturedCollections from "@/components/home/FeaturedCollections";
 
 const Home = () => {
   return (
     <div>
-      <FeaturedCollections />
       <CollectionsCarousel />
+      <LatestProduct />
+      <FeaturedCollections />
     </div>
   );
 };
