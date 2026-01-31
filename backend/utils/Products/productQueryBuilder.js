@@ -100,7 +100,9 @@ export const buildProductSearchQuery = async (search) => {
     orConditions.push({
       $or: [
         { colorId: { $in: matchingColorIds } },
+        { secondaryColorId: { $in: matchingColorIds } },
         { "variants.colorId": { $in: matchingColorIds } },
+        { "variants.secondaryColorId": { $in: matchingColorIds } },
       ],
     });
   }
@@ -238,13 +240,15 @@ export const buildPublicProductQuery = async (queryParams) => {
     query.subCollectionIds = { $in: parsedSubCollectionIds };
   }
 
-  // Color filtering (standalone or variant)
+  // Color filtering (standalone or variant, including secondary colors)
   const parsedColorIds = parseIds(colorIds);
   if (parsedColorIds.length > 0) {
     const colorFilter = {
       $or: [
         { colorId: { $in: parsedColorIds } },
+        { secondaryColorId: { $in: parsedColorIds } },
         { "variants.colorId": { $in: parsedColorIds } },
+        { "variants.secondaryColorId": { $in: parsedColorIds } },
       ],
     };
 

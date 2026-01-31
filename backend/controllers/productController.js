@@ -34,7 +34,6 @@ import {
 import {
   validateForeignKeys,
   checkProductExists,
-  checkVariantExists,
   calculateDiscountPrice,
 } from "../utils/Products/productValidation.js";
 import {
@@ -65,6 +64,7 @@ export const createProduct = async (req, res) => {
       width,
       height,
       colorId, // For standalone products
+      secondaryColorId,
       skillLevelIds,
       stock, // For standalone products
       isActive,
@@ -128,14 +128,6 @@ export const createProduct = async (req, res) => {
 
     // Validate standalone product fields
     if (isStandalone) {
-      if (!partId || !partId.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: "Part ID is required",
-          description: "Part ID is required for standalone products.",
-        });
-      }
-
       if (!itemId || !itemId.trim()) {
         return res.status(400).json({
           success: false,
@@ -197,33 +189,11 @@ export const createProduct = async (req, res) => {
           });
         }
 
-        if (!variant.partId || !variant.partId.trim()) {
-          return res.status(400).json({
-            success: false,
-            message: `Variant ${i + 1}: Part ID is required`,
-            description: "Each variant must have a Part ID.",
-          });
-        }
-
         if (!variant.itemId || !variant.itemId.trim()) {
           return res.status(400).json({
             success: false,
             message: `Variant ${i + 1}: Item ID is required`,
             description: "Each variant must have an Item ID.",
-          });
-        }
-
-        // Check uniqueness for each variant's partId/itemId combination
-        const existingVariantProduct = await checkVariantExists(
-          variant.partId,
-          variant.itemId,
-        );
-
-        if (existingVariantProduct) {
-          return res.status(409).json({
-            success: false,
-            message: "Variant already exists",
-            description: `A variant with Part ID "${variant.partId}" and Item ID "${variant.itemId}" already exists.`,
           });
         }
 
@@ -356,7 +326,7 @@ export const createProduct = async (req, res) => {
 
           processedVariants.push({
             colorId: variant.colorId,
-            partId: variant.partId.trim(),
+            secondaryColorId: variant.secondaryColorId || undefined,
             itemId: variant.itemId.trim(),
             stock:
               variant.stock !== undefined &&
@@ -460,26 +430,23 @@ export const createProduct = async (req, res) => {
 
     // Add standalone-specific fields
     if (isStandalone) {
-      productData.partId = partId.trim();
+      productData.partId = partId?.trim() ? partId.trim() : null;
       productData.itemId = itemId.trim();
       productData.images = uploadedImages;
       if (colorId) {
         productData.colorId = colorId;
       }
+      if (secondaryColorId) {
+        productData.secondaryColorId = secondaryColorId;
+      }
       productData.stock =
         stock !== undefined && stock !== null && stock !== ""
           ? Number(stock)
           : 0;
-      // Ensure variants is not set for standalone products
-      productData.variants = [];
+      // Don't include variants field for standalone products
     } else {
-      // Add variants and ensure standalone fields are not set
       productData.variants = processedVariants;
-      productData.partId = undefined;
-      productData.itemId = undefined;
-      productData.images = [];
-      productData.colorId = undefined;
-      productData.stock = undefined;
+      productData.partId = partId?.trim() ? partId.trim() : null;
     }
 
     const product = await Product.create(productData);
@@ -491,9 +458,11 @@ export const createProduct = async (req, res) => {
       { path: "collectionIds", select: "collectionName" },
       { path: "subCollectionIds", select: "subCollectionName" },
       { path: "colorId", select: "colorName hexCode" },
+      { path: "secondaryColorId", select: "colorName hexCode" },
       { path: "skillLevelIds", select: "skillLevelName" },
       { path: "createdBy", select: "firstName lastName username" },
       { path: "variants.colorId", select: "colorName hexCode" },
+      { path: "variants.secondaryColorId", select: "colorName hexCode" },
     ]);
 
     return res.status(201).json({
@@ -566,10 +535,12 @@ export const getAllProducts = async (req, res) => {
         { path: "collectionIds", select: "collectionName" },
         { path: "subCollectionIds", select: "subCollectionName" },
         { path: "colorId", select: "colorName hexCode" },
+        { path: "secondaryColorId", select: "colorName hexCode" },
         { path: "skillLevelIds", select: "skillLevelName" },
         { path: "createdBy", select: "firstName lastName username" },
         { path: "updatedBy", select: "firstName lastName username" },
         { path: "variants.colorId", select: "colorName hexCode" },
+        { path: "variants.secondaryColorId", select: "colorName hexCode" },
       ],
     });
 
@@ -614,10 +585,12 @@ export const getProductById = async (req, res) => {
       .populate("collectionIds", "collectionName")
       .populate("subCollectionIds", "subCollectionName")
       .populate("colorId", "colorName hexCode")
+      .populate("secondaryColorId", "colorName hexCode")
       .populate("skillLevelIds", "skillLevelName")
       .populate("createdBy", "firstName lastName username")
       .populate("updatedBy", "firstName lastName username")
       .populate("variants.colorId", "colorName hexCode")
+      .populate("variants.secondaryColorId", "colorName hexCode")
       .lean();
 
     if (!product) {
@@ -667,6 +640,7 @@ export const updateProduct = async (req, res) => {
       width,
       height,
       colorId,
+      secondaryColorId, // For dual-color standalone products
       skillLevelIds,
       stock,
       isActive,
@@ -759,14 +733,6 @@ export const updateProduct = async (req, res) => {
 
     // Validate standalone product fields if switching to standalone or updating standalone
     if (isStandalone || isChangingToStandalone) {
-      if (partId !== undefined && (!partId || !partId.trim())) {
-        return res.status(400).json({
-          success: false,
-          message: "Part ID is required",
-          description: "Part ID is required for standalone products.",
-        });
-      }
-
       if (itemId !== undefined && (!itemId || !itemId.trim())) {
         return res.status(400).json({
           success: false,
@@ -775,11 +741,10 @@ export const updateProduct = async (req, res) => {
         });
       }
 
-      // Check uniqueness if partId or itemId is being changed
-      if (partId || itemId) {
-        const checkPartId = partId ? partId.trim() : product.partId;
-        const checkItemId = itemId ? itemId.trim() : product.itemId;
+      const checkPartId = partId?.trim() ? partId.trim() : product.partId;
+      const checkItemId = itemId ? itemId.trim() : product.itemId;
 
+      if (checkPartId && checkItemId) {
         const existingProduct = await checkProductExists(
           checkPartId,
           checkItemId,
@@ -821,34 +786,11 @@ export const updateProduct = async (req, res) => {
           });
         }
 
-        if (!variant.partId || !variant.partId.trim()) {
-          return res.status(400).json({
-            success: false,
-            message: `Variant ${i + 1}: Part ID is required`,
-            description: "Each variant must have a Part ID.",
-          });
-        }
-
         if (!variant.itemId || !variant.itemId.trim()) {
           return res.status(400).json({
             success: false,
             message: `Variant ${i + 1}: Item ID is required`,
             description: "Each variant must have an Item ID.",
-          });
-        }
-
-        // Check uniqueness for variant partId/itemId (excluding current product)
-        const existingVariantProduct = await checkVariantExists(
-          variant.partId,
-          variant.itemId,
-          id,
-        );
-
-        if (existingVariantProduct) {
-          return res.status(409).json({
-            success: false,
-            message: "Variant already exists",
-            description: `A variant with Part ID "${variant.partId}" and Item ID "${variant.itemId}" already exists.`,
           });
         }
       }
@@ -994,7 +936,7 @@ export const updateProduct = async (req, res) => {
 
           processedVariants.push({
             colorId: variant.colorId,
-            partId: variant.partId.trim(),
+            secondaryColorId: variant.secondaryColorId || undefined,
             itemId: variant.itemId.trim(),
             stock:
               variant.stock !== undefined &&
@@ -1099,7 +1041,7 @@ export const updateProduct = async (req, res) => {
     // Handle standalone-specific fields
     if (isStandalone || isChangingToStandalone) {
       if (partId !== undefined) {
-        product.partId = partId.trim();
+        product.partId = partId?.trim() ? partId.trim() : null;
       }
       if (itemId !== undefined) {
         product.itemId = itemId.trim();
@@ -1109,6 +1051,9 @@ export const updateProduct = async (req, res) => {
       }
       if (colorId !== undefined) {
         product.colorId = colorId || null;
+      }
+      if (secondaryColorId !== undefined) {
+        product.secondaryColorId = secondaryColorId || null;
       }
       if (stock !== undefined) {
         product.stock = Number(stock);
@@ -1127,7 +1072,7 @@ export const updateProduct = async (req, res) => {
             }
           }
         }
-        product.variants = [];
+        product.variants = undefined;
       }
     }
 
@@ -1136,7 +1081,7 @@ export const updateProduct = async (req, res) => {
       if (variants !== undefined) {
         product.variants = processedVariants;
       }
-      // Clear standalone fields if switching to variants or if product has variants
+      // Set partId at product level and clear standalone fields if switching to variants
       if (isChangingToVariants || (hasVariants && !isChangingToStandalone)) {
         // Delete old standalone images
         if (product.images && product.images.length > 0) {
@@ -1148,16 +1093,19 @@ export const updateProduct = async (req, res) => {
             }
           }
         }
-        product.partId = undefined;
+        if (partId !== undefined) {
+          product.partId = partId?.trim() ? partId.trim() : null;
+        }
         product.itemId = undefined;
-        product.images = [];
+        product.images = undefined;
         product.colorId = undefined;
+        product.secondaryColorId = undefined;
         product.stock = undefined;
       }
     } else if (isStandalone || isChangingToStandalone) {
-      // Ensure variants is empty for standalone products
+      // Ensure variants is removed for standalone products
       if (!product.variants || product.variants.length === 0) {
-        product.variants = [];
+        product.variants = undefined;
       }
     }
 
@@ -1401,8 +1349,10 @@ export const getPublicProducts = async (req, res) => {
       .populate("collectionIds", "collectionName")
       .populate("subCollectionIds", "subCollectionName")
       .populate("colorId", "colorName hexCode")
+      .populate("secondaryColorId", "colorName hexCode")
       .populate("skillLevelIds", "skillLevelName")
-      .populate("variants.colorId", "colorName hexCode");
+      .populate("variants.colorId", "colorName hexCode")
+      .populate("variants.secondaryColorId", "colorName hexCode");
 
     // Execute queries in parallel
     const [totalItems, products] = await Promise.all([
@@ -1410,8 +1360,10 @@ export const getPublicProducts = async (req, res) => {
       mongooseQuery.exec(),
     ]);
 
-    // Process products using utility function
-    const processedProducts = processProductsForListing(products);
+    const processedProducts = processProductsForListing(
+      products,
+      validatedColorIds,
+    );
     const totalPages = Math.ceil(totalItems / limit);
 
     return res.status(200).json({
@@ -1456,8 +1408,10 @@ export const getPublicProductById = async (req, res) => {
       .populate("collectionIds", "collectionName")
       .populate("subCollectionIds", "subCollectionName")
       .populate("colorId", "colorName hexCode")
+      .populate("secondaryColorId", "colorName hexCode")
       .populate("skillLevelIds", "skillLevelName")
       .populate("variants.colorId", "colorName hexCode")
+      .populate("variants.secondaryColorId", "colorName hexCode")
       .lean();
 
     if (!product) {

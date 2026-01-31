@@ -1,5 +1,4 @@
-// Process product for listing (minimal fields)
-export const processProductForListing = (product) => {
+export const processProductForListing = (product, filterColorIds = []) => {
   const minimalProduct = {
     _id: product._id,
     productName: product.productName,
@@ -19,6 +18,7 @@ export const processProductForListing = (product) => {
   if (product.productType === "standalone" && product.images?.length > 0) {
     minimalProduct.images = product.images;
     minimalProduct.colorId = product.colorId;
+    minimalProduct.secondaryColorId = product.secondaryColorId || null;
     // Computed first image URL for display
     minimalProduct.imageUrl = product.images[0]?.url || null;
   } else if (
@@ -29,9 +29,41 @@ export const processProductForListing = (product) => {
     minimalProduct.variants = product.variants.map((variant) => ({
       image: variant.image || null,
       colorId: variant.colorId || null,
+      secondaryColorId: variant.secondaryColorId || null,
     }));
-    // Computed first variant image URL for display
-    minimalProduct.imageUrl = product.variants[0]?.image?.url || null;
+
+    // Find the variant that matches the filtered color (if any)
+    let matchingVariantIndex = 0; // Default to first variant
+
+    if (filterColorIds.length > 0) {
+      // Convert filterColorIds to strings for comparison
+      const filterColorStrings = filterColorIds.map((id) => String(id));
+
+      // Find the first variant that matches any of the filtered colors
+      const matchIndex = product.variants.findIndex((variant) => {
+        const primaryColorId = String(
+          variant.colorId?._id || variant.colorId || "",
+        );
+        const secondaryColorId = String(
+          variant.secondaryColorId?._id || variant.secondaryColorId || "",
+        );
+
+        return (
+          filterColorStrings.includes(primaryColorId) ||
+          (secondaryColorId && filterColorStrings.includes(secondaryColorId))
+        );
+      });
+
+      if (matchIndex !== -1) {
+        matchingVariantIndex = matchIndex;
+      }
+    }
+
+    // Use the matching variant's image URL for display
+    minimalProduct.imageUrl =
+      product.variants[matchingVariantIndex]?.image?.url || null;
+    // Also store the matched variant index for frontend use
+    minimalProduct.displayVariantIndex = matchingVariantIndex;
   } else {
     minimalProduct.imageUrl = null;
   }
@@ -40,23 +72,23 @@ export const processProductForListing = (product) => {
 };
 
 // Process products array for listing
-export const processProductsForListing = (products) => {
-  return products.map(processProductForListing);
+export const processProductsForListing = (products, filterColorIds = []) => {
+  return products.map((product) =>
+    processProductForListing(product, filterColorIds),
+  );
 };
 
 // Filter product fields based on productType
 export const filterProductByType = (product) => {
   if (product.productType === "standalone") {
-    // Remove variant-specific fields
     const { variants, ...productWithoutVariants } = product;
     return productWithoutVariants;
   } else if (product.productType === "variant") {
-    // Remove standalone-specific fields
     const {
-      partId,
       itemId,
       images,
       colorId,
+      secondaryColorId,
       stock,
       ...productWithoutStandalone
     } = product;
@@ -92,6 +124,10 @@ export const processProductForDetails = (product) => {
         colorId: variant.colorId?._id || variant.colorId,
         colorName: variant.colorId?.colorName,
         hexCode: variant.colorId?.hexCode,
+        secondaryColorId:
+          variant.secondaryColorId?._id || variant.secondaryColorId,
+        secondaryColorName: variant.secondaryColorId?.colorName,
+        secondaryHexCode: variant.secondaryColorId?.hexCode,
       }))
       .filter((img) => img.url);
   } else {
@@ -133,17 +169,27 @@ export const processProductForDetails = (product) => {
         colorId: variant.colorId?._id || variant.colorId,
         colorName: variant.colorId?.colorName,
         hexCode: variant.colorId?.hexCode,
+        secondaryColorId:
+          variant.secondaryColorId?._id || variant.secondaryColorId,
+        secondaryColorName: variant.secondaryColorId?.colorName,
+        secondaryHexCode: variant.secondaryColorId?.hexCode,
         index,
       }))
       .filter((v) => v.colorId);
   } else if (product.productType === "standalone" && product.colorId) {
     // For standalone products, create a single color entry if colorId exists
-    processedProduct.colorVariants = [{
-      colorId: product.colorId?._id || product.colorId,
-      colorName: product.colorId?.colorName,
-      hexCode: product.colorId?.hexCode,
-      index: 0,
-    }].filter((v) => v.colorId && v.colorName);
+    processedProduct.colorVariants = [
+      {
+        colorId: product.colorId?._id || product.colorId,
+        colorName: product.colorId?.colorName,
+        hexCode: product.colorId?.hexCode,
+        secondaryColorId:
+          product.secondaryColorId?._id || product.secondaryColorId,
+        secondaryColorName: product.secondaryColorId?.colorName,
+        secondaryHexCode: product.secondaryColorId?.hexCode,
+        index: 0,
+      },
+    ].filter((v) => v.colorId && v.colorName);
   } else {
     processedProduct.colorVariants = [];
   }

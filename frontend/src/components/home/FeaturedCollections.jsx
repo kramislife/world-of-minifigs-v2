@@ -32,7 +32,7 @@ const FeaturedCollections = () => {
             className="group relative block overflow-hidden"
           >
             {/* Banner Image */}
-            <div className="aspect-[4/3] sm:aspect-[16/5] flex items-center justify-center border">
+            <div className="aspect-4/3 sm:aspect-16/5 flex items-center justify-center border">
               {collection.image?.url ? (
                 <img
                   src={collection.image.url}

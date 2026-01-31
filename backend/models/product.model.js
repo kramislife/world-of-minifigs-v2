@@ -39,44 +39,10 @@ const productSchema = new mongoose.Schema(
       type: [String],
       required: [true, "At least one description is required"],
     },
-    images: [
-      {
-        _id: false,
-        publicId: {
-          type: String,
-          required: true,
-        },
-        url: {
-          type: String,
-          required: true,
-        },
-      },
-    ],
-    // Variants
-    variants: [
-      {
-        _id: false,
-        colorId: {
-      type: mongoose.Schema.Types.ObjectId,
-          ref: "Color",
-          required: true,
-        },
-        partId: {
-          type: String,
-          required: true,
-          trim: true,
-        },
-        itemId: {
-          type: String,
-          required: true,
-          trim: true,
-        },
-        stock: {
-          type: Number,
-          default: 0,
-          min: [0, "Stock cannot be negative"],
-        },
-        image: {
+    images: {
+      type: [
+        {
+          _id: false,
           publicId: {
             type: String,
             required: true,
@@ -86,8 +52,47 @@ const productSchema = new mongoose.Schema(
             required: true,
           },
         },
-      },
-    ],
+      ],
+      default: undefined,
+    },
+    // Variants
+    variants: {
+      type: [
+        {
+          _id: false,
+          colorId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Color",
+            required: true,
+          },
+          secondaryColorId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Color",
+          },
+          itemId: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+          stock: {
+            type: Number,
+            default: 0,
+            min: [0, "Stock cannot be negative"],
+          },
+          image: {
+            publicId: {
+              type: String,
+              required: true,
+            },
+            url: {
+              type: String,
+              required: true,
+            },
+          },
+        },
+      ],
+      default: undefined,
+    },
     categoryIds: {
       type: [mongoose.Schema.Types.ObjectId],
       ref: "Category",
@@ -109,6 +114,10 @@ const productSchema = new mongoose.Schema(
       ref: "SkillLevel",
     },
     colorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Color",
+    },
+    secondaryColorId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Color",
     },
@@ -148,7 +157,7 @@ const productSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Indexes
@@ -160,7 +169,7 @@ productSchema.index(
     unique: true,
     sparse: true, // Only index documents where partId and itemId exist
     collation: { locale: "en", strength: 2 }, // case-insensitive
-  }
+  },
 );
 
 // Filtering indexes
@@ -168,6 +177,7 @@ productSchema.index({ productType: 1 });
 productSchema.index({ categoryIds: 1 });
 productSchema.index({ subCategoryIds: 1 });
 productSchema.index({ colorId: 1 });
+productSchema.index({ secondaryColorId: 1 });
 productSchema.index({ isActive: 1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index({ categoryIds: 1, isActive: 1, price: 1 });

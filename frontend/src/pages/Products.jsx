@@ -143,8 +143,8 @@ const Products = () => {
       {/* Main Content: Two Column Layout */}
       <div className="flex flex-col lg:flex-row gap-5">
         {/* Left Sidebar - Filters (Desktop) */}
-        <aside className="hidden lg:block lg:w-1/4 lg:sticky lg:top-4 lg:self-start lg:overflow-y-auto">
-          <div className="pr-4">{filterContent}</div>
+        <aside className="hidden lg:block lg:w-1/4 lg:sticky lg:top-10 lg:self-start">
+          {filterContent}
         </aside>
 
         {/* Right Content Area - Products (Desktop & Mobile) */}

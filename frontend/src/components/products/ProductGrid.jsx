@@ -30,8 +30,8 @@ const ProductGrid = ({
       {/* Top Bar: Product Count & Sort */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
         <Label className={hideProductCountOnMobile ? "hidden lg:block" : ""}>
-          Showing {isLoading ? 0 : startItem} of {isLoading ? 0 : totalItems}{" "}
-          products
+          Showing {isLoading ? 0 : products.length} of{" "}
+          {isLoading ? 0 : totalItems} products
         </Label>
         <div
           className={
