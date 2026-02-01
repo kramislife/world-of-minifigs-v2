@@ -106,9 +106,11 @@ const FilterItemWithSubItems = ({
 // Reusable Filter Section Component
 const FilterSection = ({ value, title, children }) => (
   <AccordionItem value={value} className="border border-border rounded-md">
-    <AccordionTrigger className="p-3">{title}</AccordionTrigger>
-    <AccordionContent className="space-y-3 max-h-[50vh] overflow-y-auto ml-0 py-2 pr-2">
-      {children}
+    <AccordionTrigger className="p-3 text-base font-semibold">
+      {title}
+    </AccordionTrigger>
+    <AccordionContent className="max-h-[70vh] overflow-y-auto pr-2 py-2">
+      <div className="space-y-3">{children}</div>
     </AccordionContent>
   </AccordionItem>
 );
@@ -140,7 +142,7 @@ const ProductFilters = ({
   onClearFilters,
 }) => {
   return (
-    <div className="w-full space-y-5 border-r border-border pr-5">
+    <div className="w-full space-y-5 pb-10">
       {/* Filters Header with Clear Button */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

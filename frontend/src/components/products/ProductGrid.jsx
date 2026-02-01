@@ -7,7 +7,6 @@ import ProductSort from "./ProductSort";
 const ProductGrid = ({
   products,
   sortBy,
-  startItem,
   totalItems,
   page,
   totalPages,

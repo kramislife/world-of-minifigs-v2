@@ -69,14 +69,15 @@ const ProductDetails = () => {
         <div className="flex flex-col lg:flex-row gap-3">
           {/* Main Image */}
           <div
-            className={`relative flex-1 border border-border rounded-lg overflow-hidden group order-1 lg:order-2 ${!hasMultipleImages ? "flex items-center justify-center" : "aspect-square"}`}
+            className={`relative border border-border rounded-lg overflow-hidden group order-1 lg:order-2 
+  aspect-square max-h-[630px] w-full flex flex-1 items-center justify-center`}
           >
             {currentImageUrl ? (
               <>
                 <img
                   src={currentImageUrl}
                   alt={product.productName}
-                  className="w-full h-full object-cover"
+                  className={`w-full h-full ${hasMultipleImages ? "object-cover" : "object-contain"}`}
                 />
 
                 {/* Discount Badge */}
