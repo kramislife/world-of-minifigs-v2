@@ -7,6 +7,7 @@ import {
   getPublicColors,
   getPublicSkillLevels,
 } from "../controllers/productController.js";
+import { getPublicBanners } from "../controllers/bannerController.js";
 
 const router = express.Router();
 
@@ -15,6 +16,7 @@ router.get("/filters/categories", getPublicCategories);
 router.get("/filters/collections", getPublicCollections);
 router.get("/filters/colors", getPublicColors);
 router.get("/filters/skill-levels", getPublicSkillLevels);
+router.get("/banners", getPublicBanners);
 
 // Public product routes
 router.get("/", getPublicProducts);

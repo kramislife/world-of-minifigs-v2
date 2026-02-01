@@ -8,6 +8,7 @@ export const useCarousel = ({
   const [api, setApi] = useState(null);
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   // Scroll handlers
   const scrollPrev = useCallback(() => {
@@ -23,6 +24,7 @@ export const useCarousel = ({
     if (!api) return;
     setCanScrollPrev(api.canScrollPrev());
     setCanScrollNext(api.canScrollNext());
+    setSelectedIndex(api.selectedScrollSnap());
   }, [api]);
 
   // Setup carousel event listeners
@@ -59,6 +61,7 @@ export const useCarousel = ({
     setApi,
     canScrollPrev,
     canScrollNext,
+    selectedIndex,
     scrollPrev,
     scrollNext,
   };

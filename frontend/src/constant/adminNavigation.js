@@ -9,6 +9,7 @@ import {
   ShoppingCart,
   Users,
   Handshake,
+  Image,
 } from "lucide-react";
 
 export const adminNavigation = [
@@ -17,6 +18,12 @@ export const adminNavigation = [
     label: "Dashboard",
     path: "dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    id: "banners",
+    label: "Banners",
+    path: "banners",
+    icon: Image,
   },
   {
     id: "products",

@@ -42,14 +42,12 @@ const CollectionsCarousel = () => {
     <section className="p-5">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-3xl sm:text-4xl font-black tracking-tight uppercase">Themes</h2>
+        <h2 className="text-3xl sm:text-4xl font-black tracking-tight uppercase">
+          Themes
+        </h2>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="shadow-none uppercase"
-            asChild
-          >
+          <Button variant="outline" className="shadow-none uppercase" asChild>
             <Link to="/collections">View All</Link>
           </Button>
 

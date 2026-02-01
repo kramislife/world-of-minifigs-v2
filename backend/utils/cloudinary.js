@@ -59,7 +59,7 @@ export const validateImage = (image, maxSizeMB = 5) => {
   };
 };
 
-// Standard image upload function that handles any image upload
+// Standard image upload function (products, etc.)
 export const uploadImage = (file, folder) => {
   configureCloudinary();
 
@@ -86,12 +86,12 @@ export const uploadImage = (file, folder) => {
             url: result.url,
           });
         }
-      }
+      },
     );
   });
 };
 
-// Standard function to delete any image
+// Standard function to delete an image
 export const deleteImage = async (publicId) => {
   configureCloudinary();
 
@@ -100,5 +100,97 @@ export const deleteImage = async (publicId) => {
     return res.result === "ok";
   } catch (error) {
     throw new Error(`Failed to delete the image: ${error.message}`);
+  }
+};
+
+// Validate banner media (image, gif, video)
+export const validateBannerMedia = (file, maxImageMB = 5, maxVideoMB = 50) => {
+  if (!file) {
+    return {
+      isValid: false,
+      error: "No media provided",
+    };
+  }
+
+  const isImage = file.startsWith("data:image/");
+  const isVideo = file.startsWith("data:video/");
+
+  if (!isImage && !isVideo) {
+    return {
+      isValid: false,
+      error:
+        "Invalid media format. Only image, GIF, or video files are allowed.",
+    };
+  }
+
+  const base64Data = file.split(",")[1] || file;
+  const sizeInBytes = (base64Data.length * 3) / 4;
+  const sizeInMB = sizeInBytes / (1024 * 1024);
+
+  const maxSize = isVideo ? maxVideoMB : maxImageMB;
+
+  if (sizeInMB > maxSize) {
+    return {
+      isValid: false,
+      error: `File is too large. Maximum size is ${maxSize}MB.`,
+    };
+  }
+
+  return {
+    isValid: true,
+    mediaType: isVideo ? "video" : "image",
+    sizeInMB: sizeInMB.toFixed(2),
+  };
+};
+
+// Upload banner media (image / gif / video)
+export const uploadBannerMedia = (file, folder) => {
+  configureCloudinary();
+
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      return reject(new Error("No file provided for upload"));
+    }
+
+    const isVideo = file.startsWith("data:video/");
+
+    cloudinary.uploader.upload(
+      file,
+      {
+        resource_type: isVideo ? "video" : "image",
+        folder: folder,
+        quality: "auto",
+        fetch_format: "auto",
+      },
+      (error, result) => {
+        if (error) {
+          console.error("Cloudinary upload error details:", error);
+          return reject(error);
+        }
+
+        resolve({
+          publicId: result.public_id,
+          url: result.secure_url || result.url,
+          resourceType: result.resource_type, // "image" | "video"
+          duration:
+            result.resource_type === "video" ? result.duration : undefined,
+        });
+      },
+    );
+  });
+};
+
+// Delete banner media (image or video)
+export const deleteMedia = async (publicId, resourceType = "image") => {
+  configureCloudinary();
+
+  try {
+    const res = await cloudinary.uploader.destroy(publicId, {
+      resource_type: resourceType,
+    });
+
+    return res.result === "ok";
+  } catch (error) {
+    throw new Error(`Failed to delete media: ${error.message}`);
   }
 };

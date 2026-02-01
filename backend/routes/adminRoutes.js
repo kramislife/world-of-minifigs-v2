@@ -53,6 +53,13 @@ import {
   updateProduct,
   deleteProduct,
 } from "../controllers/productController.js";
+import {
+  createBanner,
+  getAllBanners,
+  getBannerById,
+  updateBanner,
+  deleteBanner,
+} from "../controllers/bannerController.js";
 
 const router = express.Router();
 
@@ -107,6 +114,13 @@ router.get("/products", getAllProducts);
 router.get("/products/:id", getProductById);
 router.put("/products/:id", updateProduct);
 router.delete("/products/:id", deleteProduct);
+
+// Banner CRUD routes
+router.post("/banners", createBanner);
+router.get("/banners", getAllBanners);
+router.get("/banners/:id", getBannerById);
+router.put("/banners/:id", updateBanner);
+router.delete("/banners/:id", deleteBanner);
 
 // User Management routes
 router.get("/users", getAllUsers);

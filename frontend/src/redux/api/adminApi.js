@@ -43,6 +43,7 @@ export const adminApi = createApi({
     "SubCollection",
     "User",
     "Product",
+    "Banner",
   ],
   endpoints: (builder) => ({
     // ==================== Color Management ====================
@@ -403,6 +404,55 @@ export const adminApi = createApi({
       invalidatesTags: ["Product"],
     }),
 
+    // ==================== Banner Management ====================
+
+    // Get all banners
+    getBanners: builder.query({
+      query: () => ({
+        url: "/banners",
+        method: "GET",
+      }),
+      providesTags: ["Banner"],
+    }),
+
+    // Get single banner by ID
+    getBannerById: builder.query({
+      query: (id) => ({
+        url: `/banners/${id}`,
+        method: "GET",
+      }),
+      providesTags: (_, __, id) => [{ type: "Banner", id }],
+    }),
+
+    // Create banner (admin only)
+    createBanner: builder.mutation({
+      query: (bannerData) => ({
+        url: "/banners",
+        method: "POST",
+        body: bannerData,
+      }),
+      invalidatesTags: ["Banner"],
+    }),
+
+    // Update banner (admin only)
+    updateBanner: builder.mutation({
+      query: ({ id, ...bannerData }) => ({
+        url: `/banners/${id}`,
+        method: "PUT",
+        body: bannerData,
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: "Banner", id }, "Banner"],
+    }),
+
+    // Delete banner (admin only)
+    deleteBanner: builder.mutation({
+      query: (id) => ({
+        url: `/banners/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Banner"],
+    }),
+
     // ==================== User Management ====================
     // Get all users
     getUsers: builder.query({
@@ -462,6 +512,12 @@ export const {
   useCreateProductMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
+  useGetBannersQuery,
+  useGetBannerByIdQuery,
+  useCreateBannerMutation,
+  useUpdateBannerMutation,
+  useDeleteBannerMutation,
+
   useGetUsersQuery,
   useUpdateUserRoleMutation,
 } = adminApi;
