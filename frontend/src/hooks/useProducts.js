@@ -452,22 +452,39 @@ export const useProductCardHoverImages = (
   product,
   { cycleIntervalMs = 1000 } = {},
 ) => {
+  const displayVariantIndex = product?.displayVariantIndex ?? 0;
+
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const cycleIntervalRef = useRef(null);
 
+  // Build image URLs array, reordering to put displayVariantIndex first if applicable
   const imageUrls = useMemo(() => {
     if (product?.productType === "standalone" && product?.images?.length) {
       return product.images.map((img) => img?.url).filter(Boolean);
     }
 
     if (product?.productType === "variant" && product?.variants?.length) {
-      return product.variants
+      const urls = product.variants
         .map((variant) => variant?.image?.url)
         .filter(Boolean);
+
+      // If there's a specific display variant index, reorder array
+      if (displayVariantIndex > 0 && displayVariantIndex < urls.length) {
+        // Create a new array with display variant first, then others
+        const displayUrl = urls[displayVariantIndex];
+        const reorderedUrls = [
+          displayUrl,
+          ...urls.slice(0, displayVariantIndex),
+          ...urls.slice(displayVariantIndex + 1),
+        ];
+        return reorderedUrls;
+      }
+
+      return urls;
     }
 
     return product?.imageUrl ? [product.imageUrl] : [];
-  }, [product]);
+  }, [product, displayVariantIndex]);
 
   const hasMultipleImages = imageUrls.length > 1;
 
@@ -719,20 +736,9 @@ export const useProductDetails = (id) => {
   const currentPartId = useMemo(() => {
     if (!product) return null;
 
-    // For standalone products, partId is at product level
-    if (product.productType === "standalone") {
-      return product.partId || null;
-    }
-
-    // For variant products, get partId from selected variant
-    if (product.productType === "variant" && product.variants?.length > 0) {
-      const variantIndex = selectedVariantIndex ?? 0;
-      const variant = product.variants[variantIndex];
-      return variant?.partId || null;
-    }
-
-    return null;
-  }, [product, selectedVariantIndex]);
+    // partId is at product level for both standalone and variant products
+    return product.partId || null;
+  }, [product]);
 
   const currentItemId = useMemo(() => {
     if (!product) return null;
@@ -796,6 +802,7 @@ export const useProductDetails = (id) => {
     currentImageUrl,
     features,
     colorVariants,
+    selectedVariantIndex,
     thumbnailScrollRef,
     displayPrice,
     hasDiscount,

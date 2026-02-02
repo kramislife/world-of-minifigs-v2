@@ -36,7 +36,7 @@ const validateEnv = () => {
   if (missing.length > 0) {
     console.error(
       "Missing required environment variables:",
-      missing.join(", ")
+      missing.join(", "),
     );
     process.exit(1);
   }
@@ -54,7 +54,7 @@ const validateEnv = () => {
       const num = Number.parseInt(value, 10);
       if (!Number.isFinite(num) || num <= 0) {
         console.error(
-          `Invalid numeric value for ${name}: "${value}". It must be a positive number.`
+          `Invalid numeric value for ${name}: "${value}". It must be a positive number.`,
         );
         process.exit(1);
       }
@@ -85,7 +85,7 @@ app.use(
         connectSrc: ["'self'"],
       },
     },
-  })
+  }),
 );
 
 // Middleware
@@ -93,10 +93,10 @@ app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:5173",
     credentials: true,
-  })
+  }),
 );
-app.use(express.json({ limit: "10mb" })); 
-app.use(express.urlencoded({ limit: "10mb", extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
 
 // Health check
@@ -113,9 +113,9 @@ app.use("/api/v1/public", publicRoutes);
 // Serve static files from React app in production
 if ((process.env.NODE_ENV || "").toLowerCase() === "production") {
   const frontendDistPath = path.join(__dirname, "../frontend/dist");
-  
+
   app.use(express.static(frontendDistPath));
-  
+
   app.use((req, res, next) => {
     // Skip API routes
     if (req.path.startsWith("/api")) {
@@ -136,7 +136,7 @@ const PORT = process.env.PORT || 4000;
 connectDatabase().then(() => {
   app.listen(PORT, () => {
     console.log(
-      `Backend running on port ${PORT} in ${process.env.NODE_ENV} mode`
+      `Backend running on port ${PORT} in ${process.env.NODE_ENV} mode`,
     );
   });
 });

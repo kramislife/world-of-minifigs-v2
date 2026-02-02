@@ -22,7 +22,8 @@ const useProductManagement = () => {
   const [variants, setVariants] = useState([
     {
       colorId: "",
-      partId: "",
+      secondaryColorId: "",
+      showSecondaryColor: false,
       itemId: "",
       stock: "",
       image: "",
@@ -46,6 +47,8 @@ const useProductManagement = () => {
     width: "",
     height: "",
     colorId: "",
+    secondaryColorId: "",
+    showSecondaryColor: false,
     skillLevelIds: [],
     stock: "",
     isActive: true,
@@ -87,7 +90,12 @@ const useProductManagement = () => {
   const subCategories = subCategoriesData?.subCategories || [];
   const collections = collectionsData?.collections || [];
   const subCollections = subCollectionsData?.subCollections || [];
-  const colors = colorsData?.colors || [];
+  const colors = useMemo(() => {
+    const colorsList = colorsData?.colors || [];
+    return [...colorsList].sort((a, b) =>
+      (a.colorName || "").localeCompare(b.colorName || ""),
+    );
+  }, [colorsData]);
   const skillLevels = skillLevelsData?.skillLevels || [];
 
   // Group sub-categories by category
@@ -208,7 +216,8 @@ const useProductManagement = () => {
       ...prev,
       {
         colorId: "",
-        partId: "",
+        secondaryColorId: "",
+        showSecondaryColor: false,
         itemId: "",
         stock: "",
         image: "",
@@ -324,14 +333,18 @@ const useProductManagement = () => {
         if (formData.colorId) {
           productData.colorId = formData.colorId;
         }
+        if (formData.secondaryColorId) {
+          productData.secondaryColorId = formData.secondaryColorId;
+        }
         if (formData.stock !== "") {
           productData.stock = parseInt(formData.stock) || 0;
         }
       } else if (productType === "variant") {
         productData.productType = "variant";
+        productData.partId = formData.partId.trim();
         productData.variants = variants.map((variant) => ({
           colorId: variant.colorId,
-          partId: variant.partId.trim(),
+          secondaryColorId: variant.secondaryColorId || undefined,
           itemId: variant.itemId.trim(),
           stock: parseInt(variant.stock) || 0,
           image: variant.image || null,
@@ -434,6 +447,8 @@ const useProductManagement = () => {
         width: "",
         height: "",
         colorId: "",
+        secondaryColorId: "",
+        showSecondaryColor: false,
         skillLevelIds: [],
         stock: "",
         isActive: true,
@@ -446,7 +461,8 @@ const useProductManagement = () => {
       setVariants([
         {
           colorId: "",
-          partId: "",
+          secondaryColorId: "",
+          showSecondaryColor: false,
           itemId: "",
           stock: "",
           image: "",
@@ -473,6 +489,10 @@ const useProductManagement = () => {
       product.descriptions && product.descriptions.length > 0
         ? product.descriptions.filter((d) => d)
         : [""];
+
+    const hasSecondaryColor = !!(
+      product.secondaryColorId?._id || product.secondaryColorId
+    );
 
     setFormData({
       productName: product.productName || "",
@@ -504,6 +524,9 @@ const useProductManagement = () => {
       width: product.width || "",
       height: product.height || "",
       colorId: product.colorId?._id || product.colorId || "",
+      secondaryColorId:
+        product.secondaryColorId?._id || product.secondaryColorId || "",
+      showSecondaryColor: hasSecondaryColor,
       skillLevelIds:
         product.skillLevelIds?.map((sl) => sl._id || sl) ||
         product.skillLevelIds ||
@@ -529,26 +552,39 @@ const useProductManagement = () => {
 
     if (product.variants && product.variants.length > 0) {
       setProductType("variant");
-      const variantData = product.variants.map((variant) => ({
-        colorId: variant.colorId?._id || variant.colorId || "",
-        partId: variant.partId || "",
-        itemId: variant.itemId || "",
-        stock: variant.stock || "",
-        image: variant.image
-          ? {
-              publicId: variant.image.publicId,
-              url: variant.image.url,
-            }
-          : "",
-        imagePreview: variant.image?.url || "",
+      // Set partId from product level for variant products
+      setFormData((prev) => ({
+        ...prev,
+        partId: product.partId || "",
       }));
+      const variantData = product.variants.map((variant) => {
+        const variantHasSecondary = !!(
+          variant.secondaryColorId?._id || variant.secondaryColorId
+        );
+        return {
+          colorId: variant.colorId?._id || variant.colorId || "",
+          secondaryColorId:
+            variant.secondaryColorId?._id || variant.secondaryColorId || "",
+          showSecondaryColor: variantHasSecondary,
+          itemId: variant.itemId || "",
+          stock: variant.stock || "",
+          image: variant.image
+            ? {
+                publicId: variant.image.publicId,
+                url: variant.image.url,
+              }
+            : "",
+          imagePreview: variant.image?.url || "",
+        };
+      });
       setVariants(
         variantData.length > 0
           ? variantData
           : [
               {
                 colorId: "",
-                partId: "",
+                secondaryColorId: "",
+                showSecondaryColor: false,
                 itemId: "",
                 stock: "",
                 image: "",
@@ -561,7 +597,8 @@ const useProductManagement = () => {
       setVariants([
         {
           colorId: "",
-          partId: "",
+          secondaryColorId: "",
+          showSecondaryColor: false,
           itemId: "",
           stock: "",
           image: "",

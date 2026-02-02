@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const ProductPagination = ({
@@ -20,14 +20,13 @@ const ProductPagination = ({
     <div className="flex items-center justify-center gap-2">
       {/* Previous Button */}
       <Button
-        variant="outline"
+        variant="link"
         size="sm"
+        className="text-foreground hover:text-primary dark:text-accent"
         onClick={onPreviousPage}
         disabled={isFirstPage}
-        className="gap-1"
       >
-        <ChevronLeft className="h-4 w-4" />
-        Previous
+        <ArrowLeft className="size-4" />
       </Button>
 
       {/* Page Numbers */}
@@ -47,10 +46,14 @@ const ProductPagination = ({
           return (
             <Button
               key={page}
-              variant={currentPage === page ? "default" : "outline"}
+              variant="link"
               size="sm"
+              className={`hover:text-primary dark:hover:text-accent transition-all ${
+                currentPage === page
+                  ? "text-primary dark:text-accent underline underline-offset-4 font-bold"
+                  : "text-foreground dark:text-foreground"
+              }`}
               onClick={() => onPageNumberClick(page)}
-              className="min-w-[40px]"
             >
               {page}
             </Button>
@@ -60,14 +63,13 @@ const ProductPagination = ({
 
       {/* Next Button */}
       <Button
-        variant="outline"
+        variant="link"
         size="sm"
+        className="text-foreground hover:text-primary dark:text-accent"
         onClick={onNextPage}
         disabled={isLastPage}
-        className="gap-1"
       >
-        Next
-        <ChevronRight className="h-4 w-4" />
+        <ArrowRight className="size-4" />
       </Button>
     </div>
   );

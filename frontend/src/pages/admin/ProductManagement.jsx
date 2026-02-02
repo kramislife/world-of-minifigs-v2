@@ -1,5 +1,5 @@
 import React from "react";
-import { Plus, Upload, X, Trash2 } from "lucide-react";
+import { Plus, Upload, X, Trash2, TrashIcon, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -220,14 +220,13 @@ const ProductManagement = () => {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
-                    <Label htmlFor="partId">Part ID</Label>
+                    <Label htmlFor="partId">Part ID (Optional)</Label>
                     <Input
                       id="partId"
                       name="partId"
                       placeholder="Enter part ID"
                       value={formData.partId}
                       onChange={handleChange}
-                      required
                       disabled={dialogMode === "edit" ? isUpdating : isCreating}
                     />
                   </div>
@@ -244,7 +243,9 @@ const ProductManagement = () => {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-4 gap-2">
+                <div
+                  className={`grid gap-2 ${formData.showSecondaryColor ? "grid-cols-5" : "grid-cols-4"}`}
+                >
                   <div className="space-y-2">
                     <Label htmlFor="price">Price</Label>
                     <Input
@@ -289,7 +290,28 @@ const ProductManagement = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="colorId">Color</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="colorId">Color</Label>
+                      {!formData.showSecondaryColor && (
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs"
+                          onClick={() =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              showSecondaryColor: true,
+                            }))
+                          }
+                          disabled={
+                            dialogMode === "edit" ? isUpdating : isCreating
+                          }
+                        >
+                          Dual Tone
+                        </Button>
+                      )}
+                    </div>
                     <Select
                       value={formData.colorId || ""}
                       onValueChange={(value) =>
@@ -320,13 +342,73 @@ const ProductManagement = () => {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Secondary Color (shown when toggle is active) */}
+                  {formData.showSecondaryColor && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="secondaryColorId">
+                          Secondary Color
+                        </Label>
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs text-destructive"
+                          onClick={() =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              secondaryColorId: "",
+                              showSecondaryColor: false,
+                            }))
+                          }
+                          disabled={
+                            dialogMode === "edit" ? isUpdating : isCreating
+                          }
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                      <Select
+                        value={formData.secondaryColorId || ""}
+                        onValueChange={(value) =>
+                          handleSelectChange("secondaryColorId", value)
+                        }
+                        disabled={
+                          dialogMode === "edit" ? isUpdating : isCreating
+                        }
+                      >
+                        <SelectTrigger id="secondaryColorId" className="w-full">
+                          <SelectValue placeholder="Select secondary color" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {colors.map((color) => (
+                            <SelectItem
+                              key={color._id || color.id}
+                              value={color._id || color.id}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="size-4 rounded-md shrink-0"
+                                  style={{
+                                    backgroundColor: color.hexCode || "#000",
+                                  }}
+                                />
+                                <span>{color.colorName}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
             {/* Product with Variants - Shared Fields */}
             {productType === "variant" && (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-2">
                   <Label htmlFor="price">Price</Label>
                   <Input
@@ -353,6 +435,17 @@ const ProductManagement = () => {
                     max="100"
                     placeholder="0"
                     value={formData.discount}
+                    onChange={handleChange}
+                    disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="partId">Part ID (Optional)</Label>
+                  <Input
+                    id="partId"
+                    name="partId"
+                    placeholder="Enter part ID"
+                    value={formData.partId}
                     onChange={handleChange}
                     disabled={dialogMode === "edit" ? isUpdating : isCreating}
                   />
@@ -416,7 +509,7 @@ const ProductManagement = () => {
                       setFormData((prev) => ({
                         ...prev,
                         descriptions: prev.descriptions.filter(
-                          (_, i) => i !== index
+                          (_, i) => i !== index,
                         ),
                       }));
                     }}
@@ -469,28 +562,9 @@ const ProductManagement = () => {
                       </Button>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-2">
-                      <div className="space-y-2">
-                        <Label htmlFor={`variant-partId-${variantIndex}`}>
-                          Part ID
-                        </Label>
-                        <Input
-                          id={`variant-partId-${variantIndex}`}
-                          placeholder="Enter part ID"
-                          value={variant.partId}
-                          onChange={(e) =>
-                            handleVariantChange(
-                              variantIndex,
-                              "partId",
-                              e.target.value
-                            )
-                          }
-                          required
-                          disabled={
-                            dialogMode === "edit" ? isUpdating : isCreating
-                          }
-                        />
-                      </div>
+                    <div
+                      className={`grid gap-2 ${variant.showSecondaryColor ? "grid-cols-4" : "grid-cols-3"}`}
+                    >
                       <div className="space-y-2">
                         <Label htmlFor={`variant-itemId-${variantIndex}`}>
                           Item ID
@@ -503,7 +577,7 @@ const ProductManagement = () => {
                             handleVariantChange(
                               variantIndex,
                               "itemId",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           required
@@ -526,7 +600,7 @@ const ProductManagement = () => {
                             handleVariantChange(
                               variantIndex,
                               "stock",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           disabled={
@@ -535,9 +609,31 @@ const ProductManagement = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor={`variant-colorId-${variantIndex}`}>
-                          Color
-                        </Label>
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor={`variant-colorId-${variantIndex}`}>
+                            Color
+                          </Label>
+                          {!variant.showSecondaryColor && (
+                            <Button
+                              type="button"
+                              variant="link"
+                              size="sm"
+                              className="h-auto p-0 text-xs"
+                              onClick={() =>
+                                handleVariantChange(
+                                  variantIndex,
+                                  "showSecondaryColor",
+                                  true,
+                                )
+                              }
+                              disabled={
+                                dialogMode === "edit" ? isUpdating : isCreating
+                              }
+                            >
+                              Dual Tone
+                            </Button>
+                          )}
+                        </div>
                         <Select
                           value={variant.colorId || ""}
                           onValueChange={(value) =>
@@ -573,6 +669,81 @@ const ProductManagement = () => {
                           </SelectContent>
                         </Select>
                       </div>
+
+                      {/* Variant Secondary Color (shown when toggle is active) */}
+                      {variant.showSecondaryColor && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label
+                              htmlFor={`variant-secondaryColorId-${variantIndex}`}
+                            >
+                              Secondary Color
+                            </Label>
+                            <Button
+                              type="button"
+                              variant="link"
+                              size="sm"
+                              className="h-auto p-0 text-xs text-destructive"
+                              onClick={() => {
+                                handleVariantChange(
+                                  variantIndex,
+                                  "secondaryColorId",
+                                  "",
+                                );
+                                handleVariantChange(
+                                  variantIndex,
+                                  "showSecondaryColor",
+                                  false,
+                                );
+                              }}
+                              disabled={
+                                dialogMode === "edit" ? isUpdating : isCreating
+                              }
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
+                          <Select
+                            value={variant.secondaryColorId || ""}
+                            onValueChange={(value) =>
+                              handleVariantChange(
+                                variantIndex,
+                                "secondaryColorId",
+                                value,
+                              )
+                            }
+                            disabled={
+                              dialogMode === "edit" ? isUpdating : isCreating
+                            }
+                          >
+                            <SelectTrigger
+                              id={`variant-secondaryColorId-${variantIndex}`}
+                              className="w-full"
+                            >
+                              <SelectValue placeholder="Select secondary" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {colors.map((color) => (
+                                <SelectItem
+                                  key={color._id || color.id}
+                                  value={color._id || color.id}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      className="size-4 rounded-md shrink-0"
+                                      style={{
+                                        backgroundColor:
+                                          color.hexCode || "#000",
+                                      }}
+                                    />
+                                    <span>{color.colorName}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                     </div>
 
                     {/* Variant Image */}
@@ -677,22 +848,22 @@ const ProductManagement = () => {
                                       setFormData((prev) => {
                                         const newSubIds = isChecked
                                           ? prev.subCategoryIds.filter(
-                                              (id) => id !== subId
+                                              (id) => id !== subId,
                                             )
                                           : [...prev.subCategoryIds, subId];
                                         // Auto-manage parent categoryId
                                         const hasAnySub =
                                           category.subCategories.some((s) =>
-                                            newSubIds.includes(s._id || s.id)
+                                            newSubIds.includes(s._id || s.id),
                                           );
                                         const newCategoryIds = hasAnySub
                                           ? prev.categoryIds.includes(
-                                              categoryId
+                                              categoryId,
                                             )
                                             ? prev.categoryIds
                                             : [...prev.categoryIds, categoryId]
                                           : prev.categoryIds.filter(
-                                              (id) => id !== categoryId
+                                              (id) => id !== categoryId,
                                             );
                                         return {
                                           ...prev,
@@ -773,7 +944,7 @@ const ProductManagement = () => {
                 <div className="space-y-3">
                   {collectionsWithSubs
                     .filter(
-                      (collection) => collection.subCollections.length > 0
+                      (collection) => collection.subCollections.length > 0,
                     )
                     .map((collection) => {
                       const collectionId = collection._id || collection.id;
@@ -802,17 +973,17 @@ const ProductManagement = () => {
                                       setFormData((prev) => {
                                         const newSubIds = isChecked
                                           ? prev.subCollectionIds.filter(
-                                              (id) => id !== subId
+                                              (id) => id !== subId,
                                             )
                                           : [...prev.subCollectionIds, subId];
                                         // Auto-manage parent collectionId
                                         const hasAnySub =
                                           collection.subCollections.some((s) =>
-                                            newSubIds.includes(s._id || s.id)
+                                            newSubIds.includes(s._id || s.id),
                                           );
                                         const newCollectionIds = hasAnySub
                                           ? prev.collectionIds.includes(
-                                              collectionId
+                                              collectionId,
                                             )
                                             ? prev.collectionIds
                                             : [
@@ -820,7 +991,7 @@ const ProductManagement = () => {
                                                 collectionId,
                                               ]
                                           : prev.collectionIds.filter(
-                                              (id) => id !== collectionId
+                                              (id) => id !== collectionId,
                                             );
                                         return {
                                           ...prev,
@@ -859,7 +1030,7 @@ const ProductManagement = () => {
                 <div className="grid grid-cols-4 gap-3 pl-2">
                   {collectionsWithSubs
                     .filter(
-                      (collection) => collection.subCollections.length === 0
+                      (collection) => collection.subCollections.length === 0,
                     )
                     .map((collection) => {
                       const collectionId = collection._id || collection.id;
@@ -871,12 +1042,12 @@ const ProductManagement = () => {
                           <Checkbox
                             id={`collection-${collectionId}`}
                             checked={formData.collectionIds.includes(
-                              collectionId
+                              collectionId,
                             )}
                             onCheckedChange={() =>
                               handleMultiSelectChange(
                                 "collectionIds",
-                                collectionId
+                                collectionId,
                               )
                             }
                             disabled={
@@ -1032,12 +1203,12 @@ const ProductManagement = () => {
                 {imagePreviews.map((preview, index) => (
                   <div
                     key={index}
-                    className="relative border rounded-lg overflow-hidden"
+                    className="relative border rounded-lg overflow-hidden aspect-square"
                   >
                     <img
                       src={preview}
                       alt={`Preview ${index + 1}`}
-                      className="w-full h-32 object-contain"
+                      className="w-full h-full object-cover"
                     />
                     <Button
                       type="button"

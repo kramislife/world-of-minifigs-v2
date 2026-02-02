@@ -17,6 +17,7 @@ const ProductDetails = () => {
     currentImageUrl,
     features,
     colorVariants,
+    selectedVariantIndex,
     thumbnailScrollRef,
     displayPrice,
     hasDiscount,
@@ -68,14 +69,15 @@ const ProductDetails = () => {
         <div className="flex flex-col lg:flex-row gap-3">
           {/* Main Image */}
           <div
-            className={`relative flex-1 border-4 border-border rounded-lg overflow-hidden group order-1 lg:order-2 ${!hasMultipleImages ? "flex items-center justify-center" : "aspect-square"}`}
+            className={`relative border border-border rounded-lg overflow-hidden group order-1 lg:order-2 
+  aspect-square max-h-[630px] w-full flex flex-1 items-center justify-center`}
           >
             {currentImageUrl ? (
               <>
                 <img
                   src={currentImageUrl}
                   alt={product.productName}
-                  className="w-full h-full object-cover"
+                  className={`w-full h-full ${hasMultipleImages ? "object-cover" : "object-contain"}`}
                 />
 
                 {/* Discount Badge */}
@@ -170,7 +172,7 @@ const ProductDetails = () => {
                 )}
               </h1>
               {/* Star Rating */}
-              <div className="flex items-center gap-1 mb-3">
+              <div className="flex items-center gap-1 mb-5">
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
@@ -253,39 +255,64 @@ const ProductDetails = () => {
                 <h3 className="text-lg font-semibold">
                   {product.productType === "standalone"
                     ? "Color"
-                    : "Color Variants"}
+                    : `Color: ${
+                        colorVariants[selectedVariantIndex ?? 0]
+                          ?.secondaryHexCode
+                          ? `${colorVariants[selectedVariantIndex ?? 0]?.colorName} / ${colorVariants[selectedVariantIndex ?? 0]?.secondaryColorName}`
+                          : colorVariants[selectedVariantIndex ?? 0]
+                              ?.colorName || "Select a color"
+                      }`}
                 </h3>
-                <div className="flex flex-wrap gap-2 items-center">
+                <div className="flex flex-wrap gap-1 items-center">
                   {product.productType === "standalone" ? (
-                    // Standalone product - show single color as indicator
+                    // Standalone product - show single or dual color as indicator
                     <div className="flex items-center gap-2">
                       <span
                         className="size-6 rounded-full border-2 border-border"
-                        style={{
-                          backgroundColor: colorVariants[0]?.hexCode || "#ccc",
-                        }}
+                        style={
+                          colorVariants[0]?.secondaryHexCode
+                            ? {
+                                background: `linear-gradient(135deg, ${colorVariants[0]?.hexCode || "#ccc"} 50%, ${colorVariants[0]?.secondaryHexCode} 50%)`,
+                              }
+                            : {
+                                backgroundColor:
+                                  colorVariants[0]?.hexCode || "#ccc",
+                              }
+                        }
                       />
                       <span className="text-sm">
-                        {colorVariants[0]?.colorName}
+                        {colorVariants[0]?.secondaryColorName
+                          ? `${colorVariants[0]?.colorName} / ${colorVariants[0]?.secondaryColorName}`
+                          : colorVariants[0]?.colorName}
                       </span>
                     </div>
                   ) : (
-                    // Variant product - show clickable color options
+                    // Variant product - show clickable color options with dual-color support
                     colorVariants.map((variant, index) => (
                       <Button
                         key={variant.colorId}
                         variant="ghost"
                         size="icon"
                         onClick={() => handleColorVariantClick(index)}
-                        className={`relative size-6 rounded-full border-2 transition-all p-0 hover:bg-transparent ${
+                        className={`relative size-6 rounded-full border-2 transition-all p-0 hover:bg-transparent group ${
                           isColorVariantSelected(index)
                             ? "border-accent"
                             : "border-border hover:border-destructive"
                         }`}
-                        style={{
-                          backgroundColor: variant.hexCode || "#ccc",
-                        }}
-                        title={variant.colorName}
+                        style={
+                          variant.secondaryHexCode
+                            ? {
+                                background: `linear-gradient(135deg, ${variant.hexCode || "#ccc"} 50%, ${variant.secondaryHexCode} 50%)`,
+                              }
+                            : {
+                                backgroundColor: variant.hexCode || "#ccc",
+                              }
+                        }
+                        title={
+                          variant.secondaryColorName
+                            ? `${variant.colorName} / ${variant.secondaryColorName}`
+                            : variant.colorName
+                        }
                       />
                     ))
                   )}

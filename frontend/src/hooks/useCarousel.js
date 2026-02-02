@@ -8,21 +8,41 @@ export const useCarousel = ({
   const [api, setApi] = useState(null);
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [lastInteraction, setLastInteraction] = useState(Date.now());
+
+  const resetAutoScroll = useCallback(() => {
+    setLastInteraction(Date.now());
+  }, []);
 
   // Scroll handlers
   const scrollPrev = useCallback(() => {
-    api?.scrollPrev();
-  }, [api]);
+    if (!api) return;
+    api.scrollPrev();
+    resetAutoScroll();
+  }, [api, resetAutoScroll]);
 
   const scrollNext = useCallback(() => {
-    api?.scrollNext();
-  }, [api]);
+    if (!api) return;
+    api.scrollNext();
+    resetAutoScroll();
+  }, [api, resetAutoScroll]);
+
+  const scrollTo = useCallback(
+    (index) => {
+      if (!api) return;
+      api.scrollTo(index);
+      resetAutoScroll();
+    },
+    [api, resetAutoScroll],
+  );
 
   // Update scroll state
   const updateScrollState = useCallback(() => {
     if (!api) return;
     setCanScrollPrev(api.canScrollPrev());
     setCanScrollNext(api.canScrollNext());
+    setSelectedIndex(api.selectedScrollSnap());
   }, [api]);
 
   // Setup carousel event listeners
@@ -52,14 +72,16 @@ export const useCarousel = ({
     }, autoScrollInterval);
 
     return () => clearInterval(autoScrollTimer);
-  }, [api, autoScroll, autoScrollInterval, itemCount]);
+  }, [api, autoScroll, autoScrollInterval, itemCount, lastInteraction]);
 
   return {
     api,
     setApi,
     canScrollPrev,
     canScrollNext,
+    selectedIndex,
     scrollPrev,
     scrollNext,
+    scrollTo,
   };
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { Search, ShoppingCart, Sun, Moon, Menu } from "lucide-react";
@@ -12,6 +12,7 @@ import UserDropdown from "@/components/layout/UserDropdown";
 import Auth from "@/pages/Auth";
 import { useThemeToggle } from "@/hooks/useToggleTheme";
 import { useLogout, getInitials } from "@/hooks/useLogin";
+import { useBanner } from "@/hooks/useBanner";
 
 const Header = () => {
   const { darkMode, toggleDarkMode } = useThemeToggle();
@@ -20,6 +21,21 @@ const Header = () => {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const location = useLocation();
   const { handleLogout, isLoggingOut } = useLogout();
+  const [isScrolled, setIsScrolled] = useState(false);
+  const { hasBanners } = useBanner();
+
+  // Check if current page is Home
+  const isHomePage = location.pathname === "/";
+
+  // Handle scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Filter menu items based on user role
   const filteredUserMenuItems = userMenu.filter((item) => {
@@ -45,10 +61,21 @@ const Header = () => {
   // Check if path is active (for mobile menu)
   const isActive = (path) => location.pathname === path;
 
+  // Header dynamic classes
+  const headerBaseClasses =
+    "fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 transition-all duration-300";
+  const headerTransparentClasses =
+    "bg-linear-to-b from-black/60 via-black/50 to-transparent";
+  const headerSolidClasses = "bg-popover-foreground dark:bg-input";
+
+  const isTransparent = isHomePage && !isScrolled && hasBanners;
+
   return (
     <>
       <Auth open={authOpen} onOpenChange={setAuthOpen} />
-      <header className="sticky top-0 z-50 flex items-center justify-between px-5 bg-popover-foreground dark:bg-background border-b shadow-xs">
+      <header
+        className={`${headerBaseClasses} ${isTransparent ? headerTransparentClasses : headerSolidClasses}`}
+      >
         <Link to="/" className="flex items-center">
           <img src={Logo} alt={APP_NAME} className="h-20 p-1" />
         </Link>
@@ -59,11 +86,24 @@ const Header = () => {
             <NavLink
               key={item.id}
               to={item.path}
-              className={({ isActive }) =>
-                isActive
-                  ? "text-accent decoration-2 underline underline-offset-8 transition-colors"
-                  : "text-background dark:text-foreground hover:text-accent dark:hover:text-accent transition-colors"
-              }
+              className={({ isActive }) => {
+                const baseNavClasses =
+                  "transition-all duration-300 font-medium";
+                const activeNavClasses =
+                  "text-accent decoration-2 underline underline-offset-8";
+                const inactiveTransparentClasses =
+                  "text-background dark:text-foreground hover:text-accent dark:hover:text-accent";
+                const inactiveSolidClasses =
+                  "text-background dark:text-foreground hover:text-accent dark:hover:text-accent";
+
+                return `${baseNavClasses} ${
+                  isActive
+                    ? activeNavClasses
+                    : isTransparent
+                      ? inactiveTransparentClasses
+                      : inactiveSolidClasses
+                }`;
+              }}
             >
               {item.label}
             </NavLink>

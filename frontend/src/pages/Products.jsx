@@ -123,7 +123,7 @@ const Products = () => {
           </SheetTrigger>
           <SheetContent
             side="left"
-            className="w-[400px] overflow-y-auto pl-3 py-5"
+            className="w-[400px] overflow-y-auto px-3 py-5"
           >
             <div>{filterContent}</div>
             <SheetTitle className="sr-only">Mobile Filter Sidebar</SheetTitle>
@@ -143,8 +143,8 @@ const Products = () => {
       {/* Main Content: Two Column Layout */}
       <div className="flex flex-col lg:flex-row gap-5">
         {/* Left Sidebar - Filters (Desktop) */}
-        <aside className="hidden lg:block lg:w-1/4 lg:sticky lg:top-4 lg:self-start lg:overflow-y-auto">
-          <div className="pr-4">{filterContent}</div>
+        <aside className="hidden lg:block lg:w-1/4 pr-5 border-r border-border">
+          <div className="sticky top-24 pb-10">{filterContent}</div>
         </aside>
 
         {/* Right Content Area - Products (Desktop & Mobile) */}
