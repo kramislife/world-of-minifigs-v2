@@ -1,14 +1,13 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import { Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Logo from "@/assets/media/Logo.png";
-import { useProductCardHoverImages } from "@/hooks/useProducts";
+import AddToCartButton from "@/components/cart/AddToCartButton";
+import { useProductCard, useProductCardHoverImages } from "@/hooks/useProducts";
 
 const ProductCard = ({ product }) => {
-  const navigate = useNavigate();
+  const { handleNavigate, isSoldOut } = useProductCard(product);
   const {
     imageUrls,
     currentImageIndex,
@@ -20,10 +19,6 @@ const ProductCard = ({ product }) => {
     cycleIntervalMs: 1500,
   });
 
-  const handleNavigate = () => {
-    navigate(`/products/${product._id}`);
-  };
-
   return (
     <Card
       role="button"
@@ -31,7 +26,9 @@ const ProductCard = ({ product }) => {
       aria-label={`View product ${product.productName}`}
       onClick={handleNavigate}
       onKeyDown={(e) => e.key === "Enter" && handleNavigate()}
-      className="group cursor-pointer hover:shadow-lg p-0 gap-2"
+      className={`group cursor-pointer hover:shadow-lg p-0 gap-2 transition-all duration-300 ${
+        isSoldOut ? "opacity-75" : ""
+      }`}
     >
       <CardHeader className="p-0 gap-0">
         <div
@@ -40,7 +37,9 @@ const ProductCard = ({ product }) => {
           onMouseLeave={handleMouseLeave}
         >
           {imageUrls.length > 0 ? (
-            <div className="relative h-full w-full">
+            <div
+              className={`relative h-full w-full ${isSoldOut ? "grayscale" : ""}`}
+            >
               {imageUrls.map((url, index) => (
                 <img
                   key={`${product._id}-${url}-${index}`}
@@ -59,7 +58,9 @@ const ProductCard = ({ product }) => {
               ))}
             </div>
           ) : (
-            <div className="flex h-full w-full items-center justify-center">
+            <div
+              className={`flex h-full w-full items-center justify-center ${isSoldOut ? "grayscale" : ""}`}
+            >
               <img
                 src={Logo}
                 alt="Product placeholder"
@@ -69,29 +70,31 @@ const ProductCard = ({ product }) => {
             </div>
           )}
 
-          {/* Discount Badge */}
-          {product.discount && (
-            <Badge variant="accent" className="absolute top-2 right-2 z-10">
-              {product.discount}% OFF
-            </Badge>
-          )}
-
-          {/* Button CTA */}
-          <div className="absolute inset-x-0 bottom-0 z-20 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            <div className="relative flex justify-center px-2 pb-2">
-              <Button
-                variant="dark"
-                className="w-full rounded-none uppercase font-semibold translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
-              >
-                {product.productType === "variant"
-                  ? "Choose Options"
-                  : "Add to Cart"}
-              </Button>
-            </div>
+          {/* Status Badges */}
+          <div className="absolute top-2 left-2 flex flex-col gap-1 z-20">
+            {isSoldOut ? (
+              <Badge variant="destructive" className="font-bold">
+                Sold Out
+              </Badge>
+            ) : (
+              product.discount && (
+                <Badge variant="accent" className="font-bold">
+                  {product.discount}% OFF
+                </Badge>
+              )
+            )}
           </div>
+
+          {/* Add to Cart Button Logic */}
+          {!isSoldOut && (
+            <div className="absolute inset-x-0 bottom-0 z-20 opacity-0 transition-opacity duration-300 group-hover:opacity-100 p-2">
+              <AddToCartButton
+                product={product}
+                variant="dark"
+                className="translate-y-2 group-hover:translate-y-0 transition-all duration-300"
+              />
+            </div>
+          )}
         </div>
       </CardHeader>
 

@@ -16,10 +16,10 @@ const baseQueryWithAuth = async (args, api, extraOptions) => {
   // But only if it's not the /me endpoint (which might fail due to cookie timing)
   // The /me endpoint failure will be handled by useAuthInit
   if (result?.error?.status === 401) {
-    const url = typeof args === 'string' ? args : args?.url || '';
+    const url = typeof args === "string" ? args : args?.url || "";
     // Don't clear credentials on /me 401 immediately after login
     // Let useAuthInit handle it with proper timing
-    if (!url.includes('/me')) {
+    if (!url.includes("/me")) {
       api.dispatch(clearCredentials());
     }
   }
@@ -30,7 +30,7 @@ const baseQueryWithAuth = async (args, api, extraOptions) => {
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: baseQueryWithAuth,
-  tagTypes: ["User"],
+  tagTypes: ["User", "Cart"],
   endpoints: (builder) => ({
     // ==================== Authentication ====================
     login: builder.mutation({
@@ -39,11 +39,7 @@ export const authApi = createApi({
         method: "POST",
         body: credentials,
       }),
-      invalidatesTags: ["User"],
-      // Note: We don't refetch /me here because:
-      // 1. Login response already contains user data
-      // 2. Cookies need time to be processed by the browser
-      // 3. useAuthInit will verify session on next app load
+      invalidatesTags: ["User", "Cart"],
     }),
 
     register: builder.mutation({
@@ -59,7 +55,7 @@ export const authApi = createApi({
         url: "/logout",
         method: "POST",
       }),
-      invalidatesTags: ["User"],
+      invalidatesTags: ["User", "Cart"],
     }),
 
     // ==================== Verification ====================
@@ -107,6 +103,104 @@ export const authApi = createApi({
         body: data,
       }),
     }),
+
+    // ==================== Cart Management ====================
+    getCart: builder.query({
+      query: () => "/cart",
+      providesTags: ["Cart"],
+    }),
+
+    addToCart: builder.mutation({
+      query: (data) => ({
+        url: "/cart",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Cart"],
+    }),
+
+    updateCartItem: builder.mutation({
+      query: (data) => ({
+        url: "/cart/item",
+        method: "PUT",
+        body: data,
+      }),
+      async onQueryStarted(
+        { productId, variantIndex, quantity },
+        { dispatch, queryFulfilled },
+      ) {
+        const patchResult = dispatch(
+          authApi.util.updateQueryData("getCart", undefined, (draft) => {
+            const item = draft.cart.items.find(
+              (i) =>
+                i.productId === productId && i.variantIndex === variantIndex,
+            );
+            if (item) {
+              item.quantity = quantity;
+            }
+          }),
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
+      invalidatesTags: ["Cart"],
+    }),
+
+    removeCartItem: builder.mutation({
+      query: ({ productId, variantIndex }) => ({
+        url: "/cart/item",
+        method: "DELETE",
+        params: { productId, variantIndex },
+      }),
+      async onQueryStarted(
+        { productId, variantIndex },
+        { dispatch, queryFulfilled },
+      ) {
+        const patchResult = dispatch(
+          authApi.util.updateQueryData("getCart", undefined, (draft) => {
+            draft.cart.items = draft.cart.items.filter(
+              (i) =>
+                !(i.productId === productId && i.variantIndex === variantIndex),
+            );
+          }),
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
+      invalidatesTags: ["Cart"],
+    }),
+
+    clearCart: builder.mutation({
+      query: () => ({
+        url: "/cart",
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Cart"],
+    }),
+
+    syncCart: builder.mutation({
+      query: (items) => ({
+        url: "/cart/sync",
+        method: "POST",
+        body: { items },
+      }),
+      invalidatesTags: ["Cart"],
+    }),
+
+    // ==================== Others ====================
+    sendContactMessage: builder.mutation({
+      query: (data) => ({
+        url: "/contact",
+        method: "POST",
+        body: data,
+      }),
+    }),
   }),
 });
 
@@ -119,4 +213,11 @@ export const {
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useGetCurrentUserQuery,
+  useGetCartQuery,
+  useAddToCartMutation,
+  useUpdateCartItemMutation,
+  useRemoveCartItemMutation,
+  useClearCartMutation,
+  useSyncCartMutation,
+  useSendContactMessageMutation,
 } = authApi;

@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   useGetProductsQuery,
   useGetProductByIdQuery,
@@ -444,6 +444,30 @@ export const useProducts = () => {
 
     // Other handlers
     handleClearFilters,
+  };
+};
+
+// Hook for individual product card logic
+export const useProductCard = (product) => {
+  const navigate = useNavigate();
+
+  const handleNavigate = useCallback(() => {
+    if (product?._id) {
+      navigate(`/products/${product._id}`);
+    }
+  }, [product?._id, navigate]);
+
+  const isSoldOut = useMemo(() => {
+    if (!product) return false;
+    if (product.productType === "standalone") {
+      return product.stock <= 0;
+    }
+    return product.variants?.every((v) => v.stock <= 0);
+  }, [product]);
+
+  return {
+    handleNavigate,
+    isSoldOut,
   };
 };
 

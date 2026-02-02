@@ -153,15 +153,15 @@ const Banner = () => {
                             {banner.buttons.map((btn, index) => {
                               const btnVariant =
                                 btn.variant === "outline"
-                                  ? "banner-outline"
-                                  : "banner-default";
+                                  ? "bannerOutline"
+                                  : "bannerDefault";
 
                               return (
                                 <Button
                                   key={index}
                                   asChild
                                   variant={btnVariant}
-                                  className="uppercase text-xs h-12 rounded-none "
+                                  className="h-12"
                                 >
                                   <Link to={btn.href || "#"}>{btn.label}</Link>
                                 </Button>

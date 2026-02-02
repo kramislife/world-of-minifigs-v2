@@ -4,10 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Logo from "@/assets/media/Logo.png";
 import { useProductDetails } from "@/hooks/useProducts";
+import { useCart } from "@/hooks/useCart";
+import AddToCartButton from "@/components/cart/AddToCartButton";
 
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { addToCart } = useCart();
 
   const {
     product,
@@ -334,8 +337,21 @@ const ProductDetails = () => {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-2">
-              <Button className="flex-1">Add to Cart</Button>
-              <Button variant="accent" className="flex-1">
+              <AddToCartButton
+                product={product}
+                variantIndex={selectedVariantIndex}
+                className="flex-1 h-12"
+              />
+              <Button
+                variant="accent"
+                onClick={() => {
+                  if (stockAlert?.message !== "Out of stock") {
+                    addToCart(product, 1, selectedVariantIndex);
+                  }
+                }}
+                disabled={stockAlert?.message === "Out of stock"}
+                className="flex-1 h-12 uppercase font-bold tracking-wider"
+              >
                 Buy Now
               </Button>
             </div>

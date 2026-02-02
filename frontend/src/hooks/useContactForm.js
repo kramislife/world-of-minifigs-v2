@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { useSendContactMessageMutation } from "@/redux/api/userApi";
+import { useSendContactMessageMutation } from "@/redux/api/authApi";
 
 export const useContactForm = () => {
   const [formData, setFormData] = useState({

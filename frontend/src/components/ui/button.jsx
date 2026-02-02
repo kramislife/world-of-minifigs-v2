@@ -20,11 +20,11 @@ const buttonVariants = cva(
           "hover:bg-accent hover:text-accent-foreground text-background dark:text-foreground dark:hover:text-secondary-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         accent: "bg-accent dark:text-secondary-foreground hover:bg-accent/90",
-        dark: "bg-popover-foreground dark:bg-accent text-background dark:text-secondary-foreground",
-        "banner-default":
-          "bg-white text-black hover:bg-transparent hover:text-white border-2 border-white duration-300",
-        "banner-outline":
-          "border-2 border-white text-white hover:bg-white hover:text-black bg-transparent duration-300",
+        dark: "bg-popover-foreground dark:bg-accent text-background dark:text-secondary-foreground uppercase font-bold tracking-widest rounded-none",
+        bannerDefault:
+          "bg-white text-black hover:bg-transparent hover:text-white border-2 border-white duration-300 uppercase text-xs rounded-none",
+        bannerOutline:
+          "border border-white text-white hover:bg-white hover:text-black bg-transparent duration-300 uppercase text-xs rounded-none",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
