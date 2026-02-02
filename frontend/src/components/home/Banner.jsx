@@ -114,7 +114,7 @@ const Banner = () => {
                   {/* Content */}
                   <div
                     className={
-                      "relative z-10 flex h-full w-full p-5 sm:p-10 " +
+                      "relative z-10 flex h-full w-full px-5 py-10 sm:px-10 sm:py-20 " +
                       banner.alignmentClasses +
                       " " +
                       textClass
