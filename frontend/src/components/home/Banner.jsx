@@ -18,35 +18,13 @@ const Banner = () => {
     setApi,
     selectedIndex,
     scrollTo,
+    container: containerVariants,
+    item: itemVariants,
   } = useBanner();
 
   if (isLoading || isError) return null;
 
   if (!hasBanners) return <div className="h-20" />;
-
-  // Animation Variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.15,
-        delayChildren: 1.0,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.8,
-        ease: [0.33, 1, 0.68, 1], // Custom slow-out ease
-      },
-    },
-  };
 
   return (
     <section className="relative w-full overflow-hidden">
@@ -91,11 +69,11 @@ const Banner = () => {
                   {/* Media */}
                   {mediaType === "video" ? (
                     <video
+                      data-banner-video={index}
                       className="absolute inset-0 w-full h-full object-cover"
                       src={mediaUrl}
                       autoPlay
                       muted
-                      loop
                       playsInline
                     />
                   ) : (

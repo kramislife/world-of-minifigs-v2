@@ -72,7 +72,14 @@ export const useCarousel = ({
     }, autoScrollInterval);
 
     return () => clearInterval(autoScrollTimer);
-  }, [api, autoScroll, autoScrollInterval, itemCount, lastInteraction]);
+  }, [
+    api,
+    autoScroll,
+    autoScrollInterval,
+    itemCount,
+    lastInteraction,
+    selectedIndex,
+  ]);
 
   return {
     api,
