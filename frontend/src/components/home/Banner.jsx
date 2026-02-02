@@ -129,7 +129,7 @@ const Banner = () => {
                       {banner.badge && (
                         <motion.p
                           variants={itemVariants}
-                          className="uppercase tracking-widest text-xs sm:text-sm pb-5"
+                          className="uppercase tracking-widest text-xs sm:text-sm"
                         >
                           {banner.badge}
                         </motion.p>

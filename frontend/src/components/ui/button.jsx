@@ -22,7 +22,7 @@ const buttonVariants = cva(
         accent: "bg-accent dark:text-secondary-foreground hover:bg-accent/90",
         dark: "bg-popover-foreground dark:bg-accent text-background dark:text-secondary-foreground",
         "banner-default":
-          "bg-white text-black hover:bg-transparent hover:text-white border-2 border-white dark:bg-black dark:text-white duration-300",
+          "bg-white text-black hover:bg-transparent hover:text-white border-2 border-white duration-300",
         "banner-outline":
           "border-2 border-white text-white hover:bg-white hover:text-black bg-transparent duration-300",
       },

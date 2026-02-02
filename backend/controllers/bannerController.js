@@ -146,7 +146,7 @@ export const createBanner = async (req, res) => {
       if (
         uploadResult.resourceType === "video" &&
         typeof uploadResult.duration === "number" &&
-        uploadResult.duration > 30
+        uploadResult.duration > 10
       ) {
         try {
           await deleteMedia(uploadResult.publicId, uploadResult.resourceType);
@@ -155,7 +155,7 @@ export const createBanner = async (req, res) => {
         return res.status(400).json({
           success: false,
           message: "Video is too long",
-          description: "Banner video must not exceed 30 seconds.",
+          description: "Banner video must not exceed 10 seconds.",
         });
       }
 
@@ -452,7 +452,7 @@ export const updateBanner = async (req, res) => {
         if (
           uploadResult.resourceType === "video" &&
           typeof uploadResult.duration === "number" &&
-          uploadResult.duration > 30
+          uploadResult.duration > 10
         ) {
           try {
             await deleteMedia(uploadResult.publicId, uploadResult.resourceType);
@@ -461,7 +461,7 @@ export const updateBanner = async (req, res) => {
           return res.status(400).json({
             success: false,
             message: "Video is too long",
-            description: "Banner video must not exceed 30 seconds.",
+            description: "Banner video must not exceed 10 seconds.",
           });
         }
       } catch (error) {

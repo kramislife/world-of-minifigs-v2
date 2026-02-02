@@ -138,9 +138,9 @@ const BannerManagement = () => {
         className="sm:max-w-2xl"
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-5 gap-3">
             {/* Badge */}
-            <div className="space-y-2">
+            <div className="space-y-2 col-span-2">
               <Label htmlFor="badge">Badge</Label>
               <Input
                 id="badge"
@@ -152,7 +152,7 @@ const BannerManagement = () => {
               />
             </div>
             {/* Label */}
-            <div className="space-y-2">
+            <div className="space-y-2 col-span-2">
               <Label htmlFor="label">Label</Label>
               <Input
                 id="label"
@@ -165,8 +165,8 @@ const BannerManagement = () => {
               />
             </div>
             {/* Order */}
-            <div className="space-y-2">
-              <Label htmlFor="order">Display Order</Label>
+            <div className="space-y-2 col-span-1">
+              <Label htmlFor="order">Order</Label>
               <Input
                 id="order"
                 name="order"
@@ -367,7 +367,7 @@ const BannerManagement = () => {
                   Click to upload
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Image, GIF, or Video (max 30s)
+                  Image, GIF, or Video (max 10s)
                 </p>
                 <input
                   type="file"
@@ -406,6 +406,11 @@ const BannerManagement = () => {
                     <div className="flex items-center justify-between">
                       <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                         Button {i + 1}
+                        {i === 1 && (
+                          <span className="text-xs font-normal opacity-70">
+                            (Optional)
+                          </span>
+                        )}
                       </Label>
                     </div>
 
