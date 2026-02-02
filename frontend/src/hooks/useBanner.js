@@ -32,15 +32,7 @@ export const useBanner = () => {
       }));
   }, [data?.banners]);
 
-  const {
-    api,
-    setApi,
-    selectedIndex,
-    canScrollPrev,
-    canScrollNext,
-    scrollPrev,
-    scrollNext,
-  } = useCarousel({
+  const { api, setApi, selectedIndex, scrollTo } = useCarousel({
     autoScroll: true,
     autoScrollInterval: AUTO_SCROLL_INTERVAL,
     itemCount: banners.length,
@@ -55,9 +47,6 @@ export const useBanner = () => {
     api,
     setApi,
     selectedIndex,
-    canScrollPrev,
-    canScrollNext,
-    scrollPrev,
-    scrollNext,
+    scrollTo,
   };
 };

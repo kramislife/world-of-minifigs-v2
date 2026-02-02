@@ -1,14 +1,13 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
-import { useBanner } from "@/hooks/useBanner";
 import { motion } from "framer-motion";
+import { useBanner } from "@/hooks/useBanner";
 
 const Banner = () => {
   const {
@@ -17,11 +16,8 @@ const Banner = () => {
     isError,
     hasBanners,
     setApi,
-    canScrollPrev,
-    canScrollNext,
     selectedIndex,
-    scrollPrev,
-    scrollNext,
+    scrollTo,
   } = useBanner();
 
   if (isLoading || isError) return null;
@@ -53,32 +49,22 @@ const Banner = () => {
   };
 
   return (
-    <section className="relative w-full aspect-4/5 md:aspect-16/7 overflow-hidden">
-      {/* Chevrons */}
+    <section className="relative w-full overflow-hidden">
+      {/* Pagination Indicators */}
       {banners.length > 1 && (
-        <>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={scrollPrev}
-            disabled={!canScrollPrev}
-            className="absolute left-4 top-1/2 z-20 -translate-y-1/2 rounded-full"
-          >
-            <ChevronLeft className="size-5" />
-            <span className="sr-only">Previous</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={scrollNext}
-            disabled={!canScrollNext}
-            className="absolute right-4 top-1/2 z-20 -translate-y-1/2 rounded-full"
-          >
-            <ChevronRight className="size-5" />
-            <span className="sr-only">Next</span>
-          </Button>
-        </>
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+          {banners.map((_, index) => (
+            <Button
+              key={index}
+              variant="ghost"
+              onClick={() => scrollTo(index)}
+              className={`h-2 p-0 rounded-full transition-all duration-300 hover:bg-white/60 ${
+                selectedIndex === index ? "w-8 bg-white" : "w-2 bg-white/40"
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
       )}
 
       <Carousel
@@ -143,7 +129,7 @@ const Banner = () => {
                       {banner.badge && (
                         <motion.p
                           variants={itemVariants}
-                          className="uppercase tracking-widest text-xs sm:text-sm"
+                          className="uppercase tracking-widest text-xs sm:text-sm pb-5"
                         >
                           {banner.badge}
                         </motion.p>
@@ -152,7 +138,7 @@ const Banner = () => {
                       {banner.label && (
                         <motion.h1
                           variants={itemVariants}
-                          className="text-4xl sm:text-5xl md:text-6xl font-black uppercase"
+                          className="text-4xl sm:text-5xl md:text-6xl font-black uppercase leading-tight"
                         >
                           {banner.label}
                         </motion.h1>
@@ -178,7 +164,7 @@ const Banner = () => {
                           <motion.div
                             variants={itemVariants}
                             className={
-                              "flex gap-3 pt-2 " +
+                              "flex gap-3 pt-5 " +
                               (banner.position === "center"
                                 ? "justify-center"
                                 : banner.position === "bottom-right"
