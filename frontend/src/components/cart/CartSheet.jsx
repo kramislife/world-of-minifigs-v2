@@ -85,7 +85,7 @@ const CartView = ({
       </SheetDescription>
     </SheetHeader>
 
-    <div className="flex-1 p-5">
+    <div className="flex-1 overflow-y-auto p-5">
       {items.length === 0 && !isUpdating ? (
         <EmptyCartView onContinue={closeSheet} />
       ) : (
@@ -103,7 +103,7 @@ const CartView = ({
     </div>
 
     {items.length > 0 && (
-      <div className="p-5 border-t space-y-5">
+      <div className="px-5 py-3 border-t space-y-5">
         <div className="flex justify-between">
           <span className="text-lg font-black uppercase">Subtotal</span>
           <span className="text-2xl font-black text-success">
@@ -310,7 +310,7 @@ const VariantSelectionView = ({
 
         <div className="px-5 space-y-5">
           <div className="mt-3">
-            <h3 className="text-3xl font-bold">{product.productName}</h3>
+            <h3 className="text-2xl font-bold">{product.productName}</h3>
             <div className="mt-3 flex items-baseline gap-2">
               <span className="text-3xl font-black text-success">
                 ${displayPrice}
