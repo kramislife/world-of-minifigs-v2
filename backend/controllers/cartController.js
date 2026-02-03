@@ -124,16 +124,26 @@ export const addToCart = async (req, res) => {
 
     const addQty = Number(quantity) || 1;
     const existingQty = itemIndex > -1 ? cart.items[itemIndex].quantity : 0;
-    const maxStock =
-      product.productType === "variant"
-        ? product.variants?.[variantIndex]?.stock
-        : product.stock;
+    const isVariant = product.productType === "variant";
+    const variant = isVariant ? product.variants?.[variantIndex] : null;
+
+    const variantName = isVariant
+      ? [variant?.colorId?.colorName, variant?.secondaryColorId?.colorName]
+          .filter(Boolean)
+          .join(" / ")
+      : null;
+
+    const displayName = variantName
+      ? `${product.productName} - ${variantName}`
+      : product.productName;
+
+    const maxStock = isVariant ? variant?.stock : product.stock;
 
     if (maxStock < existingQty + addQty) {
       return res.status(400).json({
         success: false,
-        message: "Insufficient stock",
-        description: `Only ${maxStock} units available.`,
+        message: "Maximum stock reached",
+        description: `${displayName} has reached its maximum stock available`,
       });
     }
 
@@ -194,15 +204,35 @@ export const updateCartItem = async (req, res) => {
 
     const item = cart.items[itemIndex];
     const product = await Product.findById(item.productId);
-    const maxStock =
-      item.productType === "variant"
-        ? product?.variants?.[item.variantIndex]?.stock
-        : product?.stock;
+    const isVariant = item.productType === "variant";
+    const variant = isVariant ? product?.variants?.[item.variantIndex] : null;
 
-    if (!product || !product.isActive || maxStock < quantity) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Stock unavailable" });
+    const variantName = isVariant
+      ? [variant?.colorId?.colorName, variant?.secondaryColorId?.colorName]
+          .filter(Boolean)
+          .join(" / ")
+      : null;
+
+    const displayName = variantName
+      ? `${product?.productName} - ${variantName}`
+      : product?.productName;
+
+    const maxStock = isVariant ? variant?.stock : product?.stock;
+
+    if (!product || !product.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: "Product unavailable",
+        description: "This product is no longer active or available.",
+      });
+    }
+
+    if (maxStock < quantity) {
+      return res.status(400).json({
+        success: false,
+        message: "Maximum stock reached",
+        description: `${displayName} has reached its maximum stock (${maxStock} available).`,
+      });
     }
 
     cart.items[itemIndex].quantity = quantity;

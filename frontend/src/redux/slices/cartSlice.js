@@ -16,19 +16,48 @@ const cartSlice = createSlice({
     },
 
     addToCartLocal: (state, action) => {
-      const {
+      let {
+        product,
         productId,
         productName,
         productType,
         variantIndex,
         variantColor,
-        quantity,
+        quantity = 1,
         price,
         discountPrice,
         image,
         stock,
         secondaryColor,
       } = action.payload;
+
+      // Handle raw product object mapping if provided (centralized mapping)
+      if (product) {
+        productId = product._id;
+        productName = product.productName;
+        productType = product.productType;
+
+        const isVariant = productType === "variant" && variantIndex !== null;
+        const variant = isVariant ? product.variants?.[variantIndex] : null;
+
+        variantColor = isVariant
+          ? variant?.colorId?.colorName ||
+            product.colorVariants?.[variantIndex]?.colorName
+          : product.colorId?.colorName || product.colorVariants?.[0]?.colorName;
+
+        secondaryColor = isVariant
+          ? variant?.secondaryColorId?.colorName
+          : product.secondaryColorId?.colorName;
+
+        price = isVariant ? variant?.price : product.price;
+        discountPrice = isVariant
+          ? variant?.discountPrice
+          : product.discountPrice;
+        stock = isVariant ? variant?.stock : product.stock;
+        image = isVariant
+          ? variant?.image?.url
+          : product.images?.[0]?.url || product.image;
+      }
 
       const itemIndex = state.items.findIndex(
         (item) =>
@@ -39,7 +68,6 @@ const cartSlice = createSlice({
       if (itemIndex > -1) {
         state.items[itemIndex].quantity += quantity;
         state.items[itemIndex].addedAt = new Date().toISOString();
-        // Update stock and price if they changed
         if (stock !== undefined) state.items[itemIndex].stock = stock;
         if (price !== undefined) state.items[itemIndex].price = price;
         if (discountPrice !== undefined)

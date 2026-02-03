@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { toast } from "sonner";
 import { useCarousel } from "./useCarousel";
 import { useSelector, useDispatch } from "react-redux";
 import {
@@ -233,54 +234,75 @@ export const useCart = () => {
   // Handlers
   const addToCart = useCallback(
     async (product, quantity = 1, variantIndex = null) => {
+      // Check if item already in cart to verify total stock limit
+      const existingItem = items.find(
+        (item) =>
+          item.productId === product._id &&
+          (item.variantIndex ?? null) === (variantIndex ?? null),
+      );
+
+      const isVariant =
+        product.productType === "variant" && variantIndex !== null;
+      const variant = isVariant ? product.variants?.[variantIndex] : null;
+
+      const variantColor = isVariant
+        ? variant?.colorId?.colorName ||
+          product.colorVariants?.[variantIndex]?.colorName
+        : product.colorId?.colorName || product.colorVariants?.[0]?.colorName;
+
+      const secondaryColor = isVariant
+        ? variant?.secondaryColorId?.colorName
+        : product.secondaryColorId?.colorName;
+
+      const variantName = isVariant
+        ? [variantColor, variant?.secondaryColorId?.colorName]
+            .filter(Boolean)
+            .join(" / ")
+        : null;
+
+      const displayName = variantName
+        ? `${product.productName} - ${variantName}`
+        : product.productName;
+
+      const availableStock = isVariant ? variant?.stock : product.stock;
+
+      const currentQuantityInCart = existingItem?.quantity || 0;
+      const totalRequestedQuantity = currentQuantityInCart + quantity;
+
       if (isAuthenticated) {
-        await addToCartServer({
-          productId: product._id,
-          quantity,
-          variantIndex,
-        }).unwrap();
+        try {
+          await addToCartServer({
+            productId: product._id,
+            quantity,
+            variantIndex,
+          }).unwrap();
+        } catch (err) {
+          toast.error(err.data?.message || "Cart error", {
+            description:
+              err.data?.description ||
+              `${displayName} has reached its maximum stock.`,
+          });
+          return;
+        }
       } else {
-        const { _id: productId, productName, productType } = product;
-        const isVariant = productType === "variant" && variantIndex !== null;
-        const variant = isVariant ? product.variants?.[variantIndex] : null;
-
-        const variantColor = isVariant
-          ? variant?.colorId?.colorName ||
-            product.colorVariants?.[variantIndex]?.colorName
-          : product.colorId?.colorName || product.colorVariants?.[0]?.colorName;
-
-        const secondaryColor = isVariant
-          ? variant?.secondaryColorId?.colorName
-          : product.secondaryColorId?.colorName;
-
-        const price = isVariant ? variant?.price : product.price;
-        const discountPrice = isVariant
-          ? variant?.discountPrice
-          : product.discountPrice;
-        const stock = isVariant ? variant?.stock : product.stock;
-        const image = isVariant
-          ? variant?.image?.url
-          : product.images?.[0]?.url || product.image;
+        // Guest mode validation (Frontend as primary source of validation)
+        if (totalRequestedQuantity > availableStock) {
+          toast.error(`${displayName} has reached its maximum stock.`);
+          dispatch(openCart());
+          return;
+        }
 
         dispatch(
           addToCartLocal({
-            productId,
-            productName,
-            productType,
+            product,
             variantIndex,
-            variantColor,
-            secondaryColor,
             quantity,
-            price,
-            discountPrice,
-            image,
-            stock,
           }),
         );
       }
       dispatch(openCart());
     },
-    [isAuthenticated, addToCartServer, dispatch],
+    [isAuthenticated, addToCartServer, dispatch, items],
   );
 
   const handleAddToCart = useCallback(
@@ -298,9 +320,21 @@ export const useCart = () => {
   );
 
   const updateQuantity = useCallback(
-    (quantity, productId, variantIndex) => {
+    async (quantity, productId, variantIndex) => {
       if (isAuthenticated) {
-        updateCartItemServer({ productId, variantIndex, quantity });
+        try {
+          await updateCartItemServer({
+            productId,
+            variantIndex,
+            quantity,
+          }).unwrap();
+        } catch (err) {
+          toast.error(err.data?.message || "Update failed", {
+            description:
+              err.data?.description ||
+              "Unable to update quantity. Please try again.",
+          });
+        }
       } else {
         dispatch(updateQuantityLocal({ productId, variantIndex, quantity }));
       }
@@ -309,9 +343,17 @@ export const useCart = () => {
   );
 
   const removeItem = useCallback(
-    (productId, variantIndex) => {
-      if (isAuthenticated) {
-        removeCartItemServer({ productId, variantIndex });
+    async (productId, variantIndex) => {
+      if (isAuthenticated) { 
+        try {
+          await removeCartItemServer({ productId, variantIndex }).unwrap();
+        } catch (err) {
+          toast.error(err.data?.message || "Remove failed", {
+            description:
+              err.data?.description ||
+              "Unable to remove item from cart. Please try again.",
+          });
+        }
       } else {
         dispatch(removeFromCartLocal({ productId, variantIndex }));
       }
@@ -321,7 +363,15 @@ export const useCart = () => {
 
   const clearCart = useCallback(async () => {
     if (isAuthenticated) {
-      await clearCartServer().unwrap();
+      try {
+        await clearCartServer().unwrap();
+      } catch (err) {
+        toast.error(err.data?.message || "Clear failed", {
+          description:
+            err.data?.description ||
+            "Unable to empty your cart. Please try again.",
+        });
+      }
     } else {
       dispatch(clearCartLocal());
     }
@@ -329,14 +379,22 @@ export const useCart = () => {
 
   const syncCart = useCallback(async () => {
     if (isAuthenticated && localItems.length > 0) {
-      const syncItems = localItems.map((item) => ({
-        productId: item.productId,
-        productType: item.productType,
-        variantIndex: item.variantIndex,
-        quantity: item.quantity,
-      }));
-      await syncCartServer(syncItems).unwrap();
-      dispatch(clearCartLocal());
+      try {
+        const syncItems = localItems.map((item) => ({
+          productId: item.productId,
+          productType: item.productType,
+          variantIndex: item.variantIndex,
+          quantity: item.quantity,
+        }));
+        await syncCartServer(syncItems).unwrap();
+        dispatch(clearCartLocal());
+      } catch (err) {
+        toast.error(err.data?.message || "Sync failed", {
+          description:
+            err.data?.description ||
+            "Unable to sync your guest cart to your account.",
+        });
+      }
     }
   }, [isAuthenticated, localItems, syncCartServer, dispatch]);
 
