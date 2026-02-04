@@ -106,7 +106,7 @@ const CartView = ({
       <div className="px-5 py-3 border-t space-y-5">
         <div className="flex justify-between">
           <span className="text-lg font-black uppercase">Subtotal</span>
-          <span className="text-2xl font-black text-success">
+          <span className="text-2xl font-black text-success dark:text-accent">
             ${totalPrice.toFixed(2)}
           </span>
         </div>
@@ -188,7 +188,7 @@ const CartItem = ({ item, onUpdate, onRemove }) => {
             >
               {productName}
             </h4>
-            <span className="font-black text-sm text-success whitespace-nowrap">
+            <span className="font-black text-sm text-success dark:text-accent whitespace-nowrap">
               ${totalItemPrice}
             </span>
           </div>

@@ -1,0 +1,70 @@
+import mongoose from "mongoose";
+
+const dealerTorsoBagSchema = new mongoose.Schema(
+  {
+    bagName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    items: [
+      {
+        _id: false,
+        image: {
+          publicId: {
+            type: String,
+            required: true,
+          },
+          url: {
+            type: String,
+            required: true,
+          },
+        },
+        quantity: {
+          type: Number,
+          required: true,
+          min: 1,
+          max: 4,
+        },
+      },
+    ],
+    minQuantity: {
+      type: Number,
+      required: true,
+      default: 100, // Matching the common lowest bundle
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
+
+// Indexes
+
+// Fast lookup for active bags
+dealerTorsoBagSchema.index({ isActive: 1 });
+
+// Case-insensitive name lookup
+dealerTorsoBagSchema.index(
+  { bagName: 1 },
+  {
+    unique: true,
+    collation: { locale: "en", strength: 2 },
+  },
+);
+
+const DealerTorsoBag = mongoose.model("DealerTorsoBag", dealerTorsoBagSchema);
+
+export default DealerTorsoBag;

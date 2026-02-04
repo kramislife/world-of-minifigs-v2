@@ -188,16 +188,18 @@ const Contact = () => {
               <CardContent>
                 <Accordion type="single" collapsible>
                   {contactFaqs.faq.map((faq, index) => (
-                    <AccordionItem key={faq.question} value={`faq-${index}`}>
+                    <AccordionItem
+                      className="last:border-b-0"
+                      key={faq.question}
+                      value={`faq-${index}`}
+                    >
                       <AccordionTrigger>{faq.question}</AccordionTrigger>
-                      <AccordionContent>
-                        <div className="flex gap-2">
-                          <CheckCircle
-                            size={16}
-                            className="mt-0.5 text-success shrink-0"
-                          />
-                          <span>{faq.answer}</span>
-                        </div>
+                      <AccordionContent className="flex items-start gap-2">
+                        <CheckCircle
+                          size={16}
+                          className="mt-0.5 text-success shrink-0"
+                        />
+                        <span>{faq.answer}</span>
                       </AccordionContent>
                     </AccordionItem>
                   ))}

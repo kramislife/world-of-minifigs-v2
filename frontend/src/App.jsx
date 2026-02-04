@@ -24,7 +24,7 @@ const App = () => {
         </main>
         <Footer />
       </div>
-      <Toaster position="bottom-right" />
+      <Toaster position="bottom-right" duration={5000} />
     </>
   );
 };

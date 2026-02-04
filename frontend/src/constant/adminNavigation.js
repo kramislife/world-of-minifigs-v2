@@ -4,6 +4,7 @@ import {
   Palette,
   ChartColumnStacked,
   FolderKanban,
+  Gem,
   Gauge,
   PenTool,
   ShoppingCart,
@@ -72,6 +73,50 @@ export const adminNavigation = [
     ],
   },
   {
+    id: "dealer-management",
+    label: "Dealer",
+    icon: Handshake,
+    children: [
+      {
+        id: "dealer-bundles",
+        label: "Bundles",
+        path: "dealer-bundles",
+      },
+      {
+        id: "dealer-addons",
+        label: "Add-ons",
+        path: "dealer-addons",
+      },
+      {
+        id: "dealer-extra-bags",
+        label: "Extra Bags",
+        path: "dealer-extra-bags",
+      },
+      {
+        id: "dealer-torso-bags",
+        label: "Torso Bags",
+        path: "dealer-torso-bags",
+      },
+    ],
+  },
+  {
+    id: "reward-program",
+    label: "Reward Program",
+    icon: Gem,
+    children: [
+      {
+        id: "reward-bundles",
+        label: "Reward Bundles",
+        path: "reward-bundles",
+      },
+      {
+        id: "reward-subscriptions",
+        label: "Subscriptions",
+        path: "reward-subscriptions",
+      },
+    ],
+  },
+  {
     id: "skill-level",
     label: "Skill Level",
     path: "skill-level",
@@ -82,12 +127,6 @@ export const adminNavigation = [
     label: "Designers",
     path: "designers",
     icon: PenTool,
-  },
-  {
-    id: "dealers",
-    label: "Dealers",
-    path: "dealers",
-    icon: Handshake,
   },
   {
     id: "orders",

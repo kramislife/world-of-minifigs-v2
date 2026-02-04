@@ -1,5 +1,7 @@
 import SubCollection from "../models/subCollection.model.js";
 import Collection from "../models/collection.model.js";
+import DealerExtraBag from "../models/dealerExtraBag.model.js";
+import Product from "../models/product.model.js";
 import {
   uploadImage,
   deleteImage,
@@ -95,7 +97,7 @@ export const createSubCollection = async (req, res) => {
     try {
       uploadedImage = await uploadImage(
         image,
-        "world-of-minifigs-v2/sub-collections"
+        "world-of-minifigs-v2/sub-collections",
       );
     } catch (uploadError) {
       console.error("Image upload error:", uploadError);
@@ -164,7 +166,7 @@ export const getAllSubCollections = async (req, res) => {
       const subCollectionSearchFields = ["subCollectionName", "description"];
       const subCollectionQuery = buildSearchQuery(
         search,
-        subCollectionSearchFields
+        subCollectionSearchFields,
       );
 
       // Search in collection names
@@ -348,7 +350,7 @@ export const updateSubCollection = async (req, res) => {
         // Upload new image
         const uploadedImage = await uploadImage(
           image,
-          "world-of-minifigs-v2/sub-collections"
+          "world-of-minifigs-v2/sub-collections",
         );
         subCollection.image = {
           publicId: uploadedImage.public_id,
@@ -406,6 +408,35 @@ export const deleteSubCollection = async (req, res) => {
         success: false,
         message: "Sub-collection not found",
         description: "The requested sub-collection does not exist.",
+      });
+    }
+
+    // Check if being used in DealerExtraBag
+    const extraBagCount = await DealerExtraBag.countDocuments({
+      subCollectionId: id,
+    });
+
+    if (extraBagCount > 0) {
+      return res.status(409).json({
+        success: false,
+        message: "Cannot delete sub-collection",
+        description:
+          "This sub-collection is being used in the dealer bag pricing. Please remove the extra bag pricing for this category first.",
+      });
+    }
+
+    // Check if being used in Product
+    const productCount = await Product.countDocuments({
+      subCollectionIds: id,
+    });
+
+    if (productCount > 0) {
+      return res.status(409).json({
+        success: false,
+        message: "Cannot delete sub-collection",
+        description: `This sub-collection has ${productCount} related product${
+          productCount > 1 ? "s" : ""
+        }. Please delete or reassign them first.`,
       });
     }
 

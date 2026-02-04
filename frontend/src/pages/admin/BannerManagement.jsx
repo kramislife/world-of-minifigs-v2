@@ -13,12 +13,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
-
 import useBannerManagement from "@/hooks/admin/useBannerManagement";
 
 const BannerManagement = () => {
@@ -119,7 +117,7 @@ const BannerManagement = () => {
         )}
       />
 
-      {/* Dialog */}
+      {/* Add/Edit Banner Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
@@ -495,6 +493,7 @@ const BannerManagement = () => {
         </div>
       </AddUpdateItemDialog>
 
+      {/* Delete Confirmation Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
