@@ -916,6 +916,62 @@ export const deleteDealerTorsoBag = async (req, res) => {
   }
 };
 
+//------------------------------------------------ Reorder Torso Bag Items ------------------------------------------
+export const reorderTorsoBagItems = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { itemOrder } = req.body; // Array of item indices in the new order
+
+    if (!itemOrder || !Array.isArray(itemOrder)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid item order",
+        description: "Please provide an array of item indices.",
+      });
+    }
+
+    const torsoBag = await DealerTorsoBag.findById(id);
+
+    if (!torsoBag) {
+      return res.status(404).json({
+        success: false,
+        message: "Torso bag not found",
+        description: "The requested torso bag does not exist.",
+      });
+    }
+
+    // Validate that all indices are valid
+    if (itemOrder.length !== torsoBag.items.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid item count",
+        description: "The number of items in the order must match the bag.",
+      });
+    }
+
+    // Reorder items based on the provided indices
+    const reorderedItems = itemOrder.map((index) => torsoBag.items[index]);
+
+    // Update the torso bag with reordered items
+    torsoBag.items = reorderedItems;
+    await torsoBag.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Items reordered successfully",
+      description: "The torso designs have been rearranged.",
+      data: torsoBag,
+    });
+  } catch (error) {
+    handleError(
+      res,
+      error,
+      "Reorder torso bag items",
+      "Failed to reorder items",
+    );
+  }
+};
+
 //------------------------------------------------ Get Dealer Bundles (Dealer Access) ------------------------------------------
 
 export const getDealerBundlesForUser = async (req, res) => {

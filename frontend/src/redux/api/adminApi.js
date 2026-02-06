@@ -538,6 +538,14 @@ export const adminApi = createApi({
       }),
       invalidatesTags: ["DealerTorsoBag"],
     }),
+    reorderTorsoBagItems: builder.mutation({
+      query: ({ id, itemOrder }) => ({
+        url: `/dealer/torso-bags/${id}/reorder`,
+        method: "PATCH",
+        body: { itemOrder },
+      }),
+      invalidatesTags: ["DealerTorsoBag"],
+    }),
 
     // ==================== SkillLevel Management ====================
     // Get all skillLevels
@@ -673,6 +681,7 @@ export const {
   useCreateDealerTorsoBagMutation,
   useUpdateDealerTorsoBagMutation,
   useDeleteDealerTorsoBagMutation,
+  useReorderTorsoBagItemsMutation,
 
   useGetSkillLevelsQuery,
   useGetSkillLevelByIdQuery,

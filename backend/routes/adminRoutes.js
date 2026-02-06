@@ -69,6 +69,7 @@ import {
   getAllDealerTorsoBags,
   updateDealerTorsoBag,
   deleteDealerTorsoBag,
+  reorderTorsoBagItems,
 } from "../controllers/dealerController.js";
 import {
   createSkillLevel,
@@ -153,6 +154,7 @@ router.post("/dealer/torso-bags", createDealerTorsoBag);
 router.get("/dealer/torso-bags", getAllDealerTorsoBags);
 router.put("/dealer/torso-bags/:id", updateDealerTorsoBag);
 router.delete("/dealer/torso-bags/:id", deleteDealerTorsoBag);
+router.patch("/dealer/torso-bags/:id/reorder", reorderTorsoBagItems);
 
 // SkillLevel CRUD routes
 router.post("/skillLevels", createSkillLevel);
