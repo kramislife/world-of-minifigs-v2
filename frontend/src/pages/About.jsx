@@ -46,7 +46,7 @@ const About = () => {
           {aboutStats.map((stat, index) => (
             <Card key={index} className="text-center dark:shadow-none">
               <CardContent className="py-10">
-                <div className="text-3xl font-bold text-accent-foreground dark:text-secondary-foreground mb-5 bg-accent h-28 w-28 mx-auto rounded-full flex items-center justify-center">
+                <div className="text-3xl text-foreground dark:text-secondary-foreground font-bold mb-5 bg-accent h-28 w-28 mx-auto rounded-full flex items-center justify-center shadow-lg border-4 border-background">
                   {stat.number}
                 </div>
                 <div className="font-bold">{stat.label}</div>
@@ -69,7 +69,9 @@ const About = () => {
             <Badge variant="accent" className="px-3 py-1 text-sm">
               {aboutStory.badge}
             </Badge>
-            <h2 className="text-4xl font-bold leading-tight">{aboutStory.title}</h2>
+            <h2 className="text-4xl font-bold leading-tight">
+              {aboutStory.title}
+            </h2>
 
             <div className="space-y-4">
               {aboutStory.story.map((paragraph, id) => (
@@ -92,7 +94,7 @@ const About = () => {
           {aboutOrder.steps.map((step, index) => (
             <Card key={index} className="text-center dark:shadow-none">
               <CardHeader>
-                <div className="text-3xl font-bold text-accent-foreground dark:text-secondary-foreground mb-5 bg-accent h-20 w-20 mx-auto rounded-full flex items-center justify-center">
+                <div className="text-3xl text-foreground dark:text-secondary-foreground font-bold mb-5 bg-accent h-20 w-20 mx-auto rounded-full flex items-center justify-center shadow-lg border-4 border-background">
                   {index + 1}
                 </div>
                 <CardTitle className="text-xl font-bold">
@@ -121,8 +123,8 @@ const About = () => {
           {aboutChoose.features.map((feature, index) => (
             <Card key={index} className="text-center dark:shadow-none">
               <CardHeader>
-                <div className="text-3xl font-bold text-accent-foreground dark:text-secondary-foreground mb-5 bg-accent h-20 w-20 mx-auto rounded-full flex items-center justify-center">
-                  <feature.icon size={24} />
+                <div className="text-3xl text-foreground dark:text-secondary-foreground font-bold mb-5 bg-accent h-20 w-20 mx-auto rounded-full flex items-center justify-center shadow-lg border-4 border-background">
+                  <feature.icon size={32} strokeWidth={1.5} />
                 </div>
                 <CardTitle className="text-xl font-bold">
                   {feature.title}

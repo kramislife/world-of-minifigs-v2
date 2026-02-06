@@ -23,7 +23,7 @@ const FeaturedCollections = () => {
   }
 
   return (
-    <section className="p-5">
+    <section className="py-5">
       <div className="flex flex-col gap-2">
         {collections.slice(0, 2).map((collection) => (
           <Link
@@ -52,12 +52,12 @@ const FeaturedCollections = () => {
             <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
 
             {/* Content */}
-            <div className="absolute inset-0 flex flex-col justify-end p-5">
-              <h2 className="text-3xl sm:text-4xl font-bold text-background dark:text-foreground uppercase mb-2">
+            <div className="absolute inset-0 flex flex-col justify-end px-5 py-10">
+              <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold uppercase text-background dark:text-foreground">
                 {collection.collectionName}
               </h2>
               {collection.description && (
-                <p className="text-xs sm:text-sm text-background dark:text-foreground max-w-xl">
+                <p className="text-sm sm:text-lg text-background dark:text-foreground max-w-3xl">
                   {collection.description}
                 </p>
               )}

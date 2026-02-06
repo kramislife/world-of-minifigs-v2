@@ -1,10 +1,11 @@
 import React from "react";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -163,6 +164,61 @@ const DealerBundleManagement = () => {
                 }
                 required
               />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Features</Label>
+              {formData.features.length < 5 && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="px-0 h-auto"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      features: [...formData.features, ""],
+                    });
+                  }}
+                >
+                  Add Feature
+                </Button>
+              )}
+            </div>
+            <div className="space-y-3">
+              {formData.features.map((feature, index) => (
+                <div key={index} className="flex gap-2 items-start">
+                  <Textarea
+                    placeholder={`Feature ${index + 1}`}
+                    value={feature}
+                    onChange={(e) => {
+                      const newFeatures = [...formData.features];
+                      newFeatures[index] = e.target.value;
+                      setFormData({ ...formData, features: newFeatures });
+                    }}
+                    rows={2}
+                    className="flex-1"
+                  />
+                  {formData.features.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 text-destructive hover:text-destructive h-10 w-10"
+                      onClick={() => {
+                        const newFeatures = formData.features.filter(
+                          (_, i) => i !== index,
+                        );
+                        setFormData({ ...formData, features: newFeatures });
+                      }}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 

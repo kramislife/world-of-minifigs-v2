@@ -42,7 +42,7 @@ const CollectionsCarousel = () => {
     <section className="p-5">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-3xl sm:text-4xl font-black tracking-tight uppercase">
+        <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight uppercase">
           Themes
         </h2>
 

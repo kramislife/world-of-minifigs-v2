@@ -79,7 +79,7 @@ const Collections = () => {
                 </div>
 
                 {/* Collection Name */}
-                <h3 className="text-3xl font-black tracking-tight">
+                <h3 className="text-3xl font-extrabold tracking-tight">
                   {collection.collectionName}
                   {collection.count > 0 && (
                     <sup className="text-sm font-bold text-muted-foreground ml-2">

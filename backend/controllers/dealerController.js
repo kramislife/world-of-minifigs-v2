@@ -67,7 +67,16 @@ const cleanUpImages = async (items) => {
 //------------------------------------------------ Create Bundle ------------------------------------------
 export const createDealerBundle = async (req, res) => {
   try {
-    const { bundleName, minifigQuantity, totalPrice, isActive } = req.body;
+    const { bundleName, minifigQuantity, totalPrice, features, isActive } =
+      req.body;
+
+    if (features && Array.isArray(features) && features.length > 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Too many features",
+        description: "A bundle can have a maximum of 5 features.",
+      });
+    }
 
     if (!bundleName) {
       return res.status(400).json({
@@ -107,6 +116,7 @@ export const createDealerBundle = async (req, res) => {
       minifigQuantity,
       totalPrice,
       unitPrice,
+      features: features || [],
       isActive: isActive !== undefined ? isActive : true,
       createdBy: req.user._id,
     });
@@ -152,7 +162,16 @@ export const getAllDealerBundles = async (req, res) => {
 export const updateDealerBundle = async (req, res) => {
   try {
     const { id } = req.params;
-    const { bundleName, minifigQuantity, totalPrice, isActive } = req.body;
+    const { bundleName, minifigQuantity, totalPrice, features, isActive } =
+      req.body;
+
+    if (features && Array.isArray(features) && features.length > 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Too many features",
+        description: "A bundle can have a maximum of 5 features.",
+      });
+    }
 
     const bundle = await Bundle.findOne({ _id: id, bundleType: "dealer" });
 
@@ -184,6 +203,7 @@ export const updateDealerBundle = async (req, res) => {
       bundle.minifigQuantity = minifigQuantity;
     }
     if (totalPrice !== undefined) bundle.totalPrice = totalPrice;
+    if (features !== undefined) bundle.features = features;
     if (isActive !== undefined) bundle.isActive = isActive;
 
     // Recalculate unit price
@@ -271,6 +291,7 @@ export const createDealerAddon = async (req, res) => {
           uploadedItems.push({
             itemName: isObject ? itemData.itemName : undefined,
             itemPrice: isObject ? itemData.itemPrice : undefined,
+            color: isObject ? itemData.color : undefined,
             image: {
               publicId: uploadResult.public_id,
               url: uploadResult.url,
@@ -390,6 +411,7 @@ export const updateDealerAddon = async (req, res) => {
             processedItems.push({
               itemName: isObject ? itemData.itemName : undefined,
               itemPrice: isObject ? itemData.itemPrice : undefined,
+              color: isObject ? itemData.color : undefined,
               image: {
                 publicId: uploadResult.public_id,
                 url: uploadResult.url,
@@ -890,6 +912,86 @@ export const deleteDealerTorsoBag = async (req, res) => {
       error,
       "Delete dealer torso bag",
       "Failed to delete torso bag",
+    );
+  }
+};
+
+//------------------------------------------------ Get Dealer Bundles (Dealer Access) ------------------------------------------
+
+export const getDealerBundlesForUser = async (req, res) => {
+  try {
+    const bundles = await Bundle.find({
+      bundleType: "dealer",
+      isActive: true,
+    })
+      .select("-createdBy -updatedBy -isActive -__v")
+      .sort({ minifigQuantity: 1 });
+
+    return res.status(200).json({
+      success: true,
+      bundles,
+    });
+  } catch (error) {
+    handleError(res, error, "Get user bundles", "Failed to fetch bundles");
+  }
+};
+
+//------------------------------------------------ Get Dealer Addons (Dealer Access) ------------------------------------------
+export const getDealerAddonsForUser = async (req, res) => {
+  try {
+    const addons = await Addon.find({ isActive: true })
+      .select("-createdBy -updatedBy -isActive -__v")
+      .populate("items.color", "colorName colorType hexCode")
+      .sort({ createdAt: 1 });
+
+    return res.status(200).json({
+      success: true,
+      addons,
+    });
+  } catch (error) {
+    handleError(res, error, "Get user addons", "Failed to fetch addons");
+  }
+};
+
+//------------------------------------------------ Get Dealer Extra Bags (Dealer Access) ------------------------------------------
+export const getDealerExtraBagsForUser = async (req, res) => {
+  try {
+    const extraBags = await DealerExtraBag.find({ isActive: true })
+      .populate("subCollectionId", "subCollectionName")
+      .select("-createdBy -updatedBy -isActive -__v")
+      .sort({ createdAt: 1 });
+
+    return res.status(200).json({
+      success: true,
+      extraBags,
+    });
+  } catch (error) {
+    handleError(
+      res,
+      error,
+      "Get user extra bags",
+      "Failed to fetch extra bags",
+    );
+  }
+};
+
+//------------------------------------------------ Get Dealer Torso Bags (Dealer Access) ------------------------------------------
+export const getDealerTorsoBagsForUser = async (req, res) => {
+  try {
+    const torsoBags = await DealerTorsoBag.find({ isActive: true })
+      .select("-createdBy -updatedBy -isActive -__v")
+      .sort({ createdAt: 1 });
+
+    return res.status(200).json({
+      success: true,
+      torsoBags,
+    });
+  } catch (error) {
+    handleError(
+      res,
+      error,
+      "Get user torso bags",
+      "Failed to fetch torso bags",
     );
   }
 };

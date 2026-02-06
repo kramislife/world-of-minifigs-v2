@@ -279,7 +279,7 @@ const BannerManagement = () => {
                     )}
 
                     {formData.label && (
-                      <h3 className="text-xl sm:text-2xl font-black uppercase leading-tight">
+                      <h3 className="text-xl sm:text-2xl font-extrabold uppercase leading-tight">
                         {formData.label}
                       </h3>
                     )}

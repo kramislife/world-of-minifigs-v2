@@ -36,6 +36,10 @@ const addonSchema = new mongoose.Schema(
             type: String,
           },
         },
+        color: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Color",
+        },
       },
     ],
     price: {

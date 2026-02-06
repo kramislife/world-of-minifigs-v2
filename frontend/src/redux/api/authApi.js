@@ -30,7 +30,7 @@ const baseQueryWithAuth = async (args, api, extraOptions) => {
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: baseQueryWithAuth,
-  tagTypes: ["User", "Cart"],
+  tagTypes: ["User", "Cart", "Bundle", "Addon", "ExtraBag", "TorsoBag"],
   endpoints: (builder) => ({
     // ==================== Authentication ====================
     login: builder.mutation({
@@ -201,6 +201,24 @@ export const authApi = createApi({
         body: data,
       }),
     }),
+
+    // ==================== Dealer Management ====================
+    getDealerBundles: builder.query({
+      query: () => "/dealer/bundles",
+      providesTags: ["Bundle"],
+    }),
+    getDealerAddons: builder.query({
+      query: () => "/dealer/addons",
+      providesTags: ["Addon"],
+    }),
+    getDealerExtraBags: builder.query({
+      query: () => "/dealer/extra-bags",
+      providesTags: ["ExtraBag"],
+    }),
+    getDealerTorsoBags: builder.query({
+      query: () => "/dealer/torso-bags",
+      providesTags: ["TorsoBag"],
+    }),
   }),
 });
 
@@ -220,4 +238,8 @@ export const {
   useClearCartMutation,
   useSyncCartMutation,
   useSendContactMessageMutation,
+  useGetDealerBundlesQuery,
+  useGetDealerAddonsQuery,
+  useGetDealerExtraBagsQuery,
+  useGetDealerTorsoBagsQuery,
 } = authApi;

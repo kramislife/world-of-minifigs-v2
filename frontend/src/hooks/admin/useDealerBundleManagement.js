@@ -20,6 +20,7 @@ const useDealerBundleManagement = () => {
     minifigQuantity: "",
     unitPrice: "",
     isActive: true,
+    features: [""],
   });
 
   // Pagination & Search State
@@ -70,6 +71,7 @@ const useDealerBundleManagement = () => {
         minifigQuantity: "",
         unitPrice: "",
         isActive: true,
+        features: [""],
       });
       setSelectedBundle(null);
       setDialogMode("add");
@@ -84,6 +86,7 @@ const useDealerBundleManagement = () => {
       minifigQuantity: "",
       unitPrice: "",
       isActive: true,
+      features: [""],
     });
     setDialogOpen(true);
   };
@@ -91,11 +94,13 @@ const useDealerBundleManagement = () => {
   const handleEdit = (bundle) => {
     setDialogMode("edit");
     setSelectedBundle(bundle);
+
     setFormData({
       bundleName: bundle.bundleName,
       minifigQuantity: bundle.minifigQuantity,
       unitPrice: bundle.unitPrice,
       isActive: bundle.isActive,
+      features: bundle.features?.length > 0 ? bundle.features : [""],
     });
     setDialogOpen(true);
   };
@@ -122,11 +127,17 @@ const useDealerBundleManagement = () => {
       return;
     }
 
+    // Filter out empty features
+    const cleanFeatures = formData.features
+      .map((f) => f.trim())
+      .filter((f) => f !== "");
+
     const payload = {
       ...formData,
       minifigQuantity: Number(formData.minifigQuantity),
       unitPrice: Number(formData.unitPrice),
       totalPrice: Number(calculatedTotal),
+      features: cleanFeatures,
     };
 
     try {

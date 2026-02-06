@@ -43,7 +43,7 @@ const LatestProduct = () => {
           <p className="tracking-widest uppercase text-xs sm:text-sm mb-1">
             Stay on-trend with new products
           </p>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tighter uppercase">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tighter uppercase">
             Just Arrived
           </h2>
         </div>

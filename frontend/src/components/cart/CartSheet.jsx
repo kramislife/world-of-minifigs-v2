@@ -103,10 +103,10 @@ const CartView = ({
     </div>
 
     {items.length > 0 && (
-      <div className="px-5 py-3 border-t space-y-5">
+      <div className="px-5 py-3 border-t border-dashed space-y-5">
         <div className="flex justify-between">
-          <span className="text-lg font-black uppercase">Subtotal</span>
-          <span className="text-2xl font-black text-success dark:text-accent">
+          <span className="text-lg font-extrabold uppercase">Subtotal</span>
+          <span className="text-2xl font-extrabold text-success dark:text-accent">
             ${totalPrice.toFixed(2)}
           </span>
         </div>
@@ -120,7 +120,7 @@ const CartView = ({
       <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center z-50 transition-all duration-300">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="size-10 animate-spin text-accent" />
-          <p className="text-xs font-black uppercase tracking-widest">
+          <p className="text-xs font-extrabold uppercase tracking-widest">
             Updating your cart...
           </p>
         </div>
@@ -131,7 +131,7 @@ const CartView = ({
 
 const EmptyCartView = ({ onContinue }) => (
   <div className="h-full flex flex-col items-center justify-center text-center">
-    <h1 className="text-5xl font-black uppercase max-w-md pb-10">
+    <h1 className="text-5xl font-extrabold uppercase max-w-md pb-10">
       Your cart looks lonely
     </h1>
     <Button
@@ -188,7 +188,7 @@ const CartItem = ({ item, onUpdate, onRemove }) => {
             >
               {productName}
             </h4>
-            <span className="font-black text-sm text-success dark:text-accent whitespace-nowrap">
+            <span className="font-extrabold text-sm text-success dark:text-accent whitespace-nowrap">
               ${totalItemPrice}
             </span>
           </div>
@@ -312,7 +312,7 @@ const VariantSelectionView = ({
           <div className="mt-3">
             <h3 className="text-2xl font-bold">{product.productName}</h3>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-3xl font-black text-success">
+              <span className="text-3xl font-extrabold text-success">
                 ${displayPrice}
               </span>
               {hasDiscount && (
@@ -325,7 +325,7 @@ const VariantSelectionView = ({
 
           {normalizedColorVariants.length > 0 && (
             <div>
-              <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+              <span className="text-xs font-extrabold uppercase tracking-widest text-muted-foreground">
                 Color:{" "}
                 <span className="text-foreground">{selectedColorName}</span>
               </span>

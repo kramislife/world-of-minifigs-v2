@@ -5,6 +5,7 @@ import {
   useCreateDealerAddonMutation,
   useUpdateDealerAddonMutation,
   useDeleteDealerAddonMutation,
+  useGetColorsQuery,
 } from "@/redux/api/adminApi";
 
 const useDealerAddonManagement = () => {
@@ -45,6 +46,13 @@ const useDealerAddonManagement = () => {
     useUpdateDealerAddonMutation();
   const [deleteAddon, { isLoading: isDeleting }] =
     useDeleteDealerAddonMutation();
+
+  const { data: colorData } = useGetColorsQuery();
+  const colors = colorData?.colors
+    ? [...colorData.colors].sort((a, b) =>
+        a.colorName.localeCompare(b.colorName),
+      )
+    : [];
 
   const addons = data?.addons || [];
   const totalItems = data?.pagination?.totalItems || 0;
@@ -103,6 +111,7 @@ const useDealerAddonManagement = () => {
         url: item.image?.url,
         itemName: item.itemName || "",
         itemPrice: item.itemPrice || "",
+        color: item.color?._id || item.color || "",
         image: item.image,
       })) || [];
 
@@ -141,13 +150,19 @@ const useDealerAddonManagement = () => {
           url: reader.result,
           itemPrice: "",
           itemName: "",
+          color: "",
         };
         setImagePreviews((prev) => [...prev, newImageData]);
         setFormData((prev) => ({
           ...prev,
           items: [
             ...prev.items,
-            { image: reader.result, itemPrice: "", itemName: "" },
+            {
+              image: reader.result,
+              itemPrice: "",
+              itemName: "",
+              color: "",
+            },
           ],
         }));
       };
@@ -272,6 +287,7 @@ const useDealerAddonManagement = () => {
     isUpdating,
     isDeleting,
     fileInputRef,
+    colors,
 
     // Handlers
     handleDialogClose,

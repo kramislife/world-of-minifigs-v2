@@ -3,13 +3,13 @@ import React from "react";
 const RewardBundleManagement = () => {
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-black uppercase tracking-tight">
+      <h1 className="text-3xl font-extrabold uppercase tracking-tight">
         Reward Bundles
       </h1>
       <p className="text-muted-foreground text-sm uppercase font-bold tracking-widest">
         Manage packs for the Reward Program
       </p>
-      <div className="p-10 border-2 border-dashed rounded-xl flex items-center justify-center text-muted-foreground font-black uppercase text-xs tracking-widest">
+      <div className="p-10 border-2 border-dashed rounded-xl flex items-center justify-center text-muted-foreground font-extrabold uppercase text-xs tracking-widest">
         Reward bundle management coming soon...
       </div>
     </div>

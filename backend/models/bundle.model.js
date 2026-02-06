@@ -27,6 +27,9 @@ const bundleSchema = new mongoose.Schema(
       type: Number,
       min: [0, "Unit price cannot be negative"],
     },
+    features: {
+      type: [String],
+    },
     isActive: {
       type: Boolean,
       default: true,

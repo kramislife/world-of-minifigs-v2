@@ -19,7 +19,16 @@ import {
   clearCart,
   syncCart,
 } from "../controllers/cartController.js";
-import { authenticate } from "../middlewares/auth.middleware.js";
+import {
+  authenticate,
+  authorizeAdminOrDealer,
+} from "../middlewares/auth.middleware.js";
+import {
+  getDealerBundlesForUser,
+  getDealerAddonsForUser,
+  getDealerExtraBagsForUser,
+  getDealerTorsoBagsForUser,
+} from "../controllers/dealerController.js";
 
 const router = express.Router();
 
@@ -50,5 +59,31 @@ router
   .route("/cart/item")
   .put(authenticate, updateCartItem)
   .delete(authenticate, removeCartItem);
+
+// Dealer routes (Requires Dealer or Admin role)
+router.get(
+  "/dealer/bundles",
+  authenticate,
+  authorizeAdminOrDealer,
+  getDealerBundlesForUser,
+);
+router.get(
+  "/dealer/addons",
+  authenticate,
+  authorizeAdminOrDealer,
+  getDealerAddonsForUser,
+);
+router.get(
+  "/dealer/extra-bags",
+  authenticate,
+  authorizeAdminOrDealer,
+  getDealerExtraBagsForUser,
+);
+router.get(
+  "/dealer/torso-bags",
+  authenticate,
+  authorizeAdminOrDealer,
+  getDealerTorsoBagsForUser,
+);
 
 export default router;

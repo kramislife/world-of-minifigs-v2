@@ -92,7 +92,7 @@ const Banner = () => {
                   {/* Content */}
                   <div
                     className={
-                      "relative z-10 flex h-full w-full px-5 py-10 sm:px-10 sm:py-20 " +
+                      "relative z-10 flex h-full w-full px-5 py-12 sm:px-10 " +
                       banner.alignmentClasses +
                       " " +
                       textClass
@@ -102,7 +102,7 @@ const Banner = () => {
                       variants={containerVariants}
                       initial="hidden"
                       animate={selectedIndex === index ? "visible" : "hidden"}
-                      className="max-w-3xl space-y-2"
+                      className="max-w-3xl space-y-3"
                     >
                       {banner.badge && (
                         <motion.p
@@ -116,7 +116,7 @@ const Banner = () => {
                       {banner.label && (
                         <motion.h1
                           variants={itemVariants}
-                          className="text-4xl sm:text-5xl md:text-6xl font-black uppercase leading-tight"
+                          className="text-4xl sm:text-5xl md:text-6xl font-extrabold uppercase"
                         >
                           {banner.label}
                         </motion.h1>
@@ -126,7 +126,7 @@ const Banner = () => {
                         <motion.p
                           variants={itemVariants}
                           className={
-                            "text-sm" +
+                            "text-sm sm:text-lg" +
                             (banner.textTheme === "dark"
                               ? " text-foreground dark:text-secondary-foreground"
                               : " text-background dark:text-foreground")

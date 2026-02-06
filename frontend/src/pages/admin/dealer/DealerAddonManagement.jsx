@@ -6,6 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -32,6 +39,7 @@ const DealerAddonManagement = () => {
     isUpdating,
     isDeleting,
     fileInputRef,
+    colors,
     handleDialogClose,
     setDeleteDialogOpen,
     setFormData,
@@ -121,7 +129,7 @@ const DealerAddonManagement = () => {
         submitButtonText={
           dialogMode === "edit" ? "Update Add-on" : "Create Add-on"
         }
-        className="sm:max-w-4xl"
+        className="sm:max-w-5xl"
       >
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -172,7 +180,7 @@ const DealerAddonManagement = () => {
           <div className="space-y-3">
             <Label>Image Attachment</Label>
             <div
-              className={`grid gap-4 ${
+              className={`grid gap-2 ${
                 imagePreviews.length > 0
                   ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
                   : "grid-cols-1"
@@ -202,12 +210,12 @@ const DealerAddonManagement = () => {
                   </div>
 
                   {/* Metadata Overlay/Inputs */}
-                  <div className="p-3 space-y-2">
+                  <div className="p-2 space-y-2">
                     <div className="space-y-1">
                       <Label className="text-xs font-semibold">Item Name</Label>
                       <Input
                         placeholder="e.g. Chrome Wings"
-                        className="h-8 text-xs"
+                        className="h-9 text-xs"
                         value={preview.itemName}
                         onChange={(e) =>
                           handleUpdateImageMetadata(
@@ -218,23 +226,54 @@ const DealerAddonManagement = () => {
                         }
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-semibold">
-                        Item Price
-                      </Label>
-                      <Input
-                        type="number"
-                        placeholder="0.99"
-                        className="h-8 text-xs"
-                        value={preview.itemPrice}
-                        onChange={(e) =>
-                          handleUpdateImageMetadata(
-                            index,
-                            "itemPrice",
-                            e.target.value,
-                          )
-                        }
-                      />
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="space-y-1 col-span-1">
+                        <Label className="text-xs font-semibold">Price</Label>
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          className="h-9 text-xs w-full"
+                          value={preview.itemPrice}
+                          onChange={(e) =>
+                            handleUpdateImageMetadata(
+                              index,
+                              "itemPrice",
+                              e.target.value,
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1 col-span-2">
+                        <Label className="text-xs font-semibold">Color</Label>
+                        <Select
+                          value={preview.color || ""}
+                          onValueChange={(value) =>
+                            handleUpdateImageMetadata(index, "color", value)
+                          }
+                        >
+                          <SelectTrigger className="w-full text-xs">
+                            <SelectValue placeholder="Select color" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {colors.map((color) => (
+                              <SelectItem
+                                key={color._id || color.id}
+                                value={color._id || color.id}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="size-3 rounded-md shrink-0"
+                                    style={{
+                                      backgroundColor: color.hexCode || "#000",
+                                    }}
+                                  />
+                                  <span>{color.colorName}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
                 </div>
