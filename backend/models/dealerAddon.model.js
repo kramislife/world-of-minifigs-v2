@@ -1,17 +1,11 @@
 import mongoose from "mongoose";
 
-const addonSchema = new mongoose.Schema(
+const dealerAddonSchema = new mongoose.Schema(
   {
     addonName: {
       type: String,
       required: true,
       trim: true,
-    },
-    addonType: {
-      type: String,
-      enum: ["dealer", "reward"],
-      required: true,
-      index: true,
     },
     description: {
       type: String,
@@ -46,9 +40,6 @@ const addonSchema = new mongoose.Schema(
         },
       },
     ],
-    features: {
-      type: [String],
-    },
     isActive: {
       type: Boolean,
       default: true,
@@ -69,21 +60,21 @@ const addonSchema = new mongoose.Schema(
 
 // Indexes
 
-// Fast lookup for active addons of a specific type
-addonSchema.index({ addonType: 1, isActive: 1 });
+// Fast lookup for active dealer addons
+dealerAddonSchema.index({ isActive: 1 });
 
 // Sorting by latest
-addonSchema.index({ createdAt: -1 });
+dealerAddonSchema.index({ createdAt: -1 });
 
-// Uniqueness within the same type
-addonSchema.index(
-  { addonName: 1, addonType: 1 },
+// Uniqueness for addon name
+dealerAddonSchema.index(
+  { addonName: 1 },
   {
     unique: true,
     collation: { locale: "en", strength: 2 },
   },
 );
 
-const Addon = mongoose.model("Addon", addonSchema);
+const DealerAddon = mongoose.model("DealerAddon", dealerAddonSchema);
 
-export default Addon;
+export default DealerAddon;

@@ -6,6 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -73,7 +80,8 @@ const RewardAddonManagement = () => {
         isLoading={isLoading}
         renderRow={(addon) => (
           <>
-            <TableCell maxWidth="200px">{addon.addonName}</TableCell>
+            <TableCell>{addon.duration || "-"} months</TableCell>
+            <TableCell>{addon.quantity || "-"} Minifigs</TableCell>
             <TableCell className="text-success dark:text-accent font-bold">
               ${addon.price?.toFixed(2)}
             </TableCell>
@@ -119,18 +127,50 @@ const RewardAddonManagement = () => {
         }
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
             <div className="space-y-2">
-              <Label htmlFor="addonName">Add-on Name</Label>
-              <Input
-                id="addonName"
-                placeholder="e.g., Premium Accessory Pack"
-                value={formData.addonName}
-                onChange={(e) =>
-                  setFormData({ ...formData, addonName: e.target.value })
+              <Label htmlFor="duration">Duration</Label>
+              <Select
+                value={formData.duration || undefined}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    duration: value,
+                  })
+                }
+              >
+                <SelectTrigger id="duration" className="w-full">
+                  <SelectValue placeholder="Select duration" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="3">3 months</SelectItem>
+                  <SelectItem value="6">6 months</SelectItem>
+                  <SelectItem value="12">12 months</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quantity">
+                Quantity
+              </Label>
+              <Select
+                value={formData.quantity}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    quantity: value,
+                  })
                 }
                 required
-              />
+              >
+                <SelectTrigger id="quantity" className="w-full">
+                  <SelectValue placeholder="Select quantity" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="8">8 Minifigs</SelectItem>
+                  <SelectItem value="16">16 Minifigs</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="price">Monthly Price</Label>
@@ -221,7 +261,11 @@ const RewardAddonManagement = () => {
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedAddon?.addonName || ""}
+        itemName={
+          selectedAddon
+            ? `${selectedAddon.quantity || "-"} Minifigs for ${selectedAddon.duration || "-"} Months`
+            : ""
+        }
         title="Delete Reward Add-on"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

@@ -14,8 +14,9 @@ const useRewardAddonManagement = () => {
   const [selectedAddon, setSelectedAddon] = useState(null);
 
   const [formData, setFormData] = useState({
-    addonName: "",
     price: "",
+    quantity: "",
+    duration: "",
     isActive: true,
     features: [""],
   });
@@ -42,7 +43,8 @@ const useRewardAddonManagement = () => {
   const totalPages = data?.pagination?.totalPages || 0;
 
   const columns = [
-    { label: "Add-on", key: "addonName" },
+    { label: "Duration", key: "duration" },
+    { label: "Quantity", key: "quantity" },
     { label: "Price monthly", key: "price" },
     { label: "Status", key: "isActive" },
     { label: "Created At", key: "createdAt" },
@@ -54,8 +56,9 @@ const useRewardAddonManagement = () => {
     setDialogOpen(open);
     if (!open) {
       setFormData({
-        addonName: "",
         price: "",
+        quantity: "",
+        duration: "",
         isActive: true,
         features: [""],
       });
@@ -68,9 +71,9 @@ const useRewardAddonManagement = () => {
     setDialogMode("add");
     setSelectedAddon(null);
     setFormData({
-      addonName: "",
       price: "",
-      description: "",
+      quantity: "",
+      duration: "",
       isActive: true,
       features: [""],
     });
@@ -81,8 +84,9 @@ const useRewardAddonManagement = () => {
     setDialogMode("edit");
     setSelectedAddon(addon);
     setFormData({
-      addonName: addon.addonName,
       price: addon.price,
+      quantity: addon.quantity || "",
+      duration: addon.duration || "",
       isActive: addon.isActive,
       features: addon.features?.length > 0 ? addon.features : [""],
     });
@@ -97,8 +101,8 @@ const useRewardAddonManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.addonName.trim()) {
-      toast.error("Add-on name is required");
+    if (!formData.quantity) {
+      toast.error("Quantity is required");
       return;
     }
 
@@ -109,6 +113,12 @@ const useRewardAddonManagement = () => {
     const payload = {
       ...formData,
       price: formData.price ? Number(formData.price) : undefined,
+      quantity: formData.quantity
+        ? Number(formData.quantity)
+        : undefined,
+      duration: formData.duration
+        ? Number(formData.duration)
+        : undefined, 
       features: cleanFeatures,
     };
 
@@ -119,9 +129,7 @@ const useRewardAddonManagement = () => {
           toast.success(
             response.message || "Reward add-on created successfully",
             {
-              description:
-                response.description ||
-                `The add-on "${response.addon.addonName}" has been added.`,
+              description: response.description || "The add-on has been added.",
             },
           );
           handleDialogClose(false);
@@ -135,9 +143,7 @@ const useRewardAddonManagement = () => {
           toast.success(
             response.message || "Reward add-on updated successfully",
             {
-              description:
-                response.description ||
-                `The add-on "${response.addon.addonName}" has been updated.`,
+              description: response.description || "The add-on has been updated.",
             },
           );
           handleDialogClose(false);

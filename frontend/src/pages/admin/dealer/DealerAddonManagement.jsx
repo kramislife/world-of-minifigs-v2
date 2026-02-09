@@ -165,7 +165,7 @@ const DealerAddonManagement = () => {
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description (Optional)</Label>
+            <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
               placeholder="Describe what's included in this addon..."

@@ -1,5 +1,5 @@
 import Bundle from "../models/bundle.model.js";
-import Addon from "../models/addon.model.js";
+import DealerAddon from "../models/dealerAddon.model.js";
 import DealerExtraBag from "../models/dealerExtraBag.model.js";
 import DealerTorsoBag from "../models/dealerTorsoBag.model.js";
 import SubCollection from "../models/subCollection.model.js";
@@ -42,11 +42,6 @@ const processFeatures = (features) => {
     return features;
   }
   return undefined;
-};
-
-// Unset features field for dealer bundles/addons (arrays are initialized as [] by Mongoose even if not provided)
-const unsetDealerFeatures = async (model, docId) => {
-  await model.findByIdAndUpdate(docId, { $unset: { features: "" } });
 };
 
 const getMinRequiredQuantity = async () => {
@@ -96,7 +91,7 @@ const findDealerBundleById = async (id) => {
 };
 
 const findDealerAddonById = async (id) => {
-  return await Addon.findOne({ _id: id, addonType: "dealer" });
+  return await DealerAddon.findById(id);
 };
 
 const checkBundleQuantityConflict = async (
@@ -115,17 +110,15 @@ const checkBundleQuantityConflict = async (
 
 const checkAddonNameConflict = async (
   addonName,
-  addonType,
   excludeId = null,
 ) => {
   const query = {
     addonName: addonName.trim(),
-    addonType,
   };
   if (excludeId) {
     query._id = { $ne: excludeId };
   }
-  return await Addon.findOne(query);
+  return await DealerAddon.findOne(query);
 };
 
 const checkExtraBagConflict = async (subCollectionId, excludeId = null) => {
@@ -362,11 +355,6 @@ export const createDealerBundle = async (req, res) => {
 
     const bundle = await Bundle.create(bundleData);
 
-    // Unset features if empty
-    if (!processedFeatures) {
-      await unsetDealerFeatures(Bundle, bundle._id);
-    }
-
     return res.status(201).json({
       success: true,
       message: "Bundle created successfully",
@@ -458,11 +446,6 @@ export const updateDealerBundle = async (req, res) => {
     bundle.updatedBy = req.user._id;
 
     await bundle.save();
-    
-    // Unset features if empty (Mongoose initializes arrays as [] even if not provided)
-    if (features !== undefined && !processFeatures(features)) {
-      await unsetDealerFeatures(Bundle, bundle._id);
-    }
 
     return res.status(200).json({
       success: true,
@@ -519,7 +502,7 @@ export const createDealerAddon = async (req, res) => {
     }
 
     // Check for existing addon with same name
-    const existingAddon = await checkAddonNameConflict(addonName, "dealer");
+    const existingAddon = await checkAddonNameConflict(addonName);
     if (existingAddon) {
       return res.status(409).json({
         success: false,
@@ -531,18 +514,14 @@ export const createDealerAddon = async (req, res) => {
     // Process and upload items
     const uploadedItems = await processAddonItems(items);
 
-    const addon = await Addon.create({
+    const addon = await DealerAddon.create({
       addonName: addonName.trim(),
-      addonType: "dealer",
       price,
       description,
       items: uploadedItems,
       isActive: isActive !== undefined ? isActive : true,
       createdBy: req.user._id,
     });
-
-    // Unset features field
-    await unsetDealerFeatures(Addon, addon._id);
 
     return res.status(201).json({
       success: true,
@@ -562,11 +541,10 @@ export const getAllDealerAddons = async (req, res) => {
     const { page, limit, search } = normalizePagination(req.query);
 
     const searchQuery = {
-      addonType: "dealer",
       ...buildSearchQuery(search, ["addonName", "description"]),
     };
 
-    const result = await paginateQuery(Addon, searchQuery, {
+    const result = await paginateQuery(DealerAddon, searchQuery, {
       page,
       limit,
       populate: getStandardPopulateOptions(),
@@ -601,7 +579,6 @@ export const updateDealerAddon = async (req, res) => {
       if (addonNameTrimmed !== addon.addonName) {
         const conflict = await checkAddonNameConflict(
           addonNameTrimmed,
-          "dealer",
           id,
         );
         if (conflict) {
@@ -633,9 +610,6 @@ export const updateDealerAddon = async (req, res) => {
     addon.updatedBy = req.user._id;
     await addon.save();
 
-    // Unset features field
-    await unsetDealerFeatures(Addon, addon._id);
-
     return res.status(200).json({
       success: true,
       message: "Add-on updated successfully",
@@ -665,7 +639,7 @@ export const deleteDealerAddon = async (req, res) => {
     // Delete all images from items
     await cleanUpImages(addon.items);
 
-    await Addon.findByIdAndDelete(id);
+    await DealerAddon.findByIdAndDelete(id);
 
     return res.status(200).json({
       success: true,
@@ -1135,7 +1109,7 @@ export const getDealerBundlesForUser = async (req, res) => {
 
 export const getDealerAddonsForUser = async (req, res) => {
   try {
-    const addons = await Addon.find({ addonType: "dealer", isActive: true })
+    const addons = await DealerAddon.find({ isActive: true })
       .select("-createdBy -updatedBy -isActive -__v")
       .populate("items.color", "colorName colorType hexCode")
       .sort({ createdAt: 1 });

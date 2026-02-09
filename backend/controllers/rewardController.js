@@ -1,5 +1,5 @@
 import Bundle from "../models/bundle.model.js";
-import Addon from "../models/addon.model.js";
+import RewardAddon from "../models/rewardAddon.model.js";
 import {
   normalizePagination,
   buildSearchQuery,
@@ -40,17 +40,66 @@ const processFeatures = (features) => {
   return undefined;
 };
 
-// Unset items field for reward addons
-const unsetRewardAddonItems = async (addonId) => {
-  await Addon.findByIdAndUpdate(addonId, { $unset: { items: "" } });
+const validateAndReturnFeatures = (features) => {
+  const validation = validateFeatures(features);
+  if (!validation.isValid) {
+    return { error: validation.error };
+  }
+  return { features: processFeatures(features) };
 };
+
+const validateQuantity = (quantity, fieldName = "Quantity") => {
+  if (!quantity || quantity < 1) {
+    return {
+      isValid: false,
+      error: {
+        status: 400,
+        message: `${fieldName} is required`,
+        description: `Please provide a valid ${fieldName.toLowerCase()} (at least 1).`,
+      },
+    };
+  }
+  return { isValid: true };
+};
+
+const validateDuration = (duration) => {
+  if (duration !== undefined && duration < 1) {
+    return {
+      isValid: false,
+      error: {
+        status: 400,
+        message: "Invalid duration",
+        description: "Duration must be at least 1 month.",
+      },
+    };
+  }
+  return { isValid: true };
+};
+
+const createNotFoundResponse = (itemType) => ({
+  status: 404,
+  body: {
+    success: false,
+    message: `${itemType} not found`,
+    description: `The requested reward ${itemType.toLowerCase()} does not exist.`,
+  },
+});
+
+const createConflictResponse = (message, description) => ({
+  status: 409,
+  body: {
+    success: false,
+    message,
+    description,
+  },
+});
 
 const findRewardBundleById = async (id) => {
   return await Bundle.findOne({ _id: id, bundleType: "reward" });
 };
 
 const findRewardAddonById = async (id) => {
-  return await Addon.findOne({ _id: id, addonType: "reward" });
+  return await RewardAddon.findById(id);
 };
 
 const checkBundleQuantityConflict = async (
@@ -67,19 +116,19 @@ const checkBundleQuantityConflict = async (
   return await Bundle.findOne(query);
 };
 
-const checkAddonNameConflict = async (
-  addonName,
-  addonType,
+const checkAddonConflict = async (
+  quantity,
+  duration,
   excludeId = null,
 ) => {
   const query = {
-    addonName: addonName.trim(),
-    addonType,
+    quantity,
+    duration: duration || 3,
   };
   if (excludeId) {
     query._id = { $ne: excludeId };
   }
-  return await Addon.findOne(query);
+  return await RewardAddon.findOne(query);
 };
 
 const getStandardPopulateOptions = () => [
@@ -95,11 +144,11 @@ export const createRewardBundle = async (req, res) => {
       req.body;
 
     // Validate features
-    const featuresValidation = validateFeatures(features);
-    if (!featuresValidation.isValid) {
+    const featuresResult = validateAndReturnFeatures(features);
+    if (featuresResult.error) {
       return res
-        .status(featuresValidation.error.status)
-        .json(featuresValidation.error);
+        .status(featuresResult.error.status)
+        .json(featuresResult.error);
     }
 
     // Validate required fields
@@ -111,22 +160,21 @@ export const createRewardBundle = async (req, res) => {
       });
     }
 
-    if (!minifigQuantity || minifigQuantity < 1) {
-      return res.status(400).json({
-        success: false,
-        message: "Valid quantity is required",
-        description: "Quantity must be at least 1 minifig.",
-      });
+    const quantityValidation = validateQuantity(minifigQuantity, "Valid quantity");
+    if (!quantityValidation.isValid) {
+      return res
+        .status(quantityValidation.error.status)
+        .json(quantityValidation.error);
     }
 
     // Check for existing bundle with same quantity
     const existingBundle = await checkBundleQuantityConflict(minifigQuantity);
     if (existingBundle) {
-      return res.status(409).json({
-        success: false,
-        message: "Bundle already exists",
-        description: `A reward bundle with ${minifigQuantity} minifigs already exists.`,
-      });
+      const conflict = createConflictResponse(
+        "Bundle already exists",
+        `A reward bundle with ${minifigQuantity} minifigs already exists.`,
+      );
+      return res.status(conflict.status).json(conflict.body);
     }
 
     // Prepare bundle data
@@ -139,9 +187,8 @@ export const createRewardBundle = async (req, res) => {
       createdBy: req.user._id,
     };
 
-    const processedFeatures = processFeatures(features);
-    if (processedFeatures) {
-      bundleData.features = processedFeatures;
+    if (featuresResult.features) {
+      bundleData.features = featuresResult.features;
     }
 
     const bundle = await Bundle.create(bundleData);
@@ -189,21 +236,18 @@ export const updateRewardBundle = async (req, res) => {
       req.body;
 
     // Validate features
-    const featuresValidation = validateFeatures(features);
-    if (!featuresValidation.isValid) {
+    const featuresResult = validateAndReturnFeatures(features);
+    if (featuresResult.error) {
       return res
-        .status(featuresValidation.error.status)
-        .json(featuresValidation.error);
+        .status(featuresResult.error.status)
+        .json(featuresResult.error);
     }
 
     // Find bundle
     const bundle = await findRewardBundleById(id);
     if (!bundle) {
-      return res.status(404).json({
-        success: false,
-        message: "Bundle not found",
-        description: "The requested reward bundle does not exist.",
-      });
+      const notFound = createNotFoundResponse("Bundle");
+      return res.status(notFound.status).json(notFound.body);
     }
 
     // Update fields
@@ -213,11 +257,11 @@ export const updateRewardBundle = async (req, res) => {
       if (minifigQuantity !== bundle.minifigQuantity) {
         const conflict = await checkBundleQuantityConflict(minifigQuantity, id);
         if (conflict) {
-          return res.status(409).json({
-            success: false,
-            message: "Quantity conflict",
-            description: `Another reward bundle with ${minifigQuantity} minifigs already exists.`,
-          });
+          const conflictResponse = createConflictResponse(
+            "Quantity conflict",
+            `Another reward bundle with ${minifigQuantity} minifigs already exists.`,
+          );
+          return res.status(conflictResponse.status).json(conflictResponse.body);
         }
       }
       bundle.minifigQuantity = minifigQuantity;
@@ -225,9 +269,8 @@ export const updateRewardBundle = async (req, res) => {
 
     if (totalPrice !== undefined) bundle.totalPrice = totalPrice;
 
-    if (features !== undefined) {
-      const processedFeatures = processFeatures(features);
-      bundle.features = processedFeatures;
+    if (features !== undefined && featuresResult.features !== undefined) {
+      bundle.features = featuresResult.features;
     }
 
     if (isActive !== undefined) bundle.isActive = isActive;
@@ -257,11 +300,8 @@ export const deleteRewardBundle = async (req, res) => {
     });
 
     if (!bundle) {
-      return res.status(404).json({
-        success: false,
-        message: "Bundle not found",
-        description: "The requested reward bundle does not exist.",
-      });
+      const notFound = createNotFoundResponse("Bundle");
+      return res.status(notFound.status).json(notFound.body);
     }
 
     return res.status(200).json({
@@ -278,58 +318,58 @@ export const deleteRewardBundle = async (req, res) => {
 
 export const createRewardAddon = async (req, res) => {
   try {
-    const { addonName, price, features, isActive } = req.body;
+    const { price, quantity, duration, features, isActive } = req.body;
 
     // Validate features
-    const featuresValidation = validateFeatures(features);
-    if (!featuresValidation.isValid) {
+    const featuresResult = validateAndReturnFeatures(features);
+    if (featuresResult.error) {
       return res
-        .status(featuresValidation.error.status)
-        .json(featuresValidation.error);
+        .status(featuresResult.error.status)
+        .json(featuresResult.error);
     }
 
     // Validate required fields
-    if (!addonName) {
-      return res.status(400).json({
-        success: false,
-        message: "Add-on name is required",
-        description: "Please provide a name for the add-on.",
-      });
+    const quantityValidation = validateQuantity(quantity);
+    if (!quantityValidation.isValid) {
+      return res
+        .status(quantityValidation.error.status)
+        .json(quantityValidation.error);
     }
 
-    // Check for existing addon with same name
-    const existingAddon = await checkAddonNameConflict(addonName, "reward");
+    const finalDuration = duration || 3;
+
+    // Check for existing addon with same combination
+    const existingAddon = await checkAddonConflict(
+      quantity,
+      finalDuration,
+    );
     if (existingAddon) {
-      return res.status(409).json({
-        success: false,
-        message: "Add-on already exists",
-        description: `An add-on with the name "${addonName}" already exists for rewards.`,
-      });
+      const conflict = createConflictResponse(
+        "Add-on already exists",
+        `An add-on with ${quantity} minifigs/month for ${finalDuration} months already exists.`,
+      );
+      return res.status(conflict.status).json(conflict.body);
     }
 
     // Prepare addon data
     const addonData = {
-      addonName: addonName.trim(),
-      addonType: "reward",
       price,
+      quantity,
+      duration: finalDuration,
       isActive: isActive !== undefined ? isActive : true,
       createdBy: req.user._id,
     };
 
-    const processedFeatures = processFeatures(features);
-    if (processedFeatures) {
-      addonData.features = processedFeatures;
+    if (featuresResult.features) {
+      addonData.features = featuresResult.features;
     }
 
-    const addon = await Addon.create(addonData);
-
-    // Unset items field
-    await unsetRewardAddonItems(addon._id);
+    const addon = await RewardAddon.create(addonData);
 
     return res.status(201).json({
       success: true,
       message: "Reward add-on created successfully",
-      description: `The "${addon.addonName}" add-on is now available for rewards.`,
+      description: `The add-on (${addon.quantity} minifigs/month for ${addon.duration} months) is now available for rewards.`,
       addon,
     });
   } catch (error) {
@@ -341,14 +381,9 @@ export const createRewardAddon = async (req, res) => {
 
 export const getAllRewardAddons = async (req, res) => {
   try {
-    const { page, limit, search } = normalizePagination(req.query);
+    const { page, limit } = normalizePagination(req.query);
 
-    const searchQuery = {
-      addonType: "reward",
-      ...buildSearchQuery(search, ["addonName"]),
-    };
-
-    const result = await paginateQuery(Addon, searchQuery, {
+    const result = await paginateQuery(RewardAddon, {}, {
       page,
       limit,
       populate: getStandardPopulateOptions(),
@@ -365,51 +400,66 @@ export const getAllRewardAddons = async (req, res) => {
 export const updateRewardAddon = async (req, res) => {
   try {
     const { id } = req.params;
-    const { addonName, price, features, isActive } = req.body;
+    const { price, quantity, duration, features, isActive } = req.body;
 
     // Validate features
-    const featuresValidation = validateFeatures(features);
-    if (!featuresValidation.isValid) {
+    const featuresResult = validateAndReturnFeatures(features);
+    if (featuresResult.error) {
       return res
-        .status(featuresValidation.error.status)
-        .json(featuresValidation.error);
+        .status(featuresResult.error.status)
+        .json(featuresResult.error);
     }
 
     // Find addon
     const addon = await findRewardAddonById(id);
     if (!addon) {
-      return res.status(404).json({
-        success: false,
-        message: "Add-on not found",
-        description: "The requested reward add-on does not exist.",
-      });
+      const notFound = createNotFoundResponse("Add-on");
+      return res.status(notFound.status).json(notFound.body);
+    }
+
+    // Check for conflicts if quantity or duration is being changed
+    const newQuantity = quantity !== undefined ? quantity : addon.quantity;
+    const newDuration = duration !== undefined ? duration : addon.duration;
+
+    if (
+      (quantity !== undefined && quantity !== addon.quantity) ||
+      (duration !== undefined && duration !== addon.duration)
+    ) {
+      const conflict = await checkAddonConflict(newQuantity, newDuration, id);
+      if (conflict) {
+        const conflictResponse = createConflictResponse(
+          "Add-on already exists",
+          `An add-on with ${newQuantity} minifigs/month for ${newDuration} months already exists.`,
+        );
+        return res.status(conflictResponse.status).json(conflictResponse.body);
+      }
     }
 
     // Update fields
-    if (addonName) {
-      const addonNameTrimmed = addonName.trim();
-      if (addonNameTrimmed !== addon.addonName) {
-        const conflict = await checkAddonNameConflict(
-          addonNameTrimmed,
-          "reward",
-          id,
-        );
-        if (conflict) {
-          return res.status(409).json({
-            success: false,
-            message: "Name already taken",
-            description: `Another reward add-on named "${addonNameTrimmed}" already exists.`,
-          });
-        }
-      }
-      addon.addonName = addonNameTrimmed;
-    }
-
     if (price !== undefined) addon.price = price;
 
-    if (features !== undefined) {
-      const processedFeatures = processFeatures(features);
-      addon.features = processedFeatures;
+    if (quantity !== undefined) {
+      const quantityValidation = validateQuantity(quantity);
+      if (!quantityValidation.isValid) {
+        return res
+          .status(quantityValidation.error.status)
+          .json(quantityValidation.error);
+      }
+      addon.quantity = quantity;
+    }
+
+    if (duration !== undefined) {
+      const durationValidation = validateDuration(duration);
+      if (!durationValidation.isValid) {
+        return res
+          .status(durationValidation.error.status)
+          .json(durationValidation.error);
+      }
+      addon.duration = duration;
+    }
+
+    if (features !== undefined && featuresResult.features !== undefined) {
+      addon.features = featuresResult.features;
     }
 
     if (isActive !== undefined) addon.isActive = isActive;
@@ -417,13 +467,10 @@ export const updateRewardAddon = async (req, res) => {
     addon.updatedBy = req.user._id;
     await addon.save();
 
-    // Unset items field if it exists
-    await unsetRewardAddonItems(addon._id);
-
     return res.status(200).json({
       success: true,
       message: "Reward add-on updated successfully",
-      description: `The "${addon.addonName}" add-on has been updated.`,
+      description: `The add-on (${addon.quantity} minifigs/month for ${addon.duration} months) has been updated.`,
       addon,
     });
   } catch (error) {
@@ -439,14 +486,11 @@ export const deleteRewardAddon = async (req, res) => {
     const addon = await findRewardAddonById(id);
 
     if (!addon) {
-      return res.status(404).json({
-        success: false,
-        message: "Add-on not found",
-        description: "The requested reward add-on does not exist.",
-      });
+      const notFound = createNotFoundResponse("Add-on");
+      return res.status(notFound.status).json(notFound.body);
     }
 
-    await Addon.findByIdAndDelete(id);
+    await RewardAddon.findByIdAndDelete(id);
 
     return res.status(200).json({
       success: true,
@@ -455,5 +499,25 @@ export const deleteRewardAddon = async (req, res) => {
     });
   } catch (error) {
     handleError(res, error, "Delete reward addon", "Failed to delete add-on");
+  }
+};
+
+// ==================== Public Access (Public Endpoints) ====================
+
+export const getRewardBundlesForUser = async (req, res) => {
+  try {
+    const bundles = await Bundle.find({
+      bundleType: "reward",
+      isActive: true,
+    })
+      .select("-createdBy -updatedBy -isActive -__v")
+      .sort({ minifigQuantity: 1 });
+
+    return res.status(200).json({
+      success: true,
+      bundles,
+    });
+  } catch (error) {
+    handleError(res, error, "Get reward bundles", "Failed to fetch bundles");
   }
 };

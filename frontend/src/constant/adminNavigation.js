@@ -79,12 +79,12 @@ export const adminNavigation = [
     children: [
       {
         id: "dealer-bundles",
-        label: "Bundles",
+        label: "Dealer Bundles",
         path: "dealer-bundles",
       },
       {
         id: "dealer-addons",
-        label: "Add-ons",
+        label: "Dealer Add-ons",
         path: "dealer-addons",
       },
       {
