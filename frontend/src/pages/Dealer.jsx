@@ -13,20 +13,18 @@ import {
   dealerIncluded,
   dealerBenefits,
 } from "@/constant/dealerData";
-import BundleSelection from "@/components/dealer/BundleSelection";
-import AddonSelection from "@/components/dealer/AddonSelection";
-import ExtraBagSelection from "@/components/dealer/ExtraBagSelection";
-import TorsoSelection from "@/components/dealer/TorsoSelection";
-import OrderSummary from "@/components/dealer/OrderSummary";
+import DealerBundle from "@/components/dealer/DealerBundle";
+import DealerAddon from "@/components/dealer/DealerAddon";
+import DealerExtraBag from "@/components/dealer/DealerExtraBag";
+import DealerTorsoBag from "@/components/dealer/DealerTorsoBag";
+import DealerOrderSummary from "@/components/dealer/DealerOrderSummary";
 import AddonPreviewModal from "@/components/dealer/AddonPreviewModal";
 import { useDealer } from "@/hooks/useDealer";
 
-const Dealers = () => {
+const Dealer = () => {
   const {
-    // States
-    selectedBundleId,
+    // States & Setters
     setSelectedBundleId,
-    selectedAddonId,
     setSelectedAddonId,
     selectedAddon,
     setSelectedAddon,
@@ -235,24 +233,21 @@ const Dealers = () => {
         </div>
       </section>
 
-      <BundleSelection
+      <DealerBundle
         bundles={bundles}
-        selectedBundleId={selectedBundleId}
         onSelect={setSelectedBundleId}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-5 px-5 py-10 items-start overflow-visible bg-input/50 dark:bg-card/50">
         <div className="space-y-10 overflow-visible">
-          <AddonSelection
+          <DealerAddon
             addons={addons}
-            selectedAddonId={selectedAddonId}
             onSelect={setSelectedAddonId}
             onPreview={setSelectedAddon}
           />
 
-          <ExtraBagSelection
+          <DealerExtraBag
             extraBags={extraBags}
-            extraBagQuantities={extraBagQuantities}
             totalExtraBags={totalExtraBags}
             maxExtraBags={maxExtraBags}
             selectedBundle={selectedBundle}
@@ -260,9 +255,8 @@ const Dealers = () => {
             onDecrease={handleDecreaseBag}
           />
 
-          <TorsoSelection
+          <DealerTorsoBag
             torsoBags={torsoBags}
-            selectedTorsoBagIds={selectedTorsoBagIds}
             lastSelectedBag={lastSelectedBag}
             onSelect={handleSelectTorsoBag}
             isAdmin={isAdmin}
@@ -277,7 +271,7 @@ const Dealers = () => {
           />
         </div>
 
-        <OrderSummary
+        <DealerOrderSummary
           selectedBundle={selectedBundle}
           selectedAddonData={selectedAddonData}
           totalExtraBags={totalExtraBags}
@@ -301,4 +295,4 @@ const Dealers = () => {
   );
 };
 
-export default Dealers;
+export default Dealer;

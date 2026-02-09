@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-const OrderSummary = ({
+const DealerOrderSummary = ({
   selectedBundle,
   selectedAddonData,
   totalExtraBags,
@@ -111,4 +111,4 @@ const OrderSummary = ({
   </aside>
 );
 
-export default OrderSummary;
+export default DealerOrderSummary;

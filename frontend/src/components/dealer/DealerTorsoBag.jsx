@@ -11,9 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Logo from "@/assets/media/Logo.png";
 
-const TorsoSelection = ({
+const DealerTorsoBag = ({
   torsoBags,
-  selectedTorsoBagIds,
   lastSelectedBag,
   onSelect,
   isAdmin,
@@ -39,56 +38,52 @@ const TorsoSelection = ({
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        {torsoBags.map((bag) => {
-          const isSelected = selectedTorsoBagIds.includes(bag._id);
-          const firstImage = bag.items?.[0]?.image?.url;
-          return (
-            <Card
-              key={bag._id}
-              onClick={() => onSelect(bag._id)}
-              className={`relative cursor-pointer transition-all duration-300 group p-0 gap-0 overflow-visible hover:shadow-2xl hover:-translate-y-2 ${
-                isSelected
-                  ? "border-accent ring-2 ring-accent ring-offset-2"
-                  : ""
+        {torsoBags.map((bag) => (
+          <Card
+            key={bag._id}
+            onClick={() => onSelect(bag._id)}
+            className={`relative cursor-pointer transition-all duration-300 group p-0 gap-0 overflow-visible hover:shadow-2xl hover:-translate-y-2 ${
+              bag.isSelected
+                ? "border-accent ring-2 ring-accent ring-offset-2"
+                : ""
+            }`}
+          >
+            {bag.isSelected && (
+              <Badge
+                variant="accent"
+                className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-semibold px-3 py-1 whitespace-nowrap z-10 uppercase"
+              >
+                Current Selection
+              </Badge>
+            )}
+
+            <div className="aspect-square flex items-center justify-center">
+              {bag.firstImage ? (
+                <img
+                  src={bag.firstImage}
+                  alt={bag.bagName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <img
+                  src={Logo}
+                  alt="Placeholder"
+                  className="max-h-40 max-w-40 object-contain opacity-80"
+                />
+              )}
+            </div>
+
+            <div
+              className={`p-2 text-center border-t transition-colors ${
+                bag.isSelected ? "bg-accent text-accent-foreground" : ""
               }`}
             >
-              {isSelected && (
-                <Badge
-                  variant="accent"
-                  className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-semibold px-3 py-1 whitespace-nowrap z-10 uppercase"
-                >
-                  Current Selection
-                </Badge>
-              )}
-
-              <div className="aspect-square flex items-center justify-center">
-                {firstImage ? (
-                  <img
-                    src={firstImage}
-                    alt={bag.bagName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <img
-                    src={Logo}
-                    alt="Placeholder"
-                    className="max-h-40 max-w-40 object-contain opacity-80"
-                  />
-                )}
-              </div>
-
-              <div
-                className={`p-2 text-center border-t transition-colors ${
-                  isSelected ? "bg-accent text-accent-foreground" : ""
-                }`}
-              >
-                <h3 className="text-lg font-bold font-mono uppercase tracking-tight">
-                  {bag.bagName}
-                </h3>
-              </div>
-            </Card>
-          );
-        })}
+              <h3 className="text-lg font-bold font-mono uppercase tracking-tight">
+                {bag.bagName}
+              </h3>
+            </div>
+          </Card>
+        ))}
       </div>
 
       {lastSelectedBag && localItems.length > 0 && (
@@ -244,4 +239,4 @@ const SortablePreviewItem = ({ id, item, idx }) => {
   );
 };
 
-export default TorsoSelection;
+export default DealerTorsoBag;

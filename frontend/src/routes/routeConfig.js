@@ -6,7 +6,7 @@ import SubCollections from "@/pages/SubCollections";
 import Contact from "@/pages/Contact";
 import About from "@/pages/About";
 import Designer from "@/pages/Designer";
-import Dealers from "@/pages/Dealers";
+import Dealer from "@/pages/Dealer";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfUse from "@/pages/TermsOfUse";
 import VerifyEmail from "@/components/auth/VerifyEmail";
@@ -103,7 +103,7 @@ export const privateRoutes = [
   },
   {
     path: "/dealers",
-    element: Dealers,
+    element: Dealer,
     requiredRoles: ["dealer", "admin"],
   },
 ];

@@ -68,6 +68,23 @@ export const useDealer = () => {
     }
   }, [bundles, selectedBundleId]);
 
+  // Add isSelected property to bundles
+  const bundlesWithSelection = useMemo(() => {
+    return bundles.map((bundle) => ({
+      ...bundle,
+      isSelected: selectedBundleId === bundle._id,
+    }));
+  }, [bundles, selectedBundleId]);
+
+  // Add isSelected and hasItems properties to addons
+  const addonsWithSelection = useMemo(() => {
+    return addons.map((addon) => ({
+      ...addon,
+      isSelected: selectedAddonId === addon._id,
+      hasItems: addon.items?.length > 0,
+    }));
+  }, [addons, selectedAddonId]);
+
   // Logic Constants
   const selectedBundle = useMemo(
     () => bundles.find((b) => b._id === selectedBundleId),
@@ -82,6 +99,28 @@ export const useDealer = () => {
   const totalExtraBags = useMemo(() => {
     return Object.values(extraBagQuantities).reduce((acc, qty) => acc + qty, 0);
   }, [extraBagQuantities]);
+
+  // Add computed properties to extra bags
+  const extraBagsWithComputed = useMemo(() => {
+    return extraBags.map((bag) => {
+      const qty = extraBagQuantities[bag._id] || 0;
+      return {
+        ...bag,
+        qty,
+        canIncrease: totalExtraBags < maxExtraBags,
+        canDecrease: qty > 0,
+      };
+    });
+  }, [extraBags, extraBagQuantities, totalExtraBags, maxExtraBags]);
+
+  // Add isSelected and firstImage properties to torso bags
+  const torsoBagsWithSelection = useMemo(() => {
+    return torsoBags.map((bag) => ({
+      ...bag,
+      isSelected: selectedTorsoBagIds.includes(bag._id),
+      firstImage: bag.items?.[0]?.image?.url,
+    }));
+  }, [torsoBags, selectedTorsoBagIds]);
 
   // Validation: If bundle change reduces max bags below current count, reset selections
   useEffect(() => {
@@ -235,9 +274,7 @@ export const useDealer = () => {
 
   return {
     // States & Setters
-    selectedBundleId,
     setSelectedBundleId,
-    selectedAddonId,
     setSelectedAddonId,
     selectedAddon,
     setSelectedAddon,
@@ -245,10 +282,10 @@ export const useDealer = () => {
     selectedTorsoBagIds,
 
     // Data
-    bundles,
-    addons,
-    extraBags,
-    torsoBags,
+    bundles: bundlesWithSelection,
+    addons: addonsWithSelection,
+    extraBags: extraBagsWithComputed,
+    torsoBags: torsoBagsWithSelection,
 
     // Memos
     selectedBundle,
