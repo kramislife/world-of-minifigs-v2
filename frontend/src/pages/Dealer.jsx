@@ -1,11 +1,3 @@
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import {
   dealerHero,
   dealerFeatures,
@@ -13,6 +5,8 @@ import {
   dealerIncluded,
   dealerBenefits,
 } from "@/constant/dealerData";
+import PageHero from "@/components/shared/PageHero";
+import SectionWithCards from "@/components/shared/SectionWithCards";
 import DealerBundle from "@/components/dealer/DealerBundle";
 import DealerAddon from "@/components/dealer/DealerAddon";
 import DealerExtraBag from "@/components/dealer/DealerExtraBag";
@@ -87,156 +81,42 @@ const Dealer = () => {
   }
 
   return (
-    <div>
-      {/* Hero */}
+    <>
+      <PageHero
+        title={dealerHero.title}
+        highlight={dealerHero.highlight}
+        description={dealerHero.description}
+        badge={dealerHero.badge}
+        features={dealerFeatures}
+      />
 
-      <section className="relative overflow-hidden py-35 border border-border/50">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute -top-24 -left-24 w-64 h-64 md:w-96 md:h-96 rounded-full bg-accent" />
-          <div className="absolute top-1/2 right-1/4 w-56 h-56 md:w-64 md:h-64 rounded-full bg-accent" />
-          <div className="absolute -bottom-32 -right-32 w-52 h-52 md:w-64 md:h-64 rounded-full bg-accent" />
-        </div>
-
-        <div className="relative text-center flex flex-col items-center px-5">
-          <Badge variant="accent" className="px-3 py-1 text-sm">
-            {dealerHero.badge}
-          </Badge>
-
-          <h1 className="text-4xl md:text-6xl font-bold my-5 leading-tight">
-            {dealerHero.title}{" "}
-            <span className="text-accent">{dealerHero.highlight}</span>
-          </h1>
-
-          <div className="mx-auto max-w-xl mb-5">
-            <p className="text-sm md:text-lg">{dealerHero.description}</p>
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-2">
-            {dealerFeatures.map((feature, index) => (
-              <Badge
-                key={index}
-                variant="secondary"
-                className="px-3 py-2 text-sm border-border flex items-center gap-3 bg-card text-foreground"
-              >
-                <feature.icon size={18} className="text-accent" />
-                {feature.label}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Easy Process */}
-      <section className="px-5 py-10">
-        <div className="space-y-4 leading-relaxed text-center">
-          <Badge variant="accent" className="px-3 py-1 text-sm">
-            {dealerProcess.badge}
-          </Badge>
-          <h2 className="text-4xl font-bold leading-tight">
-            {dealerProcess.title}
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 pt-5">
-          {dealerProcess.steps.map((step, index) => (
-            <Card key={index} className="text-center dark:shadow-none">
-              <CardHeader>
-                <div className="text-foreground dark:text-secondary-foreground font-bold mb-5 bg-accent h-20 w-20 mx-auto rounded-full flex items-center justify-center shadow-lg border-4 border-background">
-                  <step.icon size={32} strokeWidth={1.5} />
-                </div>
-                <CardTitle className="text-xl font-bold">
-                  {step.title}
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent>
-                <CardDescription className="leading-relaxed text-accent-foreground dark:text-foreground">
-                  {step.description}
-                </CardDescription>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
+      {/* How it works */}
+      <SectionWithCards
+        badge={dealerProcess.badge}
+        title={dealerProcess.title}
+        items={dealerProcess.steps}
+        gridCols="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+      />
 
       {/* Parts Breakdown */}
-      <section className="px-5 py-10 bg-input/50 dark:bg-card/50">
-        <div className="text-center mb-10">
-          <Badge variant="accent" className="px-3 py-1 text-sm">
-            {dealerIncluded.badge}
-          </Badge>
-          <h2 className="text-4xl font-bold mt-5 mb-3">
-            {dealerIncluded.title}{" "}
-            <span className="text-accent">{dealerIncluded.highlight}</span>
-          </h2>
-          <p className="max-w-3xl mx-auto">{dealerIncluded.description}</p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 text-center">
-          {dealerIncluded.items.map((item, index) => (
-            <Card
-              key={index}
-              className="text-center dark:shadow-none bg-background/50 border-border"
-            >
-              <CardHeader>
-                <div className="text-foreground dark:text-secondary-foreground font-bold mb-5 bg-accent h-20 w-20 mx-auto rounded-full flex items-center justify-center shadow-lg border-4 border-background">
-                  <item.icon size={24} strokeWidth={1.5} />
-                </div>
-                <CardTitle className="text-xl font-bold">
-                  {item.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="leading-relaxed text-accent-foreground dark:text-foreground">
-                  {item.description}
-                </CardDescription>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <p className="text-center mt-10 text-sm font-medium max-w-2xl mx-auto">
-          {dealerIncluded.footer}
-        </p>
-      </section>
-
-      {/* Dealer Exclusive */}
-      <section className="py-10 px-5">
-        <div className="text-center mb-10">
-          <Badge variant="accent" className="px-3 py-1 text-sm">
-            {dealerBenefits.badge}
-          </Badge>
-          <h2 className="text-4xl font-bold mt-5 mb-3">
-            {dealerBenefits.title}{" "}
-            <span className="text-accent">{dealerBenefits.highlight}</span>
-          </h2>
-          <p className="max-w-3xl mx-auto">{dealerBenefits.description}</p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 text-center">
-          {dealerBenefits.features.map((feature, index) => (
-            <Card key={index} className="text-center dark:shadow-none">
-              <CardHeader>
-                <div className="text-foreground dark:text-secondary-foreground font-bold mb-5 bg-accent h-20 w-20 mx-auto rounded-full flex items-center justify-center shadow-lg border-4 border-background">
-                  <feature.icon size={32} strokeWidth={1.5} />
-                </div>
-                <CardTitle className="text-xl font-bold">
-                  {feature.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="leading-relaxed text-accent-foreground dark:text-foreground">
-                  {feature.description}
-                </CardDescription>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <DealerBundle
-        bundles={bundles}
-        onSelect={setSelectedBundleId}
+      <SectionWithCards
+        badge={dealerIncluded.badge}
+        title={dealerIncluded.title}
+        description={dealerIncluded.description}
+        items={dealerIncluded.items}
+        gridCols="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+        background={true}
       />
+
+      {/* Why Partner with Us */}
+      <SectionWithCards
+        badge={dealerBenefits.badge}
+        title={dealerBenefits.title}
+        description={dealerBenefits.description}
+        items={dealerBenefits.features}
+      />
+
+      <DealerBundle bundles={bundles} onSelect={setSelectedBundleId} />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-5 px-5 py-10 items-start overflow-visible bg-input/50 dark:bg-card/50">
         <div className="space-y-10 overflow-visible">
@@ -291,7 +171,7 @@ const Dealer = () => {
           setSelectedAddon(null);
         }}
       />
-    </div>
+    </>
   );
 };
 

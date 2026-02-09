@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 
 export const dealerHero = {
-  badge: "100% Genuine LEGO Parts",
   title: "Build a Minifig",
   highlight: "Parts",
   description: "Get 100% Genuine LEGO Parts. Minimum Dupes, Maximum Variety!",
@@ -73,11 +72,8 @@ export const dealerProcess = {
 
 export const dealerIncluded = {
   badge: "PARTS BREAKDOWN",
-  title: "What's Included",
-  highlight: "Per Minifig",
+  title: "What's Included per Minifig",
   description: "Each minifig in your order includes these 4 essential parts",
-  footer:
-    "Only LEGO torsos are selectable at the moment. All other parts are included as a standard mix",
   items: [
     {
       title: "1 Torso",
@@ -104,8 +100,7 @@ export const dealerIncluded = {
 
 export const dealerBenefits = {
   badge: "DEALER EXCLUSIVE",
-  title: "Why Partner",
-  highlight: "With Us",
+  title: "Why Partner with Us",
   description:
     "We provide the highest quality LEGO parts and the most reliable service in the industry",
   features: [

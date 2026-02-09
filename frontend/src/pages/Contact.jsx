@@ -18,6 +18,7 @@ import {
   contactChannels,
   contactFaqs,
 } from "@/constant/contactData";
+import PageHero from "@/components/shared/PageHero";
 import { useContactForm } from "@/hooks/useContactForm";
 
 const Contact = () => {
@@ -30,24 +31,12 @@ const Contact = () => {
   } = useContactForm();
 
   return (
-    <div>
-      {/* Hero */}
-      <section className="relative overflow-hidden py-40 border border-border/50">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute -top-24 -left-24 w-64 h-64 md:w-96 md:h-96 rounded-full bg-accent" />
-          <div className="absolute top-1/2 right-1/4 w-56 h-56 md:w-64 md:h-64 rounded-full bg-accent" />
-          <div className="absolute -bottom-32 -right-32 w-52 h-52 md:w-64 md:h-64 rounded-full bg-accent" />
-        </div>
-
-        <div className="relative px-5 text-center">
-          <h1 className="text-6xl font-bold mb-5">
-            Get in <span className="text-accent">{contactHero.highlight}</span>
-          </h1>
-          <div className="mx-auto max-w-3xl">
-            <p className="text-sm md:text-lg">{contactHero.description}</p>
-          </div>
-        </div>
-      </section>
+    <>
+      <PageHero
+        title={contactHero.title}
+        highlight={contactHero.highlight}
+        description={contactHero.description}
+      />
 
       {/* Main */}
       <section className="py-5">
@@ -209,7 +198,7 @@ const Contact = () => {
           </div>
         </div>
       </section>
-    </div>
+    </>
   );
 };
 

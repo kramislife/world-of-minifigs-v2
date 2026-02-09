@@ -1,30 +1,22 @@
-import { Award, Clock, Package } from "lucide-react";
+import {
+  Award,
+  Clock,
+  Package,
+  Search,
+  ShoppingCart,
+  ShoppingBag,
+} from "lucide-react";
 import storyImage from "@/assets/media/aboutStory.png";
 import aboutExploreImage from "@/assets/media/aboutExplore.png";
 import { APP_NAME } from "@/constant/appConfig";
 
 export const aboutHero = {
-  title: "Fueling Your",
+  title: "Fueling your",
   highlight: "LEGO",
   title2: "Adventures with Authentic Parts",
   description:
     "Brick by Brick, Uniting LEGO Lovers – Where Every Piece Connects and Every Builder Belongs!",
 };
-
-export const aboutStats = [
-  {
-    number: "50+",
-    label: "Custom Projects",
-  },
-  {
-    number: "1000+",
-    label: "Buyers",
-  },
-  {
-    number: "97%",
-    label: "Satisfied Buyers",
-  },
-];
 
 export const aboutStory = {
   badge: "OUR STORY",
@@ -47,16 +39,19 @@ export const aboutOrder = {
       title: "Explore Our Collection",
       description:
         "Visit the Shop page to view all World of Minifigs products. Filter by category to find exactly what you need.",
+      icon: Search,
     },
     {
       title: "Select Your Favorites",
       description:
         "Add your preferred custom sets to your cart and double-check the quantities. We offer discounts on selected items.",
+      icon: ShoppingCart,
     },
     {
       title: "Place Your Order",
       description:
         "Complete the order details, wait for the order confirmation, and you're all set! You'll receive your LEGO in no time.",
+      icon: ShoppingBag,
     },
   ],
 };
