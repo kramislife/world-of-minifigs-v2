@@ -39,7 +39,10 @@ const DealerOrderSummary = ({
             <div className="flex justify-between items-start">
               <p className="text-sm font-bold">{selectedAddonData.addonName}</p>
               <span className="text-sm font-bold text-primary dark:text-accent">
-                ${selectedAddonData.price?.toFixed(2)}
+                {!selectedAddonData.price ||
+                Number(selectedAddonData.price) === 0
+                  ? "Free"
+                  : `$${selectedAddonData.price?.toFixed(2)}`}
               </span>
             </div>
           </div>

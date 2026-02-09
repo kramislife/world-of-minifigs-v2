@@ -80,8 +80,6 @@ const SubCategoryManagement = () => {
         columns={columns}
         data={subCategories}
         isLoading={isLoadingSubCategories}
-        loadingMessage="Loading sub-categories..."
-        emptyMessage="No sub-category found..."
         renderRow={(subCategory) => (
           <>
             <TableCell maxWidth="200px">

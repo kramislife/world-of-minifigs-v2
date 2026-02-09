@@ -77,8 +77,6 @@ const CollectionManagement = () => {
         columns={columns}
         data={collections}
         isLoading={isLoadingCollections}
-        loadingMessage="Loading collections..."
-        emptyMessage="No collection found..."
         renderRow={(collection) => (
           <>
             <TableCell maxWidth="200px">{collection.collectionName}</TableCell>

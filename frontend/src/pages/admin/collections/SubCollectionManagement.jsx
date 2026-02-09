@@ -84,8 +84,6 @@ const SubCollectionManagement = () => {
         columns={columns}
         data={subCollections}
         isLoading={isLoadingSubCollections}
-        loadingMessage="Loading sub-collections..."
-        emptyMessage="No sub-collection found..."
         renderRow={(subCollection) => (
           <>
             <TableCell maxWidth="200px">

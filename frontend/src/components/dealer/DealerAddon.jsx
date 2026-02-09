@@ -24,7 +24,9 @@ const DealerAddon = ({ addons, onSelect, onPreview }) => (
             }
           }}
           className={`relative cursor-pointer transition-all duration-300 group gap-2 hover:shadow-2xl hover:-translate-y-2 p-5 ${
-            addon.isSelected ? "border-accent ring-2 ring-accent ring-offset-2" : ""
+            addon.isSelected
+              ? "border-accent ring-2 ring-accent ring-offset-2"
+              : ""
           }`}
         >
           {addon.isSelected && (
@@ -44,7 +46,9 @@ const DealerAddon = ({ addons, onSelect, onPreview }) => (
 
           <div className="w-full flex flex-col mt-5">
             <span className="text-5xl font-extrabold text-success dark:text-accent">
-              ${addon.price}
+              {!addon.price || Number(addon.price) === 0
+                ? "Free"
+                : `$${Number(addon.price).toFixed(2)}`}
             </span>
             <span className="text-xs text-muted-foreground mt-2">
               add-on price

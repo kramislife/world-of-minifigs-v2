@@ -70,8 +70,6 @@ const SkillLevelManagement = () => {
         columns={columns}
         data={skillLevels}
         isLoading={isLoadingSkillLevels}
-        loadingMessage="Loading skill levels..."
-        emptyMessage="No skill level found..."
         renderRow={(skillLevel) => (
           <>
             <TableCell maxWidth="200px">{skillLevel.skillLevelName}</TableCell>

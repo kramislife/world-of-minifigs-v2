@@ -7,6 +7,8 @@ import {
 } from "@/constant/dealerData";
 import PageHero from "@/components/shared/PageHero";
 import SectionWithCards from "@/components/shared/SectionWithCards";
+import ErrorState from "@/components/shared/ErrorState";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import DealerBundle from "@/components/dealer/DealerBundle";
 import DealerAddon from "@/components/dealer/DealerAddon";
 import DealerExtraBag from "@/components/dealer/DealerExtraBag";
@@ -58,25 +60,29 @@ const Dealer = () => {
     isAdmin,
     isLoading,
     isError,
-    errorMessage,
   } = useDealer();
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
-      </div>
-    );
+    return <LoadingSpinner minHeight="min-h-screen" />;
   }
 
   if (isError) {
     return (
-      <div className="px-5 py-20 min-h-[50vh] flex flex-col items-center justify-center text-center">
-        <p className="text-lg font-medium text-destructive mb-2">
-          Error loading dealer packages
-        </p>
-        <p className="text-sm text-muted-foreground">{errorMessage}</p>
-      </div>
+      <ErrorState
+        title="Unable to load dealer packages"
+        description="We're experiencing issues loading dealer packages. Please refresh the page or contact support if the problem persists."
+        minHeight="min-h-screen"
+      />
+    );
+  }
+
+  if (!bundles) {
+    return (
+      <ErrorState
+        title="No dealer packages available"
+        description="No dealer packages are currently available. Please check back soon!"
+        minHeight="min-h-screen"
+      />
     );
   }
 

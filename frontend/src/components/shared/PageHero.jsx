@@ -26,7 +26,12 @@ const PageHero = ({
         )}
 
         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold uppercase leading-tight">
-          {title}&nbsp;
+          {title && (
+            <>
+              {title}
+              {highlight && <>&nbsp;</>}
+            </>
+          )}
           {highlight && <span className="text-accent">{highlight}</span>}
           {title2 && (
             <>
@@ -38,7 +43,7 @@ const PageHero = ({
         </h1>
 
         {description && (
-          <div className="mx-auto max-w-3xl">
+          <div className="mx-auto max-w-3xl mt-3">
             <p className="text-sm md:text-lg">{description}</p>
           </div>
         )}

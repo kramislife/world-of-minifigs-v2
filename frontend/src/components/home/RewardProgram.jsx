@@ -1,4 +1,6 @@
 import { Badge } from "@/components/ui/badge";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import ErrorState from "@/components/shared/ErrorState";
 import RewardBundle from "@/components/reward/RewardBundle";
 import RewardAddon from "@/components/reward/RewardAddon";
 import RewardOrderSummary from "@/components/reward/RewardOrderSummary";
@@ -27,25 +29,29 @@ const RewardProgram = () => {
     isLoading,
     isLoadingAddons,
     isError,
-    errorMessage,
   } = useReward();
 
   if (isLoading) {
+    return <LoadingSpinner minHeight="min-h-[400px]" />;
+  }
+
+  if (isError) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-lg">Loading reward bundles...</p>
-      </div>
+      <ErrorState
+        title="Reward program unavailable"
+        description="We're having trouble loading the reward program. Please try refreshing the page or check back later."
+        minHeight="min-h-[400px]"
+      />
     );
   }
 
-  if (isError || !bundles || bundles.length === 0) {
+  if (!bundles) {
     return (
-      <div className="px-5 py-20 min-h-[50vh] flex flex-col items-center justify-center text-center">
-        <p className="text-lg font-medium text-destructive mb-2">
-          Error loading reward program
-        </p>
-        <p className="text-sm text-muted-foreground">{errorMessage}</p>
-      </div>
+      <ErrorState
+        title="No reward bundles available"
+        description="No reward bundles are currently available. Please check back soon for exciting reward options!"
+        minHeight="min-h-[400px]"
+      />
     );
   }
 

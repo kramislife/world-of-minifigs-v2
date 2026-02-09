@@ -89,7 +89,9 @@ const DealerAddonManagement = () => {
             <TableCell maxWidth="200px">{addon.addonName}</TableCell>
             <TableCell maxWidth="300px">{addon.description || "-"}</TableCell>
             <TableCell className="text-success dark:text-accent font-bold">
-              ${addon.price?.toFixed(2)}
+              {!addon.price || Number(addon.price) === 0
+                ? "Free"
+                : `$${addon.price?.toFixed(2)}`}
             </TableCell>
             <TableCell>
               <Badge variant={addon.isActive ? "success" : "destructive"}>

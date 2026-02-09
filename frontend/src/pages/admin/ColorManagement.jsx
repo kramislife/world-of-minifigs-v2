@@ -71,8 +71,6 @@ const ColorManagement = () => {
         columns={columns}
         data={colors}
         isLoading={isLoadingColors}
-        loadingMessage="Loading colors..."
-        emptyMessage="No color found..."
         renderRow={(color) => (
           <>
             <TableCell maxWidth="200px">{color.colorName}</TableCell>

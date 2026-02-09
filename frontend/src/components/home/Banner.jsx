@@ -7,6 +7,8 @@ import {
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import ErrorState from "@/components/shared/ErrorState";
 import { useBanner } from "@/hooks/useBanner";
 
 const Banner = () => {
@@ -22,9 +24,28 @@ const Banner = () => {
     item: itemVariants,
   } = useBanner();
 
-  if (isLoading || isError) return null;
+  if (isLoading) {
+    return <LoadingSpinner minHeight="aspect-16/7" />;
+  }
 
-  if (!hasBanners) return <div className="h-20" />;
+  if (isError) {
+    return (
+      <ErrorState
+        title="Unable to load banner"
+        description="We're having trouble displaying the banner. Please refresh the page or check back later."
+        minHeight="aspect-16/7"
+      />
+    );
+  }
+
+  if (!hasBanners)
+    return (
+      <ErrorState
+        title="No banners available"
+        description="There are no banners to display at this time. Please check back soon!"
+        minHeight="aspect-16/7"
+      />
+    );
 
   return (
     <section className="relative w-full overflow-hidden">

@@ -1,6 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import Logo from "@/assets/media/Logo.png";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import ErrorState from "@/components/shared/ErrorState";
 import {
   useFeaturedCollections,
   getCollectionLink,
@@ -11,15 +13,27 @@ const FeaturedCollections = () => {
     useFeaturedCollections();
 
   if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (isError) {
     return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <p className="text-lg">Loading featured collections...</p>
-      </div>
+      <ErrorState
+        title="No featured collections available"
+        description="We're having trouble loading featured collections. Please refresh the page or try again later."
+        minHeight="min-h-[200px]"
+      />
     );
   }
 
-  if (isError || !hasCollections) {
-    return null;
+  if (!hasCollections) {
+    return (
+      <ErrorState
+        title="No featured collections available"
+        description="There are no featured collections to display at this time. Please check back soon!"
+        minHeight="min-h-[200px]"
+      />
+    );
   }
 
   return (

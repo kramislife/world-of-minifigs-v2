@@ -71,8 +71,6 @@ const BannerManagement = () => {
         data={banners}
         isLoading={isLoadingBanners}
         searchPlaceholder="Search banners..."
-        loadingMessage="Loading banners..."
-        emptyMessage="No banners found..."
         renderRow={(banner) => (
           <>
             <TableCell maxWidth="200px" className="font-medium">

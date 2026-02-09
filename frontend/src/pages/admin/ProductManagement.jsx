@@ -98,8 +98,6 @@ const ProductManagement = () => {
         columns={columns}
         data={products}
         isLoading={isLoadingProducts}
-        loadingMessage="Loading products..."
-        emptyMessage="No product found..."
         renderRow={(product) => (
           <>
             <TableCell maxWidth="200px" className="font-medium">

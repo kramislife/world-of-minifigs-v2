@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import dealerVideo from "@/assets/media/dealer.mp4";
-import { dealerCta } from "@/constant/dealerData";
 import PageCTA from "@/components/shared/PageCTA";
 import Auth from "@/pages/Auth";
+import { dealerCta } from "@/constant/dealerData";
 
 const DealerCTA = () => {
   const [authOpen, setAuthOpen] = useState(false);

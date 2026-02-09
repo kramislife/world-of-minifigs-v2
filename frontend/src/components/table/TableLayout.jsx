@@ -4,6 +4,7 @@ import ShowEntries from "@/components/table/ShowEntries";
 import Pagination from "@/components/table/Pagination";
 import { TableHeader } from "@/components/table/BaseColumn";
 import useTableLayout from "@/hooks/useTableLayout";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
 
 const TableLayout = ({
   searchPlaceholder = "Search...",
@@ -19,8 +20,6 @@ const TableLayout = ({
   data = [],
   renderRow,
   isLoading = false,
-  loadingMessage = "Loading...",
-  emptyMessage = "No items found...",
 }) => {
   const {
     search,
@@ -45,10 +44,7 @@ const TableLayout = ({
     <div className="space-y-5 pt-5">
       {/* Table Controls - Top */}
       <div className="flex items-center justify-between">
-        <ShowEntries
-          value={limit}
-          onValueChange={handleLimitChange}
-        />
+        <ShowEntries value={limit} onValueChange={handleLimitChange} />
         <SearchBar
           placeholder={searchPlaceholder}
           value={search}
@@ -70,11 +66,8 @@ const TableLayout = ({
           <tbody>
             {isLoading ? (
               <tr>
-                <td
-                  colSpan={columns.length}
-                  className="p-5 text-center text-popover-foreground/80"
-                >
-                  {loadingMessage}
+                <td colSpan={columns.length} className="p-10">
+                  <LoadingSpinner minHeight="min-h-[10vh]" />
                 </td>
               </tr>
             ) : data.length > 0 ? (
@@ -87,9 +80,9 @@ const TableLayout = ({
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="p-5 text-center text-popover-foreground/80"
+                  className="p-5 text-center text-muted-foreground/80"
                 >
-                  {emptyMessage}
+                  No items found
                 </td>
               </tr>
             )}

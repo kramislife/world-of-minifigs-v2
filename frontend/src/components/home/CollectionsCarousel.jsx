@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 import Logo from "@/assets/media/Logo.png";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import ErrorState from "@/components/shared/ErrorState";
 import {
   useCollectionsCarousel,
   getCollectionLink,
@@ -27,15 +29,27 @@ const CollectionsCarousel = () => {
   } = useCollectionsCarousel();
 
   if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (isError) {
     return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <p className="text-lg">Loading collections...</p>
-      </div>
+      <ErrorState
+        title="No collections available"
+        description="We're unable to load collections at the moment. Please check back later or refresh the page."
+        minHeight="min-h-[200px]"
+      />
     );
   }
 
-  if (isError || !hasCollections) {
-    return null;
+  if (!hasCollections) {
+    return (
+      <ErrorState
+        title="No collections available"
+        description="There are no collections to display at this time. Please check back soon!"
+        minHeight="min-h-[200px]"
+      />
+    );
   }
 
   return (
