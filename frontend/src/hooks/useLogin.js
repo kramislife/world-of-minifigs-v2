@@ -2,7 +2,12 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useLoginMutation, useLogoutMutation } from "@/redux/api/authApi";
+import {
+  useLoginMutation,
+  useLogoutMutation,
+  useSyncCartMutation,
+} from "@/redux/api/authApi";
+import { clearCartLocal } from "@/redux/slices/cartSlice";
 import { setCredentials, clearCredentials } from "@/redux/slices/authSlice";
 
 // ------------------------------------------ Login ------------------------------------------------------------
@@ -16,6 +21,7 @@ export const useLogin = (onSuccess) => {
   });
 
   const [login, { isLoading }] = useLoginMutation();
+  const [syncCart] = useSyncCartMutation();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -65,12 +71,33 @@ export const useLogin = (onSuccess) => {
       // Store user in Redux state
       if (response?.user) {
         dispatch(setCredentials(response.user));
-        
+
+        // Sync guest cart from localStorage to server (unified cart on login)
+        const guestCart = JSON.parse(localStorage.getItem("cart")) || [];
+        if (guestCart.length > 0) {
+          try {
+            const syncItems = guestCart.map((item) => ({
+              productId: item.productId,
+              productType: item.productType,
+              variantIndex: item.variantIndex,
+              quantity: item.quantity,
+            }));
+            await syncCart(syncItems).unwrap();
+            dispatch(clearCartLocal());
+          } catch (err) {
+            toast.error(err?.data?.message || "Could not sync cart", {
+              description:
+                err?.data?.description ||
+                "Your guest cart items could not be merged. You can add them again.",
+            });
+          }
+        }
+
         // Close auth dialog first
         if (onSuccess) {
           onSuccess();
         }
-        
+
         // Small delay to ensure cookies are set before navigation
         setTimeout(() => {
           // Redirect based on user role

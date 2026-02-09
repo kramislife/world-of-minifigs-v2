@@ -177,9 +177,12 @@ export const useCart = () => {
   const [syncCartServer] = useSyncCartMutation();
 
   // Sync server data to local state for authenticated users
+  // Also persist to localStorage so cart survives logout (unified cart experience)
   useEffect(() => {
     if (isAuthenticated && serverCartData?.cart?.items) {
-      dispatch(setCartItems(serverCartData.cart.items));
+      const items = serverCartData.cart.items;
+      dispatch(setCartItems(items));
+      localStorage.setItem("cart", JSON.stringify(items));
     }
   }, [isAuthenticated, serverCartData, dispatch]);
 
@@ -344,7 +347,7 @@ export const useCart = () => {
 
   const removeItem = useCallback(
     async (productId, variantIndex) => {
-      if (isAuthenticated) { 
+      if (isAuthenticated) {
         try {
           await removeCartItemServer({ productId, variantIndex }).unwrap();
         } catch (err) {

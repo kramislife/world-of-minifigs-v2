@@ -25,7 +25,7 @@ const DealerCTA = () => {
       </div>
 
       <div className="relative text-center max-w-4xl mx-auto flex flex-col items-center text-background dark:text-foreground">
-        <h2 className="text-4xl md:text-6xl font-extrabold mb-5">
+        <h2 className="text-4xl md:text-6xl font-extrabold mb-5 uppercase">
           {dealerCta.title} <br />
           <span className="text-accent">{dealerCta.highlight}</span>
         </h2>
