@@ -110,9 +110,9 @@ export const adminNavigation = [
         path: "reward-bundles",
       },
       {
-        id: "reward-subscriptions",
-        label: "Subscriptions",
-        path: "reward-subscriptions",
+        id: "reward-addons",
+        label: "Reward Add-ons",
+        path: "reward-addons",
       },
     ],
   },

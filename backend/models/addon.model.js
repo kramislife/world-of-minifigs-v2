@@ -17,6 +17,10 @@ const addonSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    price: {
+      type: Number,
+      min: [0, "Price cannot be negative"],
+    },
     items: [
       {
         _id: false,
@@ -42,9 +46,8 @@ const addonSchema = new mongoose.Schema(
         },
       },
     ],
-    price: {
-      type: Number,
-      min: [0, "Price cannot be negative"],
+    features: {
+      type: [String],
     },
     isActive: {
       type: Boolean,

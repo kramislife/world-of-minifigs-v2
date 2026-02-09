@@ -29,7 +29,7 @@ import DealerAddonManagement from "@/pages/admin/dealer/DealerAddonManagement";
 import DealerExtraBagManagement from "@/pages/admin/dealer/DealerExtraBagManagement";
 import DealerTorsoBagManagement from "@/pages/admin/dealer/DealerTorsoBagManagement";
 import RewardBundleManagement from "@/pages/admin/rewards/RewardBundleManagement";
-import RewardSubscriptionManagement from "@/pages/admin/rewards/RewardSubscriptionManagement";
+import RewardAddonManagement from "@/pages/admin/rewards/RewardAddonManagement";
 import SkillLevelManagement from "@/pages/admin/SkillLevelManagement";
 import DesignerManagement from "@/pages/admin/DesignerManagement";
 import OrderManagement from "@/pages/admin/OrderManagement";
@@ -172,8 +172,8 @@ export const adminRoutes = [
         element: RewardBundleManagement,
       },
       {
-        path: "reward-subscriptions",
-        element: RewardSubscriptionManagement,
+        path: "reward-addons",
+        element: RewardAddonManagement,
       },
       {
         path: "designers",

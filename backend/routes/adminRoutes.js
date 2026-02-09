@@ -72,6 +72,16 @@ import {
   reorderTorsoBagItems,
 } from "../controllers/dealerController.js";
 import {
+  createRewardBundle,
+  getAllRewardBundles,
+  updateRewardBundle,
+  deleteRewardBundle,
+  createRewardAddon,
+  getAllRewardAddons,
+  updateRewardAddon,
+  deleteRewardAddon,
+} from "../controllers/rewardController.js";
+import {
   createSkillLevel,
   getAllSkillLevels,
   getSkillLevelById,
@@ -155,6 +165,16 @@ router.get("/dealer/torso-bags", getAllDealerTorsoBags);
 router.put("/dealer/torso-bags/:id", updateDealerTorsoBag);
 router.delete("/dealer/torso-bags/:id", deleteDealerTorsoBag);
 router.patch("/dealer/torso-bags/:id/reorder", reorderTorsoBagItems);
+
+router.post("/reward/bundles", createRewardBundle);
+router.get("/reward/bundles", getAllRewardBundles);
+router.put("/reward/bundles/:id", updateRewardBundle);
+router.delete("/reward/bundles/:id", deleteRewardBundle);
+
+router.post("/reward/addons", createRewardAddon);
+router.get("/reward/addons", getAllRewardAddons);
+router.put("/reward/addons/:id", updateRewardAddon);
+router.delete("/reward/addons/:id", deleteRewardAddon);
 
 // SkillLevel CRUD routes
 router.post("/skillLevels", createSkillLevel);

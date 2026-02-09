@@ -11,7 +11,43 @@ import {
   createPaginationResponse,
 } from "../utils/pagination.js";
 
-//  Internal Helpers
+// ==================== Helper Functions ====================
+
+const handleError = (res, error, logPrefix, customMessage) => {
+  console.error(`${logPrefix}:`, error);
+  res.status(500).json({
+    success: false,
+    message: customMessage || "Internal server error",
+    description: "An unexpected error occurred. Please try again.",
+  });
+};
+
+const validateFeatures = (features) => {
+  if (features && Array.isArray(features) && features.length > 5) {
+    return {
+      isValid: false,
+      error: {
+        status: 400,
+        message: "Too many features",
+        description: "A bundle can have a maximum of 5 features.",
+      },
+    };
+  }
+  return { isValid: true };
+};
+
+const processFeatures = (features) => {
+  // Only include features if it's a non-empty array
+  if (features && Array.isArray(features) && features.length > 0) {
+    return features;
+  }
+  return undefined;
+};
+
+// Unset features field for dealer bundles/addons (arrays are initialized as [] by Mongoose even if not provided)
+const unsetDealerFeatures = async (model, docId) => {
+  await model.findByIdAndUpdate(docId, { $unset: { features: "" } });
+};
 
 const getMinRequiredQuantity = async () => {
   const lowestBundle = await Bundle.findOne({
@@ -46,15 +82,6 @@ const validateTorsoItems = (items, minRequired) => {
   return { isValid: true };
 };
 
-const handleError = (res, error, logPrefix, customMessage) => {
-  console.error(`${logPrefix}:`, error);
-  res.status(500).json({
-    success: false,
-    message: customMessage || "Internal server error",
-    description: "An unexpected error occurred. Please try again.",
-  });
-};
-
 const cleanUpImages = async (items) => {
   if (!items || !Array.isArray(items) || items.length === 0) return;
   for (const item of items) {
@@ -64,20 +91,231 @@ const cleanUpImages = async (items) => {
   }
 };
 
-//------------------------------------------------ Create Bundle ------------------------------------------
+const findDealerBundleById = async (id) => {
+  return await Bundle.findOne({ _id: id, bundleType: "dealer" });
+};
+
+const findDealerAddonById = async (id) => {
+  return await Addon.findOne({ _id: id, addonType: "dealer" });
+};
+
+const checkBundleQuantityConflict = async (
+  minifigQuantity,
+  excludeId = null,
+) => {
+  const query = {
+    bundleType: "dealer",
+    minifigQuantity,
+  };
+  if (excludeId) {
+    query._id = { $ne: excludeId };
+  }
+  return await Bundle.findOne(query);
+};
+
+const checkAddonNameConflict = async (
+  addonName,
+  addonType,
+  excludeId = null,
+) => {
+  const query = {
+    addonName: addonName.trim(),
+    addonType,
+  };
+  if (excludeId) {
+    query._id = { $ne: excludeId };
+  }
+  return await Addon.findOne(query);
+};
+
+const checkExtraBagConflict = async (subCollectionId, excludeId = null) => {
+  const query = { subCollectionId };
+  if (excludeId) {
+    query._id = { $ne: excludeId };
+  }
+  return await DealerExtraBag.findOne(query);
+};
+
+const checkTorsoBagNameConflict = async (bagName, excludeId = null) => {
+  const query = {
+    bagName: { $regex: new RegExp(`^${bagName.trim()}$`, "i") },
+  };
+  if (excludeId) {
+    query._id = { $ne: excludeId };
+  }
+  return await DealerTorsoBag.findOne(query);
+};
+
+const getStandardPopulateOptions = () => [
+  { path: "createdBy", select: "firstName lastName username" },
+  { path: "updatedBy", select: "firstName lastName username" },
+];
+
+const processAddonItems = async (
+  items,
+  folderPath = "world-of-minifigs-v2/dealers/addons",
+) => {
+  if (!items || !Array.isArray(items) || items.length === 0) return [];
+
+  const processedItems = [];
+  for (const itemData of items) {
+    const isObject = typeof itemData === "object";
+    const imageToUpload = isObject ? itemData.image : itemData;
+
+    if (imageToUpload) {
+      const uploadResult = await uploadImage(imageToUpload, folderPath);
+      processedItems.push({
+        itemName: isObject ? itemData.itemName : undefined,
+        itemPrice: isObject ? itemData.itemPrice : undefined,
+        color: isObject ? itemData.color : undefined,
+        image: {
+          publicId: uploadResult.public_id,
+          url: uploadResult.url,
+        },
+      });
+    }
+  }
+  return processedItems;
+};
+
+const processAddonItemsForUpdate = async (
+  items,
+  existingItems,
+  folderPath = "world-of-minifigs-v2/dealers/addons",
+) => {
+  if (!items || !Array.isArray(items)) return null;
+
+  const processedItems = [];
+  const oldPublicIds = (existingItems || [])
+    .map((item) => item.image?.publicId)
+    .filter(Boolean);
+
+  for (const itemData of items) {
+    // If it has image object with publicId, it's an existing item
+    if (
+      typeof itemData === "object" &&
+      itemData.image &&
+      itemData.image.publicId
+    ) {
+      processedItems.push(itemData);
+    } else {
+      // New image/item
+      const isObject = typeof itemData === "object";
+      const imageToUpload = isObject ? itemData.image : itemData;
+
+      if (imageToUpload) {
+        const uploadResult = await uploadImage(imageToUpload, folderPath);
+        processedItems.push({
+          itemName: isObject ? itemData.itemName : undefined,
+          itemPrice: isObject ? itemData.itemPrice : undefined,
+          color: isObject ? itemData.color : undefined,
+          image: {
+            publicId: uploadResult.public_id,
+            url: uploadResult.url,
+          },
+        });
+      }
+    }
+  }
+
+  // Find images to delete
+  const newPublicIds = processedItems
+    .map((item) => item.image?.publicId)
+    .filter(Boolean);
+  const idsToDelete = oldPublicIds.filter((id) => !newPublicIds.includes(id));
+
+  // Delete removed images
+  for (const id of idsToDelete) {
+    await deleteImage(id);
+  }
+
+  return processedItems;
+};
+
+const processTorsoBagItems = async (
+  items,
+  folderPath = "world-of-minifigs-v2/dealers/torsos",
+) => {
+  const uploadedItems = [];
+  for (const item of items) {
+    const designUpload = await uploadImage(item.image, folderPath);
+    uploadedItems.push({
+      image: {
+        publicId: designUpload.public_id,
+        url: designUpload.url,
+      },
+      quantity: Number(item.quantity),
+    });
+  }
+  return uploadedItems;
+};
+
+const processTorsoBagItemsForUpdate = async (
+  items,
+  existingItems,
+  folderPath = "world-of-minifigs-v2/dealers/torsos",
+) => {
+  const processedItems = [];
+  const currentPublicIds = existingItems.map((item) => item.image.publicId);
+
+  for (const itemData of items) {
+    // If it has image object with publicId, it's an existing item
+    if (
+      typeof itemData === "object" &&
+      itemData.image &&
+      itemData.image.publicId
+    ) {
+      processedItems.push(itemData);
+    } else {
+      // New image/design
+      const imageToUpload =
+        typeof itemData.image === "string"
+          ? itemData.image
+          : itemData.image?.url;
+
+      if (imageToUpload && !imageToUpload.startsWith("http")) {
+        const uploadResult = await uploadImage(imageToUpload, folderPath);
+        processedItems.push({
+          image: {
+            publicId: uploadResult.public_id,
+            url: uploadResult.url,
+          },
+          quantity: Number(itemData.quantity),
+        });
+      }
+    }
+  }
+
+  // Find images to delete
+  const newPublicIds = processedItems.map((item) => item.image.publicId);
+  const idsToDelete = currentPublicIds.filter(
+    (id) => !newPublicIds.includes(id),
+  );
+
+  // Delete removed images
+  for (const id of idsToDelete) {
+    await deleteImage(id);
+  }
+
+  return processedItems;
+};
+
+// ==================== Create Dealer Bundle ====================
+
 export const createDealerBundle = async (req, res) => {
   try {
     const { bundleName, minifigQuantity, totalPrice, features, isActive } =
       req.body;
 
-    if (features && Array.isArray(features) && features.length > 5) {
-      return res.status(400).json({
-        success: false,
-        message: "Too many features",
-        description: "A bundle can have a maximum of 5 features.",
-      });
+    // Validate features
+    const featuresValidation = validateFeatures(features);
+    if (!featuresValidation.isValid) {
+      return res
+        .status(featuresValidation.error.status)
+        .json(featuresValidation.error);
     }
 
+    // Validate required fields
     if (!bundleName) {
       return res.status(400).json({
         success: false,
@@ -94,12 +332,8 @@ export const createDealerBundle = async (req, res) => {
       });
     }
 
-    // Check if bundle with same quantity already exists for dealers
-    const existingBundle = await Bundle.findOne({
-      bundleType: "dealer",
-      minifigQuantity,
-    });
-
+    // Check for existing bundle with same quantity
+    const existingBundle = await checkBundleQuantityConflict(minifigQuantity);
     if (existingBundle) {
       return res.status(409).json({
         success: false,
@@ -110,16 +344,28 @@ export const createDealerBundle = async (req, res) => {
 
     const unitPrice = totalPrice / minifigQuantity;
 
-    const bundle = await Bundle.create({
+    const bundleData = {
       bundleName: bundleName.trim(),
       bundleType: "dealer",
       minifigQuantity,
-      totalPrice,
       unitPrice,
-      features: features || [],
+      totalPrice,
       isActive: isActive !== undefined ? isActive : true,
       createdBy: req.user._id,
-    });
+    };
+
+    // Only include features if it's a non-empty array
+    const processedFeatures = processFeatures(features);
+    if (processedFeatures) {
+      bundleData.features = processedFeatures;
+    }
+
+    const bundle = await Bundle.create(bundleData);
+
+    // Unset features if empty
+    if (!processedFeatures) {
+      await unsetDealerFeatures(Bundle, bundle._id);
+    }
 
     return res.status(201).json({
       success: true,
@@ -132,24 +378,21 @@ export const createDealerBundle = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Get All Bundles ------------------------------------------
+// ==================== Get All Dealer Bundles ====================
+
 export const getAllDealerBundles = async (req, res) => {
   try {
     const { page, limit, search } = normalizePagination(req.query);
 
-    const searchFields = ["bundleName"];
     const searchQuery = {
       bundleType: "dealer",
-      ...buildSearchQuery(search, searchFields),
+      ...buildSearchQuery(search, ["bundleName"]),
     };
 
     const result = await paginateQuery(Bundle, searchQuery, {
       page,
       limit,
-      populate: [
-        { path: "createdBy", select: "firstName lastName username" },
-        { path: "updatedBy", select: "firstName lastName username" },
-      ],
+      populate: getStandardPopulateOptions(),
     });
 
     return res.status(200).json(createPaginationResponse(result, "bundles"));
@@ -158,23 +401,24 @@ export const getAllDealerBundles = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Update Bundle ------------------------------------------
+// ==================== Update Dealer Bundle ====================
+
 export const updateDealerBundle = async (req, res) => {
   try {
     const { id } = req.params;
     const { bundleName, minifigQuantity, totalPrice, features, isActive } =
       req.body;
 
-    if (features && Array.isArray(features) && features.length > 5) {
-      return res.status(400).json({
-        success: false,
-        message: "Too many features",
-        description: "A bundle can have a maximum of 5 features.",
-      });
+    // Validate features
+    const featuresValidation = validateFeatures(features);
+    if (!featuresValidation.isValid) {
+      return res
+        .status(featuresValidation.error.status)
+        .json(featuresValidation.error);
     }
 
-    const bundle = await Bundle.findOne({ _id: id, bundleType: "dealer" });
-
+    // Find bundle
+    const bundle = await findDealerBundleById(id);
     if (!bundle) {
       return res.status(404).json({
         success: false,
@@ -183,15 +427,12 @@ export const updateDealerBundle = async (req, res) => {
       });
     }
 
+    // Update fields
     if (bundleName) bundle.bundleName = bundleName.trim();
+
     if (minifigQuantity !== undefined) {
-      // Check for conflict if quantity changed
       if (minifigQuantity !== bundle.minifigQuantity) {
-        const conflict = await Bundle.findOne({
-          bundleType: "dealer",
-          minifigQuantity,
-          _id: { $ne: id },
-        });
+        const conflict = await checkBundleQuantityConflict(minifigQuantity, id);
         if (conflict) {
           return res.status(409).json({
             success: false,
@@ -202,8 +443,14 @@ export const updateDealerBundle = async (req, res) => {
       }
       bundle.minifigQuantity = minifigQuantity;
     }
+
     if (totalPrice !== undefined) bundle.totalPrice = totalPrice;
-    if (features !== undefined) bundle.features = features;
+    
+    if (features !== undefined) {
+      const processedFeatures = processFeatures(features);
+      bundle.features = processedFeatures;
+    }
+    
     if (isActive !== undefined) bundle.isActive = isActive;
 
     // Recalculate unit price
@@ -211,6 +458,11 @@ export const updateDealerBundle = async (req, res) => {
     bundle.updatedBy = req.user._id;
 
     await bundle.save();
+    
+    // Unset features if empty (Mongoose initializes arrays as [] even if not provided)
+    if (features !== undefined && !processFeatures(features)) {
+      await unsetDealerFeatures(Bundle, bundle._id);
+    }
 
     return res.status(200).json({
       success: true,
@@ -223,7 +475,8 @@ export const updateDealerBundle = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Delete Bundle ------------------------------------------
+// ==================== Delete Dealer Bundle ====================
+
 export const deleteDealerBundle = async (req, res) => {
   try {
     const { id } = req.params;
@@ -250,11 +503,13 @@ export const deleteDealerBundle = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Create Addon ------------------------------------------
+// ==================== Create Dealer Addon ====================
+
 export const createDealerAddon = async (req, res) => {
   try {
     const { addonName, price, description, items, isActive } = req.body;
 
+    // Validate required fields
     if (!addonName) {
       return res.status(400).json({
         success: false,
@@ -263,12 +518,8 @@ export const createDealerAddon = async (req, res) => {
       });
     }
 
-    // Check uniqueness
-    const existingAddon = await Addon.findOne({
-      addonName: addonName.trim(),
-      addonType: "dealer",
-    });
-
+    // Check for existing addon with same name
+    const existingAddon = await checkAddonNameConflict(addonName, "dealer");
     if (existingAddon) {
       return res.status(409).json({
         success: false,
@@ -277,29 +528,8 @@ export const createDealerAddon = async (req, res) => {
       });
     }
 
-    let uploadedItems = [];
-    if (items && Array.isArray(items) && items.length > 0) {
-      for (const itemData of items) {
-        const isObject = typeof itemData === "object";
-        const imageToUpload = isObject ? itemData.image : itemData;
-
-        if (imageToUpload) {
-          const uploadResult = await uploadImage(
-            imageToUpload,
-            "world-of-minifigs-v2/dealers/addons",
-          );
-          uploadedItems.push({
-            itemName: isObject ? itemData.itemName : undefined,
-            itemPrice: isObject ? itemData.itemPrice : undefined,
-            color: isObject ? itemData.color : undefined,
-            image: {
-              publicId: uploadResult.public_id,
-              url: uploadResult.url,
-            },
-          });
-        }
-      }
-    }
+    // Process and upload items
+    const uploadedItems = await processAddonItems(items);
 
     const addon = await Addon.create({
       addonName: addonName.trim(),
@@ -310,6 +540,9 @@ export const createDealerAddon = async (req, res) => {
       isActive: isActive !== undefined ? isActive : true,
       createdBy: req.user._id,
     });
+
+    // Unset features field
+    await unsetDealerFeatures(Addon, addon._id);
 
     return res.status(201).json({
       success: true,
@@ -322,24 +555,21 @@ export const createDealerAddon = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Get All Addons ------------------------------------------
+// ==================== Get All Dealer Addons ====================
+
 export const getAllDealerAddons = async (req, res) => {
   try {
     const { page, limit, search } = normalizePagination(req.query);
 
-    const searchFields = ["addonName", "description"];
     const searchQuery = {
       addonType: "dealer",
-      ...buildSearchQuery(search, searchFields),
+      ...buildSearchQuery(search, ["addonName", "description"]),
     };
 
     const result = await paginateQuery(Addon, searchQuery, {
       page,
       limit,
-      populate: [
-        { path: "createdBy", select: "firstName lastName username" },
-        { path: "updatedBy", select: "firstName lastName username" },
-      ],
+      populate: getStandardPopulateOptions(),
     });
 
     return res.status(200).json(createPaginationResponse(result, "addons"));
@@ -348,14 +578,15 @@ export const getAllDealerAddons = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Update Addon ------------------------------------------
+// ==================== Update Dealer Addon ====================
+
 export const updateDealerAddon = async (req, res) => {
   try {
     const { id } = req.params;
     const { addonName, price, description, items, isActive } = req.body;
 
-    const addon = await Addon.findOne({ _id: id, addonType: "dealer" });
-
+    // Find addon
+    const addon = await findDealerAddonById(id);
     if (!addon) {
       return res.status(404).json({
         success: false,
@@ -364,14 +595,15 @@ export const updateDealerAddon = async (req, res) => {
       });
     }
 
+    // Update fields
     if (addonName) {
       const addonNameTrimmed = addonName.trim();
       if (addonNameTrimmed !== addon.addonName) {
-        const conflict = await Addon.findOne({
-          addonName: addonNameTrimmed,
-          addonType: "dealer",
-          _id: { $ne: id },
-        });
+        const conflict = await checkAddonNameConflict(
+          addonNameTrimmed,
+          "dealer",
+          id,
+        );
         if (conflict) {
           return res.status(409).json({
             success: false,
@@ -387,61 +619,22 @@ export const updateDealerAddon = async (req, res) => {
     if (description !== undefined) addon.description = description;
     if (isActive !== undefined) addon.isActive = isActive;
 
+    // Process items if provided
     if (items && Array.isArray(items)) {
-      const processedItems = [];
-
-      for (const itemData of items) {
-        // If it has image object with publicId, it's an existing item
-        if (
-          typeof itemData === "object" &&
-          itemData.image &&
-          itemData.image.publicId
-        ) {
-          processedItems.push(itemData);
-        } else {
-          // New image/item
-          const isObject = typeof itemData === "object";
-          const imageToUpload = isObject ? itemData.image : itemData;
-
-          if (imageToUpload) {
-            const uploadResult = await uploadImage(
-              imageToUpload,
-              "world-of-minifigs-v2/dealers/addons",
-            );
-            processedItems.push({
-              itemName: isObject ? itemData.itemName : undefined,
-              itemPrice: isObject ? itemData.itemPrice : undefined,
-              color: isObject ? itemData.color : undefined,
-              image: {
-                publicId: uploadResult.public_id,
-                url: uploadResult.url,
-              },
-            });
-          }
-        }
-      }
-
-      // Find images to delete
-      const oldPublicIds = (addon.items || [])
-        .map((item) => item.image?.publicId)
-        .filter(Boolean);
-      const newPublicIds = processedItems
-        .map((item) => item.image?.publicId)
-        .filter(Boolean);
-
-      const idsToDelete = oldPublicIds.filter(
-        (id) => !newPublicIds.includes(id),
+      const processedItems = await processAddonItemsForUpdate(
+        items,
+        addon.items,
       );
-
-      for (const id of idsToDelete) {
-        await deleteImage(id);
+      if (processedItems !== null) {
+        addon.items = processedItems;
       }
-
-      addon.items = processedItems;
     }
 
     addon.updatedBy = req.user._id;
     await addon.save();
+
+    // Unset features field
+    await unsetDealerFeatures(Addon, addon._id);
 
     return res.status(200).json({
       success: true,
@@ -454,11 +647,12 @@ export const updateDealerAddon = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Delete Addon ------------------------------------------
+// ==================== Delete Dealer Addon ====================
+
 export const deleteDealerAddon = async (req, res) => {
   try {
     const { id } = req.params;
-    const addon = await Addon.findOne({ _id: id, addonType: "dealer" });
+    const addon = await findDealerAddonById(id);
 
     if (!addon) {
       return res.status(404).json({
@@ -483,11 +677,13 @@ export const deleteDealerAddon = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Create Extra Bag ------------------------------------------
+// ==================== Create Dealer Extra Bag ====================
+
 export const createDealerExtraBag = async (req, res) => {
   try {
     const { subCollectionId, price, isActive } = req.body;
 
+    // Validate required fields
     if (!subCollectionId) {
       return res.status(400).json({
         success: false,
@@ -496,8 +692,8 @@ export const createDealerExtraBag = async (req, res) => {
       });
     }
 
-    // Check uniqueness per sub-collection
-    const existing = await DealerExtraBag.findOne({ subCollectionId });
+    // Check for existing extra bag with same sub-collection
+    const existing = await checkExtraBagConflict(subCollectionId);
     if (existing) {
       return res.status(409).json({
         success: false,
@@ -529,7 +725,8 @@ export const createDealerExtraBag = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Get All Extra Bags ------------------------------------------
+// ==================== Get All Dealer Extra Bags ====================
+
 export const getAllDealerExtraBags = async (req, res) => {
   try {
     const { page, limit, search } = normalizePagination(req.query);
@@ -551,8 +748,7 @@ export const getAllDealerExtraBags = async (req, res) => {
       limit,
       populate: [
         { path: "subCollectionId", select: "subCollectionName" },
-        { path: "createdBy", select: "firstName lastName username" },
-        { path: "updatedBy", select: "firstName lastName username" },
+        ...getStandardPopulateOptions(),
       ],
     });
 
@@ -567,7 +763,8 @@ export const getAllDealerExtraBags = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Update Extra Bag ------------------------------------------
+// ==================== Update Dealer Extra Bag ====================
+
 export const updateDealerExtraBag = async (req, res) => {
   try {
     const { id } = req.params;
@@ -583,12 +780,10 @@ export const updateDealerExtraBag = async (req, res) => {
       });
     }
 
+    // Update fields
     if (subCollectionId) {
       if (subCollectionId !== extraBag.subCollectionId.toString()) {
-        const conflict = await DealerExtraBag.findOne({
-          subCollectionId,
-          _id: { $ne: id },
-        });
+        const conflict = await checkExtraBagConflict(subCollectionId, id);
         if (conflict) {
           return res.status(409).json({
             success: false,
@@ -623,7 +818,8 @@ export const updateDealerExtraBag = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Delete Extra Bag ------------------------------------------
+// ==================== Delete Dealer Extra Bag ====================
+
 export const deleteDealerExtraBag = async (req, res) => {
   try {
     const { id } = req.params;
@@ -652,11 +848,13 @@ export const deleteDealerExtraBag = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Create Torso Bag ------------------------------------------
+// ==================== Create Dealer Torso Bag ====================
+
 export const createDealerTorsoBag = async (req, res) => {
   try {
     const { bagName, items, isActive } = req.body;
 
+    // Validate required fields
     if (!bagName) {
       return res.status(400).json({
         success: false,
@@ -673,7 +871,7 @@ export const createDealerTorsoBag = async (req, res) => {
       });
     }
 
-    // 1. Get required quantity and validate items
+    // Get required quantity and validate items
     const minRequired = await getMinRequiredQuantity();
     const validation = validateTorsoItems(items, minRequired);
 
@@ -685,9 +883,8 @@ export const createDealerTorsoBag = async (req, res) => {
       });
     }
 
-    const existing = await DealerTorsoBag.findOne({
-      bagName: { $regex: new RegExp(`^${bagName.trim()}$`, "i") },
-    });
+    // Check for existing bag with same name
+    const existing = await checkTorsoBagNameConflict(bagName);
     if (existing) {
       return res.status(409).json({
         success: false,
@@ -696,21 +893,8 @@ export const createDealerTorsoBag = async (req, res) => {
       });
     }
 
-    // Upload Items
-    const uploadedItems = [];
-    for (const item of items) {
-      const designUpload = await uploadImage(
-        item.image,
-        "world-of-minifigs-v2/dealers/torsos",
-      );
-      uploadedItems.push({
-        image: {
-          publicId: designUpload.public_id,
-          url: designUpload.url,
-        },
-        quantity: Number(item.quantity),
-      });
-    }
+    // Process and upload items
+    const uploadedItems = await processTorsoBagItems(items);
 
     const torsoBag = await DealerTorsoBag.create({
       bagName: bagName.trim(),
@@ -736,21 +920,18 @@ export const createDealerTorsoBag = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Get All Torso Bags ------------------------------------------
+// ==================== Get All Dealer Torso Bags ====================
+
 export const getAllDealerTorsoBags = async (req, res) => {
   try {
     const { page, limit, search } = normalizePagination(req.query);
 
-    const searchFields = ["bagName"];
-    const searchQuery = buildSearchQuery(search, searchFields);
+    const searchQuery = buildSearchQuery(search, ["bagName"]);
 
     const result = await paginateQuery(DealerTorsoBag, searchQuery, {
       page,
       limit,
-      populate: [
-        { path: "createdBy", select: "firstName lastName username" },
-        { path: "updatedBy", select: "firstName lastName username" },
-      ],
+      populate: getStandardPopulateOptions(),
     });
 
     return res.status(200).json(createPaginationResponse(result, "bags"));
@@ -764,7 +945,8 @@ export const getAllDealerTorsoBags = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Update Torso Bag ------------------------------------------
+// ==================== Update Dealer Torso Bag ====================
+
 export const updateDealerTorsoBag = async (req, res) => {
   try {
     const { id } = req.params;
@@ -780,13 +962,11 @@ export const updateDealerTorsoBag = async (req, res) => {
       });
     }
 
+    // Update fields
     if (bagName) {
       const bagNameTrimmed = bagName.trim();
       if (bagNameTrimmed.toLowerCase() !== torsoBag.bagName.toLowerCase()) {
-        const conflict = await DealerTorsoBag.findOne({
-          bagName: { $regex: new RegExp(`^${bagNameTrimmed}$`, "i") },
-          _id: { $ne: id },
-        });
+        const conflict = await checkTorsoBagNameConflict(bagNameTrimmed, id);
         if (conflict) {
           return res.status(409).json({
             success: false,
@@ -800,8 +980,9 @@ export const updateDealerTorsoBag = async (req, res) => {
 
     if (isActive !== undefined) torsoBag.isActive = isActive;
 
+    // Process items if provided
     if (items && Array.isArray(items)) {
-      // 1. Get required quantity and validate items
+      // Get required quantity and validate items
       const minRequired = await getMinRequiredQuantity();
       const validation = validateTorsoItems(items, minRequired);
 
@@ -813,51 +994,10 @@ export const updateDealerTorsoBag = async (req, res) => {
         });
       }
 
-      const processedItems = [];
-      const currentPublicIds = torsoBag.items.map(
-        (item) => item.image.publicId,
+      const processedItems = await processTorsoBagItemsForUpdate(
+        items,
+        torsoBag.items,
       );
-
-      for (const itemData of items) {
-        // If it has image object with publicId, it's an existing item
-        if (
-          typeof itemData === "object" &&
-          itemData.image &&
-          itemData.image.publicId
-        ) {
-          processedItems.push(itemData);
-        } else {
-          // New image/design
-          const imageToUpload =
-            typeof itemData.image === "string"
-              ? itemData.image
-              : itemData.image?.url;
-
-          if (imageToUpload && !imageToUpload.startsWith("http")) {
-            const uploadResult = await uploadImage(
-              imageToUpload,
-              "world-of-minifigs-v2/dealers/torsos",
-            );
-            processedItems.push({
-              image: {
-                publicId: uploadResult.public_id,
-                url: uploadResult.url,
-              },
-              quantity: Number(itemData.quantity),
-            });
-          }
-        }
-      }
-
-      // Find images to delete
-      const newPublicIds = processedItems.map((item) => item.image.publicId);
-      const idsToDelete = currentPublicIds.filter(
-        (id) => !newPublicIds.includes(id),
-      );
-
-      for (const id of idsToDelete) {
-        await deleteImage(id);
-      }
 
       torsoBag.items = processedItems;
       torsoBag.minQuantity = minRequired;
@@ -882,7 +1022,8 @@ export const updateDealerTorsoBag = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Delete Torso Bag ------------------------------------------
+// ==================== Delete Dealer Torso Bag ====================
+
 export const deleteDealerTorsoBag = async (req, res) => {
   try {
     const { id } = req.params;
@@ -916,11 +1057,12 @@ export const deleteDealerTorsoBag = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Reorder Torso Bag Items ------------------------------------------
+// ==================== Reorder Dealer Torso Bag Items ====================
+
 export const reorderTorsoBagItems = async (req, res) => {
   try {
     const { id } = req.params;
-    const { itemOrder } = req.body; // Array of item indices in the new order
+    const { itemOrder } = req.body;
 
     if (!itemOrder || !Array.isArray(itemOrder)) {
       return res.status(400).json({
@@ -952,7 +1094,6 @@ export const reorderTorsoBagItems = async (req, res) => {
     // Reorder items based on the provided indices
     const reorderedItems = itemOrder.map((index) => torsoBag.items[index]);
 
-    // Update the torso bag with reordered items
     torsoBag.items = reorderedItems;
     await torsoBag.save();
 
@@ -972,7 +1113,7 @@ export const reorderTorsoBagItems = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Get Dealer Bundles (Dealer Access) ------------------------------------------
+// ==================== Dealer Access (Public Endpoints) ====================
 
 export const getDealerBundlesForUser = async (req, res) => {
   try {
@@ -992,10 +1133,9 @@ export const getDealerBundlesForUser = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Get Dealer Addons (Dealer Access) ------------------------------------------
 export const getDealerAddonsForUser = async (req, res) => {
   try {
-    const addons = await Addon.find({ isActive: true })
+    const addons = await Addon.find({ addonType: "dealer", isActive: true })
       .select("-createdBy -updatedBy -isActive -__v")
       .populate("items.color", "colorName colorType hexCode")
       .sort({ createdAt: 1 });
@@ -1009,7 +1149,6 @@ export const getDealerAddonsForUser = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Get Dealer Extra Bags (Dealer Access) ------------------------------------------
 export const getDealerExtraBagsForUser = async (req, res) => {
   try {
     const extraBags = await DealerExtraBag.find({ isActive: true })
@@ -1031,7 +1170,6 @@ export const getDealerExtraBagsForUser = async (req, res) => {
   }
 };
 
-//------------------------------------------------ Get Dealer Torso Bags (Dealer Access) ------------------------------------------
 export const getDealerTorsoBagsForUser = async (req, res) => {
   try {
     const torsoBags = await DealerTorsoBag.find({ isActive: true })

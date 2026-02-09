@@ -18,14 +18,14 @@ const bundleSchema = new mongoose.Schema(
       required: true,
       min: [1, "Quantity must be at least 1"],
     },
+    unitPrice: {
+      type: Number,
+      min: [0, "Unit price cannot be negative"],
+    },
     totalPrice: {
       type: Number,
       required: true,
       min: [0, "Total price cannot be negative"],
-    },
-    unitPrice: {
-      type: Number,
-      min: [0, "Unit price cannot be negative"],
     },
     features: {
       type: [String],

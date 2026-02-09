@@ -48,6 +48,8 @@ export const adminApi = createApi({
     "DealerAddon",
     "DealerExtraBag",
     "DealerTorsoBag",
+    "RewardBundle",
+    "RewardAddon",
   ],
   endpoints: (builder) => ({
     // ==================== Banner Management ====================
@@ -547,6 +549,74 @@ export const adminApi = createApi({
       invalidatesTags: ["DealerTorsoBag"],
     }),
 
+    // ==================== Reward Program Management ====================
+
+    // --- Reward Bundles ---
+    getRewardBundles: builder.query({
+      query: (params = {}) => ({
+        url: "/reward/bundles",
+        method: "GET",
+        params: buildPaginationParams(params),
+      }),
+      providesTags: ["RewardBundle"],
+    }),
+    createRewardBundle: builder.mutation({
+      query: (data) => ({
+        url: "/reward/bundles",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["RewardBundle"],
+    }),
+    updateRewardBundle: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/reward/bundles/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["RewardBundle"],
+    }),
+    deleteRewardBundle: builder.mutation({
+      query: (id) => ({
+        url: `/reward/bundles/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["RewardBundle"],
+    }),
+
+    // --- Reward Addons ---
+    getRewardAddons: builder.query({
+      query: (params = {}) => ({
+        url: "/reward/addons",
+        method: "GET",
+        params: buildPaginationParams(params),
+      }),
+      providesTags: ["RewardAddon"],
+    }),
+    createRewardAddon: builder.mutation({
+      query: (data) => ({
+        url: "/reward/addons",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["RewardAddon"],
+    }),
+    updateRewardAddon: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/reward/addons/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["RewardAddon"],
+    }),
+    deleteRewardAddon: builder.mutation({
+      query: (id) => ({
+        url: `/reward/addons/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["RewardAddon"],
+    }),
+
     // ==================== SkillLevel Management ====================
     // Get all skillLevels
     getSkillLevels: builder.query({
@@ -682,6 +752,15 @@ export const {
   useUpdateDealerTorsoBagMutation,
   useDeleteDealerTorsoBagMutation,
   useReorderTorsoBagItemsMutation,
+
+  useGetRewardBundlesQuery,
+  useCreateRewardBundleMutation,
+  useUpdateRewardBundleMutation,
+  useDeleteRewardBundleMutation,
+  useGetRewardAddonsQuery,
+  useCreateRewardAddonMutation,
+  useUpdateRewardAddonMutation,
+  useDeleteRewardAddonMutation,
 
   useGetSkillLevelsQuery,
   useGetSkillLevelByIdQuery,
