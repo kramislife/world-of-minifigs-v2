@@ -213,8 +213,7 @@ export const useDealer = () => {
     return (
       (selectedBundle?.totalPrice || 0) +
       (selectedAddonData?.price || 0) +
-      extraBagsCost +
-      10 // Flat rate shipping
+      extraBagsCost
     );
   }, [selectedBundle, selectedAddonData, extraBagsCost]);
 

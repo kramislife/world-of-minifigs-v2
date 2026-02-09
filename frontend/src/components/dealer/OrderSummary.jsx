@@ -90,15 +90,6 @@ const OrderSummary = ({
           </div>
         )}
 
-        <div className="space-y-3 pb-3 border-b border-dashed">
-          <div className="flex justify-between items-start">
-            <p className="text-sm font-bold">Flat Rate Shipping</p>
-            <span className="text-sm font-bold text-primary dark:text-accent">
-              $10.00
-            </span>
-          </div>
-        </div>
-
         <div className="flex items-center justify-between">
           <span className="text-lg font-bold uppercase">Estimated Total</span>
           <div className="text-right">

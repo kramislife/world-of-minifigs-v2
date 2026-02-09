@@ -521,3 +521,18 @@ export const getRewardBundlesForUser = async (req, res) => {
     handleError(res, error, "Get reward bundles", "Failed to fetch bundles");
   }
 };
+
+export const getRewardAddonsForUser = async (req, res) => {
+  try {
+    const addons = await RewardAddon.find({ isActive: true })
+      .select("-createdBy -updatedBy -isActive -__v")
+      .sort({ duration: 1, quantity: 1 });
+
+    return res.status(200).json({
+      success: true,
+      addons,
+    });
+  } catch (error) {
+    handleError(res, error, "Get reward addons", "Failed to fetch addons");
+  }
+};
