@@ -89,18 +89,9 @@ export const publicRoutes = [
 
 // Private routes (non-admin)
 export const privateRoutes = [
-  {
-    path: "/purchase",
-    element: Purchase,
-  },
-  {
-    path: "/profile",
-    element: Profile,
-  },
-  {
-    path: "/settings",
-    element: Settings,
-  },
+  { path: "/purchase", element: Purchase },
+  { path: "/profile", element: Profile },
+  { path: "/settings", element: Settings },
   {
     path: "/dealers",
     element: Dealer,

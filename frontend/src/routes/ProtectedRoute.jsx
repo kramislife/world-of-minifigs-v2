@@ -1,9 +1,14 @@
 import React from "react";
-import { Navigate } from "react-router-dom";
-import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import { useSelector } from "react-redux";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import NotFound from "@/components/layout/NotFound";
 
-const ProtectedRoute = ({ children, requiredRole, requiredRoles }) => {
+const ProtectedRoute = ({
+  children,
+  requiredRole,
+  requiredRoles,
+  UnauthorizedComponent = NotFound,
+}) => {
   const { isAuthenticated, user, isLoading } = useSelector(
     (state) => state.auth,
   );
@@ -13,9 +18,11 @@ const ProtectedRoute = ({ children, requiredRole, requiredRoles }) => {
     return <LoadingSpinner minHeight="min-h-screen" />;
   }
 
+  const renderUnauthorized = () => <UnauthorizedComponent />;
+
   // Check if authentication is required
   if (!isAuthenticated || !user) {
-    return <Navigate to="/" replace />;
+    return renderUnauthorized();
   }
 
   // Check if specific role(s) is required
@@ -28,8 +35,7 @@ const ProtectedRoute = ({ children, requiredRole, requiredRoles }) => {
 
     // Strict check: role must exist, be a string, and match one of the required roles
     if (!userRole || typeof userRole !== "string") {
-      // Invalid or missing role - redirect to home
-      return <Navigate to="/" replace />;
+      return renderUnauthorized();
     }
 
     // Check if user role is in the allowed roles list (case-sensitive)
@@ -39,8 +45,7 @@ const ProtectedRoute = ({ children, requiredRole, requiredRoles }) => {
     );
 
     if (!normalizedRequiredRoles.includes(normalizedUserRole)) {
-      // User role doesn't match required roles - redirect to home
-      return <Navigate to="/" replace />;
+      return renderUnauthorized();
     }
   }
 

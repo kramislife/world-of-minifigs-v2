@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 const NotFound = () => {
   return (
-    <div className="flex flex-col items-center justify-center text-center py-10">
+    <div className="flex flex-col items-center justify-center text-center min-h-screen">
       <h1 className="text-6xl font-bold">404</h1>
       <h2 className="text-2xl font-semibold mb-5">Page Not Found</h2>
       <p className="text-muted-foreground mb-5">
