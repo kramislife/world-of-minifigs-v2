@@ -179,29 +179,53 @@ const useDealerTorsoBagManagement = () => {
   };
 
   const handleUpdateItemQuantity = (index, value) => {
-    let cleaned = value.toString().replace(/[^0-9]/g, "");
-    if (cleaned === "0") cleaned = "";
+    const cleaned = value.toString().replace(/[^0-9]/g, "");
 
-    // If typing a new number, validate it doesn't exceed the allocation limit
-    if (cleaned !== "") {
-      const newValue = parseInt(cleaned.slice(-1));
+    // Empty input (user clearing) - allow temporarily, will use 1 on submit
+    if (cleaned === "") {
+      const updateMap = (items) =>
+        items.map((item, i) =>
+          i === index ? { ...item, quantity: "" } : item,
+        );
+      setItemPreviews((prev) => updateMap(prev));
+      setFormData((prev) => ({
+        ...prev,
+        items: updateMap(prev.items),
+      }));
+      return;
+    }
 
-      const otherItemsTotal = formData.items.reduce(
-        (acc, item, i) =>
-          i === index ? acc : acc + (Number(item.quantity) || 1),
-        0,
-      );
+    const newValue = parseInt(cleaned, 10);
 
-      if (otherItemsTotal + newValue > minRequired) {
-        toast.error("Allocation limit reached");
-        return;
-      }
-      cleaned = newValue;
+    // Per-item limit: quantity must be 1–4
+    if (newValue > 4) {
+      toast.error("Quantity must be 1–4", {
+        description: "Each design can have a maximum of 4 quantity.",
+      });
+      return;
+    }
+
+    if (newValue < 1) {
+      return;
+    }
+
+    // Total allocation check: sum of all items must not exceed minRequired
+    const otherItemsTotal = formData.items.reduce(
+      (acc, item, i) =>
+        i === index ? acc : acc + (Number(item.quantity) || 1),
+      0,
+    );
+
+    if (otherItemsTotal + newValue > minRequired) {
+      toast.error("Allocation limit reached", {
+        description: `Total quantity cannot exceed ${minRequired}.`,
+      });
+      return;
     }
 
     const updateMap = (items) =>
       items.map((item, i) =>
-        i === index ? { ...item, quantity: cleaned } : item,
+        i === index ? { ...item, quantity: newValue } : item,
       );
 
     setItemPreviews((prev) => updateMap(prev));
@@ -230,6 +254,18 @@ const useDealerTorsoBagManagement = () => {
     if (formData.items.length === 0) {
       toast.error("Items are required", {
         description: "Please add at least one torso design.",
+      });
+      return;
+    }
+
+    // Validate each item quantity is 1–4
+    const invalidQuantity = formData.items.find((item) => {
+      const qty = Number(item.quantity) || 1;
+      return qty < 1 || qty > 4;
+    });
+    if (invalidQuantity) {
+      toast.error("Invalid quantity", {
+        description: "Each design must have a quantity between 1 and 4.",
       });
       return;
     }
