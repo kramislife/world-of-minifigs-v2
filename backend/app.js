@@ -7,7 +7,6 @@ import helmet from "helmet";
 import path from "path";
 import { fileURLToPath } from "url";
 import authRoutes from "./routes/authRoutes.js";
-import userRoutes from "./routes/userRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import publicRoutes from "./routes/publicRoutes.js";
 
@@ -115,7 +114,6 @@ app.get("/health", (_req, res) => {
 
 // API Routes
 app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/public", publicRoutes);
 

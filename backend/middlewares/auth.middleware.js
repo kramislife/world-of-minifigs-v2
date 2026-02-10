@@ -101,7 +101,7 @@ export const authenticate = async (req, res, next) => {
           Number(process.env.JWT_ACCESS_TOKEN_EXPIRY) || 1;
         const newRefreshTokenExpiry = new Date();
         newRefreshTokenExpiry.setDate(
-          newRefreshTokenExpiry.getDate() + refreshTokenDays
+          newRefreshTokenExpiry.getDate() + refreshTokenDays,
         );
 
         userWithRefresh.refreshToken = newRefreshToken;
@@ -113,7 +113,7 @@ export const authenticate = async (req, res, next) => {
           newAccessToken,
           newRefreshToken,
           accessTokenDays,
-          refreshTokenDays
+          refreshTokenDays,
         );
 
         // Use the new decoded token
@@ -130,7 +130,7 @@ export const authenticate = async (req, res, next) => {
 
     // Find user (include refreshTokenExpiry to check expiry, exclude password and refreshToken value)
     const user = await User.findById(decoded.userId).select(
-      "-password -refreshToken"
+      "-password -refreshToken",
     );
 
     if (!user) {
@@ -145,7 +145,7 @@ export const authenticate = async (req, res, next) => {
     // Check if refresh token has expired (even if access token is still valid)
     // Fetch refreshTokenExpiry separately to check expiry
     const userForExpiryCheck = await User.findById(decoded.userId).select(
-      "refreshToken refreshTokenExpiry"
+      "refreshToken refreshTokenExpiry",
     );
 
     // If refreshTokenExpiry exists and is expired, or if refreshToken exists but expiry is missing/expired
@@ -243,6 +243,9 @@ export const requireRole = (...roles) => {
 //  authorize admin users only
 export const authorizeAdmin = requireRole("admin");
 
+// authorize admin or dealer users
+export const authorizeAdminOrDealer = requireRole("admin", "dealer");
+
 // Optional authentication - attaches user if token is valid, but doesn't require it
 // Useful for routes that work for both authenticated and unauthenticated users
 export const optionalAuth = async (req, res, next) => {
@@ -261,7 +264,7 @@ export const optionalAuth = async (req, res, next) => {
       try {
         const decoded = verifyAccessToken(token);
         const user = await User.findById(decoded.userId).select(
-          "-password -refreshToken"
+          "-password -refreshToken",
         );
 
         if (user && user.isActive) {

@@ -2,7 +2,7 @@ import { Facebook, Instagram, Mail } from "lucide-react";
 import { APP_EMAIL, APP_SOCIAL_LINKS } from "@/constant/appConfig";
 
 export const contactHero = {
-  title: "Get in Touch",
+  title: "Get in",
   highlight: "Touch",
   description:
     "World of Minifigs Team is always open to your suggestions, concerns, and business ideas. Feel free to reach out and we'll surely respond within 24 hours!",

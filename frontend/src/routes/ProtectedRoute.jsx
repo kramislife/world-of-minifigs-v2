@@ -1,15 +1,16 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import { useSelector } from "react-redux";
 
 const ProtectedRoute = ({ children, requiredRole, requiredRoles }) => {
   const { isAuthenticated, user, isLoading } = useSelector(
-    (state) => state.auth
+    (state) => state.auth,
   );
 
   // Wait for auth initialization to complete before checking
   if (isLoading) {
-    return null;
+    return <LoadingSpinner minHeight="min-h-screen" />;
   }
 
   // Check if authentication is required
@@ -34,7 +35,7 @@ const ProtectedRoute = ({ children, requiredRole, requiredRoles }) => {
     // Check if user role is in the allowed roles list (case-sensitive)
     const normalizedUserRole = userRole.toLowerCase().trim();
     const normalizedRequiredRoles = rolesToCheck.map((role) =>
-      typeof role === "string" ? role.toLowerCase().trim() : ""
+      typeof role === "string" ? role.toLowerCase().trim() : "",
     );
 
     if (!normalizedRequiredRoles.includes(normalizedUserRole)) {

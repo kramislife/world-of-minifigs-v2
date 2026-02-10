@@ -7,6 +7,8 @@ import {
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import ErrorState from "@/components/shared/ErrorState";
 import { useBanner } from "@/hooks/useBanner";
 
 const Banner = () => {
@@ -22,9 +24,28 @@ const Banner = () => {
     item: itemVariants,
   } = useBanner();
 
-  if (isLoading || isError) return null;
+  if (isLoading) {
+    return <LoadingSpinner minHeight="aspect-16/7" />;
+  }
 
-  if (!hasBanners) return <div className="h-20" />;
+  if (isError) {
+    return (
+      <ErrorState
+        title="Unable to load banner"
+        description="We're having trouble displaying the banner. Please refresh the page or check back later."
+        minHeight="aspect-16/7"
+      />
+    );
+  }
+
+  if (!hasBanners)
+    return (
+      <ErrorState
+        title="No banners available"
+        description="There are no banners to display at this time. Please check back soon!"
+        minHeight="aspect-16/7"
+      />
+    );
 
   return (
     <section className="relative w-full overflow-hidden">
@@ -92,7 +113,7 @@ const Banner = () => {
                   {/* Content */}
                   <div
                     className={
-                      "relative z-10 flex h-full w-full px-5 py-10 sm:px-10 sm:py-20 " +
+                      "relative z-10 flex h-full w-full px-5 py-12 sm:px-10 " +
                       banner.alignmentClasses +
                       " " +
                       textClass
@@ -102,7 +123,7 @@ const Banner = () => {
                       variants={containerVariants}
                       initial="hidden"
                       animate={selectedIndex === index ? "visible" : "hidden"}
-                      className="max-w-3xl space-y-2"
+                      className="max-w-3xl space-y-3"
                     >
                       {banner.badge && (
                         <motion.p
@@ -116,7 +137,7 @@ const Banner = () => {
                       {banner.label && (
                         <motion.h1
                           variants={itemVariants}
-                          className="text-4xl sm:text-5xl md:text-6xl font-black uppercase leading-tight"
+                          className="text-4xl sm:text-5xl md:text-6xl font-extrabold uppercase"
                         >
                           {banner.label}
                         </motion.h1>
@@ -126,7 +147,7 @@ const Banner = () => {
                         <motion.p
                           variants={itemVariants}
                           className={
-                            "text-sm" +
+                            "text-sm sm:text-lg" +
                             (banner.textTheme === "dark"
                               ? " text-foreground dark:text-secondary-foreground"
                               : " text-background dark:text-foreground")
@@ -153,15 +174,15 @@ const Banner = () => {
                             {banner.buttons.map((btn, index) => {
                               const btnVariant =
                                 btn.variant === "outline"
-                                  ? "banner-outline"
-                                  : "banner-default";
+                                  ? "bannerOutline"
+                                  : "bannerDefault";
 
                               return (
                                 <Button
                                   key={index}
                                   asChild
                                   variant={btnVariant}
-                                  className="uppercase text-xs h-12 rounded-none "
+                                  className="h-12"
                                 >
                                   <Link to={btn.href || "#"}>{btn.label}</Link>
                                 </Button>

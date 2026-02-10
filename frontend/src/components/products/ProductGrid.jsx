@@ -1,5 +1,6 @@
 import React from "react";
 import { Label } from "@/components/ui/label";
+import ErrorState from "@/components/shared/ErrorState";
 import ProductCard from "./ProductCard";
 import ProductPagination from "./ProductPagination";
 import ProductSort from "./ProductSort";
@@ -13,10 +14,8 @@ const ProductGrid = ({
   pageNumbers,
   hasProducts,
   showPagination,
-  showEmptyState,
   isFirstPage,
   isLastPage,
-  isLoading,
   onSortChange,
   onPreviousPage,
   onNextPage,
@@ -29,8 +28,7 @@ const ProductGrid = ({
       {/* Top Bar: Product Count & Sort */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
         <Label className={hideProductCountOnMobile ? "hidden lg:block" : ""}>
-          Showing {isLoading ? 0 : products.length} of{" "}
-          {isLoading ? 0 : totalItems} products
+          Showing {products.length} of {totalItems} products
         </Label>
         <div
           className={
@@ -46,26 +44,18 @@ const ProductGrid = ({
       </div>
 
       {/* Product Grid */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <p className="text-sm text-muted-foreground">Loading products...</p>
-        </div>
-      ) : hasProducts ? (
+      {hasProducts ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {products.map((product) => (
             <ProductCard key={product._id} product={product} />
           ))}
         </div>
-      ) : showEmptyState ? (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-          <p className="text-lg font-medium text-muted-foreground mb-2">
-            No products found
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Try adjusting your filters to see more results.
-          </p>
-        </div>
-      ) : null}
+      ) : (
+        <ErrorState
+          title="No products found"
+          description="Try adjusting your filters to see more results."
+        />
+      )}
 
       {/* Pagination */}
       {showPagination && (

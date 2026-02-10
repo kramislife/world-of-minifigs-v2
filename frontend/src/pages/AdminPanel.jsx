@@ -30,38 +30,31 @@ const AdminPanel = () => {
     localStorage.setItem("adminSidebarCollapsed", JSON.stringify(isCollapsed));
   }, [isCollapsed]);
 
-  // toggle the menu item children
+  // toggle the menu item children (only one open at a time)
   const toggleExpand = (itemId) => {
-    setExpandedItems((prev) =>
-      prev.includes(itemId)
-        ? prev.filter((id) => id !== itemId)
-        : [...prev, itemId]
-    );
+    setExpandedItems((prev) => (prev.includes(itemId) ? [] : [itemId]));
   };
 
-  // Auto-expand parent items based on current route
+  // Auto-expand parent items based on current route (ensuring single expansion)
   useEffect(() => {
-    const currentPath = location.pathname.split("/").pop(); // Get the last segment of the path
+    const currentPath = location.pathname.split("/").pop();
 
-    // Find parent items that should be expanded based on current route
     const itemsToExpand = adminNavigation
       .filter((item) => item.children)
       .filter((item) =>
-        item.children.some((child) => child.path === currentPath)
+        item.children.some((child) => child.path === currentPath),
       )
       .map((item) => item.id);
 
     if (itemsToExpand.length > 0) {
-      setExpandedItems((prev) => {
-        const newExpanded = [...new Set([...prev, ...itemsToExpand])];
-        return newExpanded;
-      });
+      // Only set the first matching parent as expanded to maintain single-open state
+      setExpandedItems([itemsToExpand[0]]);
     }
   }, [location.pathname]); // navlink button style
   const getNavLinkClassName = (
     isActive,
     isChild = false,
-    isCollapsedIcon = false
+    isCollapsedIcon = false,
   ) =>
     `flex items-center ${
       isCollapsedIcon ? "justify-center" : "gap-3"
@@ -78,7 +71,7 @@ const AdminPanel = () => {
       const isExpanded = expandedItems.includes(item.id);
       const currentPath = location.pathname.split("/").pop();
       const isChildActive = item.children.some(
-        (child) => child.path === currentPath
+        (child) => child.path === currentPath,
       );
 
       // If sidebar is collapsed, show dropdown menu for categories and collections
@@ -90,7 +83,7 @@ const AdminPanel = () => {
                 className={`w-full ${getNavLinkClassName(
                   isChildActive,
                   false,
-                  true
+                  true,
                 )}`}
                 title={item.label}
               >
@@ -133,7 +126,7 @@ const AdminPanel = () => {
           </button>
           {/* render the children */}
           {!isCollapsed && isExpanded && (
-            <div className="space-y-1 mt-1">
+            <div className="space-y-1 mt-1 ml-3">
               {item.children.map((child) => (
                 <NavLink
                   key={child.id}
@@ -169,7 +162,7 @@ const AdminPanel = () => {
     <section className="flex">
       {/* Sidebar */}
       <aside
-        className={`bg-input/30 dark:bg-card/30 border-r border-border/30 transition-all duration-300 flex flex-col sticky top-20 h-screen ${
+        className={`bg-input/30 dark:bg-card/30 border-r border-border/30 transition-all duration-300 flex flex-col sticky top-[80px] h-[calc(100vh-80px)] ${
           isCollapsed ? "w-20" : "w-68"
         }`}
       >
@@ -214,7 +207,7 @@ const AdminPanel = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto px-5 py-7">
+      <main className="flex-1 overflow-y-auto p-5">
         <Outlet />
       </main>
     </section>

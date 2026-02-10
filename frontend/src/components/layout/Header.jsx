@@ -13,6 +13,7 @@ import Auth from "@/pages/Auth";
 import { useThemeToggle } from "@/hooks/useToggleTheme";
 import { useLogout, getInitials } from "@/hooks/useLogin";
 import { useBanner } from "@/hooks/useBanner";
+import { useCart } from "@/hooks/useCart";
 
 const Header = () => {
   const { darkMode, toggleDarkMode } = useThemeToggle();
@@ -23,6 +24,7 @@ const Header = () => {
   const { handleLogout, isLoggingOut } = useLogout();
   const [isScrolled, setIsScrolled] = useState(false);
   const { hasBanners } = useBanner();
+  const { totalQuantity, openCart } = useCart();
 
   // Check if current page is Home
   const isHomePage = location.pathname === "/";
@@ -118,6 +120,7 @@ const Header = () => {
             size="icon"
             aria-label="Search"
             title="Search Products"
+            className="hover:bg-transparent hover:text-background dark:hover:text-foreground"
           >
             <Search />
           </Button>
@@ -126,12 +129,16 @@ const Header = () => {
             variant="ghost"
             size="icon"
             aria-label="Cart"
-            asChild
             title="View Cart"
+            onClick={openCart}
+            className="relative hover:bg-transparent hover:text-background dark:hover:text-foreground"
           >
-            <Link to="/cart">
-              <ShoppingCart />
-            </Link>
+            <ShoppingCart />
+            {totalQuantity > 0 && (
+              <span className="absolute bottom-4 left-5 flex size-4 items-center justify-center rounded-full bg-accent text-xs font-semibold text-foreground dark:text-secondary-foreground">
+                {totalQuantity}
+              </span>
+            )}
           </Button>
           {/* Theme Toggle Button */}
           <Button
@@ -140,6 +147,7 @@ const Header = () => {
             onClick={toggleDarkMode}
             aria-label="Toggle theme"
             title={darkMode ? "Toggle Light mode" : "Toggle Dark mode"}
+            className="hover:bg-transparent hover:text-background dark:hover:text-foreground"
           >
             {darkMode ? <Sun /> : <Moon />}
           </Button>

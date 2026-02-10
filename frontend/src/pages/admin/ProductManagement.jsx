@@ -98,8 +98,6 @@ const ProductManagement = () => {
         columns={columns}
         data={products}
         isLoading={isLoadingProducts}
-        loadingMessage="Loading products..."
-        emptyMessage="No product found..."
         renderRow={(product) => (
           <>
             <TableCell maxWidth="200px" className="font-medium">
@@ -1223,7 +1221,7 @@ const ProductManagement = () => {
                   </div>
                 ))}
                 {imagePreviews.length < 10 && (
-                  <label
+                  <Label
                     htmlFor="images"
                     className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors flex flex-col items-center justify-center min-h-32"
                   >
@@ -1245,7 +1243,7 @@ const ProductManagement = () => {
                       disabled={dialogMode === "edit" ? isUpdating : isCreating}
                       className="hidden"
                     />
-                  </label>
+                  </Label>
                 )}
               </div>
             </div>

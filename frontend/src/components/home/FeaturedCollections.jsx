@@ -1,6 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import Logo from "@/assets/media/Logo.png";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import ErrorState from "@/components/shared/ErrorState";
 import {
   useFeaturedCollections,
   getCollectionLink,
@@ -11,19 +13,31 @@ const FeaturedCollections = () => {
     useFeaturedCollections();
 
   if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (isError) {
     return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <p className="text-lg">Loading featured collections...</p>
-      </div>
+      <ErrorState
+        title="No featured collections available"
+        description="We're having trouble loading featured collections. Please refresh the page or try again later."
+        minHeight="min-h-[200px]"
+      />
     );
   }
 
-  if (isError || !hasCollections) {
-    return null;
+  if (!hasCollections) {
+    return (
+      <ErrorState
+        title="No featured collections available"
+        description="There are no featured collections to display at this time. Please check back soon!"
+        minHeight="min-h-[200px]"
+      />
+    );
   }
 
   return (
-    <section className="p-5">
+    <section className="py-5">
       <div className="flex flex-col gap-2">
         {collections.slice(0, 2).map((collection) => (
           <Link
@@ -52,12 +66,12 @@ const FeaturedCollections = () => {
             <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
 
             {/* Content */}
-            <div className="absolute inset-0 flex flex-col justify-end p-5">
-              <h2 className="text-3xl sm:text-4xl font-bold text-background dark:text-foreground uppercase mb-2">
+            <div className="absolute inset-0 flex flex-col justify-end px-5 py-10">
+              <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold uppercase text-background dark:text-foreground">
                 {collection.collectionName}
               </h2>
               {collection.description && (
-                <p className="text-xs sm:text-sm text-background dark:text-foreground max-w-xl">
+                <p className="text-sm sm:text-lg text-background dark:text-foreground max-w-3xl">
                   {collection.description}
                 </p>
               )}

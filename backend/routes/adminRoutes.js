@@ -4,6 +4,20 @@ import {
   authorizeAdmin,
 } from "../middlewares/auth.middleware.js";
 import {
+  createBanner,
+  getAllBanners,
+  getBannerById,
+  updateBanner,
+  deleteBanner,
+} from "../controllers/bannerController.js";
+import {
+  createProduct,
+  getAllProducts,
+  getProductById,
+  updateProduct,
+  deleteProduct,
+} from "../controllers/productController.js";
+import {
   createColor,
   getAllColors,
   getColorById,
@@ -25,13 +39,6 @@ import {
   deleteSubCategory,
 } from "../controllers/subCategoryController.js";
 import {
-  createSkillLevel,
-  getAllSkillLevels,
-  getSkillLevelById,
-  updateSkillLevel,
-  deleteSkillLevel,
-} from "../controllers/skillLevelController.js";
-import {
   createCollection,
   getAllCollections,
   getCollectionById,
@@ -45,26 +52,62 @@ import {
   updateSubCollection,
   deleteSubCollection,
 } from "../controllers/subCollectionController.js";
+import {
+  createDealerBundle,
+  getAllDealerBundles,
+  updateDealerBundle,
+  deleteDealerBundle,
+  createDealerAddon,
+  getAllDealerAddons,
+  updateDealerAddon,
+  deleteDealerAddon,
+  createDealerExtraBag,
+  getAllDealerExtraBags,
+  updateDealerExtraBag,
+  deleteDealerExtraBag,
+  createDealerTorsoBag,
+  getAllDealerTorsoBags,
+  updateDealerTorsoBag,
+  deleteDealerTorsoBag,
+  reorderTorsoBagItems,
+} from "../controllers/dealerController.js";
+import {
+  createRewardBundle,
+  getAllRewardBundles,
+  updateRewardBundle,
+  deleteRewardBundle,
+  createRewardAddon,
+  getAllRewardAddons,
+  updateRewardAddon,
+  deleteRewardAddon,
+} from "../controllers/rewardController.js";
+import {
+  createSkillLevel,
+  getAllSkillLevels,
+  getSkillLevelById,
+  updateSkillLevel,
+  deleteSkillLevel,
+} from "../controllers/skillLevelController.js";
 import { getAllUsers, updateUserRole } from "../controllers/authController.js";
-import {
-  createProduct,
-  getAllProducts,
-  getProductById,
-  updateProduct,
-  deleteProduct,
-} from "../controllers/productController.js";
-import {
-  createBanner,
-  getAllBanners,
-  getBannerById,
-  updateBanner,
-  deleteBanner,
-} from "../controllers/bannerController.js";
 
 const router = express.Router();
 
 // All admin routes require authentication and admin role
 router.use(authenticate, authorizeAdmin);
+
+// Banner CRUD routes
+router.post("/banners", createBanner);
+router.get("/banners", getAllBanners);
+router.get("/banners/:id", getBannerById);
+router.put("/banners/:id", updateBanner);
+router.delete("/banners/:id", deleteBanner);
+
+// Product CRUD routes
+router.post("/products", createProduct);
+router.get("/products", getAllProducts);
+router.get("/products/:id", getProductById);
+router.put("/products/:id", updateProduct);
+router.delete("/products/:id", deleteProduct);
 
 // Color CRUD routes
 router.post("/colors", createColor);
@@ -87,13 +130,6 @@ router.get("/subCategories/:id", getSubCategoryById);
 router.put("/subCategories/:id", updateSubCategory);
 router.delete("/subCategories/:id", deleteSubCategory);
 
-// SkillLevel CRUD routes
-router.post("/skillLevels", createSkillLevel);
-router.get("/skillLevels", getAllSkillLevels);
-router.get("/skillLevels/:id", getSkillLevelById);
-router.put("/skillLevels/:id", updateSkillLevel);
-router.delete("/skillLevels/:id", deleteSkillLevel);
-
 // Collection CRUD routes
 router.post("/collections", createCollection);
 router.get("/collections", getAllCollections);
@@ -108,19 +144,44 @@ router.get("/subCollections/:id", getSubCollectionById);
 router.put("/subCollections/:id", updateSubCollection);
 router.delete("/subCollections/:id", deleteSubCollection);
 
-// Product CRUD routes
-router.post("/products", createProduct);
-router.get("/products", getAllProducts);
-router.get("/products/:id", getProductById);
-router.put("/products/:id", updateProduct);
-router.delete("/products/:id", deleteProduct);
+// Dealer Management routes
+router.post("/dealer/bundles", createDealerBundle);
+router.get("/dealer/bundles", getAllDealerBundles);
+router.put("/dealer/bundles/:id", updateDealerBundle);
+router.delete("/dealer/bundles/:id", deleteDealerBundle);
 
-// Banner CRUD routes
-router.post("/banners", createBanner);
-router.get("/banners", getAllBanners);
-router.get("/banners/:id", getBannerById);
-router.put("/banners/:id", updateBanner);
-router.delete("/banners/:id", deleteBanner);
+router.post("/dealer/addons", createDealerAddon);
+router.get("/dealer/addons", getAllDealerAddons);
+router.put("/dealer/addons/:id", updateDealerAddon);
+router.delete("/dealer/addons/:id", deleteDealerAddon);
+
+router.post("/dealer/extra-bags", createDealerExtraBag);
+router.get("/dealer/extra-bags", getAllDealerExtraBags);
+router.put("/dealer/extra-bags/:id", updateDealerExtraBag);
+router.delete("/dealer/extra-bags/:id", deleteDealerExtraBag);
+
+router.post("/dealer/torso-bags", createDealerTorsoBag);
+router.get("/dealer/torso-bags", getAllDealerTorsoBags);
+router.put("/dealer/torso-bags/:id", updateDealerTorsoBag);
+router.delete("/dealer/torso-bags/:id", deleteDealerTorsoBag);
+router.patch("/dealer/torso-bags/:id/reorder", reorderTorsoBagItems);
+
+router.post("/reward/bundles", createRewardBundle);
+router.get("/reward/bundles", getAllRewardBundles);
+router.put("/reward/bundles/:id", updateRewardBundle);
+router.delete("/reward/bundles/:id", deleteRewardBundle);
+
+router.post("/reward/addons", createRewardAddon);
+router.get("/reward/addons", getAllRewardAddons);
+router.put("/reward/addons/:id", updateRewardAddon);
+router.delete("/reward/addons/:id", deleteRewardAddon);
+
+// SkillLevel CRUD routes
+router.post("/skillLevels", createSkillLevel);
+router.get("/skillLevels", getAllSkillLevels);
+router.get("/skillLevels/:id", getSkillLevelById);
+router.put("/skillLevels/:id", updateSkillLevel);
+router.delete("/skillLevels/:id", deleteSkillLevel);
 
 // User Management routes
 router.get("/users", getAllUsers);

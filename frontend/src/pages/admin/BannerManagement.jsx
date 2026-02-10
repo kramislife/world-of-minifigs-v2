@@ -13,12 +13,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
-
 import useBannerManagement from "@/hooks/admin/useBannerManagement";
 
 const BannerManagement = () => {
@@ -73,8 +71,6 @@ const BannerManagement = () => {
         data={banners}
         isLoading={isLoadingBanners}
         searchPlaceholder="Search banners..."
-        loadingMessage="Loading banners..."
-        emptyMessage="No banners found..."
         renderRow={(banner) => (
           <>
             <TableCell maxWidth="200px" className="font-medium">
@@ -119,7 +115,7 @@ const BannerManagement = () => {
         )}
       />
 
-      {/* Dialog */}
+      {/* Add/Edit Banner Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
@@ -281,7 +277,7 @@ const BannerManagement = () => {
                     )}
 
                     {formData.label && (
-                      <h3 className="text-xl sm:text-2xl font-black uppercase leading-tight">
+                      <h3 className="text-xl sm:text-2xl font-extrabold uppercase leading-tight">
                         {formData.label}
                       </h3>
                     )}
@@ -495,6 +491,7 @@ const BannerManagement = () => {
         </div>
       </AddUpdateItemDialog>
 
+      {/* Delete Confirmation Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}

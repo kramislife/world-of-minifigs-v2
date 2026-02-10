@@ -7,6 +7,8 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import ErrorState from "@/components/shared/ErrorState";
 import ProductCard from "@/components/products/ProductCard";
 import { useLatestProducts } from "@/hooks/useProducts";
 
@@ -24,15 +26,27 @@ const LatestProduct = () => {
   } = useLatestProducts({ limit: 12 });
 
   if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (isError) {
     return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <p className="text-lg">Loading latest products...</p>
-      </div>
+      <ErrorState
+        title="No products available"
+        description="We're unable to load the latest products right now. Please try refreshing the page or check back later."
+        minHeight="min-h-[200px]"
+      />
     );
   }
 
-  if (isError || !hasProducts) {
-    return null;
+  if (!hasProducts) {
+    return (
+      <ErrorState
+        title="No products available"
+        description="There are no products to display at this time. Please check back soon!"
+        minHeight="min-h-[200px]"
+      />
+    );
   }
 
   return (
@@ -43,7 +57,7 @@ const LatestProduct = () => {
           <p className="tracking-widest uppercase text-xs sm:text-sm mb-1">
             Stay on-trend with new products
           </p>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tighter uppercase">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tighter uppercase">
             Just Arrived
           </h2>
         </div>

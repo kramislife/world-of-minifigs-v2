@@ -17,6 +17,8 @@ export const publicApi = createApi({
     "Color",
     "SkillLevel",
     "Banner",
+    "RewardBundle",
+    "RewardAddon",
   ],
   endpoints: (builder) => ({
     // Get products with filters, pagination, and sorting
@@ -106,6 +108,24 @@ export const publicApi = createApi({
       }),
       providesTags: ["Banner"],
     }),
+
+    // Get reward bundles
+    getRewardBundles: builder.query({
+      query: () => ({
+        url: "/reward/bundles",
+        method: "GET",
+      }),
+      providesTags: ["RewardBundle"],
+    }),
+
+    // Get reward addons
+    getRewardAddons: builder.query({
+      query: () => ({
+        url: "/reward/addons",
+        method: "GET",
+      }),
+      providesTags: ["RewardAddon"],
+    }),
   }),
 });
 
@@ -117,4 +137,6 @@ export const {
   useGetPublicColorsQuery,
   useGetPublicSkillLevelsQuery,
   useGetPublicBannersQuery,
+  useGetRewardBundlesQuery,
+  useGetRewardAddonsQuery,
 } = publicApi;

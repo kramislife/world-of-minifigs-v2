@@ -56,8 +56,6 @@ const UserManagement = () => {
         columns={columns}
         data={users}
         isLoading={isLoadingUsers}
-        loadingMessage="Loading users..."
-        emptyMessage="No users found..."
         renderRow={(user) => (
           <>
             {/* User (Avatar + Name) */}

@@ -14,22 +14,24 @@ export const processProductForListing = (product, filterColorIds = []) => {
     skillLevelIds: product.skillLevelIds || [],
   };
 
-  // Handle images - only first image for listing
-  if (product.productType === "standalone" && product.images?.length > 0) {
-    minimalProduct.images = product.images;
+  // Handle images and stock based on product type
+  if (product.productType === "standalone") {
+    minimalProduct.images = product.images || [];
     minimalProduct.colorId = product.colorId;
     minimalProduct.secondaryColorId = product.secondaryColorId || null;
+    minimalProduct.stock = product.stock !== undefined ? product.stock : 0;
     // Computed first image URL for display
-    minimalProduct.imageUrl = product.images[0]?.url || null;
+    minimalProduct.imageUrl = product.images?.[0]?.url || null;
   } else if (
     product.productType === "variant" &&
     product.variants?.length > 0
   ) {
-    // Include all variant images (keep payload minimal)
+    // Include variant images and stock
     minimalProduct.variants = product.variants.map((variant) => ({
       image: variant.image || null,
       colorId: variant.colorId || null,
       secondaryColorId: variant.secondaryColorId || null,
+      stock: variant.stock !== undefined ? variant.stock : 0,
     }));
 
     // Find the variant that matches the filtered color (if any)
@@ -64,8 +66,14 @@ export const processProductForListing = (product, filterColorIds = []) => {
       product.variants[matchingVariantIndex]?.image?.url || null;
     // Also store the matched variant index for frontend use
     minimalProduct.displayVariantIndex = matchingVariantIndex;
+    // For variant products, total stock is the sum of all variants
+    minimalProduct.stock = product.variants.reduce(
+      (sum, v) => sum + (v.stock || 0),
+      0,
+    );
   } else {
     minimalProduct.imageUrl = null;
+    minimalProduct.stock = 0;
   }
 
   return minimalProduct;

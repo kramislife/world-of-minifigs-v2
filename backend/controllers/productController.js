@@ -1332,7 +1332,7 @@ export const getPublicProducts = async (req, res) => {
     // Apply pagination with minimal field selection
     const skip = (page - 1) * limit;
     const selectFields =
-      "_id productName price discount discountPrice productType createdAt images variants";
+      "_id productName price discount discountPrice productType createdAt images variants stock";
 
     // Build query with minimal fields
     let mongooseQuery = Product.find(query)

@@ -3,16 +3,20 @@ import { ChevronLeft, ChevronRight, Check, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Logo from "@/assets/media/Logo.png";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import ErrorState from "@/components/shared/ErrorState";
+import AddToCartButton from "@/components/cart/AddToCartButton";
 import { useProductDetails } from "@/hooks/useProducts";
+import { useCart } from "@/hooks/useCart";
 
 const ProductDetails = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const { addToCart } = useCart();
 
   const {
     product,
     isLoading,
-    error,
+    isError,
     allImages,
     currentImageUrl,
     features,
@@ -40,25 +44,26 @@ const ProductDetails = () => {
   } = useProductDetails(id);
 
   if (isLoading) {
+    return <LoadingSpinner minHeight="min-h-screen" />;
+  }
+
+  if (isError) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <p className="text-lg">Loading product...</p>
-      </div>
+      <ErrorState
+        title="Unable to load product"
+        description="We're experiencing issues loading the product. Please refresh the page or try again later."
+        minHeight="min-h-screen"
+      />
     );
   }
 
-  if (error || !product) {
+  if (!product) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] px-5">
-        <p className="text-lg font-medium text-destructive mb-2">
-          Product not found
-        </p>
-        <p className="text-sm text-muted-foreground mb-4">
-          {error?.data?.message ||
-            "The product you're looking for doesn't exist."}
-        </p>
-        <Button onClick={() => navigate("/products")}>Back to Products</Button>
-      </div>
+      <ErrorState
+        title="Product not found"
+        description="The product you're looking for doesn't exist or has been removed."
+        minHeight="min-h-screen"
+      />
     );
   }
 
@@ -334,8 +339,21 @@ const ProductDetails = () => {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-2">
-              <Button className="flex-1">Add to Cart</Button>
-              <Button variant="accent" className="flex-1">
+              <AddToCartButton
+                product={product}
+                variantIndex={selectedVariantIndex}
+                className="flex-1 h-12"
+              />
+              <Button
+                variant="accent"
+                onClick={() => {
+                  if (stockAlert?.message !== "Out of stock") {
+                    addToCart(product, 1, selectedVariantIndex);
+                  }
+                }}
+                disabled={stockAlert?.message === "Out of stock"}
+                className="flex-1 h-12"
+              >
                 Buy Now
               </Button>
             </div>

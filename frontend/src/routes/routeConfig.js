@@ -6,7 +6,7 @@ import SubCollections from "@/pages/SubCollections";
 import Contact from "@/pages/Contact";
 import About from "@/pages/About";
 import Designer from "@/pages/Designer";
-import Dealers from "@/pages/Dealers";
+import Dealer from "@/pages/Dealer";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfUse from "@/pages/TermsOfUse";
 import VerifyEmail from "@/components/auth/VerifyEmail";
@@ -24,11 +24,16 @@ import CategoryManagement from "@/pages/admin/categories/CategoryManagement";
 import SubCategoryManagement from "@/pages/admin/categories/SubCategoryManagement";
 import CollectionManagement from "@/pages/admin/collections/CollectionManagement";
 import SubCollectionManagement from "@/pages/admin/collections/SubCollectionManagement";
+import DealerBundleManagement from "@/pages/admin/dealer/DealerBundleManagement";
+import DealerAddonManagement from "@/pages/admin/dealer/DealerAddonManagement";
+import DealerExtraBagManagement from "@/pages/admin/dealer/DealerExtraBagManagement";
+import DealerTorsoBagManagement from "@/pages/admin/dealer/DealerTorsoBagManagement";
+import RewardBundleManagement from "@/pages/admin/rewards/RewardBundleManagement";
+import RewardAddonManagement from "@/pages/admin/rewards/RewardAddonManagement";
 import SkillLevelManagement from "@/pages/admin/SkillLevelManagement";
 import DesignerManagement from "@/pages/admin/DesignerManagement";
 import OrderManagement from "@/pages/admin/OrderManagement";
 import UserManagement from "@/pages/admin/UserManagement";
-import DealerManagement from "@/pages/admin/DealerManagement";
 
 // Public routes
 export const publicRoutes = [
@@ -98,7 +103,7 @@ export const privateRoutes = [
   },
   {
     path: "/dealers",
-    element: Dealers,
+    element: Dealer,
     requiredRoles: ["dealer", "admin"],
   },
 ];
@@ -147,6 +152,30 @@ export const adminRoutes = [
         element: SkillLevelManagement,
       },
       {
+        path: "dealer-bundles",
+        element: DealerBundleManagement,
+      },
+      {
+        path: "dealer-addons",
+        element: DealerAddonManagement,
+      },
+      {
+        path: "dealer-extra-bags",
+        element: DealerExtraBagManagement,
+      },
+      {
+        path: "dealer-torso-bags",
+        element: DealerTorsoBagManagement,
+      },
+      {
+        path: "reward-bundles",
+        element: RewardBundleManagement,
+      },
+      {
+        path: "reward-addons",
+        element: RewardAddonManagement,
+      },
+      {
         path: "designers",
         element: DesignerManagement,
       },
@@ -157,10 +186,6 @@ export const adminRoutes = [
       {
         path: "users",
         element: UserManagement,
-      },
-      {
-        path: "dealers",
-        element: DealerManagement,
       },
     ],
   },

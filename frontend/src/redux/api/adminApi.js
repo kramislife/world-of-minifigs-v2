@@ -44,8 +44,112 @@ export const adminApi = createApi({
     "User",
     "Product",
     "Banner",
+    "DealerBundle",
+    "DealerAddon",
+    "DealerExtraBag",
+    "DealerTorsoBag",
+    "RewardBundle",
+    "RewardAddon",
   ],
   endpoints: (builder) => ({
+    // ==================== Banner Management ====================
+
+    // Get all banners
+    getBanners: builder.query({
+      query: () => ({
+        url: "/banners",
+        method: "GET",
+      }),
+      providesTags: ["Banner"],
+    }),
+
+    // Get single banner by ID
+    getBannerById: builder.query({
+      query: (id) => ({
+        url: `/banners/${id}`,
+        method: "GET",
+      }),
+      providesTags: (_, __, id) => [{ type: "Banner", id }],
+    }),
+
+    // Create banner (admin only)
+    createBanner: builder.mutation({
+      query: (bannerData) => ({
+        url: "/banners",
+        method: "POST",
+        body: bannerData,
+      }),
+      invalidatesTags: ["Banner"],
+    }),
+
+    // Update banner (admin only)
+    updateBanner: builder.mutation({
+      query: ({ id, ...bannerData }) => ({
+        url: `/banners/${id}`,
+        method: "PUT",
+        body: bannerData,
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: "Banner", id }, "Banner"],
+    }),
+
+    // Delete banner (admin only)
+    deleteBanner: builder.mutation({
+      query: (id) => ({
+        url: `/banners/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Banner"],
+    }),
+
+    // ==================== Product Management ====================
+    // Get all products
+    getProducts: builder.query({
+      query: (params = {}) => ({
+        url: "/products",
+        method: "GET",
+        params: buildPaginationParams(params),
+      }),
+      providesTags: ["Product"],
+    }),
+
+    // Get single product by ID
+    getProductById: builder.query({
+      query: (id) => ({
+        url: `/products/${id}`,
+        method: "GET",
+      }),
+      providesTags: (_, __, id) => [{ type: "Product", id }],
+    }),
+
+    // Create product (admin only)
+    createProduct: builder.mutation({
+      query: (productData) => ({
+        url: "/products",
+        method: "POST",
+        body: productData,
+      }),
+      invalidatesTags: ["Product"],
+    }),
+
+    // Update product (admin only)
+    updateProduct: builder.mutation({
+      query: ({ id, ...productData }) => ({
+        url: `/products/${id}`,
+        method: "PUT",
+        body: productData,
+      }),
+      invalidatesTags: (_, __, { id }) => [{ type: "Product", id }, "Product"],
+    }),
+
+    // Delete product (admin only)
+    deleteProduct: builder.mutation({
+      query: (id) => ({
+        url: `/products/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Product"],
+    }),
+
     // ==================== Color Management ====================
     // Get all colors
     getColors: builder.query({
@@ -199,58 +303,6 @@ export const adminApi = createApi({
       invalidatesTags: ["SubCategory"],
     }),
 
-    // ==================== SkillLevel Management ====================
-    // Get all skillLevels
-    getSkillLevels: builder.query({
-      query: (params = {}) => ({
-        url: "/skillLevels",
-        method: "GET",
-        params: buildPaginationParams(params),
-      }),
-      providesTags: ["SkillLevel"],
-    }),
-
-    // Get single skillLevel by ID
-    getSkillLevelById: builder.query({
-      query: (id) => ({
-        url: `/skillLevels/${id}`,
-        method: "GET",
-      }),
-      providesTags: (_, __, id) => [{ type: "SkillLevel", id }],
-    }),
-
-    // Create skillLevel (admin only)
-    createSkillLevel: builder.mutation({
-      query: (skillLevelData) => ({
-        url: "/skillLevels",
-        method: "POST",
-        body: skillLevelData,
-      }),
-      invalidatesTags: ["SkillLevel"],
-    }),
-
-    // Update skillLevel (admin only)
-    updateSkillLevel: builder.mutation({
-      query: ({ id, ...skillLevelData }) => ({
-        url: `/skillLevels/${id}`,
-        method: "PUT",
-        body: skillLevelData,
-      }),
-      invalidatesTags: (_, __, { id }) => [
-        { type: "SkillLevel", id },
-        "SkillLevel",
-      ],
-    }),
-
-    // Delete skillLevel (admin only)
-    deleteSkillLevel: builder.mutation({
-      query: (id) => ({
-        url: `/skillLevels/${id}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["SkillLevel"],
-    }),
-
     // ==================== Collection Management ====================
     // Get all collections
     getCollections: builder.query({
@@ -355,102 +407,266 @@ export const adminApi = createApi({
       invalidatesTags: ["SubCollection"],
     }),
 
-    // ==================== Product Management ====================
-    // Get all products
-    getProducts: builder.query({
+    // ==================== Dealer Management ====================
+
+    // --- Bundles ---
+    getDealerBundles: builder.query({
       query: (params = {}) => ({
-        url: "/products",
+        url: "/dealer/bundles",
         method: "GET",
         params: buildPaginationParams(params),
       }),
-      providesTags: ["Product"],
+      providesTags: ["DealerBundle"],
     }),
-
-    // Get single product by ID
-    getProductById: builder.query({
-      query: (id) => ({
-        url: `/products/${id}`,
-        method: "GET",
-      }),
-      providesTags: (_, __, id) => [{ type: "Product", id }],
-    }),
-
-    // Create product (admin only)
-    createProduct: builder.mutation({
-      query: (productData) => ({
-        url: "/products",
+    createDealerBundle: builder.mutation({
+      query: (data) => ({
+        url: "/dealer/bundles",
         method: "POST",
-        body: productData,
+        body: data,
       }),
-      invalidatesTags: ["Product"],
+      invalidatesTags: ["DealerBundle"],
     }),
-
-    // Update product (admin only)
-    updateProduct: builder.mutation({
-      query: ({ id, ...productData }) => ({
-        url: `/products/${id}`,
+    updateDealerBundle: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/dealer/bundles/${id}`,
         method: "PUT",
-        body: productData,
+        body: data,
       }),
-      invalidatesTags: (_, __, { id }) => [{ type: "Product", id }, "Product"],
+      invalidatesTags: ["DealerBundle"],
     }),
-
-    // Delete product (admin only)
-    deleteProduct: builder.mutation({
+    deleteDealerBundle: builder.mutation({
       query: (id) => ({
-        url: `/products/${id}`,
+        url: `/dealer/bundles/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Product"],
+      invalidatesTags: ["DealerBundle"],
     }),
 
-    // ==================== Banner Management ====================
-
-    // Get all banners
-    getBanners: builder.query({
-      query: () => ({
-        url: "/banners",
+    // --- Addons ---
+    getDealerAddons: builder.query({
+      query: (params = {}) => ({
+        url: "/dealer/addons",
         method: "GET",
+        params: buildPaginationParams(params),
       }),
-      providesTags: ["Banner"],
+      providesTags: ["DealerAddon"],
     }),
-
-    // Get single banner by ID
-    getBannerById: builder.query({
-      query: (id) => ({
-        url: `/banners/${id}`,
-        method: "GET",
-      }),
-      providesTags: (_, __, id) => [{ type: "Banner", id }],
-    }),
-
-    // Create banner (admin only)
-    createBanner: builder.mutation({
-      query: (bannerData) => ({
-        url: "/banners",
+    createDealerAddon: builder.mutation({
+      query: (data) => ({
+        url: "/dealer/addons",
         method: "POST",
-        body: bannerData,
+        body: data,
       }),
-      invalidatesTags: ["Banner"],
+      invalidatesTags: ["DealerAddon"],
     }),
-
-    // Update banner (admin only)
-    updateBanner: builder.mutation({
-      query: ({ id, ...bannerData }) => ({
-        url: `/banners/${id}`,
+    updateDealerAddon: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/dealer/addons/${id}`,
         method: "PUT",
-        body: bannerData,
+        body: data,
       }),
-      invalidatesTags: (_, __, { id }) => [{ type: "Banner", id }, "Banner"],
+      invalidatesTags: ["DealerAddon"],
     }),
-
-    // Delete banner (admin only)
-    deleteBanner: builder.mutation({
+    deleteDealerAddon: builder.mutation({
       query: (id) => ({
-        url: `/banners/${id}`,
+        url: `/dealer/addons/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Banner"],
+      invalidatesTags: ["DealerAddon"],
+    }),
+
+    // --- Extra Bags ---
+    getDealerExtraBags: builder.query({
+      query: (params = {}) => ({
+        url: "/dealer/extra-bags",
+        method: "GET",
+        params: buildPaginationParams(params),
+      }),
+      providesTags: ["DealerExtraBag"],
+    }),
+    createDealerExtraBag: builder.mutation({
+      query: (data) => ({
+        url: "/dealer/extra-bags",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["DealerExtraBag"],
+    }),
+    updateDealerExtraBag: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/dealer/extra-bags/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["DealerExtraBag"],
+    }),
+    deleteDealerExtraBag: builder.mutation({
+      query: (id) => ({
+        url: `/dealer/extra-bags/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["DealerExtraBag"],
+    }),
+
+    // --- Torso Bags ---
+    getDealerTorsoBags: builder.query({
+      query: (params = {}) => ({
+        url: "/dealer/torso-bags",
+        method: "GET",
+        params: buildPaginationParams(params),
+      }),
+      providesTags: ["DealerTorsoBag"],
+    }),
+    createDealerTorsoBag: builder.mutation({
+      query: (data) => ({
+        url: "/dealer/torso-bags",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["DealerTorsoBag"],
+    }),
+    updateDealerTorsoBag: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/dealer/torso-bags/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["DealerTorsoBag"],
+    }),
+    deleteDealerTorsoBag: builder.mutation({
+      query: (id) => ({
+        url: `/dealer/torso-bags/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["DealerTorsoBag"],
+    }),
+    reorderTorsoBagItems: builder.mutation({
+      query: ({ id, itemOrder }) => ({
+        url: `/dealer/torso-bags/${id}/reorder`,
+        method: "PATCH",
+        body: { itemOrder },
+      }),
+      invalidatesTags: ["DealerTorsoBag"],
+    }),
+
+    // ==================== Reward Program Management ====================
+
+    // --- Reward Bundles ---
+    getRewardBundles: builder.query({
+      query: (params = {}) => ({
+        url: "/reward/bundles",
+        method: "GET",
+        params: buildPaginationParams(params),
+      }),
+      providesTags: ["RewardBundle"],
+    }),
+    createRewardBundle: builder.mutation({
+      query: (data) => ({
+        url: "/reward/bundles",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["RewardBundle"],
+    }),
+    updateRewardBundle: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/reward/bundles/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["RewardBundle"],
+    }),
+    deleteRewardBundle: builder.mutation({
+      query: (id) => ({
+        url: `/reward/bundles/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["RewardBundle"],
+    }),
+
+    // --- Reward Addons ---
+    getRewardAddons: builder.query({
+      query: (params = {}) => ({
+        url: "/reward/addons",
+        method: "GET",
+        params: buildPaginationParams(params),
+      }),
+      providesTags: ["RewardAddon"],
+    }),
+    createRewardAddon: builder.mutation({
+      query: (data) => ({
+        url: "/reward/addons",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["RewardAddon"],
+    }),
+    updateRewardAddon: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/reward/addons/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["RewardAddon"],
+    }),
+    deleteRewardAddon: builder.mutation({
+      query: (id) => ({
+        url: `/reward/addons/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["RewardAddon"],
+    }),
+
+    // ==================== SkillLevel Management ====================
+    // Get all skillLevels
+    getSkillLevels: builder.query({
+      query: (params = {}) => ({
+        url: "/skillLevels",
+        method: "GET",
+        params: buildPaginationParams(params),
+      }),
+      providesTags: ["SkillLevel"],
+    }),
+
+    // Get single skillLevel by ID
+    getSkillLevelById: builder.query({
+      query: (id) => ({
+        url: `/skillLevels/${id}`,
+        method: "GET",
+      }),
+      providesTags: (_, __, id) => [{ type: "SkillLevel", id }],
+    }),
+
+    // Create skillLevel (admin only)
+    createSkillLevel: builder.mutation({
+      query: (skillLevelData) => ({
+        url: "/skillLevels",
+        method: "POST",
+        body: skillLevelData,
+      }),
+      invalidatesTags: ["SkillLevel"],
+    }),
+
+    // Update skillLevel (admin only)
+    updateSkillLevel: builder.mutation({
+      query: ({ id, ...skillLevelData }) => ({
+        url: `/skillLevels/${id}`,
+        method: "PUT",
+        body: skillLevelData,
+      }),
+      invalidatesTags: (_, __, { id }) => [
+        { type: "SkillLevel", id },
+        "SkillLevel",
+      ],
+    }),
+
+    // Delete skillLevel (admin only)
+    deleteSkillLevel: builder.mutation({
+      query: (id) => ({
+        url: `/skillLevels/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["SkillLevel"],
     }),
 
     // ==================== User Management ====================
@@ -477,46 +693,80 @@ export const adminApi = createApi({
 });
 
 export const {
-  useGetColorsQuery,
-  useGetColorByIdQuery,
-  useCreateColorMutation,
-  useUpdateColorMutation,
-  useDeleteColorMutation,
-  useGetCategoriesQuery,
-  useGetCategoryByIdQuery,
-  useCreateCategoryMutation,
-  useUpdateCategoryMutation,
-  useDeleteCategoryMutation,
-  useGetSubCategoriesQuery,
-  useGetSubCategoryByIdQuery,
-  useCreateSubCategoryMutation,
-  useUpdateSubCategoryMutation,
-  useDeleteSubCategoryMutation,
-  useGetSkillLevelsQuery,
-  useGetSkillLevelByIdQuery,
-  useCreateSkillLevelMutation,
-  useUpdateSkillLevelMutation,
-  useDeleteSkillLevelMutation,
-  useGetCollectionsQuery,
-  useGetCollectionByIdQuery,
-  useCreateCollectionMutation,
-  useUpdateCollectionMutation,
-  useDeleteCollectionMutation,
-  useGetSubCollectionsQuery,
-  useGetSubCollectionByIdQuery,
-  useCreateSubCollectionMutation,
-  useUpdateSubCollectionMutation,
-  useDeleteSubCollectionMutation,
-  useGetProductsQuery,
-  useGetProductByIdQuery,
-  useCreateProductMutation,
-  useUpdateProductMutation,
-  useDeleteProductMutation,
   useGetBannersQuery,
   useGetBannerByIdQuery,
   useCreateBannerMutation,
   useUpdateBannerMutation,
   useDeleteBannerMutation,
+
+  useGetProductsQuery,
+  useGetProductByIdQuery,
+  useCreateProductMutation,
+  useUpdateProductMutation,
+  useDeleteProductMutation,
+
+  useGetColorsQuery,
+  useGetColorByIdQuery,
+  useCreateColorMutation,
+  useUpdateColorMutation,
+  useDeleteColorMutation,
+
+  useGetCategoriesQuery,
+  useGetCategoryByIdQuery,
+  useCreateCategoryMutation,
+  useUpdateCategoryMutation,
+  useDeleteCategoryMutation,
+
+  useGetSubCategoriesQuery,
+  useGetSubCategoryByIdQuery,
+  useCreateSubCategoryMutation,
+  useUpdateSubCategoryMutation,
+  useDeleteSubCategoryMutation,
+
+  useGetCollectionsQuery,
+  useGetCollectionByIdQuery,
+  useCreateCollectionMutation,
+  useUpdateCollectionMutation,
+  useDeleteCollectionMutation,
+
+  useGetSubCollectionsQuery,
+  useGetSubCollectionByIdQuery,
+  useCreateSubCollectionMutation,
+  useUpdateSubCollectionMutation,
+  useDeleteSubCollectionMutation,
+
+  useGetDealerBundlesQuery,
+  useCreateDealerBundleMutation,
+  useUpdateDealerBundleMutation,
+  useDeleteDealerBundleMutation,
+  useGetDealerAddonsQuery,
+  useCreateDealerAddonMutation,
+  useUpdateDealerAddonMutation,
+  useDeleteDealerAddonMutation,
+  useGetDealerExtraBagsQuery,
+  useCreateDealerExtraBagMutation,
+  useUpdateDealerExtraBagMutation,
+  useDeleteDealerExtraBagMutation,
+  useGetDealerTorsoBagsQuery,
+  useCreateDealerTorsoBagMutation,
+  useUpdateDealerTorsoBagMutation,
+  useDeleteDealerTorsoBagMutation,
+  useReorderTorsoBagItemsMutation,
+
+  useGetRewardBundlesQuery,
+  useCreateRewardBundleMutation,
+  useUpdateRewardBundleMutation,
+  useDeleteRewardBundleMutation,
+  useGetRewardAddonsQuery,
+  useCreateRewardAddonMutation,
+  useUpdateRewardAddonMutation,
+  useDeleteRewardAddonMutation,
+
+  useGetSkillLevelsQuery,
+  useGetSkillLevelByIdQuery,
+  useCreateSkillLevelMutation,
+  useUpdateSkillLevelMutation,
+  useDeleteSkillLevelMutation,
 
   useGetUsersQuery,
   useUpdateUserRoleMutation,

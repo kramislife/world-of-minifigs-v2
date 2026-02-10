@@ -70,8 +70,6 @@ const CategoryManagement = () => {
         columns={columns}
         data={categories}
         isLoading={isLoadingCategories}
-        loadingMessage="Loading categories..."
-        emptyMessage="No category found..."
         renderRow={(category) => (
           <>
             <TableCell maxWidth="200px">{category.categoryName}</TableCell>

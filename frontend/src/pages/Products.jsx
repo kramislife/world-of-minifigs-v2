@@ -7,6 +7,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
+import ErrorState from "@/components/shared/ErrorState";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import ProductFilters from "@/components/products/ProductFilters";
 import ProductSort from "@/components/products/ProductSort";
 import ProductGrid from "@/components/products/ProductGrid";
@@ -37,11 +39,10 @@ const Products = () => {
     pageNumbers,
     hasProducts,
     showPagination,
-    showEmptyState,
     isFirstPage,
     isLastPage,
     isLoading,
-    error,
+    isError,
     handlePriceRangeChange,
     handleCategoryToggle,
     handleSubCategoryToggle,
@@ -60,19 +61,17 @@ const Products = () => {
 
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  if (error) {
+  if (isLoading) {
+    return <LoadingSpinner minHeight="min-h-screen" />;
+  }
+
+  if (isError) {
     return (
-      <div className="px-5 py-20 min-h-[50vh]">
-        <div className="flex flex-col items-center justify-center py-10 text-center">
-          <p className="text-lg font-medium text-destructive mb-2">
-            Error loading products
-          </p>
-          <p className="text-sm">
-            {error?.data?.message ||
-              "An unexpected error occurred. Please try again."}
-          </p>
-        </div>
-      </div>
+      <ErrorState
+        title="Unable to load products"
+        description="We're experiencing issues loading products. Please refresh the page or try again laters."
+        minHeight="min-h-screen"
+      />
     );
   }
 
@@ -159,10 +158,8 @@ const Products = () => {
             pageNumbers={pageNumbers}
             hasProducts={hasProducts}
             showPagination={showPagination}
-            showEmptyState={showEmptyState}
             isFirstPage={isFirstPage}
             isLastPage={isLastPage}
-            isLoading={isLoading}
             onSortChange={handleSortChange}
             onPreviousPage={handlePreviousPage}
             onNextPage={handleNextPage}
