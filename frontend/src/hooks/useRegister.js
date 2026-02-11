@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useRegisterMutation } from "@/redux/api/authApi";
 import { passwordRequirementsConfig } from "@/constant/passwordRequirements";
@@ -18,6 +19,7 @@ export const useRegister = (onSuccess) => {
   const [showPasswordRequirements, setShowPasswordRequirements] =
     useState(false);
   const [register, { isLoading }] = useRegisterMutation();
+  const navigate = useNavigate();
 
   // Password requirement checks
   const passwordRequirements = {
@@ -205,6 +207,12 @@ export const useRegister = (onSuccess) => {
           description:
             response?.description ||
             "Your account was created, but verification email failed. Please use 'Resend verification' to get your link.",
+        });
+        navigate("/verify-email", {
+          state: {
+            email: userData.email,
+            from: "register",
+          },
         });
       } else {
         toast.success(response?.message || "Account creation completed", {

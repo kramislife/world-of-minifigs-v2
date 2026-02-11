@@ -9,20 +9,19 @@ const sendEmail = async (option) => {
     !process.env.SMTP_FROM_EMAIL
   ) {
     throw new Error(
-      "SMTP configuration is incomplete. Please check your environment variables."
+      "SMTP configuration is incomplete. Please check your environment variables.",
     );
   }
 
-  // Validate and default SMTP port
   const parsedPort = Number.parseInt(process.env.SMTP_PORT, 10);
   const smtpPort = Number.isFinite(parsedPort) ? parsedPort : 587;
 
   const transport = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: smtpPort,
-    secure: smtpPort === 465,
+    secure: false,
     auth: {
-      user: process.env.SMTP_FROM_EMAIL,
+      user: "apikey",
       pass: process.env.SMTP_PASSWORD,
     },
     tls: {
@@ -40,7 +39,6 @@ const sendEmail = async (option) => {
   };
 
   await transport.verify();
-
   await transport.sendMail(mailOptions);
 };
 

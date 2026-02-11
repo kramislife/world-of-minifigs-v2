@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   useVerifyEmailMutation,
@@ -7,10 +7,13 @@ import {
 } from "@/redux/api/authApi";
 
 export const useVerifyEmail = () => {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [verificationStatus, setVerificationStatus] = useState("verifying");
   const [authOpen, setAuthOpen] = useState(false);
-  const [resendEmail, setResendEmail] = useState("");
+  const fromRegistration = location.state?.from === "register";
+  const initialResendEmail = location.state?.email || "";
+  const [resendEmail, setResendEmail] = useState(initialResendEmail);
   const [verifyEmail, { isLoading }] = useVerifyEmailMutation();
   const [resendVerification, { isLoading: isResending }] =
     useResendVerificationMutation();
@@ -26,10 +29,13 @@ export const useVerifyEmail = () => {
     if (!token) {
       hasVerified.current = true; // no token, nothing to retry
       setVerificationStatus("error");
-      toast.error("Verification token missing", {
-        description:
-          "No verification token found. Please use the verification link from your email.",
-      });
+
+      if (!fromRegistration) {
+        toast.error("Verification token missing", {
+          description:
+            "No verification token found. Please use the verification link from your email.",
+        });
+      }
       return;
     }
 
@@ -45,7 +51,7 @@ export const useVerifyEmail = () => {
 
         hasVerified.current = true; // mark success
         setVerificationStatus(
-          isAlreadyVerified ? "alreadyVerified" : "success"
+          isAlreadyVerified ? "alreadyVerified" : "success",
         );
 
         // Clear token from URL only after success
@@ -73,7 +79,7 @@ export const useVerifyEmail = () => {
               (error?.status === "FETCH_ERROR"
                 ? "Unable to connect to the server. Please check your internet connection and try again."
                 : "Unable to verify email. Please check the verification link and try again."),
-          }
+          },
         );
       } finally {
         isVerifying.current = false;
@@ -81,7 +87,13 @@ export const useVerifyEmail = () => {
     };
 
     verify();
-  }, [searchParams, verifyEmail, setSearchParams]);
+  }, [searchParams, verifyEmail, setSearchParams, fromRegistration]);
+
+  useEffect(() => {
+    if (location.state?.email) {
+      setResendEmail(location.state.email);
+    }
+  }, [location.state?.email]);
 
   const handleGoToLogin = () => {
     setAuthOpen(true);
@@ -121,7 +133,7 @@ export const useVerifyEmail = () => {
           description:
             error?.data?.description ||
             "Please confirm the email address and try again.",
-        }
+        },
       );
     }
   };

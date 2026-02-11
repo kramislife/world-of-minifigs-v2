@@ -23,6 +23,7 @@ const validateEnv = () => {
     "JWT_REFRESH_TOKEN_SECRET",
     "FRONTEND_URL",
     "SMTP_HOST",
+    "SMTP_PORT",
     "SMTP_PASSWORD",
     "SMTP_FROM_EMAIL",
     "CLOUDINARY_CLOUD_NAME",

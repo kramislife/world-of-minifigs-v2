@@ -45,8 +45,7 @@ const VerifyEmail = () => {
                 Verification Failed
               </h1>
               <p className="text-accent-foreground">
-                We couldn’t use that verification link. Enter your registered
-                email to get a new verification link.
+                Enter your registered email to get a new verification link.
               </p>
             </div>
 

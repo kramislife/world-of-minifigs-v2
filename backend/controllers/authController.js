@@ -113,7 +113,7 @@ export const register = async (req, res) => {
     const verificationTokenExpiry = new Date();
     verificationTokenExpiry.setHours(
       verificationTokenExpiry.getHours() +
-        parseInt(process.env.EMAIL_VERIFICATION_EXPIRY || "1", 10)
+        parseInt(process.env.EMAIL_VERIFICATION_EXPIRY || "1", 10),
     );
 
     // Create user
@@ -210,7 +210,7 @@ export const register = async (req, res) => {
         success: true,
         message: "Your account has been created",
         description:
-          "Your account was created successfully, but we couldn't send the verification email. Please use the 'Resend verification email' option to receive your verification link.",
+          "We couldn't send the verification email. Please enter your registered email to get a new verification link.",
         user: userResponse,
         emailSent: false, // Flag for frontend to show resend option
       });
@@ -276,7 +276,7 @@ export const resendVerification = async (req, res) => {
         const verificationTokenExpiry = new Date();
         verificationTokenExpiry.setHours(
           verificationTokenExpiry.getHours() +
-            parseInt(process.env.EMAIL_VERIFICATION_EXPIRY || "1", 10)
+            parseInt(process.env.EMAIL_VERIFICATION_EXPIRY || "1", 10),
         );
 
         user.verificationToken = verificationToken;
@@ -412,13 +412,12 @@ export const login = async (req, res) => {
       profilePicture: user.profilePicture,
     };
 
-
     setAuthCookies(
       res,
       accessToken,
       refreshToken,
       accessTokenDays,
-      refreshTokenDays
+      refreshTokenDays,
     );
 
     res.status(200).json({
@@ -529,7 +528,6 @@ export const logout = async (req, res) => {
         await user.save();
       }
     }
-
 
     clearAuthCookies(res);
 
@@ -658,14 +656,14 @@ export const refreshToken = async (req, res) => {
 
     // Rotate refresh token: generate new access + refresh tokens
     const { accessToken, refreshToken: newRefreshToken } = generateTokens(
-      user._id
+      user._id,
     );
 
     const accessTokenDays = Number(process.env.JWT_ACCESS_TOKEN_EXPIRY) || 1;
     const refreshTokenDays = Number(process.env.JWT_REFRESH_TOKEN_EXPIRY) || 7;
     const newRefreshTokenExpiry = new Date();
     newRefreshTokenExpiry.setDate(
-      newRefreshTokenExpiry.getDate() + refreshTokenDays
+      newRefreshTokenExpiry.getDate() + refreshTokenDays,
     );
 
     user.refreshToken = newRefreshToken;
@@ -677,7 +675,7 @@ export const refreshToken = async (req, res) => {
       accessToken,
       newRefreshToken,
       accessTokenDays,
-      refreshTokenDays
+      refreshTokenDays,
     );
 
     return res.status(200).json({
@@ -722,7 +720,7 @@ export const forgotPassword = async (req, res) => {
       const resetTokenExpiry = new Date();
       resetTokenExpiry.setMinutes(
         resetTokenExpiry.getMinutes() +
-          parseInt(process.env.PASSWORD_RESET_EXPIRY || "30", 10)
+          parseInt(process.env.PASSWORD_RESET_EXPIRY || "30", 10),
       );
 
       user.resetPasswordToken = resetToken;
@@ -879,7 +877,7 @@ export const getAllUsers = async (req, res) => {
 
     const allUsers = await User.find(searchQuery)
       .select(
-        "-password -verificationToken -verificationTokenExpiry -resetPasswordToken -resetPasswordTokenExpiry -refreshToken -refreshTokenExpiry -__v"
+        "-password -verificationToken -verificationTokenExpiry -resetPasswordToken -resetPasswordTokenExpiry -refreshToken -refreshTokenExpiry -__v",
       )
       .lean();
 
