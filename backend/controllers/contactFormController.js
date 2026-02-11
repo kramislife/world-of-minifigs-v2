@@ -39,11 +39,9 @@ export const sendContactMessage = async (req, res) => {
       });
     }
 
-    const appEmail = process.env.SUPPORT_EMAIL || process.env.SMTP_FROM_EMAIL;
+    const appEmail = process.env.SMTP_FROM_EMAIL;
     if (!appEmail) {
-      console.error(
-        "Contact form error: SUPPORT_EMAIL/SMTP_FROM_EMAIL is not configured."
-      );
+      console.error("Contact form error: SMTP_FROM_EMAIL is not configured.");
       return res.status(500).json({
         success: false,
         message: "Unable to send your message",

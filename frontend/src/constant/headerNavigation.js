@@ -36,12 +36,12 @@ export const headerNavigation = [
     path: "/about",
     icon: Info,
   },
-  {
-    id: "designer",
-    label: "Designer",
-    path: "/designer",
-    icon: PenTool,
-  },
+  // {
+  //   id: "designer",
+  //   label: "Designer",
+  //   path: "/designer",
+  //   icon: PenTool,
+  // },
   {
     id: "dealers",
     label: "Dealers",

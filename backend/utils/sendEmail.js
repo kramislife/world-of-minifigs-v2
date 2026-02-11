@@ -4,7 +4,6 @@ const sendEmail = async (option) => {
   // Validate required SMTP config
   if (
     !process.env.SMTP_HOST ||
-    !process.env.SMTP_USER ||
     !process.env.SMTP_PASSWORD ||
     !process.env.SMTP_FROM_EMAIL
   ) {
@@ -22,7 +21,7 @@ const sendEmail = async (option) => {
     port: smtpPort,
     secure: smtpPort === 465,
     auth: {
-      user: process.env.SMTP_USER,
+      user: process.env.SMTP_FROM_EMAIL,
       pass: process.env.SMTP_PASSWORD,
     },
     tls: {

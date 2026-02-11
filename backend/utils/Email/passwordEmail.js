@@ -1,7 +1,7 @@
 export const getResetPasswordTemplate = (user, resetUrl) => {
   const email = user.email;
   const appName = process.env.SMTP_FROM_NAME || "World Of Minifigs";
-  const supportEmail = process.env.SUPPORT_EMAIL || process.env.SMTP_FROM_EMAIL;
+  const supportEmail = process.env.SMTP_FROM_EMAIL;
   const expiryTime = process.env.PASSWORD_RESET_EXPIRY || "30";
   const expiryUnit = parseInt(expiryTime) === 1 ? "minute" : "minutes";
 
