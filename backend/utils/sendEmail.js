@@ -4,6 +4,7 @@ const sendEmail = async (option) => {
   // Validate required SMTP config
   if (
     !process.env.SMTP_HOST ||
+    !process.env.SMTP_PORT ||
     !process.env.SMTP_PASSWORD ||
     !process.env.SMTP_FROM_EMAIL
   ) {
@@ -25,7 +26,7 @@ const sendEmail = async (option) => {
       pass: process.env.SMTP_PASSWORD,
     },
     tls: {
-      rejectUnauthorized: process.env.NODE_ENV === "production",
+      rejectUnauthorized: false,
     },
   });
 
@@ -37,6 +38,8 @@ const sendEmail = async (option) => {
     subject: option.subject,
     html: option.message,
   };
+
+  await transport.verify();
 
   await transport.sendMail(mailOptions);
 };
