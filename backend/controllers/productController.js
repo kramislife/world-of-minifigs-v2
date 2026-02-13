@@ -34,8 +34,8 @@ import {
 import {
   validateForeignKeys,
   checkProductExists,
-  calculateDiscountPrice,
 } from "../utils/Products/productValidation.js";
+import { calculateDiscountPrice } from "../utils/Products/productPriceUtils.js";
 import {
   validatePriceParams,
   validateSortBy,

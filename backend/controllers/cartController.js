@@ -1,93 +1,12 @@
 import Cart from "../models/cart.model.js";
 import Product from "../models/product.model.js";
-
-//------------------------------------------------ Helpers ------------------------------------------
-
-const CART_POPULATE = {
-  path: "items.productId",
-  select:
-    "productName price discountPrice productType variants images isActive stock colorId secondaryColorId",
-  populate: [
-    { path: "variants.colorId", select: "colorName hexCode" },
-    { path: "variants.secondaryColorId", select: "colorName hexCode" },
-    { path: "colorId", select: "colorName hexCode" },
-    { path: "secondaryColorId", select: "colorName hexCode" },
-  ],
-};
-
-function parseVariantIndex(value) {
-  if (value == null || value === "null" || value === "undefined") return null;
-  return Number(value);
-}
-
-function findCartItemIndex(items, productId, variantIndex) {
-  const target = parseVariantIndex(variantIndex);
-  return items.findIndex((item) => {
-    const matchProduct = item.productId.toString() === productId;
-    const itemV = item.variantIndex ?? null;
-    return matchProduct && itemV === target;
-  });
-}
-
-function getProductDisplayInfo(product, productType, variantIndex) {
-  if (!product) return { displayName: "Unknown", maxStock: 0 };
-  const isVariant = productType === "variant";
-  const variant = isVariant ? product.variants?.[variantIndex] : null;
-  const variantName =
-    isVariant && variant
-      ? [variant.colorId?.colorName, variant.secondaryColorId?.colorName]
-          .filter(Boolean)
-          .join(" / ")
-      : null;
-  const displayName = variantName
-    ? `${product.productName} - ${variantName}`
-    : product.productName;
-  const maxStock = isVariant ? (variant?.stock ?? 0) : (product?.stock ?? 0);
-  return { displayName, maxStock };
-}
-
-function formatCartItem(item) {
-  const product = item.productId;
-  const isVariant = item.productType === "variant";
-  const variant = isVariant ? product.variants?.[item.variantIndex] : null;
-
-  const price = Number(product.price) || 0;
-  const discountPrice =
-    product.discountPrice != null && product.discountPrice >= 0
-      ? Number(product.discountPrice)
-      : null;
-  const effectivePrice = discountPrice ?? price;
-  const hasDiscount =
-    discountPrice != null && discountPrice < price && price > 0;
-  const quantity = item.quantity;
-
-  const variantColor = isVariant
-    ? variant?.colorId?.colorName
-    : product.colorId?.colorName;
-  const secondaryColor = isVariant
-    ? variant?.secondaryColorId?.colorName
-    : product.secondaryColorId?.colorName;
-  const colorLabel = [variantColor, secondaryColor].filter(Boolean).join(" / ");
-
-  const formatted = {
-    productId: product._id,
-    productName: product.productName,
-    quantity,
-    productType: item.productType,
-    image: isVariant ? variant?.image?.url : product.images?.[0]?.url,
-    stock: isVariant ? variant?.stock : product.stock,
-    variantColor: variantColor || null,
-    secondaryColor: secondaryColor || null,
-    colorLabel: colorLabel || null,
-    displayPrice: effectivePrice.toFixed(2),
-    originalPrice: price.toFixed(2),
-    hasDiscount,
-    totalItemPrice: (effectivePrice * quantity).toFixed(2),
-    addedAt: item.addedAt,
-  };
-  if (isVariant) formatted.variantIndex = item.variantIndex;
-  return formatted;
-}
+import { CART_POPULATE } from "../utils/cartPopulate.js";
+import {
+  findCartItemIndex,
+  formatCartItemForDisplay,
+  getCartItemDisplayAndStock,
+  itemMatchesCartItem,
+} from "../utils/productItemUtils.js";
 
 //------------------------------------------------ Get User Cart ------------------------------------------
 export const getCart = async (req, res) => {
@@ -104,7 +23,8 @@ export const getCart = async (req, res) => {
 
     const formattedItems = cart.items
       .filter((item) => item.productId?.isActive)
-      .map(formatCartItem)
+      .map(formatCartItemForDisplay)
+      .filter(Boolean)
       .sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
 
     const subtotal = formattedItems.reduce(
@@ -140,6 +60,14 @@ export const addToCart = async (req, res) => {
     const { productId, quantity, variantIndex } = req.body;
     const userId = req.user._id;
 
+    if (!productId) {
+      return res.status(400).json({
+        success: false,
+        message: "Product ID is required",
+        description: "Please provide a product to add to cart.",
+      });
+    }
+
     const product = await Product.findById(productId);
     if (!product?.isActive) {
       return res.status(404).json({
@@ -156,7 +84,7 @@ export const addToCart = async (req, res) => {
 
     const addQty = Number(quantity) || 1;
     const existingQty = itemIndex > -1 ? cart.items[itemIndex].quantity : 0;
-    const { displayName, maxStock } = getProductDisplayInfo(
+    const { displayName, maxStock } = getCartItemDisplayAndStock(
       product,
       product.productType,
       variantIndex,
@@ -180,8 +108,9 @@ export const addToCart = async (req, res) => {
         productType: product.productType,
         quantity: addQty,
       };
-      if (product.productType === "variant")
+      if (product.productType === "variant") {
         newItem.variantIndex = variantIndex;
+      }
       cart.items.push(newItem);
     }
 
@@ -203,13 +132,33 @@ export const updateCartItem = async (req, res) => {
     const { quantity, productId, variantIndex } = req.body;
     const userId = req.user._id;
 
-    const cart = await Cart.findOne({ userId });
-    const itemIndex = findCartItemIndex(
-      cart?.items ?? [],
-      productId,
-      variantIndex,
-    );
+    if (!productId) {
+      return res.status(400).json({
+        success: false,
+        message: "Product ID is required",
+        description: "Please provide the product to update.",
+      });
+    }
 
+    const parsedQty = Number(quantity);
+    if (quantity == null || !Number.isInteger(parsedQty) || parsedQty < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid quantity",
+        description: "Quantity must be a positive integer.",
+      });
+    }
+    const qty = parsedQty;
+
+    const cart = await Cart.findOne({ userId });
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        message: "Item not found",
+      });
+    }
+
+    const itemIndex = findCartItemIndex(cart.items, productId, variantIndex);
     if (itemIndex === -1) {
       return res
         .status(404)
@@ -218,7 +167,7 @@ export const updateCartItem = async (req, res) => {
 
     const item = cart.items[itemIndex];
     const product = await Product.findById(item.productId);
-    const { displayName, maxStock } = getProductDisplayInfo(
+    const { displayName, maxStock } = getCartItemDisplayAndStock(
       product,
       item.productType,
       item.variantIndex,
@@ -232,7 +181,7 @@ export const updateCartItem = async (req, res) => {
       });
     }
 
-    if (maxStock < quantity) {
+    if (maxStock < qty) {
       return res.status(400).json({
         success: false,
         message: "Maximum stock reached",
@@ -240,7 +189,7 @@ export const updateCartItem = async (req, res) => {
       });
     }
 
-    cart.items[itemIndex].quantity = quantity;
+    cart.items[itemIndex].quantity = qty;
     await cart.save();
     return res.status(200).json({ success: true, message: "Quantity updated" });
   } catch (error) {
@@ -256,12 +205,9 @@ export const removeCartItem = async (req, res) => {
     const cart = await Cart.findOne({ userId: req.user._id });
 
     if (cart) {
-      const target = parseVariantIndex(variantIndex);
-      cart.items = cart.items.filter((item) => {
-        const matchProduct = item.productId.toString() === productId;
-        const itemV = item.variantIndex ?? null;
-        return !(matchProduct && itemV === target);
-      });
+      cart.items = cart.items.filter(
+        (item) => !itemMatchesCartItem(item, productId, variantIndex),
+      );
 
       if (cart.items.length === 0) {
         await Cart.deleteOne({ _id: cart._id });
@@ -293,6 +239,14 @@ export const syncCart = async (req, res) => {
   try {
     const { items } = req.body;
     const userId = req.user._id;
+
+    if (!Array.isArray(items)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid request",
+        description: "Items must be an array.",
+      });
+    }
 
     const newItems = [];
     for (const localItem of items) {

@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import Category from "../../models/category.model.js";
 import SubCategory from "../../models/subCategory.model.js";
 import Collection from "../../models/collection.model.js";
@@ -6,8 +5,11 @@ import SubCollection from "../../models/subCollection.model.js";
 import Color from "../../models/color.model.js";
 import SkillLevel from "../../models/skillLevel.model.js";
 import { buildSearchQuery } from "../pagination.js";
+import { parseIds } from "./productQueryValidator.js";
 
-// Build sort object from sortBy string
+//------------------------------------------------ Sort -------------------------------------------------
+
+/** Build sort object from sortBy string */
 export const buildSortObject = (sortBy) => {
   const sortMap = {
     name_asc: { productName: 1 },
@@ -20,22 +22,9 @@ export const buildSortObject = (sortBy) => {
   return sortMap[sortBy] || { createdAt: -1 }; // Default to newest first
 };
 
-// Parse comma-separated IDs or array into array, validating ObjectId format
-export const parseIds = (value) => {
-  if (!value) return [];
-  if (Array.isArray(value)) {
-    return value.filter((id) => mongoose.Types.ObjectId.isValid(id));
-  }
-  if (typeof value === "string") {
-    return value
-      .split(",")
-      .map((id) => id.trim())
-      .filter((id) => mongoose.Types.ObjectId.isValid(id));
-  }
-  return [];
-};
+//------------------------------------------------ Search -------------------------------------------------
 
-// Build search query for products
+/** Build search query for products */
 export const buildProductSearchQuery = async (search) => {
   if (!search) return {};
 
@@ -113,7 +102,9 @@ export const buildProductSearchQuery = async (search) => {
   return orConditions.length > 0 ? { $or: orConditions } : {};
 };
 
-// Build price filter query
+//------------------------------------- Price Filter -------------------------------------------------
+
+/** Build price filter query */
 export const buildPriceFilter = (priceMin, priceMax) => {
   if (priceMin === null && priceMax === null) return null;
 
@@ -180,7 +171,9 @@ export const buildPriceFilter = (priceMin, priceMax) => {
   return priceConditions.length > 0 ? priceConditions[0] : null;
 };
 
-// Build complete query for public products with filters
+//------------------------------------- Public Product Query -------------------------------------------------
+
+/** Build complete query for public products with filters */
 export const buildPublicProductQuery = async (queryParams) => {
   const {
     search,

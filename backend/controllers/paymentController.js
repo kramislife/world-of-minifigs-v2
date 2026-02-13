@@ -1,36 +1,22 @@
 import Stripe from "stripe";
 import Cart from "../models/cart.model.js";
 import Order from "../models/order.model.js";
-import Product from "../models/product.model.js";
+import {
+  CART_POPULATE_ORDER,
+  CART_POPULATE_CHECKOUT,
+} from "../utils/cartPopulate.js";
+import {
+  decrementProductStock,
+  extractShippingAddress,
+  getFullSessionIfNeeded,
+} from "../utils/paymentHelpers.js";
+import { getCartItemInfoForOrder } from "../utils/productItemUtils.js";
 
 //------------------------------------------------ Helpers ------------------------------------------
 
 const getStripe = () => new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
-
-const CART_POPULATE_BASE = {
-  populate: [
-    { path: "variants.colorId", select: "colorName" },
-    { path: "variants.secondaryColorId", select: "colorName" },
-    { path: "colorId", select: "colorName" },
-    { path: "secondaryColorId", select: "colorName" },
-  ],
-};
-
-const CART_POPULATE_ORDER = {
-  path: "items.productId",
-  select:
-    "productName price discount discountPrice productType variants images colorId secondaryColorId",
-  ...CART_POPULATE_BASE,
-};
-
-const CART_POPULATE_CHECKOUT = {
-  path: "items.productId",
-  select:
-    "productName price discountPrice productType variants images isActive colorId secondaryColorId",
-  ...CART_POPULATE_BASE,
-};
 
 const STRIPE_SESSION_CONFIG = {
   mode: "payment",
@@ -40,85 +26,7 @@ const STRIPE_SESSION_CONFIG = {
   },
 };
 
-function getCartItemProductInfo(product, item) {
-  const isVariant = item.productType === "variant";
-  const variant = isVariant ? product.variants?.[item.variantIndex] : null;
-
-  const price =
-    product.discountPrice != null && product.discountPrice >= 0
-      ? product.discountPrice
-      : product.price;
-
-  const discount =
-    product.discount != null && product.discount >= 0 ? product.discount : 0;
-
-  const primaryColor = isVariant
-    ? variant?.colorId?.colorName
-    : product.colorId?.colorName;
-  const secondaryColor = isVariant
-    ? variant?.secondaryColorId?.colorName
-    : product.secondaryColorId?.colorName;
-  const colorLabel = [primaryColor, secondaryColor].filter(Boolean).join(" / ");
-  const productName = colorLabel
-    ? `${product.productName} - ${colorLabel}`
-    : product.productName;
-
-  const imageUrl = isVariant ? variant?.image?.url : product.images?.[0]?.url;
-
-  return { price, discount, productName, imageUrl };
-}
-
-function extractShippingAddress(session) {
-  const shippingDetails = session.shipping_details;
-  const customerDetails = session.customer_details;
-  const addr = shippingDetails?.address || customerDetails?.address;
-  if (!addr) return undefined;
-
-  const name = shippingDetails?.name || customerDetails?.name;
-  return {
-    name: name || undefined,
-    line1: addr.line1,
-    line2: addr.line2 || undefined,
-    city: addr.city,
-    state: addr.state,
-    postalCode: addr.postal_code,
-    country: addr.country,
-  };
-}
-
-async function decrementProductStock(cart) {
-  for (const item of cart.items) {
-    const product = item.productId;
-    if (!product) continue;
-
-    const quantity = Number(item.quantity) || 1;
-    if (item.variantIndex != null) {
-      await Product.findByIdAndUpdate(product._id, {
-        $inc: { [`variants.${item.variantIndex}.stock`]: -quantity },
-      });
-    } else {
-      await Product.findByIdAndUpdate(product._id, {
-        $inc: { stock: -quantity },
-      });
-    }
-  }
-}
-
-async function getFullSessionIfNeeded(rawSession) {
-  if (rawSession?.id && !rawSession?.shipping_details?.address) {
-    try {
-      return await getStripe().checkout.sessions.retrieve(rawSession.id);
-    } catch (e) {
-      console.warn(
-        "Could not retrieve full session, using payload:",
-        e?.message,
-      );
-    }
-  }
-  return rawSession;
-}
-
-//--------------------------------------- Create Order from Stripe Session -----------------------------------
+//---------------------------------------- Create Order from Stripe Session -----------------------------------
 async function createOrderFromStripeSession(session) {
   const existingOrder = await Order.findOne({ stripeSessionId: session.id });
   if (existingOrder) return { order: existingOrder, created: false };
@@ -142,7 +50,7 @@ async function createOrderFromStripeSession(session) {
     const product = item.productId;
     if (!product) continue;
 
-    const { price, discount, productName, imageUrl } = getCartItemProductInfo(
+    const { price, discount, productName, imageUrl } = getCartItemInfoForOrder(
       product,
       item,
     );
@@ -197,7 +105,7 @@ async function createOrderFromStripeSession(session) {
   return { order, created: true };
 }
 
-//--------------------------------------- Create Checkout Session (Cart) --------------------------------------
+//----------------------------------- Create Checkout Session ------------------------------------------
 export const createCheckoutSession = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -218,7 +126,7 @@ export const createCheckoutSession = async (req, res) => {
       const product = item.productId;
       if (!product?.isActive) continue;
 
-      const { price, productName, imageUrl } = getCartItemProductInfo(
+      const { price, productName, imageUrl } = getCartItemInfoForOrder(
         product,
         item,
       );
@@ -271,7 +179,7 @@ export const createCheckoutSession = async (req, res) => {
   }
 };
 
-//--------------------------------------- Confirm Order (Success Page) --------------------------------------
+//----------------------------------- Confirm Order (Success Page) -------------------------------------------
 export const confirmOrder = async (req, res) => {
   try {
     const sessionId = req.query.session_id || req.body?.session_id;
@@ -332,15 +240,12 @@ export const stripeWebhook = async (req, res) => {
       console.error("STRIPE_WEBHOOK_SECRET is not set");
       return res.status(500).json({ received: false });
     }
-    const event = getStripe().webhooks.constructEvent(
-      req.body,
-      sig,
-      webhookSecret,
-    );
+    const stripe = getStripe();
+    const event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
 
     if (event.type === "checkout.session.completed") {
       const rawSession = event.data.object;
-      const session = await getFullSessionIfNeeded(rawSession);
+      const session = await getFullSessionIfNeeded(rawSession, stripe);
 
       try {
         await createOrderFromStripeSession(session);

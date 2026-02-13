@@ -1,10 +1,15 @@
+import { getPriceDisplayInfo } from "./productPriceUtils.js";
+
 export const processProductForListing = (product, filterColorIds = []) => {
+  const priceInfo = getPriceDisplayInfo(product, 1);
   const minimalProduct = {
     _id: product._id,
     productName: product.productName,
     price: product.price,
     discount: product.discount,
     discountPrice: product.discountPrice,
+    displayPrice: priceInfo.displayPrice,
+    hasDiscount: priceInfo.hasDiscount,
     productType: product.productType,
     createdAt: product.createdAt,
     categoryIds: product.categoryIds || [],
@@ -64,7 +69,6 @@ export const processProductForListing = (product, filterColorIds = []) => {
     // Use the matching variant's image URL for display
     minimalProduct.imageUrl =
       product.variants[matchingVariantIndex]?.image?.url || null;
-    // Also store the matched variant index for frontend use
     minimalProduct.displayVariantIndex = matchingVariantIndex;
     // For variant products, total stock is the sum of all variants
     minimalProduct.stock = product.variants.reduce(
@@ -79,14 +83,14 @@ export const processProductForListing = (product, filterColorIds = []) => {
   return minimalProduct;
 };
 
-// Process products array for listing
 export const processProductsForListing = (products, filterColorIds = []) => {
   return products.map((product) =>
     processProductForListing(product, filterColorIds),
   );
 };
 
-// Filter product fields based on productType
+//--------------------------------------------- Type Filter -------------------------------------------------
+
 export const filterProductByType = (product) => {
   if (product.productType === "standalone") {
     const { variants, ...productWithoutVariants } = product;
@@ -105,12 +109,16 @@ export const filterProductByType = (product) => {
   return product;
 };
 
-// Process product for detail page
+//------------------------------------------------ Details -------------------------------------------------
+
 export const processProductForDetails = (product) => {
   if (!product) return null;
 
+  const priceInfo = getPriceDisplayInfo(product, 1);
   const processedProduct = {
     ...product,
+    displayPrice: priceInfo.displayPrice,
+    hasDiscount: priceInfo.hasDiscount,
   };
 
   // Process images based on product type

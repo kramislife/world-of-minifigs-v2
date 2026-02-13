@@ -82,7 +82,8 @@ export const validateForeignKeys = async ({
   return errors;
 };
 
-// Check if product with partId and itemId already exists
+//------------------------------------------------ Uniqueness -------------------------------------------------
+
 export const checkProductExists = async (partId, itemId, excludeId = null) => {
   const query = {
     partId: partId.trim(),
@@ -98,7 +99,6 @@ export const checkProductExists = async (partId, itemId, excludeId = null) => {
     .lean();
 };
 
-// Check if variant with partId and itemId already exists
 export const checkVariantExists = async (
   partId,
   itemId,
@@ -116,10 +116,4 @@ export const checkVariantExists = async (
   return await Product.findOne(query)
     .collation({ locale: "en", strength: 2 })
     .lean();
-};
-
-// Calculate discount price
-export const calculateDiscountPrice = (price, discount) => {
-  if (!discount || discount <= 0) return null;
-  return Math.round(price * (1 - discount / 100) * 100) / 100;
 };

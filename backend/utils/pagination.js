@@ -2,7 +2,8 @@ const SAFE_MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 10;
 const DEFAULT_PAGE = 1;
 
-// Validates and normalizes pagination parameters
+//------------------------------------------------ Normalize -------------------------------------------------
+
 export const normalizePagination = ({ page, limit, search }) => {
   // Normalize page
   let normalizedPage = parseInt(page, 10);
@@ -33,7 +34,8 @@ export const normalizePagination = ({ page, limit, search }) => {
   };
 };
 
-// Builds MongoDB query for search functionality
+//------------------------------------------------ Search -------------------------------------------------
+
 export const buildSearchQuery = (search, searchFields = []) => {
   if (!search || searchFields.length === 0) {
     return {};
@@ -55,7 +57,8 @@ export const buildSearchQuery = (search, searchFields = []) => {
   };
 };
 
-// Applies pagination to a MongoDB query
+//------------------------------------------------ Paginate -------------------------------------------------
+
 export const paginateQuery = async (
   Model,
   query = {},
@@ -98,7 +101,8 @@ export const paginateQuery = async (
   };
 };
 
-// Creates pagination response object
+//------------------------------------------------ Response -------------------------------------------------
+
 export const createPaginationResponse = (result, dataKey = "items") => {
   return {
     success: true,
