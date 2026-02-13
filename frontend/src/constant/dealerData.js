@@ -102,24 +102,24 @@ export const dealerBenefits = {
   badge: "DEALER EXCLUSIVE",
   title: "Why Partner with Us",
   description:
-    "We provide the highest quality LEGO parts and the most reliable service in the industry",
+    "We offer the highest quality LEGO parts and the most reliable service in the industry",
   features: [
     {
       title: "Premium Quality",
       description:
-        "Every single part is hand-sorted and 100% genuine LEGO. No fakes, no knock-offs",
+        "Every part is hand-sorted and 100% genuine LEGO. No fakes or knock-offs",
       icon: Star,
     },
     {
       title: "Market Ready",
       description:
-        "Our parts are cleaned and ready to be put on your shelves immediately",
+        "Our parts are brand new and ready for immediate sale. They are all genuine LEGO products",
       icon: TrendingUp,
     },
     {
       title: "Design Variety",
       description:
-        "Access thousands of unique torso designs and rare part combinations",
+        "Gain access to thousands of unique torso designs and rare part combinations",
       icon: Origami,
     },
   ],
