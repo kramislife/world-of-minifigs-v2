@@ -18,6 +18,7 @@ export const createBanner = async (req, res) => {
       enableButtons,
       buttons,
       isActive,
+      order: orderFromBody,
     } = req.body;
 
     // Required fields
@@ -171,11 +172,29 @@ export const createBanner = async (req, res) => {
       });
     }
 
-    // Get the next available order
+    // Resolve order: use provided value if valid, otherwise append at end
+    const count = await Banner.countDocuments();
     const lastBanner = await Banner.findOne()
       .sort({ order: -1 })
       .select("order");
     const nextOrder = lastBanner && lastBanner.order ? lastBanner.order + 1 : 1;
+
+    let finalOrder = nextOrder;
+    if (
+      orderFromBody !== undefined &&
+      orderFromBody !== null &&
+      orderFromBody !== ""
+    ) {
+      const parsed = parseInt(orderFromBody, 10);
+      if (!isNaN(parsed) && parsed >= 1) {
+        finalOrder = Math.min(parsed, count + 1);
+        // Shift existing banners to make room for the new one
+        await Banner.updateMany(
+          { order: { $gte: finalOrder } },
+          { $inc: { order: 1 } },
+        );
+      }
+    }
 
     const bannerData = {
       badge: badge?.trim() || undefined,
@@ -191,7 +210,7 @@ export const createBanner = async (req, res) => {
       },
       enableButtons: finalEnableButtons,
       isActive: isActive !== undefined ? Boolean(isActive) : true,
-      order: nextOrder,
+      order: finalOrder,
       createdBy: req.user._id,
     };
 

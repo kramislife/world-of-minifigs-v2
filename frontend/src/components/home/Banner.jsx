@@ -18,8 +18,9 @@ const Banner = () => {
     isError,
     hasBanners,
     setApi,
-    selectedIndex,
     scrollTo,
+    getPaginationIndicatorClass,
+    getSlideAnimationState,
     container: containerVariants,
     item: itemVariants,
   } = useBanner();
@@ -57,9 +58,7 @@ const Banner = () => {
               key={index}
               variant="ghost"
               onClick={() => scrollTo(index)}
-              className={`h-2 p-0 rounded-full transition-all duration-300 hover:bg-white/60 ${
-                selectedIndex === index ? "w-8 bg-white" : "w-2 bg-white/40"
-              }`}
+              className={`h-2 p-0 rounded-full transition-all duration-300 hover:bg-white/60 ${getPaginationIndicatorClass(index)}`}
               aria-label={`Go to slide ${index + 1}`}
             />
           ))}
@@ -75,127 +74,99 @@ const Banner = () => {
         className="w-full h-full"
       >
         <CarouselContent className="h-full">
-          {banners.map((banner, index) => {
-            const textClass =
-              banner.textTheme === "dark"
-                ? "text-foreground dark:text-secondary-foreground"
-                : "text-background dark:text-foreground";
+          {banners.map((banner, index) => (
+            <CarouselItem key={banner._id} className="h-full">
+              <div className="relative w-full h-full aspect-4/5 md:aspect-16/7 overflow-hidden">
+                {banner.mediaType === "video" ? (
+                  <video
+                    data-banner-video={index}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    src={banner.mediaUrl}
+                    autoPlay
+                    muted
+                    playsInline
+                  />
+                ) : (
+                  <img
+                    src={banner.mediaUrl}
+                    alt={banner.label || "Banner"}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                )}
 
-            const mediaType = banner.media?.resourceType;
-            const mediaUrl = banner.media?.url;
+                {/* Overlay (only when light text is used) */}
+                {banner.showOverlay && (
+                  <div className="absolute inset-0 bg-black/30" />
+                )}
 
-            return (
-              <CarouselItem key={banner._id} className="h-full">
-                <div className="relative w-full h-full aspect-4/5 md:aspect-16/7 overflow-hidden">
-                  {/* Media */}
-                  {mediaType === "video" ? (
-                    <video
-                      data-banner-video={index}
-                      className="absolute inset-0 w-full h-full object-cover"
-                      src={mediaUrl}
-                      autoPlay
-                      muted
-                      playsInline
-                    />
-                  ) : (
-                    <img
-                      src={mediaUrl}
-                      alt={banner.label || "Banner"}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  )}
-
-                  {/* Overlay (only when light text is used) */}
-                  {banner.textTheme === "light" && (
-                    <div className="absolute inset-0 bg-black/30" />
-                  )}
-
-                  {/* Content */}
-                  <div
-                    className={
-                      "relative z-10 flex h-full w-full px-5 py-12 sm:px-10 " +
-                      banner.alignmentClasses +
-                      " " +
-                      textClass
-                    }
+                {/* Content */}
+                <div
+                  className={
+                    "relative z-10 flex h-full w-full px-5 py-12 sm:px-10 " +
+                    banner.alignmentClasses +
+                    " " +
+                    banner.textClass
+                  }
+                >
+                  <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate={getSlideAnimationState(index)}
+                    className="max-w-3xl space-y-3"
                   >
-                    <motion.div
-                      variants={containerVariants}
-                      initial="hidden"
-                      animate={selectedIndex === index ? "visible" : "hidden"}
-                      className="max-w-3xl space-y-3"
-                    >
-                      {banner.badge && (
-                        <motion.p
-                          variants={itemVariants}
-                          className="uppercase tracking-widest text-xs sm:text-sm"
-                        >
-                          {banner.badge}
-                        </motion.p>
-                      )}
+                    {banner.badge && (
+                      <motion.p
+                        variants={itemVariants}
+                        className="uppercase tracking-widest text-xs sm:text-sm"
+                      >
+                        {banner.badge}
+                      </motion.p>
+                    )}
 
-                      {banner.label && (
-                        <motion.h1
-                          variants={itemVariants}
-                          className="text-4xl sm:text-5xl md:text-6xl font-extrabold uppercase"
-                        >
-                          {banner.label}
-                        </motion.h1>
-                      )}
+                    {banner.label && (
+                      <motion.h1
+                        variants={itemVariants}
+                        className="text-4xl sm:text-5xl md:text-6xl font-extrabold uppercase"
+                      >
+                        {banner.label}
+                      </motion.h1>
+                    )}
 
-                      {banner.description && (
-                        <motion.p
-                          variants={itemVariants}
-                          className={
-                            "text-sm sm:text-lg" +
-                            (banner.textTheme === "dark"
-                              ? " text-foreground dark:text-secondary-foreground"
-                              : " text-background dark:text-foreground")
-                          }
-                        >
-                          {banner.description}
-                        </motion.p>
-                      )}
+                    {banner.description && (
+                      <motion.p
+                        variants={itemVariants}
+                        className={
+                          "text-sm sm:text-lg" + banner.descriptionClass
+                        }
+                      >
+                        {banner.description}
+                      </motion.p>
+                    )}
 
-                      {banner.enableButtons &&
-                        Array.isArray(banner.buttons) &&
-                        banner.buttons.length > 0 && (
-                          <motion.div
-                            variants={itemVariants}
-                            className={
-                              "flex gap-3 pt-5 " +
-                              (banner.position === "center"
-                                ? "justify-center"
-                                : banner.position === "bottom-right"
-                                  ? "justify-end"
-                                  : "")
-                            }
+                    {banner.showButtons && (
+                      <motion.div
+                        variants={itemVariants}
+                        className={
+                          "flex gap-3 pt-5 " + banner.buttonsContainerClass
+                        }
+                      >
+                        {banner.buttons.map((btn, btnIndex) => (
+                          <Button
+                            key={btnIndex}
+                            asChild
+                            variant={btn.buttonVariant}
+                            className="h-12"
                           >
-                            {banner.buttons.map((btn, index) => {
-                              const btnVariant =
-                                btn.variant === "outline"
-                                  ? "bannerOutline"
-                                  : "bannerDefault";
-
-                              return (
-                                <Button
-                                  key={index}
-                                  asChild
-                                  variant={btnVariant}
-                                  className="h-12"
-                                >
-                                  <Link to={btn.href || "#"}>{btn.label}</Link>
-                                </Button>
-                              );
-                            })}
-                          </motion.div>
-                        )}
-                    </motion.div>
-                  </div>
+                            <Link to={btn.href || "#"}>{btn.label}</Link>
+                          </Button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </motion.div>
                 </div>
-              </CarouselItem>
-            );
-          })}
+              </div>
+            </CarouselItem>
+          ))}
         </CarouselContent>
       </Carousel>
     </section>
