@@ -29,8 +29,9 @@ export const useAddToCart = ({
   product,
   variantIndex = null,
   quantity = 1,
+  onSuccess,
 }) => {
-  const { handleAddToCart, getAddToCartStatus } = useCart();
+  const { handleAddToCart, getAddToCartStatus, isAddingToCart } = useCart();
 
   const { isSoldOut, label } = useMemo(
     () => getAddToCartStatus(product, variantIndex),
@@ -43,25 +44,21 @@ export const useAddToCart = ({
         e.preventDefault();
         e.stopPropagation();
       }
-      handleAddToCart(product, quantity, variantIndex);
+      handleAddToCart(product, quantity, variantIndex, onSuccess);
     },
-    [product, quantity, variantIndex, handleAddToCart],
+    [product, quantity, variantIndex, onSuccess, handleAddToCart],
   );
 
   return {
     isSoldOut,
     label,
     onClick,
+    isLoading: isAddingToCart,
   };
 };
 
-// Hook for managing variant selection in the cart/product views
-export const useVariantSelection = ({
-  product,
-  onAddToCart,
-  switchToCart,
-  isAddingToCart = false,
-}) => {
+// Hook for variant selection UI (color swatches, images, price display)
+export const useVariantSelection = ({ product }) => {
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(() => {
     if (!product?.variants || product.variants.length === 0) return 0;
     const firstInStock = product.variants.findIndex((v) => v.stock > 0);
@@ -70,35 +67,19 @@ export const useVariantSelection = ({
 
   const selectedVariant = product?.variants?.[selectedVariantIndex];
 
-  const carouselImages = useMemo(() => {
-    return product?.variants?.map((v) => v.image?.url).filter(Boolean) || [];
-  }, [product]);
+  const carouselImages = useMemo(
+    () => product?.variants?.map((v) => v.image?.url).filter(Boolean) || [],
+    [product],
+  );
 
   const { setApi, scrollTo } = useCarousel({
     itemCount: carouselImages.length,
   });
 
-  // Smooth scroll to selected variant image
   useEffect(() => {
-    if (scrollTo) {
-      scrollTo(selectedVariantIndex);
-    }
+    if (scrollTo) scrollTo(selectedVariantIndex);
   }, [selectedVariantIndex, scrollTo]);
 
-  const handleAdd = useCallback(() => {
-    if (selectedVariant && selectedVariant.stock > 0) {
-      onAddToCart(product, 1, selectedVariantIndex);
-      if (switchToCart) switchToCart();
-    }
-  }, [
-    product,
-    selectedVariantIndex,
-    selectedVariant,
-    onAddToCart,
-    switchToCart,
-  ]);
-
-  // Normalized color data for swatches
   const normalizedColorVariants = useMemo(() => {
     const source = product?.colorVariants || product?.variants || [];
     const isFlattened = Boolean(product?.colorVariants);
@@ -127,38 +108,26 @@ export const useVariantSelection = ({
   const displayPrice = (
     selectedVariant?.discountPrice ||
     selectedVariant?.price ||
-    product.price ||
+    product?.price ||
     0
   ).toFixed(2);
-  const originalPrice = (selectedVariant?.price || product.price || 0).toFixed(
+  const originalPrice = (selectedVariant?.price || product?.price || 0).toFixed(
     2,
   );
   const hasDiscount = Boolean(
-    selectedVariant?.discountPrice || product.discountPrice,
+    selectedVariant?.discountPrice || product?.discountPrice,
   );
-  const isAddDisabled = !(selectedVariant?.stock > 0) || isAddingToCart;
-  const addButtonLabel =
-    selectedVariant?.stock > 0
-      ? isAddingToCart
-        ? "Adding..."
-        : "Add to Cart"
-      : "Out of Stock";
 
   return {
     selectedVariantIndex,
     setSelectedVariantIndex,
-    selectedVariant,
     carouselImages,
     normalizedColorVariants,
     selectedColorName,
     displayPrice,
     originalPrice,
     hasDiscount,
-    isAddDisabled,
-    addButtonLabel,
     setApi,
-    scrollTo,
-    handleAdd,
   };
 };
 
@@ -217,12 +186,8 @@ export const useCart = () => {
     return label || null;
   }, []);
 
-  const items = useMemo(() => {
-    const rawItems = isAuthenticated
-      ? serverCartData?.cart?.items || []
-      : localItems;
-
-    return rawItems.map((item) => {
+  const formatCartItem = useCallback(
+    (item) => {
       if (
         item.displayPrice != null &&
         item.totalItemPrice != null &&
@@ -239,11 +204,9 @@ export const useCart = () => {
       const hasDiscount =
         discountPrice != null && discountPrice < price && price > 0;
       const colorLabel =
-        item.colorLabel != null
-          ? item.colorLabel
-          : [item.variantColor, item.secondaryColor]
-              .filter(Boolean)
-              .join(" / ") || null;
+        item.colorLabel ??
+        ([item.variantColor, item.secondaryColor].filter(Boolean).join(" / ") ||
+          null);
 
       return {
         ...item,
@@ -254,8 +217,16 @@ export const useCart = () => {
         colorLabel,
         colorDisplay: getColorDisplay({ ...item, colorLabel }),
       };
-    });
-  }, [isAuthenticated, serverCartData, localItems, getColorDisplay]);
+    },
+    [getColorDisplay],
+  );
+
+  const items = useMemo(() => {
+    const rawItems = isAuthenticated
+      ? serverCartData?.cart?.items || []
+      : localItems;
+    return rawItems.map(formatCartItem);
+  }, [isAuthenticated, serverCartData, localItems, formatCartItem]);
 
   const cartTotals = useMemo(() => {
     const computedTotal = items.reduce(
@@ -296,7 +267,7 @@ export const useCart = () => {
 
   // Handlers
   const addToCart = useCallback(
-    async (product, quantity = 1, variantIndex = null) => {
+    async (product, quantity = 1, variantIndex = null, onSuccess) => {
       // Check if item already in cart to verify total stock limit
       const existingItem = items.find(
         (item) =>
@@ -339,6 +310,7 @@ export const useCart = () => {
             quantity,
             variantIndex,
           }).unwrap();
+          await refetchCart();
         } catch (err) {
           toast.error(err.data?.message || "Cart error", {
             description:
@@ -363,18 +335,19 @@ export const useCart = () => {
           }),
         );
       }
+      onSuccess?.();
       dispatch(openCart());
     },
-    [isAuthenticated, addToCartServer, dispatch, items],
+    [isAuthenticated, addToCartServer, refetchCart, dispatch, items],
   );
 
   const handleAddToCart = useCallback(
-    (product, quantity = 1, variantIndex = null) => {
+    (product, quantity = 1, variantIndex = null, onSuccess) => {
       const { isSoldOut } = getAddToCartStatus(product, variantIndex);
       if (isSoldOut) return;
 
       if (product.productType === "standalone" || variantIndex !== null) {
-        addToCart(product, quantity, variantIndex);
+        addToCart(product, quantity, variantIndex, onSuccess);
       } else {
         dispatch(openVariantSelection(product));
       }
@@ -490,6 +463,7 @@ export const useCart = () => {
     ...cartTotals,
     isCartLoading,
     isCartFetching,
+    isAddingToCart,
     isUpdating:
       isAddingToCart ||
       isUpdatingQuantity ||

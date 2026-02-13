@@ -5,7 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import Logo from "@/assets/media/Logo.png";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import ErrorState from "@/components/shared/ErrorState";
-import AddToCartButton from "@/components/cart/AddToCartButton";
+import {
+  AddToCartButton,
+  CheckoutButton,
+} from "@/components/shared/OrderActionButton";
 import { useProductDetails } from "@/hooks/useProducts";
 import { useCart } from "@/hooks/useCart";
 
@@ -344,8 +347,8 @@ const ProductDetails = () => {
                 variantIndex={selectedVariantIndex}
                 className="flex-1 h-12"
               />
-              <Button
-                variant="dark"
+              <CheckoutButton
+                label="Checkout"
                 onClick={() => {
                   if (stockAlert?.message !== "Out of stock") {
                     addToCart(product, 1, selectedVariantIndex);
@@ -353,9 +356,7 @@ const ProductDetails = () => {
                 }}
                 disabled={stockAlert?.message === "Out of stock"}
                 className="flex-1 h-12"
-              >
-                Checkout
-              </Button>
+              />
             </div>
           </div>
         </div>

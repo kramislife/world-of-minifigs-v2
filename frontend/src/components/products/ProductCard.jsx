@@ -3,7 +3,7 @@ import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Logo from "@/assets/media/Logo.png";
-import AddToCartButton from "@/components/cart/AddToCartButton";
+import { AddToCartButton } from "@/components/shared/OrderActionButton";
 import { useProductCard, useProductCardHoverImages } from "@/hooks/useProducts";
 
 const ProductCard = ({ product }) => {
@@ -37,9 +37,7 @@ const ProductCard = ({ product }) => {
           onMouseLeave={handleMouseLeave}
         >
           {imageUrls.length > 0 ? (
-            <div
-              className={`relative h-full w-full ${isSoldOut ? "grayscale" : ""}`}
-            >
+            <div className={`relative h-full w-full`}>
               {imageUrls.map((url, index) => (
                 <img
                   key={`${product._id}-${url}-${index}`}
@@ -58,9 +56,7 @@ const ProductCard = ({ product }) => {
               ))}
             </div>
           ) : (
-            <div
-              className={`flex h-full w-full items-center justify-center ${isSoldOut ? "grayscale" : ""}`}
-            >
+            <div className={`flex h-full w-full items-center justify-center`}>
               <img
                 src={Logo}
                 alt="Product placeholder"
