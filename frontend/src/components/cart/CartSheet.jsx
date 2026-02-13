@@ -21,7 +21,7 @@ const CartSheet = () => {
   const {
     items,
     totalQuantity,
-    totalPrice,
+    totalPriceFormatted,
     isOpen,
     closeSheet,
     sheetMode,
@@ -30,7 +30,9 @@ const CartSheet = () => {
     updateQuantity,
     removeItem,
     setSheetMode,
+    handleCheckout,
     isUpdating,
+    isCheckoutLoading,
   } = useCart();
 
   return (
@@ -39,12 +41,14 @@ const CartSheet = () => {
         {sheetMode === "cart" ? (
           <CartView
             items={items}
-            totalPrice={totalPrice}
+            totalPriceFormatted={totalPriceFormatted}
             totalQuantity={totalQuantity}
             updateQuantity={updateQuantity}
             removeItem={removeItem}
             closeSheet={closeSheet}
             isUpdating={isUpdating}
+            onCheckout={handleCheckout}
+            isCheckoutLoading={isCheckoutLoading}
           />
         ) : (
           selectedProduct && (
@@ -65,12 +69,14 @@ const CartSheet = () => {
 
 const CartView = ({
   items,
-  totalPrice,
+  totalPriceFormatted,
   totalQuantity,
   updateQuantity,
   removeItem,
   closeSheet,
   isUpdating,
+  onCheckout,
+  isCheckoutLoading,
 }) => (
   <div className="flex flex-col h-full relative">
     <SheetHeader className="p-5 border-b flex flex-row items-center justify-between">
@@ -107,11 +113,19 @@ const CartView = ({
         <div className="flex justify-between">
           <span className="text-lg font-extrabold uppercase">Subtotal</span>
           <span className="text-2xl font-extrabold text-success dark:text-accent">
-            ${totalPrice.toFixed(2)}
+            ${totalPriceFormatted}
           </span>
         </div>
-        <Button variant="dark" className="w-full h-12">
-          Checkout
+        <Button
+          variant="dark"
+          className="w-full h-12"
+          onClick={onCheckout}
+          disabled={isCheckoutLoading}
+        >
+          {isCheckoutLoading && (
+            <Loader2 className="size-4 animate-spin mr-2" />
+          )}
+          {isCheckoutLoading ? "Redirecting..." : "Checkout"}
         </Button>
       </div>
     )}
@@ -152,9 +166,10 @@ const CartItem = ({ item, onUpdate, onRemove }) => {
     variantIndex,
     quantity,
     image,
-    variantColor,
-    secondaryColor,
+    colorDisplay,
     displayPrice,
+    originalPrice,
+    hasDiscount,
     totalItemPrice,
     stock,
   } = item;
@@ -194,16 +209,21 @@ const CartItem = ({ item, onUpdate, onRemove }) => {
           </div>
 
           <div className="mt-1 space-y-2">
-            <p className="text-xs font-bold text-foreground">${displayPrice}</p>
-            {(variantColor || secondaryColor) && (
-              <p className="text-xs text-muted-foreground">
-                {[variantColor, secondaryColor].filter(Boolean).join(" / ")}
-              </p>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-xs font-bold">${displayPrice}</span>
+              {hasDiscount && (
+                <span className="text-xs text-muted-foreground line-through">
+                  ${originalPrice}
+                </span>
+              )}
+            </div>
+            {colorDisplay && (
+              <p className="text-xs text-muted-foreground">{colorDisplay}</p>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-3 mt-3">
+        <div className="flex items-center gap-3">
           <div className="flex items-center border rounded-sm">
             <Button
               variant="ghost"
@@ -255,19 +275,21 @@ const VariantSelectionView = ({
   const {
     selectedVariantIndex: idx,
     setSelectedVariantIndex: setIdx,
-    selectedVariant,
     carouselImages,
     normalizedColorVariants,
     selectedColorName,
     displayPrice,
     originalPrice,
     hasDiscount,
+    isAddDisabled,
+    addButtonLabel,
     setApi,
     handleAdd,
   } = useVariantSelection({
     product,
     onAddToCart,
     switchToCart,
+    isAddingToCart,
   });
 
   return (
@@ -368,14 +390,10 @@ const VariantSelectionView = ({
           variant="dark"
           className="w-full h-12"
           onClick={handleAdd}
-          disabled={!(selectedVariant?.stock > 0) || isAddingToCart}
+          disabled={isAddDisabled}
         >
           {isAddingToCart && <Loader2 className="size-4 animate-spin mr-2" />}
-          {selectedVariant?.stock > 0
-            ? isAddingToCart
-              ? "Adding..."
-              : "Add to Cart"
-            : "Out of Stock"}
+          {addButtonLabel}
         </Button>
       </div>
     </>

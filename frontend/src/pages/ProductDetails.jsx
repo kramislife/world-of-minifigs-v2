@@ -345,7 +345,7 @@ const ProductDetails = () => {
                 className="flex-1 h-12"
               />
               <Button
-                variant="accent"
+                variant="dark"
                 onClick={() => {
                   if (stockAlert?.message !== "Out of stock") {
                     addToCart(product, 1, selectedVariantIndex);
@@ -354,7 +354,7 @@ const ProductDetails = () => {
                 disabled={stockAlert?.message === "Out of stock"}
                 className="flex-1 h-12"
               >
-                Buy Now
+                Checkout
               </Button>
             </div>
           </div>

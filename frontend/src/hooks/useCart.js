@@ -10,6 +10,7 @@ import {
   useClearCartMutation,
   useSyncCartMutation,
 } from "@/redux/api/authApi";
+import { useCreateCheckoutSessionMutation } from "@/redux/api/paymentApi";
 import {
   setCartItems,
   addToCartLocal,
@@ -55,7 +56,12 @@ export const useAddToCart = ({
 };
 
 // Hook for managing variant selection in the cart/product views
-export const useVariantSelection = ({ product, onAddToCart, switchToCart }) => {
+export const useVariantSelection = ({
+  product,
+  onAddToCart,
+  switchToCart,
+  isAddingToCart = false,
+}) => {
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(() => {
     if (!product?.variants || product.variants.length === 0) return 0;
     const firstInStock = product.variants.findIndex((v) => v.stock > 0);
@@ -130,6 +136,13 @@ export const useVariantSelection = ({ product, onAddToCart, switchToCart }) => {
   const hasDiscount = Boolean(
     selectedVariant?.discountPrice || product.discountPrice,
   );
+  const isAddDisabled = !(selectedVariant?.stock > 0) || isAddingToCart;
+  const addButtonLabel =
+    selectedVariant?.stock > 0
+      ? isAddingToCart
+        ? "Adding..."
+        : "Add to Cart"
+      : "Out of Stock";
 
   return {
     selectedVariantIndex,
@@ -141,6 +154,8 @@ export const useVariantSelection = ({ product, onAddToCart, switchToCart }) => {
     displayPrice,
     originalPrice,
     hasDiscount,
+    isAddDisabled,
+    addButtonLabel,
     setApi,
     scrollTo,
     handleAdd,
@@ -165,7 +180,14 @@ export const useCart = () => {
     data: serverCartData,
     isLoading: isCartLoading,
     isFetching: isCartFetching,
+    refetch: refetchCart,
   } = useGetCartQuery(undefined, { skip: !isAuthenticated });
+
+  useEffect(() => {
+    if (isAuthenticated && isOpen) {
+      refetchCart();
+    }
+  }, [isAuthenticated, isOpen, refetchCart]);
 
   const [addToCartServer, { isLoading: isAddingToCart }] =
     useAddToCartMutation();
@@ -175,6 +197,8 @@ export const useCart = () => {
     useRemoveCartItemMutation();
   const [clearCartServer] = useClearCartMutation();
   const [syncCartServer] = useSyncCartMutation();
+  const [createCheckoutSession, { isLoading: isCheckoutLoading }] =
+    useCreateCheckoutSessionMutation();
 
   // Sync server data to local state for authenticated users
   // Also persist to localStorage so cart survives logout (unified cart experience)
@@ -186,33 +210,69 @@ export const useCart = () => {
     }
   }, [isAuthenticated, serverCartData, dispatch]);
 
-  // Computed Values
+  const getColorDisplay = useCallback((item) => {
+    const label =
+      item.colorLabel ??
+      [item.variantColor, item.secondaryColor].filter(Boolean).join(" / ");
+    return label || null;
+  }, []);
+
   const items = useMemo(() => {
     const rawItems = isAuthenticated
       ? serverCartData?.cart?.items || []
       : localItems;
 
     return rawItems.map((item) => {
-      const price = item.discountPrice || item.price || 0;
+      if (
+        item.displayPrice != null &&
+        item.totalItemPrice != null &&
+        item.hasDiscount !== undefined
+      ) {
+        return { ...item, colorDisplay: getColorDisplay(item) };
+      }
+      const price = Number(item.price) || 0;
+      const discountPrice =
+        item.discountPrice != null && item.discountPrice >= 0
+          ? Number(item.discountPrice)
+          : null;
+      const effectivePrice = discountPrice ?? price;
+      const hasDiscount =
+        discountPrice != null && discountPrice < price && price > 0;
+      const colorLabel =
+        item.colorLabel != null
+          ? item.colorLabel
+          : [item.variantColor, item.secondaryColor]
+              .filter(Boolean)
+              .join(" / ") || null;
+
       return {
         ...item,
-        displayPrice: price.toFixed(2),
-        totalItemPrice: (price * item.quantity).toFixed(2),
+        displayPrice: effectivePrice.toFixed(2),
+        originalPrice: price.toFixed(2),
+        hasDiscount,
+        totalItemPrice: (effectivePrice * item.quantity).toFixed(2),
+        colorLabel,
+        colorDisplay: getColorDisplay({ ...item, colorLabel }),
       };
     });
-  }, [isAuthenticated, serverCartData, localItems]);
+  }, [isAuthenticated, serverCartData, localItems, getColorDisplay]);
 
-  const cartTotals = useMemo(
-    () => ({
+  const cartTotals = useMemo(() => {
+    const computedTotal = items.reduce(
+      (sum, i) => sum + parseFloat(i.totalItemPrice || 0),
+      0,
+    );
+    const serverSubtotal = serverCartData?.cart?.subtotal;
+    const serverSubtotalFormatted = serverCartData?.cart?.subtotalFormatted;
+    return {
       totalQuantity: items.reduce((sum, i) => sum + i.quantity, 0),
-      totalPrice:
-        items.reduce(
-          (sum, i) => sum + (i.discountPrice || i.price || 0) * i.quantity,
-          0,
-        ) || 0,
-    }),
-    [items],
-  );
+      totalPrice: serverSubtotal != null ? serverSubtotal : computedTotal,
+      totalPriceFormatted:
+        serverSubtotalFormatted != null
+          ? serverSubtotalFormatted
+          : (computedTotal || 0).toFixed(2),
+    };
+  }, [items, serverCartData]);
 
   // Helper: Get button status based on stock
   const getAddToCartStatus = useCallback((product, variantIndex = null) => {
@@ -401,6 +461,30 @@ export const useCart = () => {
     }
   }, [isAuthenticated, localItems, syncCartServer, dispatch]);
 
+  const handleCheckout = useCallback(async () => {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to checkout", {
+        description: "You need to be signed in to complete your purchase.",
+      });
+      dispatch(closeSheet());
+      return;
+    }
+    try {
+      const res = await createCheckoutSession().unwrap();
+      if (res?.url) {
+        window.location.href = res.url;
+      } else {
+        toast.error("Checkout failed", {
+          description: "Could not start checkout. Please try again.",
+        });
+      }
+    } catch (err) {
+      toast.error(err?.data?.message || "Checkout failed", {
+        description: err?.data?.description || "Please try again.",
+      });
+    }
+  }, [isAuthenticated, createCheckoutSession, dispatch]);
+
   return {
     items,
     ...cartTotals,
@@ -411,6 +495,10 @@ export const useCart = () => {
       isUpdatingQuantity ||
       isRemovingItem ||
       (items.length === 0 && isCartFetching),
+    isCheckoutLoading,
+
+    // Operations
+    handleCheckout,
 
     // UI State
     isOpen,
@@ -420,7 +508,6 @@ export const useCart = () => {
     // Status Helpers
     getAddToCartStatus,
 
-    // Operations
     addToCart,
     handleAddToCart,
     updateQuantity,

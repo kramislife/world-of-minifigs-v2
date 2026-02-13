@@ -11,6 +11,7 @@ import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfUse from "@/pages/TermsOfUse";
 import VerifyEmail from "@/components/auth/VerifyEmail";
 import ResetPassword from "@/components/auth/ResetPassword";
+import CheckoutSuccess from "@/pages/CheckoutSuccess";
 import NotFound from "@/components/layout/NotFound";
 import Profile from "@/pages/Profile";
 import Settings from "@/pages/Settings";
@@ -84,6 +85,10 @@ export const publicRoutes = [
   {
     path: "/reset-password",
     element: ResetPassword,
+  },
+  {
+    path: "/checkout/success",
+    element: CheckoutSuccess,
   },
 ];
 

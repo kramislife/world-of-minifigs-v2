@@ -20,7 +20,7 @@ const AddToCartButton = ({
       onClick={onClick}
       disabled={isSoldOut}
       variant={variant}
-      className={`w-full ${className}`}
+      className={`w-full uppercase font-bold tracking-widest rounded-none ${className}`}
     >
       {label}
     </Button>
