@@ -20,9 +20,10 @@ export const paymentApi = createApi({
   baseQuery: baseQueryWithAuth,
   endpoints: (builder) => ({
     createCheckoutSession: builder.mutation({
-      query: () => ({
+      query: (data) => ({
         url: "/create-checkout-session",
         method: "POST",
+        body: data,
       }),
     }),
     confirmOrder: builder.query({
@@ -32,5 +33,7 @@ export const paymentApi = createApi({
   }),
 });
 
-export const { useCreateCheckoutSessionMutation, useConfirmOrderQuery } =
-  paymentApi;
+export const {
+  useCreateCheckoutSessionMutation,
+  useConfirmOrderQuery,
+} = paymentApi;

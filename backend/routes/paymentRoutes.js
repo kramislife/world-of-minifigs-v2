@@ -14,7 +14,12 @@ router.post(
   stripeWebhook,
 );
 
-router.post("/create-checkout-session", authenticate, createCheckoutSession);
+router.post(
+  "/create-checkout-session",
+  express.json(),
+  authenticate,
+  createCheckoutSession,
+);
 router.get("/confirm-order", authenticate, confirmOrder);
 
 export default router;

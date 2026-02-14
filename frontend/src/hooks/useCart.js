@@ -23,6 +23,33 @@ import {
   setSheetMode,
 } from "@/redux/slices/cartSlice";
 
+//------------------------------------------- Helpers -------------------------------------------
+
+const getAddToCartStatus = (product, variantIndex = null) => {
+  if (!product) return { isSoldOut: false, label: "Add to Cart" };
+
+  const isStandalone = product.productType === "standalone";
+  const isSoldOut = isStandalone
+    ? product.stock <= 0
+    : variantIndex !== null
+      ? product.variants?.[variantIndex]?.stock <= 0
+      : product.variants?.every((v) => v.stock <= 0);
+
+  const label = isSoldOut
+    ? "Out of Stock"
+    : isStandalone || variantIndex !== null
+      ? "Add to Cart"
+      : "Choose Options";
+
+  return { isSoldOut, label };
+};
+
+const showCheckoutError = (err, fallbackMsg, fallbackDesc) => {
+  toast.error(err?.data?.message || fallbackMsg, {
+    description: err?.data?.description || fallbackDesc,
+  });
+};
+
 // "Add to Cart" button logic and state
 
 export const useAddToCart = ({
@@ -54,6 +81,73 @@ export const useAddToCart = ({
     label,
     onClick,
     isLoading: isAddingToCart,
+  };
+};
+
+// Product details page: direct Stripe checkout (no cart)
+export const useProductCheckout = ({ product, variantIndex = null }) => {
+  const { isAuthenticated } = useSelector((state) => state.auth);
+  const [createCheckoutSession, { isLoading: isCheckoutLoading }] =
+    useCreateCheckoutSessionMutation();
+
+  const { isSoldOut, label } = useMemo(
+    () => getAddToCartStatus(product, variantIndex),
+    [product, variantIndex],
+  );
+
+  const isDisabled =
+    !product ||
+    !isAuthenticated ||
+    isSoldOut ||
+    (product.productType === "variant" && variantIndex === null);
+
+  const handleProductCheckout = useCallback(async () => {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to checkout", {
+        description: "You need to be signed in to complete your purchase.",
+      });
+      return;
+    }
+    if (isDisabled) return;
+
+    try {
+      const res = await createCheckoutSession({
+        productId: product._id,
+        variantIndex: product.productType === "variant" ? variantIndex : null,
+        quantity: 1,
+      }).unwrap();
+      if (res?.url) {
+        window.location.href = res.url;
+      } else {
+        showCheckoutError(
+          null,
+          "Checkout failed",
+          "Could not start checkout. Please try again.",
+        );
+      }
+    } catch (err) {
+      showCheckoutError(err, "Checkout failed", "Please try again.");
+    }
+  }, [
+    isAuthenticated,
+    isDisabled,
+    product,
+    variantIndex,
+    createCheckoutSession,
+  ]);
+
+  const buttonLabel =
+    isDisabled && !isAuthenticated
+      ? "Sign in to Checkout"
+      : isDisabled
+        ? label
+        : "Checkout";
+
+  return {
+    handleProductCheckout,
+    isCheckoutLoading,
+    isDisabled,
+    label: buttonLabel,
   };
 };
 
@@ -245,26 +339,6 @@ export const useCart = () => {
     };
   }, [items, serverCartData]);
 
-  // Helper: Get button status based on stock
-  const getAddToCartStatus = useCallback((product, variantIndex = null) => {
-    if (!product) return { isSoldOut: false, label: "Add to Cart" };
-
-    const isStandalone = product.productType === "standalone";
-    const isSoldOut = isStandalone
-      ? product.stock <= 0
-      : variantIndex !== null
-        ? product.variants?.[variantIndex]?.stock <= 0
-        : product.variants?.every((v) => v.stock <= 0);
-
-    const label = isSoldOut
-      ? "Out of Stock"
-      : isStandalone || variantIndex !== null
-        ? "Add to Cart"
-        : "Choose Options";
-
-    return { isSoldOut, label };
-  }, []);
-
   // Handlers
   const addToCart = useCallback(
     async (product, quantity = 1, variantIndex = null, onSuccess) => {
@@ -447,14 +521,14 @@ export const useCart = () => {
       if (res?.url) {
         window.location.href = res.url;
       } else {
-        toast.error("Checkout failed", {
-          description: "Could not start checkout. Please try again.",
-        });
+        showCheckoutError(
+          null,
+          "Checkout failed",
+          "Could not start checkout. Please try again.",
+        );
       }
     } catch (err) {
-      toast.error(err?.data?.message || "Checkout failed", {
-        description: err?.data?.description || "Please try again.",
-      });
+      showCheckoutError(err, "Checkout failed", "Please try again.");
     }
   }, [isAuthenticated, createCheckoutSession, dispatch]);
 

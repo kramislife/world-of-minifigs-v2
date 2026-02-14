@@ -1,4 +1,5 @@
 import Product from "../models/product.model.js";
+import { getCartItemInfoForOrder } from "./productItemUtils.js";
 
 export const extractShippingAddress = (session) => {
   const shippingDetails = session.shipping_details;
@@ -18,24 +19,60 @@ export const extractShippingAddress = (session) => {
   };
 };
 
+const decrementStockForItem = async (productId, variantIndex, quantity) => {
+  const qty = Number(quantity) || 1;
+  const id = productId?._id ?? productId;
+  if (!id) return;
+
+  if (variantIndex != null) {
+    await Product.findByIdAndUpdate(id, {
+      $inc: { [`variants.${variantIndex}.stock`]: -qty },
+    });
+  } else {
+    await Product.findByIdAndUpdate(id, {
+      $inc: { stock: -qty },
+    });
+  }
+};
+
 export const decrementProductStock = async (cart) => {
   for (const item of cart.items) {
     const product = item.productId;
     if (!product) continue;
-
-    const quantity = Number(item.quantity) || 1;
-    const productId = product._id || product;
-
-    if (item.variantIndex != null) {
-      await Product.findByIdAndUpdate(productId, {
-        $inc: { [`variants.${item.variantIndex}.stock`]: -quantity },
-      });
-    } else {
-      await Product.findByIdAndUpdate(productId, {
-        $inc: { stock: -quantity },
-      });
-    }
+    await decrementStockForItem(
+      product._id || product,
+      item.variantIndex,
+      item.quantity,
+    );
   }
+};
+
+/** Decrement stock for explicit items (e.g. direct product checkout). */
+export const decrementProductStockForItems = async (items) => {
+  for (const { productId, variantIndex, quantity } of items) {
+    await decrementStockForItem(productId, variantIndex, quantity);
+  }
+};
+
+/** Build a Stripe line_item from product + item (productType, variantIndex, quantity). */
+export const buildStripeLineItem = (product, item) => {
+  const { price, productName, imageUrl } = getCartItemInfoForOrder(
+    product,
+    item,
+  );
+  const quantity = Number(item?.quantity) || 1;
+  return {
+    price_data: {
+      currency: "usd",
+      product_data: {
+        name: productName,
+        ...(imageUrl && { images: [imageUrl] }),
+      },
+      unit_amount: Math.round(price * 100),
+      tax_behavior: "exclusive",
+    },
+    quantity,
+  };
 };
 
 export const getFullSessionIfNeeded = async (rawSession, stripe) => {

@@ -5,6 +5,97 @@ import {
   deleteMedia,
 } from "../utils/cloudinary.js";
 
+//------------------------------------------------ Helpers ------------------------------------------
+
+const BANNER_VIDEO_MAX_SECONDS = 10;
+
+const BANNER_VALID_PATHS = [
+  "/products",
+  "/collections",
+  "/about",
+  "/contact-us",
+  "/designer",
+  "/privacy-policy",
+  "/terms-of-use",
+];
+
+const isBannerButtonLinkValid = (href) => {
+  const isStatic = BANNER_VALID_PATHS.some((p) => href === p);
+  const isDynamic =
+    href.startsWith("/products/") || href.startsWith("/collections/");
+  return isStatic || isDynamic;
+};
+
+const validateBannerButtons = (buttons) => {
+  if (!buttons || !Array.isArray(buttons) || buttons.length === 0) {
+    return {
+      status: 400,
+      message: "CTA buttons are required",
+      description: "At least one CTA button must be provided.",
+    };
+  }
+  if (buttons.length > 2) {
+    return {
+      status: 400,
+      message: "Too many CTA buttons",
+      description: "Maximum of 2 CTA buttons are allowed.",
+    };
+  }
+  for (let i = 0; i < buttons.length; i++) {
+    const btn = buttons[i];
+    if (!btn.label || !btn.label.trim()) {
+      return {
+        status: 400,
+        message: `Button ${i + 1}: Label is required`,
+        description: "Each CTA button must have a label.",
+      };
+    }
+    if (!btn.href || !btn.href.trim()) {
+      return {
+        status: 400,
+        message: `Button ${i + 1}: Link (href) is required`,
+        description: "Each CTA button must have a link.",
+      };
+    }
+    if (!isBannerButtonLinkValid(btn.href)) {
+      return {
+        status: 400,
+        message: `Button ${i + 1}: Invalid link`,
+        description:
+          "Link must be a valid page (e.g., /products, /collections) or a specific item path.",
+      };
+    }
+  }
+  return null;
+};
+
+const normalizeBannerButtons = (buttons) =>
+  buttons.map((b) => ({
+    label: b.label.trim(),
+    href: b.href.startsWith("/") ? b.href.trim() : `/${b.href.trim()}`,
+    variant: b.variant || "default",
+  }));
+
+const validateBannerVideoDuration = async (uploadResult) => {
+  if (
+    uploadResult?.resourceType !== "video" ||
+    typeof uploadResult?.duration !== "number"
+  ) {
+    return null;
+  }
+  if (uploadResult.duration <= BANNER_VIDEO_MAX_SECONDS) {
+    return null;
+  }
+  try {
+    await deleteMedia(uploadResult.publicId, uploadResult.resourceType);
+  } catch (e) {}
+  return {
+    status: 400,
+    message: "Video is too long",
+    description: "Banner video must not exceed 10 seconds.",
+  };
+};
+
 //------------------------------------------------ Create Banner ------------------------------------------
 export const createBanner = async (req, res) => {
   try {
@@ -73,64 +164,13 @@ export const createBanner = async (req, res) => {
       enableButtons !== undefined ? Boolean(enableButtons) : false;
 
     if (finalEnableButtons) {
-      if (!buttons || !Array.isArray(buttons) || buttons.length === 0) {
-        return res.status(400).json({
+      const buttonError = validateBannerButtons(buttons);
+      if (buttonError) {
+        return res.status(buttonError.status).json({
           success: false,
-          message: "CTA buttons are required",
-          description: "At least one CTA button must be provided.",
+          message: buttonError.message,
+          description: buttonError.description,
         });
-      }
-
-      if (buttons.length > 2) {
-        return res.status(400).json({
-          success: false,
-          message: "Too many CTA buttons",
-          description: "Maximum of 2 CTA buttons are allowed.",
-        });
-      }
-
-      for (let i = 0; i < buttons.length; i++) {
-        const btn = buttons[i];
-
-        if (!btn.label || !btn.label.trim()) {
-          return res.status(400).json({
-            success: false,
-            message: `Button ${i + 1}: Label is required`,
-            description: "Each CTA button must have a label.",
-          });
-        }
-
-        if (!btn.href || !btn.href.trim()) {
-          return res.status(400).json({
-            success: false,
-            message: `Button ${i + 1}: Link (href) is required`,
-            description: "Each CTA button must have a link.",
-          });
-        }
-
-        const validPaths = [
-          "/products",
-          "/collections",
-          "/about",
-          "/contact-us",
-          "/designer",
-          "/privacy-policy",
-          "/terms-of-use",
-        ];
-
-        const isStaticPath = validPaths.some((p) => btn.href === p);
-        const isDynamicPath =
-          btn.href.startsWith("/products/") ||
-          btn.href.startsWith("/collections/");
-
-        if (!isStaticPath && !isDynamicPath) {
-          return res.status(400).json({
-            success: false,
-            message: `Button ${i + 1}: Invalid link`,
-            description:
-              "Link must be a valid page (e.g., /products, /collections) or a specific item path.",
-          });
-        }
       }
     }
 
@@ -143,20 +183,12 @@ export const createBanner = async (req, res) => {
         "world-of-minifigs-v2/banners",
       );
 
-      // Enforce video duration rule here (controller layer)
-      if (
-        uploadResult.resourceType === "video" &&
-        typeof uploadResult.duration === "number" &&
-        uploadResult.duration > 10
-      ) {
-        try {
-          await deleteMedia(uploadResult.publicId, uploadResult.resourceType);
-        } catch (e) {}
-
-        return res.status(400).json({
+      const videoError = await validateBannerVideoDuration(uploadResult);
+      if (videoError) {
+        return res.status(videoError.status).json({
           success: false,
-          message: "Video is too long",
-          description: "Banner video must not exceed 10 seconds.",
+          message: videoError.message,
+          description: videoError.description,
         });
       }
 
@@ -215,11 +247,7 @@ export const createBanner = async (req, res) => {
     };
 
     if (finalEnableButtons) {
-      bannerData.buttons = buttons.map((b) => ({
-        label: b.label.trim(),
-        href: b.href.startsWith("/") ? b.href.trim() : `/${b.href.trim()}`,
-        variant: b.variant || "default",
-      }));
+      bannerData.buttons = normalizeBannerButtons(buttons);
     }
 
     const banner = await Banner.create(bannerData);
@@ -387,64 +415,13 @@ export const updateBanner = async (req, res) => {
         : banner.enableButtons;
 
     if (finalEnableButtons) {
-      if (!buttons || !Array.isArray(buttons) || buttons.length === 0) {
-        return res.status(400).json({
+      const buttonError = validateBannerButtons(buttons);
+      if (buttonError) {
+        return res.status(buttonError.status).json({
           success: false,
-          message: "CTA buttons are required",
-          description: "At least one CTA button must be provided.",
+          message: buttonError.message,
+          description: buttonError.description,
         });
-      }
-
-      if (buttons.length > 2) {
-        return res.status(400).json({
-          success: false,
-          message: "Too many CTA buttons",
-          description: "Maximum of 2 CTA buttons are allowed.",
-        });
-      }
-
-      for (let i = 0; i < buttons.length; i++) {
-        const btn = buttons[i];
-
-        if (!btn.label || !btn.label.trim()) {
-          return res.status(400).json({
-            success: false,
-            message: `Button ${i + 1}: Label is required`,
-            description: "Each CTA button must have a label.",
-          });
-        }
-
-        if (!btn.href || !btn.href.trim()) {
-          return res.status(400).json({
-            success: false,
-            message: `Button ${i + 1}: Link (href) is required`,
-            description: "Each CTA button must have a link.",
-          });
-        }
-
-        const validPaths = [
-          "/products",
-          "/collections",
-          "/about",
-          "/contact-us",
-          "/designer",
-          "/privacy-policy",
-          "/terms-of-use",
-        ];
-
-        const isStaticPath = validPaths.some((p) => btn.href === p);
-        const isDynamicPath =
-          btn.href.startsWith("/products/") ||
-          btn.href.startsWith("/collections/");
-
-        if (!isStaticPath && !isDynamicPath) {
-          return res.status(400).json({
-            success: false,
-            message: `Button ${i + 1}: Invalid link`,
-            description:
-              "Link must be a valid page (e.g., /products, /collections) or a specific item path.",
-          });
-        }
       }
     }
 
@@ -468,19 +445,12 @@ export const updateBanner = async (req, res) => {
           "world-of-minifigs-v2/banners",
         );
 
-        if (
-          uploadResult.resourceType === "video" &&
-          typeof uploadResult.duration === "number" &&
-          uploadResult.duration > 10
-        ) {
-          try {
-            await deleteMedia(uploadResult.publicId, uploadResult.resourceType);
-          } catch (e) {}
-
-          return res.status(400).json({
+        const videoError = await validateBannerVideoDuration(uploadResult);
+        if (videoError) {
+          return res.status(videoError.status).json({
             success: false,
-            message: "Video is too long",
-            description: "Banner video must not exceed 10 seconds.",
+            message: videoError.message,
+            description: videoError.description,
           });
         }
       } catch (error) {
@@ -521,11 +491,7 @@ export const updateBanner = async (req, res) => {
     if (isActive !== undefined) banner.isActive = Boolean(isActive);
 
     if (finalEnableButtons) {
-      banner.buttons = buttons.map((b) => ({
-        label: b.label.trim(),
-        href: b.href.startsWith("/") ? b.href.trim() : `/${b.href.trim()}`,
-        variant: b.variant || "default",
-      }));
+      banner.buttons = normalizeBannerButtons(buttons);
     } else {
       banner.buttons = undefined;
     }

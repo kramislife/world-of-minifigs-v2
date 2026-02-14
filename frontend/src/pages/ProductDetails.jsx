@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Check, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,11 +10,10 @@ import {
   CheckoutButton,
 } from "@/components/shared/OrderActionButton";
 import { useProductDetails } from "@/hooks/useProducts";
-import { useCart } from "@/hooks/useCart";
+import { useProductCheckout } from "@/hooks/useCart";
 
 const ProductDetails = () => {
   const { id } = useParams();
-  const { addToCart } = useCart();
 
   const {
     product,
@@ -45,6 +44,13 @@ const ProductDetails = () => {
     handleNextImage,
     handleColorVariantClick,
   } = useProductDetails(id);
+
+  const {
+    handleProductCheckout,
+    isCheckoutLoading,
+    isDisabled: isCheckoutDisabled,
+    label: checkoutLabel,
+  } = useProductCheckout({ product, variantIndex: selectedVariantIndex });
 
   if (isLoading) {
     return <LoadingSpinner minHeight="min-h-screen" />;
@@ -348,13 +354,10 @@ const ProductDetails = () => {
                 className="flex-1 h-12"
               />
               <CheckoutButton
-                label="Checkout"
-                onClick={() => {
-                  if (stockAlert?.message !== "Out of stock") {
-                    addToCart(product, 1, selectedVariantIndex);
-                  }
-                }}
-                disabled={stockAlert?.message === "Out of stock"}
+                label={checkoutLabel}
+                onClick={handleProductCheckout}
+                disabled={isCheckoutDisabled}
+                isLoading={isCheckoutLoading}
                 className="flex-1 h-12"
               />
             </div>

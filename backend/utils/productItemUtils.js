@@ -8,7 +8,13 @@ const getPriceSource = (product) => product;
 //------------------------------------------- Variant Index -------------------------------------------------
 
 export const parseVariantIndex = (value) => {
-  if (value == null || value === "null" || value === "undefined") return null;
+  if (
+    value == null ||
+    value === "" ||
+    value === "null" ||
+    value === "undefined"
+  )
+    return null;
   return Number(value);
 };
 

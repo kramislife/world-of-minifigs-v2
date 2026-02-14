@@ -5,7 +5,7 @@ const POPULATE_COLORS = [
   { path: "secondaryColorId", select: "colorName hexCode" },
 ];
 
-const POPULATE_COLORS_NAMES_ONLY = [
+export const POPULATE_COLORS_NAMES_ONLY = [
   { path: "variants.colorId", select: "colorName" },
   { path: "variants.secondaryColorId", select: "colorName" },
   { path: "colorId", select: "colorName" },

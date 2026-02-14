@@ -1,5 +1,26 @@
 import Product from "../models/product.model.js";
 import Category from "../models/category.model.js";
+
+//------------------------------------------------ Helpers ------------------------------------------
+
+const PRODUCT_DETAILS_POPULATE = [
+  { path: "categoryIds", select: "categoryName" },
+  { path: "subCategoryIds", select: "subCategoryName" },
+  { path: "collectionIds", select: "collectionName" },
+  { path: "subCollectionIds", select: "subCollectionName" },
+  { path: "colorId", select: "colorName hexCode" },
+  { path: "secondaryColorId", select: "colorName hexCode" },
+  { path: "skillLevelIds", select: "skillLevelName" },
+  { path: "createdBy", select: "firstName lastName username" },
+  { path: "variants.colorId", select: "colorName hexCode" },
+  { path: "variants.secondaryColorId", select: "colorName hexCode" },
+];
+
+const PRODUCT_DETAILS_POPULATE_WITH_UPDATED = [
+  ...PRODUCT_DETAILS_POPULATE,
+  { path: "updatedBy", select: "firstName lastName username" },
+];
+
 import SubCategory from "../models/subCategory.model.js";
 import Collection from "../models/collection.model.js";
 import SubCollection from "../models/subCollection.model.js";
@@ -452,18 +473,7 @@ export const createProduct = async (req, res) => {
     const product = await Product.create(productData);
 
     // Populate references
-    await product.populate([
-      { path: "categoryIds", select: "categoryName" },
-      { path: "subCategoryIds", select: "subCategoryName" },
-      { path: "collectionIds", select: "collectionName" },
-      { path: "subCollectionIds", select: "subCollectionName" },
-      { path: "colorId", select: "colorName hexCode" },
-      { path: "secondaryColorId", select: "colorName hexCode" },
-      { path: "skillLevelIds", select: "skillLevelName" },
-      { path: "createdBy", select: "firstName lastName username" },
-      { path: "variants.colorId", select: "colorName hexCode" },
-      { path: "variants.secondaryColorId", select: "colorName hexCode" },
-    ]);
+    await product.populate(PRODUCT_DETAILS_POPULATE);
 
     return res.status(201).json({
       success: true,
@@ -529,19 +539,7 @@ export const getAllProducts = async (req, res) => {
       page,
       limit,
       sort: { createdAt: -1 },
-      populate: [
-        { path: "categoryIds", select: "categoryName" },
-        { path: "subCategoryIds", select: "subCategoryName" },
-        { path: "collectionIds", select: "collectionName" },
-        { path: "subCollectionIds", select: "subCollectionName" },
-        { path: "colorId", select: "colorName hexCode" },
-        { path: "secondaryColorId", select: "colorName hexCode" },
-        { path: "skillLevelIds", select: "skillLevelName" },
-        { path: "createdBy", select: "firstName lastName username" },
-        { path: "updatedBy", select: "firstName lastName username" },
-        { path: "variants.colorId", select: "colorName hexCode" },
-        { path: "variants.secondaryColorId", select: "colorName hexCode" },
-      ],
+      populate: PRODUCT_DETAILS_POPULATE_WITH_UPDATED,
     });
 
     // Filter out fields based on productType using utility function
@@ -1129,17 +1127,7 @@ export const updateProduct = async (req, res) => {
     }
 
     // Populate references
-    await product.populate([
-      { path: "categoryIds", select: "categoryName" },
-      { path: "subCategoryIds", select: "subCategoryName" },
-      { path: "collectionIds", select: "collectionName" },
-      { path: "subCollectionIds", select: "subCollectionName" },
-      { path: "colorId", select: "colorName hexCode" },
-      { path: "skillLevelIds", select: "skillLevelName" },
-      { path: "createdBy", select: "firstName lastName username" },
-      { path: "updatedBy", select: "firstName lastName username" },
-      { path: "variants.colorId", select: "colorName hexCode" },
-    ]);
+    await product.populate(PRODUCT_DETAILS_POPULATE_WITH_UPDATED);
 
     return res.status(200).json({
       success: true,
