@@ -1,6 +1,5 @@
-import { Plus, Minus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import QuantityControl from "@/components/shared/QuantityControl";
 import { Card } from "@/components/ui/card";
 
 const DealerExtraBag = ({
@@ -55,28 +54,16 @@ const DealerExtraBag = ({
             </span>
           </div>
 
-          <div className="flex items-center justify-between border rounded-md w-full mt-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-black hover:bg-transparent disabled:opacity-30"
-              onClick={() => onDecrease(bag._id)}
-              disabled={!bag.canDecrease}
-            >
-              <Minus className="size-4" />
-            </Button>
-            <span className="text-center text-sm font-bold flex-1">
-              {bag.qty}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-black hover:bg-transparent disabled:opacity-30"
-              onClick={() => onIncrease(bag._id)}
-              disabled={!bag.canIncrease}
-            >
-              <Plus className="size-4" />
-            </Button>
+          <div className="mt-3">
+            <QuantityControl
+              value={bag.qty}
+              onDecrement={() => onDecrease(bag._id)}
+              onIncrement={() => onIncrease(bag._id)}
+              min={0}
+              max={bag.qty + Math.max(0, maxExtraBags - totalExtraBags)}
+              className="rounded-md h-10"
+              valueClassName="flex-1"
+            />
           </div>
         </Card>
       ))}

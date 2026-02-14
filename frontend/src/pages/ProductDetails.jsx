@@ -9,6 +9,7 @@ import {
   AddToCartButton,
   CheckoutButton,
 } from "@/components/shared/OrderActionButton";
+import QuantityControl from "@/components/shared/QuantityControl";
 import { useProductDetails } from "@/hooks/useProducts";
 import { useProductCheckout } from "@/hooks/useCart";
 
@@ -43,6 +44,10 @@ const ProductDetails = () => {
     handlePreviousImage,
     handleNextImage,
     handleColorVariantClick,
+    quantity,
+    handleQuantityDecrement,
+    handleQuantityIncrement,
+    maxQuantity,
   } = useProductDetails(id);
 
   const {
@@ -50,7 +55,11 @@ const ProductDetails = () => {
     isCheckoutLoading,
     isDisabled: isCheckoutDisabled,
     label: checkoutLabel,
-  } = useProductCheckout({ product, variantIndex: selectedVariantIndex });
+  } = useProductCheckout({
+    product,
+    variantIndex: selectedVariantIndex,
+    quantity,
+  });
 
   if (isLoading) {
     return <LoadingSpinner minHeight="min-h-screen" />;
@@ -84,7 +93,7 @@ const ProductDetails = () => {
           {/* Main Image */}
           <div
             className={`relative border border-border rounded-lg overflow-hidden group order-1 lg:order-2 
-  aspect-square max-h-[630px] w-full flex flex-1 items-center justify-center`}
+  aspect-square max-h-[660px] w-full flex flex-1 items-center justify-center`}
           >
             {currentImageUrl ? (
               <>
@@ -148,7 +157,7 @@ const ProductDetails = () => {
           {hasMultipleImages && (
             <div
               ref={thumbnailScrollRef}
-              className="flex lg:flex-col gap-2 overflow-y-auto lg:h-[620px] order-2 lg:order-1"
+              className="flex lg:flex-col gap-2 overflow-y-auto lg:h-[650px] order-2 lg:order-1"
             >
               {allImages.map((img, index) => (
                 <Button
@@ -347,18 +356,30 @@ const ProductDetails = () => {
             )}
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-2">
-              <AddToCartButton
-                product={product}
-                variantIndex={selectedVariantIndex}
-                className="flex-1 h-12"
-              />
+            <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-4 gap-2">
+                <QuantityControl
+                  value={quantity}
+                  onDecrement={handleQuantityDecrement}
+                  onIncrement={handleQuantityIncrement}
+                  min={1}
+                  max={maxQuantity}
+                  className="h-12 col-span-1"
+                  valueClassName="w-24"
+                />
+                <AddToCartButton
+                  product={product}
+                  variantIndex={selectedVariantIndex}
+                  quantity={quantity}
+                  className="flex-1 h-12 col-span-3"
+                />
+              </div>
               <CheckoutButton
                 label={checkoutLabel}
                 onClick={handleProductCheckout}
                 disabled={isCheckoutDisabled}
                 isLoading={isCheckoutLoading}
-                className="flex-1 h-12"
+                className="w-full h-12"
               />
             </div>
           </div>

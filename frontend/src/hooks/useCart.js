@@ -85,7 +85,11 @@ export const useAddToCart = ({
 };
 
 // Product details page: direct Stripe checkout (no cart)
-export const useProductCheckout = ({ product, variantIndex = null }) => {
+export const useProductCheckout = ({
+  product,
+  variantIndex = null,
+  quantity = 1,
+}) => {
   const { isAuthenticated } = useSelector((state) => state.auth);
   const [createCheckoutSession, { isLoading: isCheckoutLoading }] =
     useCreateCheckoutSessionMutation();
@@ -114,7 +118,7 @@ export const useProductCheckout = ({ product, variantIndex = null }) => {
       const res = await createCheckoutSession({
         productId: product._id,
         variantIndex: product.productType === "variant" ? variantIndex : null,
-        quantity: 1,
+        quantity,
       }).unwrap();
       if (res?.url) {
         window.location.href = res.url;
@@ -133,6 +137,7 @@ export const useProductCheckout = ({ product, variantIndex = null }) => {
     isDisabled,
     product,
     variantIndex,
+    quantity,
     createCheckoutSession,
   ]);
 

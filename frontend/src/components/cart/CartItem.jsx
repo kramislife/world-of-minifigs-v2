@@ -1,6 +1,7 @@
 import React from "react";
-import { Minus, Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import QuantityControl from "@/components/shared/QuantityControl";
 import Logo from "@/assets/media/Logo.png";
 
 const CartItem = ({ item, onUpdate, onRemove }) => {
@@ -67,30 +68,16 @@ const CartItem = ({ item, onUpdate, onRemove }) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center border rounded-sm">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-black hover:bg-transparent disabled:opacity-30"
-              onClick={() =>
-                onUpdate(Math.max(1, quantity - 1), productId, variantIndex)
-              }
-              disabled={quantity <= 1}
-            >
-              <Minus className="size-3" />
-            </Button>
-            <span className="w-8 text-center text-xs font-bold">{quantity}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-black hover:bg-transparent disabled:opacity-30"
-              onClick={() => onUpdate(quantity + 1, productId, variantIndex)}
-              disabled={quantity >= stock}
-            >
-              <Plus className="size-3" />
-            </Button>
-          </div>
+        <div className="flex items-center gap-2">
+          <QuantityControl
+            value={quantity}
+            onDecrement={() =>
+              onUpdate(Math.max(1, quantity - 1), productId, variantIndex)
+            }
+            onIncrement={() => onUpdate(quantity + 1, productId, variantIndex)}
+            min={1}
+            max={stock}
+          />
           <Button
             variant="ghost"
             size="icon"
