@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import {
   useCreateCollectionMutation,
@@ -6,33 +6,25 @@ import {
   useGetCollectionsQuery,
   useDeleteCollectionMutation,
 } from "@/redux/api/adminApi";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
+import { extractPaginatedData } from "@/utils/apiHelpers";
+import { validateFile, readFileAsDataURL } from "@/utils/fileHelpers";
+
+const initialFormData = {
+  collectionName: "",
+  description: "",
+  isFeatured: false,
+  image: null,
+};
 
 const useCollectionManagement = () => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedCollection, setSelectedCollection] = useState(null);
-  const [dialogMode, setDialogMode] = useState("add");
-  const [formData, setFormData] = useState({
-    collectionName: "",
-    description: "",
-    isFeatured: false,
-    image: null,
-  });
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Pagination and search state
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState("10");
-  const [search, setSearch] = useState("");
-
-  // Fetch data with pagination and search
-  const { data: collectionsResponse, isLoading: isLoadingCollections } =
-    useGetCollectionsQuery({
-      page,
-      limit,
-      search: search || undefined,
-    });
+  const resetImages = useCallback(() => {
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
 
   const [createCollection, { isLoading: isCreating }] =
     useCreateCollectionMutation();
@@ -41,12 +33,26 @@ const useCollectionManagement = () => {
   const [deleteCollection, { isLoading: isDeleting }] =
     useDeleteCollectionMutation();
 
-  // Extract data from server response
-  const collections = collectionsResponse?.collections || [];
-  const totalItems = collectionsResponse?.pagination?.totalItems || 0;
-  const totalPages = collectionsResponse?.pagination?.totalPages || 1;
+  const crud = useAdminCrud({
+    initialFormData,
+    createFn: createCollection,
+    updateFn: updateCollection,
+    deleteFn: deleteCollection,
+    entityName: "collection",
+    onReset: resetImages,
+  });
 
-  // Column definitions
+  // Fetch data
+  const { data: collectionsResponse, isLoading: isLoadingCollections } =
+    useGetCollectionsQuery({
+      page: crud.page,
+      limit: crud.limit,
+      search: crud.search || undefined,
+    });
+
+  const { items: collections, totalItems, totalPages } =
+    extractPaginatedData(collectionsResponse, "collections");
+
   const columns = [
     { key: "collectionName", label: "Collection" },
     { key: "description", label: "Description" },
@@ -56,230 +62,77 @@ const useCollectionManagement = () => {
     { key: "actions", label: "Actions" },
   ];
 
-  const resetForm = () => {
-    setFormData({
-      collectionName: "",
-      description: "",
-      isFeatured: false,
-      image: null,
-    });
-    setImagePreview(null);
-    setSelectedCollection(null);
-    setDialogMode("add");
-    setDialogOpen(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    crud.setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSwitchChange = (checked) => {
-    setFormData((prev) => ({
-      ...prev,
-      isFeatured: checked,
-    }));
+    crud.setFormData((prev) => ({ ...prev, isFeatured: checked }));
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      if (!file.type.startsWith("image/")) {
-        toast.error("Invalid file type", {
-          description: "Please select an image file.",
-        });
-        return;
-      }
+    if (!file || !validateFile(file)) return;
 
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("File too large", {
-          description: "Please select an image smaller than 5MB.",
-        });
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-        setFormData((prev) => ({
-          ...prev,
-          image: reader.result,
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
+    const dataUrl = await readFileAsDataURL(file);
+    setImagePreview(dataUrl);
+    crud.setFormData((prev) => ({ ...prev, image: dataUrl }));
   };
 
   const handleRemoveImage = () => {
     setImagePreview(null);
-    setFormData((prev) => ({
-      ...prev,
-      image: null,
-    }));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.collectionName.trim()) {
-      toast.error("Collection name is required", {
-        description: "Please enter a collection name.",
-      });
-      return;
-    }
-
-    if (dialogMode === "add" && !formData.image) {
-      toast.error("Collection image is required", {
-        description: "Please upload an image for the collection.",
-      });
-      return;
-    }
-
-    try {
-      const collectionData = {
-        collectionName: formData.collectionName.trim(),
-        description: formData.description.trim(),
-        isFeatured: formData.isFeatured,
-        ...(formData.image && { image: formData.image }),
-      };
-
-      if (dialogMode === "edit" && selectedCollection) {
-        const collectionId = selectedCollection._id || selectedCollection.id;
-        const response = await updateCollection({
-          id: collectionId,
-          ...collectionData,
-        }).unwrap();
-
-        if (response.success) {
-          toast.success(response.message || "Collection updated successfully", {
-            description:
-              response.description ||
-              `The collection "${response.collection.collectionName}" has been updated.`,
-          });
-          resetForm();
-        }
-      } else {
-        const response = await createCollection(collectionData).unwrap();
-
-        if (response.success) {
-          toast.success(response.message || "Collection created successfully", {
-            description:
-              response.description ||
-              `The collection "${response.collection.collectionName}" has been added.`,
-          });
-          resetForm();
-        }
-      }
-    } catch (error) {
-      console.error(
-        `${dialogMode === "edit" ? "Update" : "Create"} collection error:`,
-        error
-      );
-      toast.error(
-        error?.data?.message ||
-          `Failed to ${dialogMode === "edit" ? "update" : "create"} collection`,
-        {
-          description:
-            error?.data?.description ||
-            "An unexpected error occurred. Please try again.",
-        }
-      );
-    }
-  };
-
-  const handleDialogClose = (open) => {
-    setDialogOpen(open);
-    if (!open) {
-      resetForm();
-    }
-  };
-
-  const handleAdd = () => {
-    setDialogMode("add");
-    resetForm();
-    setDialogOpen(true);
+    crud.setFormData((prev) => ({ ...prev, image: null }));
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleEdit = (collection) => {
-    setDialogMode("edit");
-    setSelectedCollection(collection);
-    setFormData({
+    crud.openEdit(collection, {
       collectionName: collection.collectionName || "",
       description: collection.description || "",
       isFeatured: collection.isFeatured || false,
       image: null,
     });
     setImagePreview(collection.image?.url || null);
-    setDialogOpen(true);
   };
 
-  const handleDelete = (collection) => {
-    setSelectedCollection(collection);
-    setDeleteDialogOpen(true);
-  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  const handleConfirmDelete = async () => {
-    if (!selectedCollection) return;
-
-    try {
-      const collectionId = selectedCollection._id || selectedCollection.id;
-      const response = await deleteCollection(collectionId).unwrap();
-
-      if (response.success) {
-        toast.success(response.message || "Collection deleted successfully", {
-          description:
-            response.description ||
-            `The collection "${selectedCollection.collectionName}" has been removed.`,
-        });
-
-        setDeleteDialogOpen(false);
-        setSelectedCollection(null);
-      }
-    } catch (error) {
-      console.error("Delete collection error:", error);
-      toast.error(error?.data?.message || "Failed to delete collection", {
-        description:
-          error?.data?.description ||
-          "An unexpected error occurred. Please try again.",
+    if (!crud.formData.collectionName.trim()) {
+      toast.error("Collection name is required", {
+        description: "Please enter a collection name.",
       });
+      return;
     }
-  };
 
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
-  };
+    if (crud.dialogMode === "add" && !crud.formData.image) {
+      toast.error("Collection image is required", {
+        description: "Please upload an image for the collection.",
+      });
+      return;
+    }
 
-  const handleLimitChange = (newLimit) => {
-    setLimit(newLimit);
-    setPage(1);
-  };
-
-  const handleSearchChange = (value) => {
-    setSearch(value);
-    setPage(1);
+    await crud.submitForm({
+      collectionName: crud.formData.collectionName.trim(),
+      description: crud.formData.description.trim(),
+      isFeatured: crud.formData.isFeatured,
+      ...(crud.formData.image && { image: crud.formData.image }),
+    });
   };
 
   return {
     // State
-    dialogOpen,
-    deleteDialogOpen,
-    selectedCollection,
-    dialogMode,
-    formData,
+    dialogOpen: crud.dialogOpen,
+    deleteDialogOpen: crud.deleteDialogOpen,
+    selectedCollection: crud.selectedItem,
+    dialogMode: crud.dialogMode,
+    formData: crud.formData,
     imagePreview,
     fileInputRef,
-    page,
-    limit,
-    search,
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search,
     collections,
     totalItems,
     totalPages,
@@ -295,15 +148,15 @@ const useCollectionManagement = () => {
     handleImageChange,
     handleRemoveImage,
     handleSubmit,
-    handleDialogClose,
-    handleAdd,
+    handleDialogClose: crud.handleDialogClose,
+    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete,
-    handleConfirmDelete,
-    handlePageChange,
-    handleLimitChange,
-    handleSearchChange,
-    setDeleteDialogOpen,
+    handleDelete: crud.handleDelete,
+    handleConfirmDelete: crud.handleConfirmDelete,
+    handlePageChange: crud.handlePageChange,
+    handleLimitChange: crud.handleLimitChange,
+    handleSearchChange: crud.handleSearchChange,
+    setDeleteDialogOpen: crud.setDeleteDialogOpen,
   };
 };
 

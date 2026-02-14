@@ -10,6 +10,12 @@ import {
 } from "@/redux/api/publicApi";
 import { PRICE_RANGES, DEFAULT_SORT } from "@/constant/filterOptions";
 import { useCarousel } from "./useCarousel";
+import {
+  getProductDisplayInfo,
+  parseArrayParam,
+  toggleArrayItem,
+  toggleSetItem,
+} from "@/utils/formatting";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 12;
@@ -21,30 +27,6 @@ const DEFAULT_PAGINATION = {
   totalPages: 0,
   hasNextPage: false,
   hasPreviousPage: false,
-};
-
-// Utility: Parse comma-separated URL param to array
-const parseArrayParam = (param) => param?.split(",").filter(Boolean) || [];
-
-// Utility: Calculate display price and discount
-const getProductDisplayInfo = (product) => ({
-  displayPrice: product?.discountPrice ?? product?.price,
-  hasDiscount: Boolean(product?.discountPrice),
-});
-
-// Utility: Toggle item in array
-const toggleArrayItem = (array, item) =>
-  array.includes(item) ? array.filter((id) => id !== item) : [...array, item];
-
-// Utility: Toggle item in Set
-const toggleSetItem = (set, item) => {
-  const newSet = new Set(set);
-  if (newSet.has(item)) {
-    newSet.delete(item);
-  } else {
-    newSet.add(item);
-  }
-  return newSet;
 };
 
 export const useProducts = () => {

@@ -1,5 +1,3 @@
-import { useState } from "react";
-import { toast } from "sonner";
 import {
   useGetDealerExtraBagsQuery,
   useCreateDealerExtraBagMutation,
@@ -7,38 +5,16 @@ import {
   useDeleteDealerExtraBagMutation,
   useGetSubCollectionsQuery,
 } from "@/redux/api/adminApi";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
+import { extractPaginatedData } from "@/utils/apiHelpers";
+
+const initialFormData = {
+  subCollectionId: "",
+  price: "",
+  isActive: true,
+};
 
 const useDealerExtraBagManagement = () => {
-  // Dialog State
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState("add");
-  const [selectedBag, setSelectedBag] = useState(null);
-
-  // Form State
-  const [formData, setFormData] = useState({
-    subCollectionId: "",
-    price: "",
-    isActive: true,
-  });
-
-  // Pagination & Search State
-  const [search, setSearch] = useState("");
-  const [limit, setLimit] = useState("10");
-  const [page, setPage] = useState(1);
-
-  // API Hooks
-  const { data, isLoading, isFetching } = useGetDealerExtraBagsQuery({
-    page,
-    limit,
-    search: search || undefined,
-  });
-
-  const { data: subCollectionsData } = useGetSubCollectionsQuery({
-    limit: 1000,
-  });
-  const subCollections = subCollectionsData?.subCollections || [];
-
   const [createExtraBag, { isLoading: isCreating }] =
     useCreateDealerExtraBagMutation();
   const [updateExtraBag, { isLoading: isUpdating }] =
@@ -46,9 +22,31 @@ const useDealerExtraBagManagement = () => {
   const [deleteExtraBag, { isLoading: isDeleting }] =
     useDeleteDealerExtraBagMutation();
 
-  const extraBags = data?.extraBags || [];
-  const totalItems = data?.pagination?.totalItems || 0;
-  const totalPages = data?.pagination?.totalPages || 0;
+  const crud = useAdminCrud({
+    initialFormData,
+    createFn: createExtraBag,
+    updateFn: updateExtraBag,
+    deleteFn: deleteExtraBag,
+    entityName: "bag pricing",
+  });
+
+  // Fetch data
+  const { data, isLoading, isFetching } = useGetDealerExtraBagsQuery({
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search || undefined,
+  });
+
+  const { data: subCollectionsData } = useGetSubCollectionsQuery({
+    limit: 1000,
+  });
+  const subCollections = subCollectionsData?.subCollections || [];
+
+  const {
+    items: extraBags,
+    totalItems,
+    totalPages,
+  } = extractPaginatedData(data, "extraBags");
 
   const columns = [
     { label: "Part Type", key: "subCollectionId" },
@@ -59,127 +57,29 @@ const useDealerExtraBagManagement = () => {
     { label: "Actions", key: "actions" },
   ];
 
-  // Handlers
-  const handleDialogClose = (open) => {
-    setDialogOpen(open);
-    if (!open) {
-      setFormData({
-        subCollectionId: "",
-        price: "",
-        isActive: true,
-      });
-      setSelectedBag(null);
-      setDialogMode("add");
-    }
-  };
-
-  const handleAdd = () => {
-    setDialogMode("add");
-    setSelectedBag(null);
-    setFormData({
-      subCollectionId: "",
-      price: "",
-      isActive: true,
-    });
-    setDialogOpen(true);
-  };
-
   const handleEdit = (bag) => {
-    setDialogMode("edit");
-    setSelectedBag(bag);
-    setFormData({
+    crud.openEdit(bag, {
       subCollectionId: bag.subCollectionId?._id || "",
       price: bag.price,
       isActive: bag.isActive,
     });
-    setDialogOpen(true);
-  };
-
-  const handleDelete = (bag) => {
-    setSelectedBag(bag);
-    setDeleteDialogOpen(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      if (dialogMode === "add") {
-        const response = await createExtraBag(formData).unwrap();
-        if (response.success) {
-          toast.success(response.message || "Bag pricing set successfully", {
-            description:
-              response.description ||
-              "Pricing for this category has been added.",
-          });
-          handleDialogClose(false);
-        }
-      } else {
-        const response = await updateExtraBag({
-          id: selectedBag._id,
-          ...formData,
-        }).unwrap();
-        if (response.success) {
-          toast.success(
-            response.message || "Bag pricing updated successfully",
-            {
-              description:
-                response.description ||
-                "The bag pricing details have been updated.",
-            },
-          );
-          handleDialogClose(false);
-        }
-      }
-    } catch (err) {
-      toast.error(err?.data?.message || "Failed to save bag pricing", {
-        description:
-          err?.data?.description ||
-          "An unexpected error occurred. Please try again.",
-      });
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!selectedBag) return;
-    try {
-      const response = await deleteExtraBag(selectedBag._id).unwrap();
-      if (response.success) {
-        toast.success(response.message || "Bag pricing removed successfully", {
-          description:
-            response.description || "The bag pricing has been removed.",
-        });
-        setDeleteDialogOpen(false);
-        setSelectedBag(null);
-      }
-    } catch (err) {
-      toast.error(err?.data?.message || "Failed to delete bag pricing", {
-        description:
-          err?.data?.description ||
-          "An unexpected error occurred. Please try again.",
-      });
-    }
-  };
-
-  const handlePageChange = (p) => setPage(p);
-  const handleLimitChange = (l) => {
-    setLimit(l);
-    setPage(1);
-  };
-  const handleSearchChange = (s) => {
-    setSearch(s);
-    setPage(1);
+    await crud.submitForm(crud.formData);
   };
 
   return {
     // State
-    search,
-    limit,
-    page,
-    dialogOpen,
-    deleteDialogOpen,
-    dialogMode,
-    selectedBag,
-    formData,
+    search: crud.search,
+    limit: crud.limit,
+    page: crud.page,
+    dialogOpen: crud.dialogOpen,
+    deleteDialogOpen: crud.deleteDialogOpen,
+    dialogMode: crud.dialogMode,
+    selectedBag: crud.selectedItem,
+    formData: crud.formData,
     subCollections,
     extraBags,
     totalItems,
@@ -191,17 +91,17 @@ const useDealerExtraBagManagement = () => {
     isDeleting,
 
     // Handlers
-    handleDialogClose,
-    setDeleteDialogOpen,
-    setFormData,
-    handleAdd,
+    handleDialogClose: crud.handleDialogClose,
+    setDeleteDialogOpen: crud.setDeleteDialogOpen,
+    setFormData: crud.setFormData,
+    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete,
+    handleDelete: crud.handleDelete,
     handleSubmit,
-    handleConfirmDelete,
-    handlePageChange,
-    handleLimitChange,
-    handleSearchChange,
+    handleConfirmDelete: crud.handleConfirmDelete,
+    handlePageChange: crud.handlePageChange,
+    handleLimitChange: crud.handleLimitChange,
+    handleSearchChange: crud.handleSearchChange,
   };
 };
 

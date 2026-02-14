@@ -84,7 +84,6 @@ export const useSubCollections = () => {
     hasSubCollections,
   };
 };
-
 // import { useCallback, useMemo } from "react";
 // import { useParams } from "react-router-dom";
 // import { useCarousel } from "./useCarousel";
@@ -181,3 +180,4 @@ export const useSubCollections = () => {
 //     hasSubCollections,
 //   };
 // };
+

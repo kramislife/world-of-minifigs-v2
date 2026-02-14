@@ -22,6 +22,7 @@ import {
   closeSheet,
   setSheetMode,
 } from "@/redux/slices/cartSlice";
+import { handleApiError } from "@/utils/apiHelpers";
 
 //------------------------------------------- Helpers -------------------------------------------
 
@@ -42,12 +43,6 @@ const getAddToCartStatus = (product, variantIndex = null) => {
       : "Choose Options";
 
   return { isSoldOut, label };
-};
-
-const showCheckoutError = (err, fallbackMsg, fallbackDesc) => {
-  toast.error(err?.data?.message || fallbackMsg, {
-    description: err?.data?.description || fallbackDesc,
-  });
 };
 
 // "Add to Cart" button logic and state
@@ -123,14 +118,14 @@ export const useProductCheckout = ({
       if (res?.url) {
         window.location.href = res.url;
       } else {
-        showCheckoutError(
+        handleApiError(
           null,
           "Checkout failed",
           "Could not start checkout. Please try again.",
         );
       }
     } catch (err) {
-      showCheckoutError(err, "Checkout failed", "Please try again.");
+      handleApiError(err, "Checkout failed", "Please try again.");
     }
   }, [
     isAuthenticated,
@@ -391,11 +386,11 @@ export const useCart = () => {
           }).unwrap();
           await refetchCart();
         } catch (err) {
-          toast.error(err.data?.message || "Cart error", {
-            description:
-              err.data?.description ||
-              `${displayName} has reached its maximum stock.`,
-          });
+          handleApiError(
+            err,
+            "Cart error",
+            `${displayName} has reached its maximum stock.`,
+          );
           return;
         }
       } else {
@@ -444,11 +439,11 @@ export const useCart = () => {
             quantity,
           }).unwrap();
         } catch (err) {
-          toast.error(err.data?.message || "Update failed", {
-            description:
-              err.data?.description ||
-              "Unable to update quantity. Please try again.",
-          });
+          handleApiError(
+            err,
+            "Update failed",
+            "Unable to update quantity. Please try again.",
+          );
         }
       } else {
         dispatch(updateQuantityLocal({ productId, variantIndex, quantity }));
@@ -457,17 +452,46 @@ export const useCart = () => {
     [isAuthenticated, updateCartItemServer, dispatch],
   );
 
+  // Cart item quantity handlers (used by CartItem via CartSheet -> CartView)
+  const handleQuantityDecrement = useCallback(
+    (productId, variantIndex) => {
+      const item = items.find(
+        (i) =>
+          i.productId === productId &&
+          (i.variantIndex ?? null) === (variantIndex ?? null),
+      );
+      if (!item || item.quantity <= 1) return;
+      updateQuantity(item.quantity - 1, productId, variantIndex);
+    },
+    [items, updateQuantity],
+  );
+
+  const handleQuantityIncrement = useCallback(
+    (productId, variantIndex) => {
+      const item = items.find(
+        (i) =>
+          i.productId === productId &&
+          (i.variantIndex ?? null) === (variantIndex ?? null),
+      );
+      if (!item) return;
+      const max = item.stock ?? Infinity;
+      if (item.quantity >= max) return;
+      updateQuantity(item.quantity + 1, productId, variantIndex);
+    },
+    [items, updateQuantity],
+  );
+
   const removeItem = useCallback(
     async (productId, variantIndex) => {
       if (isAuthenticated) {
         try {
           await removeCartItemServer({ productId, variantIndex }).unwrap();
         } catch (err) {
-          toast.error(err.data?.message || "Remove failed", {
-            description:
-              err.data?.description ||
-              "Unable to remove item from cart. Please try again.",
-          });
+          handleApiError(
+            err,
+            "Remove failed",
+            "Unable to remove item from cart. Please try again.",
+          );
         }
       } else {
         dispatch(removeFromCartLocal({ productId, variantIndex }));
@@ -481,11 +505,11 @@ export const useCart = () => {
       try {
         await clearCartServer().unwrap();
       } catch (err) {
-        toast.error(err.data?.message || "Clear failed", {
-          description:
-            err.data?.description ||
-            "Unable to empty your cart. Please try again.",
-        });
+        handleApiError(
+          err,
+          "Clear failed",
+          "Unable to empty your cart. Please try again.",
+        );
       }
     } else {
       dispatch(clearCartLocal());
@@ -504,11 +528,11 @@ export const useCart = () => {
         await syncCartServer(syncItems).unwrap();
         dispatch(clearCartLocal());
       } catch (err) {
-        toast.error(err.data?.message || "Sync failed", {
-          description:
-            err.data?.description ||
-            "Unable to sync your guest cart to your account.",
-        });
+        handleApiError(
+          err,
+          "Sync failed",
+          "Unable to sync your guest cart to your account.",
+        );
       }
     }
   }, [isAuthenticated, localItems, syncCartServer, dispatch]);
@@ -526,14 +550,14 @@ export const useCart = () => {
       if (res?.url) {
         window.location.href = res.url;
       } else {
-        showCheckoutError(
+        handleApiError(
           null,
           "Checkout failed",
           "Could not start checkout. Please try again.",
         );
       }
     } catch (err) {
-      showCheckoutError(err, "Checkout failed", "Please try again.");
+      handleApiError(err, "Checkout failed", "Please try again.");
     }
   }, [isAuthenticated, createCheckoutSession, dispatch]);
 
@@ -564,6 +588,8 @@ export const useCart = () => {
     addToCart,
     handleAddToCart,
     updateQuantity,
+    handleQuantityDecrement,
+    handleQuantityIncrement,
     removeItem,
     clearCart,
     syncCart,

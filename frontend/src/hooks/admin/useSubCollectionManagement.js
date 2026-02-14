@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import {
   useGetSubCollectionsQuery,
@@ -7,35 +7,25 @@ import {
   useDeleteSubCollectionMutation,
   useGetCollectionsQuery,
 } from "@/redux/api/adminApi";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
+import { extractPaginatedData } from "@/utils/apiHelpers";
+import { validateFile, readFileAsDataURL } from "@/utils/fileHelpers";
+
+const initialFormData = {
+  subCollectionName: "",
+  description: "",
+  collection: "",
+  image: null,
+};
 
 const useSubCollectionManagement = () => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedSubCollection, setSelectedSubCollection] = useState(null);
-  const [dialogMode, setDialogMode] = useState("add");
-  const [formData, setFormData] = useState({
-    subCollectionName: "",
-    description: "",
-    collection: "",
-    image: null,
-  });
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Pagination and search state
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState("10");
-  const [search, setSearch] = useState("");
-
-  // Fetch data with pagination and search
-  const { data: subCollectionsData, isLoading: isLoadingSubCollections } =
-    useGetSubCollectionsQuery({
-      page,
-      limit,
-      search: search || undefined,
-    });
-  const { data: collectionsData, isLoading: isLoadingCollections } =
-    useGetCollectionsQuery();
+  const resetImages = useCallback(() => {
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
 
   const [createSubCollection, { isLoading: isCreating }] =
     useCreateSubCollectionMutation();
@@ -44,15 +34,32 @@ const useSubCollectionManagement = () => {
   const [deleteSubCollection, { isLoading: isDeleting }] =
     useDeleteSubCollectionMutation();
 
-  // Extract data from server response
-  const subCollections = subCollectionsData?.subCollections || [];
-  const totalItems = subCollectionsData?.pagination?.totalItems || 0;
-  const totalPages = subCollectionsData?.pagination?.totalPages || 1;
+  const crud = useAdminCrud({
+    initialFormData,
+    createFn: createSubCollection,
+    updateFn: updateSubCollection,
+    deleteFn: deleteSubCollection,
+    entityName: "sub-collection",
+    onReset: resetImages,
+  });
 
-  // Get collections list
+  // Fetch data
+  const { data: subCollectionsData, isLoading: isLoadingSubCollections } =
+    useGetSubCollectionsQuery({
+      page: crud.page,
+      limit: crud.limit,
+      search: crud.search || undefined,
+    });
+  const { data: collectionsData, isLoading: isLoadingCollections } =
+    useGetCollectionsQuery();
+
+  const {
+    items: subCollections,
+    totalItems,
+    totalPages,
+  } = extractPaginatedData(subCollectionsData, "subCollections");
   const collections = collectionsData?.collections || [];
 
-  // Column definitions
   const columns = [
     { key: "subCollectionName", label: "Sub-collection" },
     { key: "collection", label: "Collection" },
@@ -64,280 +71,83 @@ const useSubCollectionManagement = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    crud.setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleCollectionChange = (value) => {
-    setFormData((prev) => ({
-      ...prev,
-      collection: value,
-    }));
+    crud.setFormData((prev) => ({ ...prev, collection: value }));
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      if (!file.type.startsWith("image/")) {
-        toast.error("Invalid file type", {
-          description: "Please select an image file.",
-        });
-        return;
-      }
+    if (!file || !validateFile(file)) return;
 
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("File too large", {
-          description: "Please select an image smaller than 5MB.",
-        });
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-        setFormData((prev) => ({
-          ...prev,
-          image: reader.result,
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
+    const dataUrl = await readFileAsDataURL(file);
+    setImagePreview(dataUrl);
+    crud.setFormData((prev) => ({ ...prev, image: dataUrl }));
   };
 
   const handleRemoveImage = () => {
     setImagePreview(null);
-    setFormData((prev) => ({
-      ...prev,
-      image: null,
-    }));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.subCollectionName.trim()) {
-      toast.error("Sub-collection name is required", {
-        description: "Please enter a sub-collection name.",
-      });
-      return;
-    }
-
-    if (!formData.collection) {
-      toast.error("Collection is required", {
-        description: "Please select a parent collection.",
-      });
-      return;
-    }
-
-    if (dialogMode === "add" && !formData.image) {
-      toast.error("Sub-collection image is required", {
-        description: "Please upload an image for the sub-collection.",
-      });
-      return;
-    }
-
-    try {
-      const subCollectionData = {
-        subCollectionName: formData.subCollectionName.trim(),
-        description: formData.description.trim(),
-        collection: formData.collection,
-        ...(formData.image && { image: formData.image }),
-      };
-
-      if (dialogMode === "edit" && selectedSubCollection) {
-        const subCollectionId =
-          selectedSubCollection._id || selectedSubCollection.id;
-        const response = await updateSubCollection({
-          id: subCollectionId,
-          ...subCollectionData,
-        }).unwrap();
-
-        if (response.success) {
-          toast.success(
-            response.message || "Sub-collection updated successfully",
-            {
-              description:
-                response.description ||
-                `The sub-collection "${response.subCollection.subCollectionName}" has been updated.`,
-            }
-          );
-
-          setFormData({
-            subCollectionName: "",
-            description: "",
-            collection: "",
-            image: null,
-          });
-          setImagePreview(null);
-          setSelectedSubCollection(null);
-          setDialogMode("add");
-          setDialogOpen(false);
-          if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-          }
-        }
-      } else {
-        const response = await createSubCollection(subCollectionData).unwrap();
-
-        if (response.success) {
-          toast.success(
-            response.message || "Sub-collection created successfully",
-            {
-              description:
-                response.description ||
-                `The sub-collection "${response.subCollection.subCollectionName}" has been created.`,
-            }
-          );
-
-          setFormData({
-            subCollectionName: "",
-            description: "",
-            collection: "",
-            image: null,
-          });
-          setImagePreview(null);
-          setDialogOpen(false);
-          if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-          }
-        }
-      }
-    } catch (error) {
-      console.error(
-        `${dialogMode === "edit" ? "Update" : "Create"} sub-collection error:`,
-        error
-      );
-      toast.error(
-        error?.data?.message ||
-          `Failed to ${
-            dialogMode === "edit" ? "update" : "create"
-          } sub-collection`,
-        {
-          description:
-            error?.data?.description ||
-            "An unexpected error occurred. Please try again.",
-        }
-      );
-    }
-  };
-
-  const handleDialogClose = (open) => {
-    setDialogOpen(open);
-    if (!open) {
-      setFormData({
-        subCollectionName: "",
-        description: "",
-        collection: "",
-        image: null,
-      });
-      setImagePreview(null);
-      setSelectedSubCollection(null);
-      setDialogMode("add");
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
-
-  const handleAdd = () => {
-    setDialogMode("add");
-    setSelectedSubCollection(null);
-    setFormData({
-      subCollectionName: "",
-      description: "",
-      collection: "",
-      image: null,
-    });
-    setImagePreview(null);
-    setDialogOpen(true);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    crud.setFormData((prev) => ({ ...prev, image: null }));
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleEdit = (subCollection) => {
-    setDialogMode("edit");
-    setSelectedSubCollection(subCollection);
-    setFormData({
+    crud.openEdit(subCollection, {
       subCollectionName: subCollection.subCollectionName || "",
       description: subCollection.description || "",
       collection:
         subCollection.collectionId?._id || subCollection.collectionId || "",
       image: null,
     });
-
-    const imageUrl = subCollection.image?.url || null;
-    setImagePreview(imageUrl);
-    setDialogOpen(true);
+    setImagePreview(subCollection.image?.url || null);
   };
 
-  const handleDelete = (subCollection) => {
-    setSelectedSubCollection(subCollection);
-    setDeleteDialogOpen(true);
-  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  const handleConfirmDelete = async () => {
-    if (!selectedSubCollection) return;
-
-    try {
-      const subCollectionId =
-        selectedSubCollection._id || selectedSubCollection.id;
-      const response = await deleteSubCollection(subCollectionId).unwrap();
-
-      if (response.success) {
-        toast.success(
-          response.message || "Sub-collection deleted successfully",
-          {
-            description:
-              response.description ||
-              `The sub-collection "${selectedSubCollection.subCollectionName}" has been removed.`,
-          }
-        );
-
-        setDeleteDialogOpen(false);
-        setSelectedSubCollection(null);
-      }
-    } catch (error) {
-      console.error("Delete sub-collection error:", error);
-      toast.error(error?.data?.message || "Failed to delete sub-collection", {
-        description:
-          error?.data?.description ||
-          "An unexpected error occurred. Please try again.",
+    if (!crud.formData.subCollectionName.trim()) {
+      toast.error("Sub-collection name is required", {
+        description: "Please enter a sub-collection name.",
       });
+      return;
     }
-  };
 
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
-  };
+    if (!crud.formData.collection) {
+      toast.error("Collection is required", {
+        description: "Please select a parent collection.",
+      });
+      return;
+    }
 
-  const handleLimitChange = (newLimit) => {
-    setLimit(newLimit);
-    setPage(1);
-  };
+    if (crud.dialogMode === "add" && !crud.formData.image) {
+      toast.error("Sub-collection image is required", {
+        description: "Please upload an image for the sub-collection.",
+      });
+      return;
+    }
 
-  const handleSearchChange = (value) => {
-    setSearch(value);
-    setPage(1);
+    await crud.submitForm({
+      subCollectionName: crud.formData.subCollectionName.trim(),
+      description: crud.formData.description.trim(),
+      collection: crud.formData.collection,
+      ...(crud.formData.image && { image: crud.formData.image }),
+    });
   };
 
   return {
     // State
-    dialogOpen,
-    deleteDialogOpen,
-    selectedSubCollection,
-    dialogMode,
-    formData,
+    dialogOpen: crud.dialogOpen,
+    deleteDialogOpen: crud.deleteDialogOpen,
+    selectedSubCollection: crud.selectedItem,
+    dialogMode: crud.dialogMode,
+    formData: crud.formData,
     imagePreview,
     fileInputRef,
-    page,
-    limit,
-    search,
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search,
     subCollections,
     totalItems,
     totalPages,
@@ -355,15 +165,15 @@ const useSubCollectionManagement = () => {
     handleImageChange,
     handleRemoveImage,
     handleSubmit,
-    handleDialogClose,
-    handleAdd,
+    handleDialogClose: crud.handleDialogClose,
+    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete,
-    handleConfirmDelete,
-    handlePageChange,
-    handleLimitChange,
-    handleSearchChange,
-    setDeleteDialogOpen,
+    handleDelete: crud.handleDelete,
+    handleConfirmDelete: crud.handleConfirmDelete,
+    handlePageChange: crud.handlePageChange,
+    handleLimitChange: crud.handleLimitChange,
+    handleSearchChange: crud.handleSearchChange,
+    setDeleteDialogOpen: crud.setDeleteDialogOpen,
   };
 };
 

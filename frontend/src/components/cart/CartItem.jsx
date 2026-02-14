@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import QuantityControl from "@/components/shared/QuantityControl";
 import Logo from "@/assets/media/Logo.png";
 
-const CartItem = ({ item, onUpdate, onRemove }) => {
+const CartItem = ({ item, onDecrement, onIncrement, onRemove }) => {
   const {
     productId,
     productName,
@@ -71,10 +71,8 @@ const CartItem = ({ item, onUpdate, onRemove }) => {
         <div className="flex items-center gap-2">
           <QuantityControl
             value={quantity}
-            onDecrement={() =>
-              onUpdate(Math.max(1, quantity - 1), productId, variantIndex)
-            }
-            onIncrement={() => onUpdate(quantity + 1, productId, variantIndex)}
+            onDecrement={() => onDecrement(productId, variantIndex)}
+            onIncrement={() => onIncrement(productId, variantIndex)}
             min={1}
             max={stock}
           />

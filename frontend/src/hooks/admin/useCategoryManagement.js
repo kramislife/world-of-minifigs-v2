@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { toast } from "sonner";
 import {
   useCreateCategoryMutation,
@@ -6,30 +5,15 @@ import {
   useGetCategoriesQuery,
   useDeleteCategoryMutation,
 } from "@/redux/api/adminApi";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
+import { extractPaginatedData } from "@/utils/apiHelpers";
+
+const initialFormData = {
+  categoryName: "",
+  description: "",
+};
 
 const useCategoryManagement = () => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [dialogMode, setDialogMode] = useState("add");
-  const [formData, setFormData] = useState({
-    categoryName: "",
-    description: "",
-  });
-
-  // Pagination and search state
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState("10");
-  const [search, setSearch] = useState("");
-
-  // Fetch data with pagination and search
-  const { data: categoriesResponse, isLoading: isLoadingCategories } =
-    useGetCategoriesQuery({
-      page,
-      limit,
-      search: search || undefined,
-    });
-
   const [createCategory, { isLoading: isCreating }] =
     useCreateCategoryMutation();
   const [updateCategory, { isLoading: isUpdating }] =
@@ -37,12 +21,25 @@ const useCategoryManagement = () => {
   const [deleteCategory, { isLoading: isDeleting }] =
     useDeleteCategoryMutation();
 
-  // Extract data from server response
-  const categories = categoriesResponse?.categories || [];
-  const totalItems = categoriesResponse?.pagination?.totalItems || 0;
-  const totalPages = categoriesResponse?.pagination?.totalPages || 1;
+  const crud = useAdminCrud({
+    initialFormData,
+    createFn: createCategory,
+    updateFn: updateCategory,
+    deleteFn: deleteCategory,
+    entityName: "category",
+  });
 
-  // Column definitions
+  // Fetch data
+  const { data: categoriesResponse, isLoading: isLoadingCategories } =
+    useGetCategoriesQuery({
+      page: crud.page,
+      limit: crud.limit,
+      search: crud.search || undefined,
+    });
+
+  const { items: categories, totalItems, totalPages } =
+    extractPaginatedData(categoriesResponse, "categories");
+
   const columns = [
     { key: "categoryName", label: "Name" },
     { key: "description", label: "Description" },
@@ -53,172 +50,42 @@ const useCategoryManagement = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    crud.setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleEdit = (category) => {
+    crud.openEdit(category, {
+      categoryName: category.categoryName || "",
+      description: category.description || "",
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.categoryName.trim()) {
+    if (!crud.formData.categoryName.trim()) {
       toast.error("Category name is required", {
         description: "Please enter a category name.",
       });
       return;
     }
 
-    try {
-      const categoryData = {
-        categoryName: formData.categoryName.trim(),
-        description: formData.description.trim(),
-      };
-
-      if (dialogMode === "edit" && selectedCategory) {
-        const categoryId = selectedCategory._id || selectedCategory.id;
-        const response = await updateCategory({
-          id: categoryId,
-          ...categoryData,
-        }).unwrap();
-
-        if (response.success) {
-          toast.success(response.message || "Category updated successfully", {
-            description:
-              response.description ||
-              `The category "${response.category.categoryName}" has been updated.`,
-          });
-
-          setFormData({
-            categoryName: "",
-            description: "",
-          });
-          setSelectedCategory(null);
-          setDialogMode("add");
-          setDialogOpen(false);
-        }
-      } else {
-        const response = await createCategory(categoryData).unwrap();
-
-        if (response.success) {
-          toast.success(response.message || "Category created successfully", {
-            description:
-              response.description ||
-              `The category "${response.category.categoryName}" has been added.`,
-          });
-
-          setFormData({
-            categoryName: "",
-            description: "",
-          });
-          setDialogOpen(false);
-        }
-      }
-    } catch (error) {
-      console.error(
-        `${dialogMode === "edit" ? "Update" : "Create"} category error:`,
-        error
-      );
-      toast.error(
-        error?.data?.message ||
-          `Failed to ${dialogMode === "edit" ? "update" : "create"} category`,
-        {
-          description:
-            error?.data?.description ||
-            "An unexpected error occurred. Please try again.",
-        }
-      );
-    }
-  };
-
-  const handleDialogClose = (open) => {
-    setDialogOpen(open);
-    if (!open) {
-      setFormData({
-        categoryName: "",
-        description: "",
-      });
-      setSelectedCategory(null);
-      setDialogMode("add");
-    }
-  };
-
-  const handleAdd = () => {
-    setDialogMode("add");
-    setSelectedCategory(null);
-    setFormData({
-      categoryName: "",
-      description: "",
+    await crud.submitForm({
+      categoryName: crud.formData.categoryName.trim(),
+      description: crud.formData.description.trim(),
     });
-    setDialogOpen(true);
-  };
-
-  const handleEdit = (category) => {
-    setDialogMode("edit");
-    setSelectedCategory(category);
-    setFormData({
-      categoryName: category.categoryName || "",
-      description: category.description || "",
-    });
-    setDialogOpen(true);
-  };
-
-  const handleDelete = (category) => {
-    setSelectedCategory(category);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!selectedCategory) return;
-
-    try {
-      const categoryId = selectedCategory._id || selectedCategory.id;
-      const response = await deleteCategory(categoryId).unwrap();
-
-      if (response.success) {
-        toast.success(response.message || "Category deleted successfully", {
-          description:
-            response.description ||
-            `The category "${selectedCategory.categoryName}" has been removed.`,
-        });
-
-        setDeleteDialogOpen(false);
-        setSelectedCategory(null);
-      }
-    } catch (error) {
-      console.error("Delete category error:", error);
-      toast.error(error?.data?.message || "Failed to delete category", {
-        description:
-          error?.data?.description ||
-          "An unexpected error occurred. Please try again.",
-      });
-    }
-  };
-
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
-  };
-
-  const handleLimitChange = (newLimit) => {
-    setLimit(newLimit);
-    setPage(1);
-  };
-
-  const handleSearchChange = (value) => {
-    setSearch(value);
-    setPage(1);
   };
 
   return {
     // State
-    dialogOpen,
-    deleteDialogOpen,
-    selectedCategory,
-    dialogMode,
-    formData,
-    page,
-    limit,
-    search,
+    dialogOpen: crud.dialogOpen,
+    deleteDialogOpen: crud.deleteDialogOpen,
+    selectedCategory: crud.selectedItem,
+    dialogMode: crud.dialogMode,
+    formData: crud.formData,
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search,
     categories,
     totalItems,
     totalPages,
@@ -231,15 +98,15 @@ const useCategoryManagement = () => {
     // Handlers
     handleChange,
     handleSubmit,
-    handleDialogClose,
-    handleAdd,
+    handleDialogClose: crud.handleDialogClose,
+    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete,
-    handleConfirmDelete,
-    handlePageChange,
-    handleLimitChange,
-    handleSearchChange,
-    setDeleteDialogOpen,
+    handleDelete: crud.handleDelete,
+    handleConfirmDelete: crud.handleConfirmDelete,
+    handlePageChange: crud.handlePageChange,
+    handleLimitChange: crud.handleLimitChange,
+    handleSearchChange: crud.handleSearchChange,
+    setDeleteDialogOpen: crud.setDeleteDialogOpen,
   };
 };
 

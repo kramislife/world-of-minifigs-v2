@@ -5,6 +5,7 @@ import {
   useVerifyEmailMutation,
   useResendVerificationMutation,
 } from "@/redux/api/authApi";
+import { handleApiError, handleApiSuccess } from "@/utils/apiHelpers";
 
 export const useVerifyEmail = () => {
   const location = useLocation();
@@ -59,10 +60,11 @@ export const useVerifyEmail = () => {
         newSearchParams.delete("token");
         setSearchParams(newSearchParams, { replace: true });
 
-        toast.success(response?.message || "Email verified successfully", {
-          description:
-            response?.description || "You can now sign in to your account.",
-        });
+        handleApiSuccess(
+          response,
+          "Email verified successfully",
+          "You can now sign in to your account.",
+        );
       } catch (error) {
         // allow retry on refresh: do NOT set hasVerified, keep token in URL
         console.error("Verification error:", error);
@@ -120,20 +122,17 @@ export const useVerifyEmail = () => {
         setVerificationStatus("alreadyVerified");
       }
 
-      toast.success(response?.message || "Verification email sent", {
-        description:
-          response?.description ||
-          "A new verification link has been sent. Please check your inbox.",
-      });
+      handleApiSuccess(
+        response,
+        "Verification email sent",
+        "A new verification link has been sent. Please check your inbox.",
+      );
     } catch (error) {
       console.error("Resend verification error:", error);
-      toast.error(
-        error?.data?.message || "Unable to resend verification email",
-        {
-          description:
-            error?.data?.description ||
-            "Please confirm the email address and try again.",
-        },
+      handleApiError(
+        error,
+        "Unable to resend verification email",
+        "Please confirm the email address and try again.",
       );
     }
   };

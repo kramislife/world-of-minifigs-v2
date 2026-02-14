@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import {
   useGetProductsQuery,
@@ -12,62 +12,77 @@ import {
   useGetColorsQuery,
   useGetSkillLevelsQuery,
 } from "@/redux/api/adminApi";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
+import { extractPaginatedData } from "@/utils/apiHelpers";
+
+const initialFormData = {
+  productName: "",
+  partId: "",
+  itemId: "",
+  price: "",
+  discount: "",
+  descriptions: [""],
+  images: [],
+  categoryIds: [],
+  subCategoryIds: [],
+  collectionIds: [],
+  subCollectionIds: [],
+  pieceCount: "",
+  length: "",
+  width: "",
+  height: "",
+  colorId: "",
+  secondaryColorId: "",
+  showSecondaryColor: false,
+  skillLevelIds: [],
+  stock: "",
+  isActive: true,
+};
+
+const defaultVariant = {
+  colorId: "",
+  secondaryColorId: "",
+  showSecondaryColor: false,
+  itemId: "",
+  stock: "",
+  image: "",
+  imagePreview: "",
+};
 
 const useProductManagement = () => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [dialogMode, setDialogMode] = useState("add");
   const [productType, setProductType] = useState("standalone");
-  const [variants, setVariants] = useState([
-    {
-      colorId: "",
-      secondaryColorId: "",
-      showSecondaryColor: false,
-      itemId: "",
-      stock: "",
-      image: "",
-      imagePreview: "",
-    },
-  ]);
-  const [formData, setFormData] = useState({
-    productName: "",
-    partId: "",
-    itemId: "",
-    price: "",
-    discount: "",
-    descriptions: [""],
-    images: [],
-    categoryIds: [],
-    subCategoryIds: [],
-    collectionIds: [],
-    subCollectionIds: [],
-    pieceCount: "",
-    length: "",
-    width: "",
-    height: "",
-    colorId: "",
-    secondaryColorId: "",
-    showSecondaryColor: false,
-    skillLevelIds: [],
-    stock: "",
-    isActive: true,
-  });
+  const [variants, setVariants] = useState([{ ...defaultVariant }]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [imagesChanged, setImagesChanged] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Pagination and search state
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState("10");
-  const [search, setSearch] = useState("");
+  const resetProductState = useCallback(() => {
+    setProductType("standalone");
+    setVariants([{ ...defaultVariant }]);
+    setImagePreviews([]);
+    setImagesChanged(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
 
-  // Fetch data with pagination and search
+  const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
+  const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
+  const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation();
+
+  const crud = useAdminCrud({
+    initialFormData,
+    createFn: createProduct,
+    updateFn: updateProduct,
+    deleteFn: deleteProduct,
+    entityName: "product",
+    onReset: resetProductState,
+  });
+
+  // Fetch data
   const { data: productsData, isLoading: isLoadingProducts } =
     useGetProductsQuery({
-      page,
-      limit,
-      search: search || undefined,
+      page: crud.page,
+      limit: crud.limit,
+      search: crud.search || undefined,
     });
   const { data: categoriesData } = useGetCategoriesQuery();
   const { data: subCategoriesData } = useGetSubCategoriesQuery();
@@ -76,16 +91,13 @@ const useProductManagement = () => {
   const { data: colorsData } = useGetColorsQuery();
   const { data: skillLevelsData } = useGetSkillLevelsQuery();
 
-  const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
-  const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
-  const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation();
+  const {
+    items: products,
+    totalItems,
+    totalPages,
+  } = extractPaginatedData(productsData, "products");
 
-  // Extract data from server response
-  const products = productsData?.products || [];
-  const totalItems = productsData?.pagination?.totalItems || 0;
-  const totalPages = productsData?.pagination?.totalPages || 1;
-
-  // Get options lists
+  // Option lists
   const categories = categoriesData?.categories || [];
   const subCategories = subCategoriesData?.subCategories || [];
   const collections = collectionsData?.collections || [];
@@ -120,7 +132,6 @@ const useProductManagement = () => {
     });
   }, [collections, subCollections]);
 
-  // Column definitions
   const columns = [
     { key: "productName", label: "Product Name" },
     { key: "productType", label: "Type" },
@@ -133,23 +144,21 @@ const useProductManagement = () => {
     { key: "actions", label: "Actions" },
   ];
 
+  // Form handlers
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
+    crud.setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
   };
 
   const handleSelectChange = (name, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value || "",
-    }));
+    crud.setFormData((prev) => ({ ...prev, [name]: value || "" }));
   };
 
   const handleMultiSelectChange = (name, value) => {
-    setFormData((prev) => {
+    crud.setFormData((prev) => {
       const currentValues = prev[name] || [];
       const isSelected = currentValues.includes(value);
       return {
@@ -161,6 +170,7 @@ const useProductManagement = () => {
     });
   };
 
+  // Image handlers
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
@@ -190,7 +200,7 @@ const useProductManagement = () => {
 
         if (newPreviews.length === files.length) {
           setImagePreviews((prev) => [...prev, ...newPreviews]);
-          setFormData((prev) => ({
+          crud.setFormData((prev) => ({
             ...prev,
             images: [...prev.images, ...newImages],
           }));
@@ -203,7 +213,7 @@ const useProductManagement = () => {
 
   const handleRemoveImage = (index) => {
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
-    setFormData((prev) => ({
+    crud.setFormData((prev) => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index),
     }));
@@ -212,18 +222,7 @@ const useProductManagement = () => {
 
   // Variant handlers
   const handleAddVariant = () => {
-    setVariants((prev) => [
-      ...prev,
-      {
-        colorId: "",
-        secondaryColorId: "",
-        showSecondaryColor: false,
-        itemId: "",
-        stock: "",
-        image: "",
-        imagePreview: "",
-      },
-    ]);
+    setVariants((prev) => [...prev, { ...defaultVariant }]);
   };
 
   const handleRemoveVariant = (index) => {
@@ -237,10 +236,7 @@ const useProductManagement = () => {
   const handleVariantChange = (index, field, value) => {
     setVariants((prev) => {
       const newVariants = [...prev];
-      newVariants[index] = {
-        ...newVariants[index],
-        [field]: value,
-      };
+      newVariants[index] = { ...newVariants[index], [field]: value };
       return newVariants;
     });
   };
@@ -276,215 +272,8 @@ const useProductManagement = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.productName.trim()) {
-      toast.error("Product name is required");
-      return;
-    }
-    if (!formData.price || formData.price <= 0) {
-      toast.error("Valid price is required");
-      return;
-    }
-    if (!formData.descriptions[0]?.trim()) {
-      toast.error("At least one description is required");
-      return;
-    }
-
-    // Image validation
-    if (productType === "standalone") {
-      if (!imagePreviews.length) {
-        toast.error("Image is required", {
-          description: "Please add at least one product image.",
-        });
-        return;
-      }
-    } else if (productType === "variant") {
-      const variantWithoutImageIndex = variants.findIndex(
-        (variant) => !variant.image && !variant.imagePreview,
-      );
-      if (variantWithoutImageIndex !== -1) {
-        toast.error("Variant image is required", {
-          description: `Please add an image for Variant ${
-            variantWithoutImageIndex + 1
-          }.`,
-        });
-        return;
-      }
-    }
-
-    try {
-      const validDescriptions = formData.descriptions.filter((d) => d.trim());
-
-      const productData = {
-        productName: formData.productName.trim(),
-        price: parseFloat(formData.price),
-        descriptions: validDescriptions.map((d) => d.trim()).slice(0, 3),
-        isActive: formData.isActive,
-      };
-
-      // Add product type specific fields
-      if (productType === "standalone") {
-        productData.productType = "standalone";
-        productData.partId = formData.partId.trim();
-        productData.itemId = formData.itemId.trim();
-        productData.images = formData.images;
-        if (formData.colorId) {
-          productData.colorId = formData.colorId;
-        }
-        if (formData.secondaryColorId) {
-          productData.secondaryColorId = formData.secondaryColorId;
-        }
-        if (formData.stock !== "") {
-          productData.stock = parseInt(formData.stock) || 0;
-        }
-      } else if (productType === "variant") {
-        productData.productType = "variant";
-        productData.partId = formData.partId.trim();
-        productData.variants = variants.map((variant) => ({
-          colorId: variant.colorId,
-          secondaryColorId: variant.secondaryColorId || undefined,
-          itemId: variant.itemId.trim(),
-          stock: parseInt(variant.stock) || 0,
-          image: variant.image || null,
-        }));
-      }
-
-      // Add optional fields
-      if (formData.discount) {
-        productData.discount = parseFloat(formData.discount);
-      }
-      if (formData.categoryIds.length > 0) {
-        productData.categoryIds = formData.categoryIds;
-      }
-      if (formData.subCategoryIds.length > 0) {
-        productData.subCategoryIds = formData.subCategoryIds;
-      }
-      if (formData.collectionIds.length > 0) {
-        productData.collectionIds = formData.collectionIds;
-      }
-      if (formData.subCollectionIds.length > 0) {
-        productData.subCollectionIds = formData.subCollectionIds;
-      }
-      if (formData.pieceCount) {
-        productData.pieceCount = parseInt(formData.pieceCount);
-      }
-      if (formData.length) {
-        productData.length = parseFloat(formData.length);
-      }
-      if (formData.width) {
-        productData.width = parseFloat(formData.width);
-      }
-      if (formData.height) {
-        productData.height = parseFloat(formData.height);
-      }
-      if (formData.skillLevelIds.length > 0) {
-        productData.skillLevelIds = formData.skillLevelIds;
-      }
-
-      if (dialogMode === "edit" && selectedProduct) {
-        const productId = selectedProduct._id || selectedProduct.id;
-        const response = await updateProduct({
-          id: productId,
-          ...productData,
-        }).unwrap();
-
-        if (response.success) {
-          toast.success(response.message || "Product updated successfully", {
-            description:
-              response.description ||
-              `The product "${response.product.productName}" has been updated.`,
-          });
-          handleDialogClose(false);
-        }
-      } else {
-        const response = await createProduct(productData).unwrap();
-
-        if (response.success) {
-          toast.success(response.message || "Product created successfully", {
-            description:
-              response.description ||
-              `The product "${response.product.productName}" has been added.`,
-          });
-          handleDialogClose(false);
-        }
-      }
-    } catch (error) {
-      console.error(
-        `${dialogMode === "edit" ? "Update" : "Create"} product error:`,
-        error,
-      );
-      toast.error(
-        error?.data?.message ||
-          `Failed to ${dialogMode === "edit" ? "update" : "create"} product`,
-        {
-          description:
-            error?.data?.description ||
-            "An unexpected error occurred. Please try again.",
-        },
-      );
-    }
-  };
-
-  const handleDialogClose = (open) => {
-    setDialogOpen(open);
-    if (!open) {
-      setFormData({
-        productName: "",
-        partId: "",
-        itemId: "",
-        price: "",
-        discount: "",
-        descriptions: [""],
-        images: [],
-        categoryIds: [],
-        subCategoryIds: [],
-        collectionIds: [],
-        subCollectionIds: [],
-        pieceCount: "",
-        length: "",
-        width: "",
-        height: "",
-        colorId: "",
-        secondaryColorId: "",
-        showSecondaryColor: false,
-        skillLevelIds: [],
-        stock: "",
-        isActive: true,
-      });
-      setImagePreviews([]);
-      setImagesChanged(false);
-      setSelectedProduct(null);
-      setDialogMode("add");
-      setProductType("standalone");
-      setVariants([
-        {
-          colorId: "",
-          secondaryColorId: "",
-          showSecondaryColor: false,
-          itemId: "",
-          stock: "",
-          image: "",
-          imagePreview: "",
-        },
-      ]);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
-
-  const handleAdd = () => {
-    setDialogMode("add");
-    setSelectedProduct(null);
-    handleDialogClose(true);
-  };
-
+  // Edit handler (complex — sets product type, variants, images)
   const handleEdit = (product) => {
-    setDialogMode("edit");
-    setSelectedProduct(product);
-
     const existingDescriptions =
       product.descriptions && product.descriptions.length > 0
         ? product.descriptions.filter((d) => d)
@@ -494,7 +283,7 @@ const useProductManagement = () => {
       product.secondaryColorId?._id || product.secondaryColorId
     );
 
-    setFormData({
+    const mappedForm = {
       productName: product.productName || "",
       partId: product.partId || "",
       itemId: product.itemId || "",
@@ -533,30 +322,25 @@ const useProductManagement = () => {
         [],
       stock: product.stock || "",
       isActive: product.isActive !== undefined ? product.isActive : true,
-    });
+    };
 
+    crud.openEdit(product, mappedForm);
+
+    // Set images
     const existingImages = product.images?.map((img) => img.url) || [];
     setImagePreviews(existingImages);
-
     const existingImageObjects =
       product.images?.map((img) => ({
         publicId: img.publicId,
         url: img.url,
       })) || [];
-    setFormData((prev) => ({
-      ...prev,
-      images: existingImageObjects,
-    }));
-
+    crud.setFormData((prev) => ({ ...prev, images: existingImageObjects }));
     setImagesChanged(false);
 
+    // Set variants / product type
     if (product.variants && product.variants.length > 0) {
       setProductType("variant");
-      // Set partId from product level for variant products
-      setFormData((prev) => ({
-        ...prev,
-        partId: product.partId || "",
-      }));
+      crud.setFormData((prev) => ({ ...prev, partId: product.partId || "" }));
       const variantData = product.variants.map((variant) => {
         const variantHasSecondary = !!(
           variant.secondaryColorId?._id || variant.secondaryColorId
@@ -569,108 +353,133 @@ const useProductManagement = () => {
           itemId: variant.itemId || "",
           stock: variant.stock || "",
           image: variant.image
-            ? {
-                publicId: variant.image.publicId,
-                url: variant.image.url,
-              }
+            ? { publicId: variant.image.publicId, url: variant.image.url }
             : "",
           imagePreview: variant.image?.url || "",
         };
       });
       setVariants(
-        variantData.length > 0
-          ? variantData
-          : [
-              {
-                colorId: "",
-                secondaryColorId: "",
-                showSecondaryColor: false,
-                itemId: "",
-                stock: "",
-                image: "",
-                imagePreview: "",
-              },
-            ],
+        variantData.length > 0 ? variantData : [{ ...defaultVariant }],
       );
     } else {
       setProductType("standalone");
-      setVariants([
-        {
-          colorId: "",
-          secondaryColorId: "",
-          showSecondaryColor: false,
-          itemId: "",
-          stock: "",
-          image: "",
-          imagePreview: "",
-        },
-      ]);
+      setVariants([{ ...defaultVariant }]);
+    }
+  };
+
+  // Submit handler (complex — builds product-specific payload)
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!crud.formData.productName.trim()) {
+      toast.error("Product name is required");
+      return;
+    }
+    if (!crud.formData.price || crud.formData.price <= 0) {
+      toast.error("Valid price is required");
+      return;
+    }
+    if (!crud.formData.descriptions[0]?.trim()) {
+      toast.error("At least one description is required");
+      return;
     }
 
-    setDialogOpen(true);
-  };
-
-  const handleDelete = (product) => {
-    setSelectedProduct(product);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!selectedProduct) return;
-
-    try {
-      const productId = selectedProduct._id || selectedProduct.id;
-      const response = await deleteProduct(productId).unwrap();
-
-      if (response.success) {
-        toast.success(response.message || "Product deleted successfully", {
-          description:
-            response.description ||
-            `The product "${selectedProduct.productName}" has been removed.`,
+    // Image validation
+    if (productType === "standalone") {
+      if (!imagePreviews.length) {
+        toast.error("Image is required", {
+          description: "Please add at least one product image.",
         });
-
-        setDeleteDialogOpen(false);
-        setSelectedProduct(null);
+        return;
       }
-    } catch (error) {
-      console.error("Delete product error:", error);
-      toast.error(error?.data?.message || "Failed to delete product", {
-        description:
-          error?.data?.description ||
-          "An unexpected error occurred. Please try again.",
-      });
+    } else if (productType === "variant") {
+      const variantWithoutImageIndex = variants.findIndex(
+        (variant) => !variant.image && !variant.imagePreview,
+      );
+      if (variantWithoutImageIndex !== -1) {
+        toast.error("Variant image is required", {
+          description: `Please add an image for Variant ${
+            variantWithoutImageIndex + 1
+          }.`,
+        });
+        return;
+      }
     }
-  };
 
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
-  };
+    const validDescriptions = crud.formData.descriptions.filter((d) =>
+      d.trim(),
+    );
 
-  const handleLimitChange = (newLimit) => {
-    setLimit(newLimit);
-    setPage(1);
-  };
+    const productData = {
+      productName: crud.formData.productName.trim(),
+      price: parseFloat(crud.formData.price),
+      descriptions: validDescriptions.map((d) => d.trim()).slice(0, 3),
+      isActive: crud.formData.isActive,
+    };
 
-  const handleSearchChange = (value) => {
-    setSearch(value);
-    setPage(1);
+    // Product type specific fields
+    if (productType === "standalone") {
+      productData.productType = "standalone";
+      productData.partId = crud.formData.partId.trim();
+      productData.itemId = crud.formData.itemId.trim();
+      productData.images = crud.formData.images;
+      if (crud.formData.colorId) productData.colorId = crud.formData.colorId;
+      if (crud.formData.secondaryColorId)
+        productData.secondaryColorId = crud.formData.secondaryColorId;
+      if (crud.formData.stock !== "")
+        productData.stock = parseInt(crud.formData.stock) || 0;
+    } else if (productType === "variant") {
+      productData.productType = "variant";
+      productData.partId = crud.formData.partId.trim();
+      productData.variants = variants.map((variant) => ({
+        colorId: variant.colorId,
+        secondaryColorId: variant.secondaryColorId || undefined,
+        itemId: variant.itemId.trim(),
+        stock: parseInt(variant.stock) || 0,
+        image: variant.image || null,
+      }));
+    }
+
+    // Optional fields
+    if (crud.formData.discount)
+      productData.discount = parseFloat(crud.formData.discount);
+    if (crud.formData.categoryIds.length > 0)
+      productData.categoryIds = crud.formData.categoryIds;
+    if (crud.formData.subCategoryIds.length > 0)
+      productData.subCategoryIds = crud.formData.subCategoryIds;
+    if (crud.formData.collectionIds.length > 0)
+      productData.collectionIds = crud.formData.collectionIds;
+    if (crud.formData.subCollectionIds.length > 0)
+      productData.subCollectionIds = crud.formData.subCollectionIds;
+    if (crud.formData.pieceCount)
+      productData.pieceCount = parseInt(crud.formData.pieceCount);
+    if (crud.formData.length)
+      productData.length = parseFloat(crud.formData.length);
+    if (crud.formData.width)
+      productData.width = parseFloat(crud.formData.width);
+    if (crud.formData.height)
+      productData.height = parseFloat(crud.formData.height);
+    if (crud.formData.skillLevelIds.length > 0)
+      productData.skillLevelIds = crud.formData.skillLevelIds;
+
+    await crud.submitForm(productData);
   };
 
   return {
     // State
-    dialogOpen,
-    deleteDialogOpen,
-    selectedProduct,
-    dialogMode,
+    dialogOpen: crud.dialogOpen,
+    deleteDialogOpen: crud.deleteDialogOpen,
+    selectedProduct: crud.selectedItem,
+    dialogMode: crud.dialogMode,
     productType,
     variants,
-    formData,
+    formData: crud.formData,
     imagePreviews,
     imagesChanged,
     fileInputRef,
-    page,
-    limit,
-    search,
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search,
     products,
     totalItems,
     totalPages,
@@ -700,17 +509,17 @@ const useProductManagement = () => {
     handleVariantImageChange,
     handleRemoveVariantImage,
     handleSubmit,
-    handleDialogClose,
-    handleAdd,
+    handleDialogClose: crud.handleDialogClose,
+    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete,
-    handleConfirmDelete,
-    handlePageChange,
-    handleLimitChange,
-    handleSearchChange,
+    handleDelete: crud.handleDelete,
+    handleConfirmDelete: crud.handleConfirmDelete,
+    handlePageChange: crud.handlePageChange,
+    handleLimitChange: crud.handleLimitChange,
+    handleSearchChange: crud.handleSearchChange,
     setProductType,
-    setDeleteDialogOpen,
-    setFormData,
+    setDeleteDialogOpen: crud.setDeleteDialogOpen,
+    setFormData: crud.setFormData,
   };
 };
 
