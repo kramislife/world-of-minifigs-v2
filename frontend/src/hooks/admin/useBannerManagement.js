@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import {
   useGetBannersQuery,
@@ -6,58 +6,58 @@ import {
   useUpdateBannerMutation,
   useDeleteBannerMutation,
 } from "@/redux/api/adminApi";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
+import { extractPaginatedData } from "@/utils/apiHelpers";
+import { validateFile, readFileAsDataURL } from "@/utils/fileHelpers";
+
+const initialFormData = {
+  badge: "",
+  label: "",
+  description: "",
+  position: "center",
+  textTheme: "light",
+  media: null,
+  mediaType: "image",
+  enableButtons: false,
+  buttons: [
+    { label: "", href: "", variant: "default" },
+    { label: "", href: "", variant: "default" },
+  ],
+  isActive: true,
+  order: 1,
+};
 
 const useBannerManagement = () => {
-  // Dialog states
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedBanner, setSelectedBanner] = useState(null);
-  const [dialogMode, setDialogMode] = useState("add");
-
-  // Form state
-  const [formData, setFormData] = useState({
-    badge: "",
-    label: "",
-    description: "",
-    position: "center",
-    textTheme: "light",
-    media: null,
-    mediaType: "image",
-    enableButtons: false,
-    buttons: [
-      { label: "", href: "", variant: "default" },
-      { label: "", href: "", variant: "default" },
-    ],
-    isActive: true,
-    order: 1,
-  });
-
   const [mediaPreview, setMediaPreview] = useState("");
 
-  // Pagination and search state
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState("10");
-  const [search, setSearch] = useState("");
-
-  // Fetch data
-  const { data: bannersData, isLoading: isLoadingBanners } = useGetBannersQuery(
-    {
-      page,
-      limit,
-      search: search || undefined,
-    },
-  );
+  const resetMedia = useCallback(() => {
+    setMediaPreview("");
+  }, []);
 
   const [createBanner, { isLoading: isCreating }] = useCreateBannerMutation();
   const [updateBanner, { isLoading: isUpdating }] = useUpdateBannerMutation();
   const [deleteBanner, { isLoading: isDeleting }] = useDeleteBannerMutation();
 
-  // Extract banners
-  const banners = bannersData?.banners || [];
-  const totalItems = bannersData?.pagination?.totalItems || banners.length;
-  const totalPages = bannersData?.pagination?.totalPages || 1;
+  const crud = useAdminCrud({
+    initialFormData,
+    createFn: createBanner,
+    updateFn: updateBanner,
+    deleteFn: deleteBanner,
+    entityName: "banner",
+    onReset: resetMedia,
+  });
 
-  // Column definitions
+  // Fetch data
+  const { data: bannersData, isLoading: isLoadingBanners } =
+    useGetBannersQuery({
+      page: crud.page,
+      limit: crud.limit,
+      search: crud.search || undefined,
+    });
+
+  const { items: banners, totalItems, totalPages } =
+    extractPaginatedData(bannersData, "banners");
+
   const columns = [
     { key: "label", label: "Label" },
     { key: "badge", label: "Badge" },
@@ -69,10 +69,9 @@ const useBannerManagement = () => {
     { key: "actions", label: "Actions" },
   ];
 
-  // Core handlers
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
+    crud.setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
@@ -82,7 +81,7 @@ const useBannerManagement = () => {
     // Handle nested button fields
     if (name === "buttons") {
       const { index, field, value: v } = value;
-      setFormData((prev) => {
+      crud.setFormData((prev) => {
         const nextButtons = [...prev.buttons];
         nextButtons[index] = { ...nextButtons[index], [field]: v };
         return { ...prev, buttons: nextButtons };
@@ -90,173 +89,36 @@ const useBannerManagement = () => {
       return;
     }
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    crud.setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleMediaChange = (e) => {
+  const handleMediaChange = async (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("File too large", {
-        description: "Media file must be less than 10MB.",
-      });
+    if (!file || !validateFile(file, { maxSizeMB: 10, allowVideo: true }))
       return;
-    }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData((prev) => ({
-        ...prev,
-        media: reader.result,
-        mediaType: file.type.startsWith("video") ? "video" : "image",
-      }));
-      setMediaPreview(reader.result);
-    };
-    reader.readAsDataURL(file);
+    const dataUrl = await readFileAsDataURL(file);
+    crud.setFormData((prev) => ({
+      ...prev,
+      media: dataUrl,
+      mediaType: file.type.startsWith("video") ? "video" : "image",
+    }));
+    setMediaPreview(dataUrl);
   };
 
   const handleRemoveMedia = () => {
-    setFormData((prev) => ({ ...prev, media: null }));
+    crud.setFormData((prev) => ({ ...prev, media: null }));
     setMediaPreview("");
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.label.trim()) {
-      toast.error("Label is required");
-      return;
-    }
-
-    if (!formData.description.trim()) {
-      toast.error("Description is required");
-      return;
-    }
-
-    if (dialogMode === "add" && !formData.media) {
-      toast.error("Banner media is required");
-      return;
-    }
-
-    const payload = {
-      badge: formData.badge?.trim() || undefined,
-      label: formData.label.trim(),
-      description: formData.description.trim(),
-      position: formData.position,
-      textTheme: formData.textTheme,
-      enableButtons: formData.enableButtons,
-      isActive: formData.isActive,
-      order: formData.order,
-    };
-
-    if (formData.enableButtons) {
-      payload.buttons = formData.buttons
-        .filter((b) => b.label.trim() && b.href.trim())
-        .map((b) => ({
-          label: b.label.trim(),
-          href: b.href.trim(),
-          variant: b.variant || "default",
-        }))
-        .slice(0, 2);
-
-      if (payload.buttons.length === 0) {
-        toast.error("Button configuration incomplete", {
-          description:
-            "Please provide both label and link for enabled buttons.",
-        });
-        return;
-      }
-    }
-
-    if (formData.media) {
-      payload.media = formData.media;
-    }
-
-    try {
-      if (dialogMode === "edit" && selectedBanner) {
-        const response = await updateBanner({
-          id: selectedBanner._id,
-          ...payload,
-        }).unwrap();
-
-        if (response.success) {
-          toast.success(response.message || "Banner updated", {
-            description:
-              response.description ||
-              `The banner "${response.banner.label}" has been updated.`,
-          });
-          handleDialogClose(false);
-        }
-      } else {
-        const response = await createBanner(payload).unwrap();
-
-        if (response.success) {
-          toast.success(response.message || "Banner created", {
-            description:
-              response.description ||
-              `The banner "${response.banner.label}" has been added.`,
-          });
-          handleDialogClose(false);
-        }
-      }
-    } catch (err) {
-      console.error("Banner save error:", err);
-      toast.error(err?.data?.message || "Failed to save banner", {
-        description:
-          err?.data?.description ||
-          "An unexpected error occurred. Please try again.",
-      });
-    }
-  };
-
-  const handleDialogClose = (open) => {
-    setDialogOpen(open);
-    if (!open) {
-      setFormData({
-        badge: "",
-        label: "",
-        description: "",
-        position: "center",
-        textTheme: "light",
-        media: null,
-        mediaType: "image",
-        enableButtons: false,
-        buttons: [
-          { label: "", href: "", variant: "default" },
-          { label: "", href: "", variant: "default" },
-        ],
-        isActive: true,
-        order: 1,
-      });
-      setMediaPreview("");
-      setSelectedBanner(null);
-      setDialogMode("add");
-    }
   };
 
   const handleAdd = () => {
     const maxOrder =
       banners.length > 0 ? Math.max(...banners.map((b) => b.order || 0)) : 0;
-    const nextOrder = maxOrder + 1;
-
-    setDialogMode("add");
-    setSelectedBanner(null);
-    setFormData((prev) => ({
-      ...prev,
-      order: nextOrder,
-    }));
-    handleDialogClose(true);
+    crud.handleAdd({ order: maxOrder + 1 });
   };
 
   const handleEdit = (banner) => {
-    setDialogMode("edit");
-    setSelectedBanner(banner);
-
-    setFormData({
+    crud.openEdit(banner, {
       badge: banner.badge || "",
       label: banner.label || "",
       description: banner.description || "",
@@ -290,59 +152,71 @@ const useBannerManagement = () => {
       isActive: banner.isActive !== false,
       order: banner.order || 1,
     });
-
     setMediaPreview(banner.media?.url || "");
-    setDialogOpen(true);
   };
 
-  const handleDelete = (banner) => {
-    setSelectedBanner(banner);
-    setDeleteDialogOpen(true);
-  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  const handleConfirmDelete = async () => {
-    if (!selectedBanner) return;
-
-    try {
-      const response = await deleteBanner(selectedBanner._id).unwrap();
-      if (response.success) {
-        toast.success(response.message || "Banner deleted", {
-          description:
-            response.description ||
-            `The banner "${selectedBanner.label}" has been removed.`,
-        });
-        setDeleteDialogOpen(false);
-        setSelectedBanner(null);
-      }
-    } catch (err) {
-      console.error("Delete banner error:", err);
-      toast.error(err?.data?.message || "Delete failed", {
-        description: err?.data?.description || "An unexpected error occurred.",
-      });
+    if (!crud.formData.label.trim()) {
+      toast.error("Label is required");
+      return;
     }
-  };
 
-  const handlePageChange = (newPage) => setPage(newPage);
-  const handleLimitChange = (newLimit) => {
-    setLimit(newLimit);
-    setPage(1);
-  };
-  const handleSearchChange = (value) => {
-    setSearch(value);
-    setPage(1);
+    if (!crud.formData.description.trim()) {
+      toast.error("Description is required");
+      return;
+    }
+
+    if (crud.dialogMode === "add" && !crud.formData.media) {
+      toast.error("Banner media is required");
+      return;
+    }
+
+    const buttons = crud.formData.enableButtons
+      ? crud.formData.buttons
+          .filter((b) => b.label.trim() && b.href.trim())
+          .map((b) => ({
+            label: b.label.trim(),
+            href: b.href.trim(),
+            variant: b.variant || "default",
+          }))
+          .slice(0, 2)
+      : null;
+
+    if (crud.formData.enableButtons && (!buttons || buttons.length === 0)) {
+      toast.error("Button configuration incomplete", {
+        description:
+          "Please provide both label and link for enabled buttons.",
+      });
+      return;
+    }
+
+    await crud.submitForm({
+      badge: crud.formData.badge?.trim() || undefined,
+      label: crud.formData.label.trim(),
+      description: crud.formData.description.trim(),
+      position: crud.formData.position,
+      textTheme: crud.formData.textTheme,
+      enableButtons: crud.formData.enableButtons,
+      isActive: crud.formData.isActive,
+      order: crud.formData.order,
+      ...(buttons?.length && { buttons }),
+      ...(crud.formData.media && { media: crud.formData.media }),
+    });
   };
 
   return {
     // State
-    dialogOpen,
-    deleteDialogOpen,
-    selectedBanner,
-    dialogMode,
-    formData,
+    dialogOpen: crud.dialogOpen,
+    deleteDialogOpen: crud.deleteDialogOpen,
+    selectedBanner: crud.selectedItem,
+    dialogMode: crud.dialogMode,
+    formData: crud.formData,
     mediaPreview,
-    page,
-    limit,
-    search,
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search,
     banners,
     totalItems,
     totalPages,
@@ -358,16 +232,16 @@ const useBannerManagement = () => {
     handleMediaChange,
     handleRemoveMedia,
     handleSubmit,
-    handleDialogClose,
+    handleDialogClose: crud.handleDialogClose,
     handleAdd,
     handleEdit,
-    handleDelete,
-    handleConfirmDelete,
-    handlePageChange,
-    handleLimitChange,
-    handleSearchChange,
-    setDeleteDialogOpen,
-    setFormData,
+    handleDelete: crud.handleDelete,
+    handleConfirmDelete: crud.handleConfirmDelete,
+    handlePageChange: crud.handlePageChange,
+    handleLimitChange: crud.handleLimitChange,
+    handleSearchChange: crud.handleSearchChange,
+    setDeleteDialogOpen: crud.setDeleteDialogOpen,
+    setFormData: crud.setFormData,
   };
 };
 

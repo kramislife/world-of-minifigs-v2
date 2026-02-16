@@ -6,6 +6,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -27,7 +34,7 @@ const DealerBundleManagement = () => {
     totalPages,
     calculatedTotal,
     columns,
-    isLoading,
+    isLoadingBundles,
     isCreating,
     isUpdating,
     isDeleting,
@@ -71,12 +78,21 @@ const DealerBundleManagement = () => {
         totalPages={totalPages}
         columns={columns}
         data={bundles}
-        isLoading={isLoading}
+        isLoading={isLoadingBundles}
         renderRow={(bundle) => (
           <>
             <TableCell maxWidth="200px">{bundle.bundleName}</TableCell>
             <TableCell className="font-semibold">
               {bundle.minifigQuantity}
+            </TableCell>
+            <TableCell>
+              <Badge
+                variant={
+                  bundle.torsoBagType === "custom" ? "accent" : "outline"
+                }
+              >
+                {bundle.torsoBagType === "custom" ? "Custom" : "Regular"}
+              </Badge>
             </TableCell>
             <TableCell className="font-semibold">
               ${bundle.unitPrice?.toFixed(2)}
@@ -123,6 +139,7 @@ const DealerBundleManagement = () => {
         submitButtonText={
           dialogMode === "edit" ? "Update Bundle" : "Create Bundle"
         }
+        className="sm:max-w-3xl"
       >
         <div className="space-y-4">
           <div className="space-y-2">
@@ -137,7 +154,7 @@ const DealerBundleManagement = () => {
               required
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2">
               <Label htmlFor="quantity">Quantity</Label>
               <Input
@@ -164,6 +181,28 @@ const DealerBundleManagement = () => {
                 }
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="torsoBagType">Torso Bag Type</Label>
+              <Select
+                value={formData.torsoBagType}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, torsoBagType: value })
+                }
+              >
+                <SelectTrigger id="torsoBagType" className="w-full">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="regular">Regular</SelectItem>
+                  <SelectItem value="custom">Custom Bundle</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {formData.torsoBagType === "regular"
+                  ? "Uses base bags with a quantity (e.g. 200 = 2× 100 bag)."
+                  : "Uses a dedicated bag set for this bundle."}
+              </p>
             </div>
           </div>
 

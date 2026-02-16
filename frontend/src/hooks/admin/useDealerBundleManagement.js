@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { toast } from "sonner";
 import {
   useGetDealerBundlesQuery,
@@ -6,35 +5,19 @@ import {
   useUpdateDealerBundleMutation,
   useDeleteDealerBundleMutation,
 } from "@/redux/api/adminApi";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
+import { extractPaginatedData } from "@/utils/apiHelpers";
+
+const initialFormData = {
+  bundleName: "",
+  minifigQuantity: "",
+  unitPrice: "",
+  torsoBagType: "regular",
+  isActive: true,
+  features: [""],
+};
 
 const useDealerBundleManagement = () => {
-  // Dialog State
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState("add"); // "add" or "edit"
-  const [selectedBundle, setSelectedBundle] = useState(null);
-
-  // Form State
-  const [formData, setFormData] = useState({
-    bundleName: "",
-    minifigQuantity: "",
-    unitPrice: "",
-    isActive: true,
-    features: [""],
-  });
-
-  // Pagination & Search State
-  const [search, setSearch] = useState("");
-  const [limit, setLimit] = useState("10");
-  const [page, setPage] = useState(1);
-
-  // API Hooks
-  const { data, isLoading, isFetching } = useGetDealerBundlesQuery({
-    page,
-    limit,
-    search: search || undefined,
-  });
-
   const [createBundle, { isLoading: isCreating }] =
     useCreateDealerBundleMutation();
   const [updateBundle, { isLoading: isUpdating }] =
@@ -42,200 +25,122 @@ const useDealerBundleManagement = () => {
   const [deleteBundle, { isLoading: isDeleting }] =
     useDeleteDealerBundleMutation();
 
-  const bundles = data?.bundles || [];
-  const totalItems = data?.pagination?.totalItems || 0;
-  const totalPages = data?.pagination?.totalPages || 0;
+  const crud = useAdminCrud({
+    initialFormData,
+    createFn: createBundle,
+    updateFn: updateBundle,
+    deleteFn: deleteBundle,
+    entityName: "bundle",
+  });
+
+  // Fetch data
+  const { data: bundlesResponse, isLoading: isLoadingBundles } =
+    useGetDealerBundlesQuery({
+      page: crud.page,
+      limit: crud.limit,
+      search: crud.search || undefined,
+    });
+
+  const {
+    items: bundles,
+    totalItems,
+    totalPages,
+  } = extractPaginatedData(bundlesResponse, "bundles");
 
   // Derived State
   const calculatedTotal = (
-    Number(formData.minifigQuantity || 0) * Number(formData.unitPrice || 0)
+    Number(crud.formData.minifigQuantity || 0) *
+    Number(crud.formData.unitPrice || 0)
   ).toFixed(2);
 
   const columns = [
-    { label: "Bundle", key: "bundleName" },
-    { label: "Quantity", key: "minifigQuantity" },
-    { label: "Unit Price", key: "unitPrice" },
-    { label: "Total Price", key: "totalPrice" },
-    { label: "Status", key: "isActive" },
-    { label: "Created At", key: "createdAt" },
-    { label: "Updated At", key: "updatedAt" },
-    { label: "Actions", key: "actions" },
+    { key: "bundleName", label: "Bundle" },
+    { key: "minifigQuantity", label: "Quantity" },
+    { key: "torsoBagType", label: "Torso Type" },
+    { key: "unitPrice", label: "Unit Price" },
+    { key: "totalPrice", label: "Total Price" },
+    { key: "isActive", label: "Status" },
+    { key: "createdAt", label: "Created At" },
+    { key: "updatedAt", label: "Updated At" },
+    { key: "actions", label: "Actions" },
   ];
 
-  // Handlers
-  const handleDialogClose = (open) => {
-    setDialogOpen(open);
-    if (!open) {
-      setFormData({
-        bundleName: "",
-        minifigQuantity: "",
-        unitPrice: "",
-        isActive: true,
-        features: [""],
-      });
-      setSelectedBundle(null);
-      setDialogMode("add");
-    }
-  };
-
-  const handleAdd = () => {
-    setDialogMode("add");
-    setSelectedBundle(null);
-    setFormData({
-      bundleName: "",
-      minifigQuantity: "",
-      unitPrice: "",
-      isActive: true,
-      features: [""],
-    });
-    setDialogOpen(true);
-  };
-
   const handleEdit = (bundle) => {
-    setDialogMode("edit");
-    setSelectedBundle(bundle);
-
-    setFormData({
+    crud.openEdit(bundle, {
       bundleName: bundle.bundleName,
       minifigQuantity: bundle.minifigQuantity,
       unitPrice: bundle.unitPrice,
+      torsoBagType: bundle.torsoBagType || "regular",
       isActive: bundle.isActive,
       features: bundle.features?.length > 0 ? bundle.features : [""],
     });
-    setDialogOpen(true);
-  };
-
-  const handleDelete = (bundle) => {
-    setSelectedBundle(bundle);
-    setDeleteDialogOpen(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic validation
-    if (!formData.bundleName.trim()) {
+    if (!crud.formData.bundleName?.trim()) {
       toast.error("Bundle name is required");
       return;
     }
-    if (!formData.minifigQuantity || Number(formData.minifigQuantity) <= 0) {
+    if (
+      !crud.formData.minifigQuantity ||
+      Number(crud.formData.minifigQuantity) <= 0
+    ) {
       toast.error("Valid quantity is required");
       return;
     }
-    if (formData.unitPrice === "" || Number(formData.unitPrice) < 0) {
+    if (crud.formData.unitPrice === "" || Number(crud.formData.unitPrice) < 0) {
       toast.error("Valid unit price is required");
       return;
     }
 
-    // Filter out empty features
-    const cleanFeatures = formData.features
-      .map((f) => f.trim())
+    const cleanFeatures = (crud.formData.features || [])
+      .map((f) => String(f).trim())
       .filter((f) => f !== "");
 
-    const payload = {
-      ...formData,
-      minifigQuantity: Number(formData.minifigQuantity),
-      unitPrice: Number(formData.unitPrice),
+    await crud.submitForm({
+      bundleName: crud.formData.bundleName.trim(),
+      minifigQuantity: Number(crud.formData.minifigQuantity),
       totalPrice: Number(calculatedTotal),
+      torsoBagType: crud.formData.torsoBagType || "regular",
+      isActive: crud.formData.isActive,
       features: cleanFeatures,
-    };
-
-    try {
-      if (dialogMode === "add") {
-        const response = await createBundle(payload).unwrap();
-        if (response.success) {
-          toast.success(response.message || "Bundle created successfully", {
-            description:
-              response.description ||
-              `The bundle "${response.bundle.bundleName}" has been added.`,
-          });
-          handleDialogClose(false);
-        }
-      } else {
-        const response = await updateBundle({
-          id: selectedBundle._id,
-          ...payload,
-        }).unwrap();
-        if (response.success) {
-          toast.success(response.message || "Bundle updated successfully", {
-            description:
-              response.description ||
-              `The bundle "${response.bundle.bundleName}" has been updated.`,
-          });
-          handleDialogClose(false);
-        }
-      }
-    } catch (err) {
-      toast.error(err?.data?.message || "Failed to save bundle", {
-        description:
-          err?.data?.description ||
-          "An unexpected error occurred. Please try again.",
-      });
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!selectedBundle) return;
-    try {
-      const response = await deleteBundle(selectedBundle._id).unwrap();
-      if (response.success) {
-        toast.success(response.message || "Bundle deleted successfully", {
-          description: response.description || "The bundle has been removed.",
-        });
-        setDeleteDialogOpen(false);
-        setSelectedBundle(null);
-      }
-    } catch (err) {
-      toast.error(err?.data?.message || "Failed to delete bundle", {
-        description:
-          err?.data?.description ||
-          "An unexpected error occurred. Please try again.",
-      });
-    }
-  };
-
-  const handlePageChange = (newPage) => setPage(newPage);
-  const handleLimitChange = (newLimit) => {
-    setLimit(newLimit);
-    setPage(1);
-  };
-  const handleSearchChange = (val) => {
-    setSearch(val);
-    setPage(1);
+    });
   };
 
   return {
     // State
-    search,
-    limit,
-    page,
-    dialogOpen,
-    deleteDialogOpen,
-    dialogMode,
-    selectedBundle,
-    formData,
+    dialogOpen: crud.dialogOpen,
+    deleteDialogOpen: crud.deleteDialogOpen,
+    selectedBundle: crud.selectedItem,
+    dialogMode: crud.dialogMode,
+    formData: crud.formData,
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search,
     bundles,
     totalItems,
     totalPages,
     calculatedTotal,
     columns,
-    isLoading: isLoading || isFetching,
+    isLoadingBundles,
     isCreating,
     isUpdating,
     isDeleting,
 
     // Handlers
-    handleDialogClose,
-    setDeleteDialogOpen,
-    setFormData,
-    handleAdd,
+    handleDialogClose: crud.handleDialogClose,
+    setDeleteDialogOpen: crud.setDeleteDialogOpen,
+    setFormData: crud.setFormData,
+    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete,
+    handleDelete: crud.handleDelete,
     handleSubmit,
-    handleConfirmDelete,
-    handlePageChange,
-    handleLimitChange,
-    handleSearchChange,
+    handleConfirmDelete: crud.handleConfirmDelete,
+    handlePageChange: crud.handlePageChange,
+    handleLimitChange: crud.handleLimitChange,
+    handleSearchChange: crud.handleSearchChange,
   };
 };
 

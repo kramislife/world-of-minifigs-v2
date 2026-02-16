@@ -3,7 +3,7 @@ import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Logo from "@/assets/media/Logo.png";
-import AddToCartButton from "@/components/cart/AddToCartButton";
+import { AddToCartButton } from "@/components/shared/OrderActionButton";
 import { useProductCard, useProductCardHoverImages } from "@/hooks/useProducts";
 
 const ProductCard = ({ product }) => {
@@ -37,9 +37,7 @@ const ProductCard = ({ product }) => {
           onMouseLeave={handleMouseLeave}
         >
           {imageUrls.length > 0 ? (
-            <div
-              className={`relative h-full w-full ${isSoldOut ? "grayscale" : ""}`}
-            >
+            <div className={`relative h-full w-full`}>
               {imageUrls.map((url, index) => (
                 <img
                   key={`${product._id}-${url}-${index}`}
@@ -58,9 +56,7 @@ const ProductCard = ({ product }) => {
               ))}
             </div>
           ) : (
-            <div
-              className={`flex h-full w-full items-center justify-center ${isSoldOut ? "grayscale" : ""}`}
-            >
+            <div className={`flex h-full w-full items-center justify-center`}>
               <img
                 src={Logo}
                 alt="Product placeholder"
@@ -71,16 +67,12 @@ const ProductCard = ({ product }) => {
           )}
 
           {/* Status Badges */}
-          <div className="absolute top-2 left-2 flex flex-col gap-1 z-20">
+          <div className="absolute top-2 right-2 flex flex-col gap-1 z-20">
             {isSoldOut ? (
-              <Badge variant="destructive" className="font-bold">
-                Sold Out
-              </Badge>
+              <Badge variant="destructive">Sold Out</Badge>
             ) : (
               product.discount && (
-                <Badge variant="accent" className="font-bold">
-                  {product.discount}% OFF
-                </Badge>
+                <Badge variant="accent">{product.discount}% OFF</Badge>
               )
             )}
           </div>

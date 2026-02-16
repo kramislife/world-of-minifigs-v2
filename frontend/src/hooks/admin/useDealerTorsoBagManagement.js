@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import {
   useGetDealerTorsoBagsQuery,
@@ -7,39 +7,29 @@ import {
   useDeleteDealerTorsoBagMutation,
   useGetDealerBundlesQuery,
 } from "@/redux/api/adminApi";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
+import { extractPaginatedData } from "@/utils/apiHelpers";
+
+// Misc is always 20% of the target bundle size
+const MISC_RATIO = 0.2;
+const getMiscQuantity = (target) => Math.round(target * MISC_RATIO);
+const getAdminTarget = (target) => target - getMiscQuantity(target);
+
+const initialFormData = {
+  bagName: "",
+  targetBundleSize: 100,
+  isActive: true,
+  items: [],
+};
 
 const useDealerTorsoBagManagement = () => {
-  // Dialog State
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState("add");
-  const [selectedBag, setSelectedBag] = useState(null);
-
-  // Form State
-  const [formData, setFormData] = useState({
-    bagName: "",
-    isActive: true,
-    items: [],
-  });
-
-  // Image Preview States
   const [itemPreviews, setItemPreviews] = useState([]);
   const fileInputRef = useRef(null);
 
-  // Pagination & Search State
-  const [search, setSearch] = useState("");
-  const [limit, setLimit] = useState("10");
-  const [page, setPage] = useState(1);
-
-  // API Hooks
-  const { data, isLoading, isFetching } = useGetDealerTorsoBagsQuery({
-    page,
-    limit,
-    search: search || undefined,
-  });
-
-  const { data: bundlesData } = useGetDealerBundlesQuery({ limit: 100 });
-  const bundles = bundlesData?.bundles || [];
+  const resetImages = useCallback(() => {
+    setItemPreviews([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
 
   const [createBag, { isLoading: isCreating }] =
     useCreateDealerTorsoBagMutation();
@@ -48,68 +38,88 @@ const useDealerTorsoBagManagement = () => {
   const [deleteBag, { isLoading: isDeleting }] =
     useDeleteDealerTorsoBagMutation();
 
-  const bags = data?.bags || [];
-  const totalItems = data?.pagination?.totalItems || 0;
-  const totalPages = data?.pagination?.totalPages || 0;
+  const crud = useAdminCrud({
+    initialFormData,
+    createFn: createBag,
+    updateFn: updateBag,
+    deleteFn: deleteBag,
+    entityName: "torso bag",
+    onReset: resetImages,
+  });
 
-  // Derived State & Calculations
-  const minRequired = useMemo(() => {
-    if (!bundles || bundles.length === 0) return 100;
+  // Fetch data
+  const { data: bagsResponse, isLoading: isLoadingBags } =
+    useGetDealerTorsoBagsQuery({
+      page: crud.page,
+      limit: crud.limit,
+      search: crud.search || undefined,
+    });
+
+  // Fetch bundles to build targetBundleSize options
+  const { data: bundlesData } = useGetDealerBundlesQuery({ limit: 100 });
+  const bundles = bundlesData?.bundles || [];
+
+  const {
+    items: bags,
+    totalItems,
+    totalPages,
+  } = extractPaginatedData(bagsResponse, "bags");
+
+  // Build target options from active bundles
+  // Regular bundles use the base (smallest), custom bundles use their own size
+  const targetBundleSizeOptions = useMemo(() => {
+    if (!bundles.length) return [{ value: 100, label: "100 Minifigs (Base)" }];
+
     const activeBundles = bundles.filter((b) => b.isActive);
-    if (activeBundles.length === 0) return 100;
-    return Math.min(...activeBundles.map((b) => b.minifigQuantity));
+    const sizes = new Set();
+
+    // Always include the base (smallest regular)
+    const regularBundles = activeBundles.filter(
+      (b) => (b.torsoBagType || "regular") === "regular",
+    );
+    if (regularBundles.length > 0) {
+      const base = Math.min(...regularBundles.map((b) => b.minifigQuantity));
+      sizes.add(base);
+    }
+
+    // Include custom bundle sizes
+    activeBundles
+      .filter((b) => b.torsoBagType === "custom")
+      .forEach((b) => sizes.add(b.minifigQuantity));
+
+    if (sizes.size === 0) sizes.add(100);
+
+    return [...sizes]
+      .sort((a, b) => a - b)
+      .map((size) => ({
+        value: size,
+        label: `${size} Minifigs`,
+      }));
   }, [bundles]);
 
+  // Derived validation values
+  const targetSize = Number(crud.formData.targetBundleSize) || 100;
+  const miscQuantity = getMiscQuantity(targetSize);
+  const adminTarget = getAdminTarget(targetSize);
+
   const currentTotal = useMemo(() => {
-    return formData.items.reduce(
+    return crud.formData.items.reduce(
       (acc, item) => acc + (Number(item.quantity) || 1),
       0,
     );
-  }, [formData.items]);
+  }, [crud.formData.items]);
 
   const columns = [
-    { label: "Bag Name", key: "bagName" },
-    { label: "Designs Inside", key: "itemCount" },
-    { label: "Status", key: "isActive" },
-    { label: "Created At", key: "createdAt" },
-    { label: "Updated At", key: "updatedAt" },
-    { label: "Actions", key: "actions" },
+    { key: "bagName", label: "Bag Name" },
+    { key: "targetBundleSize", label: "Target" },
+    { key: "itemCount", label: "Designs Inside" },
+    { key: "isActive", label: "Status" },
+    { key: "createdAt", label: "Created At" },
+    { key: "updatedAt", label: "Updated At" },
+    { key: "actions", label: "Actions" },
   ];
 
-  // Handlers
-  const handleDialogClose = (open) => {
-    setDialogOpen(open);
-    if (!open) {
-      setFormData({
-        bagName: "",
-        isActive: true,
-        items: [],
-      });
-      setItemPreviews([]);
-      setSelectedBag(null);
-      setDialogMode("add");
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
-
-  const handleAdd = () => {
-    setDialogMode("add");
-    setSelectedBag(null);
-    setItemPreviews([]);
-    setFormData({
-      bagName: "",
-      isActive: true,
-      items: [],
-    });
-    setDialogOpen(true);
-  };
-
   const handleEdit = (bag) => {
-    setDialogMode("edit");
-    setSelectedBag(bag);
-
     const existingItems =
       bag.items?.map((item) => ({
         url: item.image?.url,
@@ -118,17 +128,12 @@ const useDealerTorsoBagManagement = () => {
       })) || [];
 
     setItemPreviews(existingItems);
-    setFormData({
+    crud.openEdit(bag, {
       bagName: bag.bagName,
+      targetBundleSize: bag.targetBundleSize || 100,
       isActive: bag.isActive,
       items: existingItems,
     });
-    setDialogOpen(true);
-  };
-
-  const handleDelete = (bag) => {
-    setSelectedBag(bag);
-    setDeleteDialogOpen(true);
   };
 
   const handleItemImageChange = (e) => {
@@ -136,12 +141,10 @@ const useDealerTorsoBagManagement = () => {
     if (files.length === 0) return;
 
     let tempTotal = currentTotal;
-    let addedCount = 0;
     let skippedCount = 0;
 
     files.forEach((file) => {
-      // Check if adding another 1 would exceed limit
-      if (tempTotal + 1 > minRequired) {
+      if (tempTotal + 1 > adminTarget) {
         skippedCount++;
         return;
       }
@@ -161,19 +164,18 @@ const useDealerTorsoBagManagement = () => {
           image: { url: reader.result },
         };
         setItemPreviews((prev) => [...prev, newItem]);
-        setFormData((prev) => ({
+        crud.setFormData((prev) => ({
           ...prev,
           items: [...prev.items, newItem],
         }));
       };
       reader.readAsDataURL(file);
       tempTotal += 1;
-      addedCount++;
     });
 
     if (skippedCount > 0) {
       toast.warning(`Limit reached: ${skippedCount} designs were skipped`, {
-        description: `Your allocation target is ${minRequired} designs max.`,
+        description: `Admin allocation target is ${adminTarget} (${targetSize} minus ${miscQuantity} miscellaneous).`,
       });
     }
   };
@@ -181,44 +183,30 @@ const useDealerTorsoBagManagement = () => {
   const handleUpdateItemQuantity = (index, value) => {
     const cleaned = value.toString().replace(/[^0-9]/g, "");
 
-    // Empty input (user clearing) - allow temporarily, will use 1 on submit
+    // Empty input — allow temporarily, will default to 1 on submit
     if (cleaned === "") {
       const updateMap = (items) =>
         items.map((item, i) =>
           i === index ? { ...item, quantity: "" } : item,
         );
       setItemPreviews((prev) => updateMap(prev));
-      setFormData((prev) => ({
-        ...prev,
-        items: updateMap(prev.items),
-      }));
+      crud.setFormData((prev) => ({ ...prev, items: updateMap(prev.items) }));
       return;
     }
 
     const newValue = parseInt(cleaned, 10);
+    if (newValue < 1) return;
 
-    // Per-item limit: quantity must be 1–4
-    if (newValue > 4) {
-      toast.error("Quantity must be 1–4", {
-        description: "Each design can have a maximum of 4 quantity.",
-      });
-      return;
-    }
-
-    if (newValue < 1) {
-      return;
-    }
-
-    // Total allocation check: sum of all items must not exceed minRequired
-    const otherItemsTotal = formData.items.reduce(
+    // Total allocation check
+    const otherItemsTotal = crud.formData.items.reduce(
       (acc, item, i) =>
         i === index ? acc : acc + (Number(item.quantity) || 1),
       0,
     );
 
-    if (otherItemsTotal + newValue > minRequired) {
+    if (otherItemsTotal + newValue > adminTarget) {
       toast.error("Allocation limit reached", {
-        description: `Total quantity cannot exceed ${minRequired}.`,
+        description: `Total quantity cannot exceed ${adminTarget}.`,
       });
       return;
     }
@@ -229,15 +217,12 @@ const useDealerTorsoBagManagement = () => {
       );
 
     setItemPreviews((prev) => updateMap(prev));
-    setFormData((prev) => ({
-      ...prev,
-      items: updateMap(prev.items),
-    }));
+    crud.setFormData((prev) => ({ ...prev, items: updateMap(prev.items) }));
   };
 
   const handleRemoveItem = (index) => {
     setItemPreviews((prev) => prev.filter((_, i) => i !== index));
-    setFormData((prev) => ({
+    crud.setFormData((prev) => ({
       ...prev,
       items: prev.items.filter((_, i) => i !== index),
     }));
@@ -246,142 +231,86 @@ const useDealerTorsoBagManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.bagName.trim()) {
+    if (!crud.formData.bagName.trim()) {
       toast.error("Bag name is required");
       return;
     }
 
-    if (formData.items.length === 0) {
+    if (crud.formData.items.length === 0) {
       toast.error("Items are required", {
         description: "Please add at least one torso design.",
       });
       return;
     }
 
-    // Validate each item quantity is 1–4
-    const invalidQuantity = formData.items.find((item) => {
-      const qty = Number(item.quantity) || 1;
-      return qty < 1 || qty > 4;
-    });
-    if (invalidQuantity) {
-      toast.error("Invalid quantity", {
-        description: "Each design must have a quantity between 1 and 4.",
+    // Validate total matches admin target
+    const submitTotal = crud.formData.items.reduce(
+      (acc, item) => acc + (Number(item.quantity) || 1),
+      0,
+    );
+
+    if (submitTotal !== adminTarget) {
+      toast.error("Quantity mismatch", {
+        description: `Total must equal ${adminTarget} (${targetSize} minus ${miscQuantity} misc). Current: ${submitTotal}.`,
       });
       return;
     }
 
-    const payload = {
-      ...formData,
-      bagName: formData.bagName.trim(),
-      items: formData.items.map((item) => ({
-        image: item.url.startsWith("data:") ? item.url : item.image,
-        quantity: item.quantity === "" ? 1 : Number(item.quantity),
-      })),
-    };
+    const items = crud.formData.items.map((item) => ({
+      image: typeof item?.url === "string" && item.url.startsWith("data:")
+        ? item.url
+        : item?.image,
+      quantity: item.quantity === "" ? 1 : Number(item.quantity),
+    }));
 
-    try {
-      if (dialogMode === "add") {
-        const response = await createBag(payload).unwrap();
-        if (response.success) {
-          toast.success(response.message || "Torso bag created successfully", {
-            description:
-              response.description ||
-              `The bag "${response.torsoBag?.bagName}" has been created.`,
-          });
-          handleDialogClose(false);
-        }
-      } else {
-        const response = await updateBag({
-          id: selectedBag._id,
-          ...payload,
-        }).unwrap();
-        if (response.success) {
-          toast.success(response.message || "Torso bag updated successfully", {
-            description:
-              response.description ||
-              `The bag "${response.torsoBag?.bagName}" has been updated.`,
-          });
-          handleDialogClose(false);
-        }
-      }
-    } catch (err) {
-      toast.error(err?.data?.message || "Failed to save torso bag", {
-        description:
-          err?.data?.description ||
-          "An unexpected error occurred. Please try again.",
-      });
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!selectedBag) return;
-    try {
-      const response = await deleteBag(selectedBag._id).unwrap();
-      if (response.success) {
-        toast.success(response.message || "Torso bag deleted successfully", {
-          description:
-            response.description || "The torso bag has been removed.",
-        });
-        setDeleteDialogOpen(false);
-        setSelectedBag(null);
-      }
-    } catch (err) {
-      toast.error(err?.data?.message || "Failed to delete torso bag", {
-        description:
-          err?.data?.description ||
-          "An unexpected error occurred. Please try again.",
-      });
-    }
-  };
-
-  const handlePageChange = (p) => setPage(p);
-  const handleLimitChange = (l) => {
-    setLimit(l);
-    setPage(1);
-  };
-  const handleSearchChange = (s) => {
-    setSearch(s);
-    setPage(1);
+    await crud.submitForm({
+      bagName: crud.formData.bagName.trim(),
+      targetBundleSize: targetSize,
+      isActive: crud.formData.isActive,
+      items,
+    });
   };
 
   return {
     // State
-    search,
-    limit,
-    page,
-    dialogOpen,
-    deleteDialogOpen,
-    dialogMode,
-    selectedBag,
+    dialogOpen: crud.dialogOpen,
+    deleteDialogOpen: crud.deleteDialogOpen,
+    selectedBag: crud.selectedItem,
+    dialogMode: crud.dialogMode,
+    formData: crud.formData,
     itemPreviews,
-    formData,
+    fileInputRef,
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search,
     bags,
     totalItems,
     totalPages,
     columns,
-    minRequired,
-    isLoading: isLoading || isFetching,
+    targetBundleSizeOptions,
+    adminTarget,
+    miscQuantity,
+    currentTotal,
+    isLoadingBags,
     isCreating,
     isUpdating,
     isDeleting,
-    currentTotal,
-    fileInputRef,
 
     // Handlers
-    handleDialogClose,
-    setDeleteDialogOpen,
-    setFormData,
-    handleAdd,
+    handleDialogClose: crud.handleDialogClose,
+    setDeleteDialogOpen: crud.setDeleteDialogOpen,
+    setFormData: crud.setFormData,
+    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete,
+    handleDelete: crud.handleDelete,
     handleItemImageChange,
     handleUpdateItemQuantity,
     handleRemoveItem,
     handleSubmit,
-    handleConfirmDelete,
-    handlePageChange,
-    handleLimitChange,
-    handleSearchChange,
+    handleConfirmDelete: crud.handleConfirmDelete,
+    handlePageChange: crud.handlePageChange,
+    handleLimitChange: crud.handleLimitChange,
+    handleSearchChange: crud.handleSearchChange,
   };
 };
 

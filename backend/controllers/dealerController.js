@@ -44,7 +44,16 @@ const processFeatures = (features) => {
   return undefined;
 };
 
-const getMinRequiredQuantity = async () => {
+// Misc is always 20% of the target bundle size
+const MISC_RATIO = 0.2;
+
+const getMiscQuantity = (targetBundleSize) =>
+  Math.round(targetBundleSize * MISC_RATIO);
+
+const getAdminTarget = (targetBundleSize) =>
+  targetBundleSize - getMiscQuantity(targetBundleSize);
+
+const getBaseBundleSize = async () => {
   const lowestBundle = await Bundle.findOne({
     bundleType: "dealer",
     isActive: true,
@@ -52,25 +61,18 @@ const getMinRequiredQuantity = async () => {
   return lowestBundle ? lowestBundle.minifigQuantity : 100;
 };
 
-const validateTorsoItems = (items, minRequired) => {
-  let totalQty = 0;
-  for (const item of items) {
-    const qty = Number(item.quantity || 0);
-    if (qty > 4) {
-      return {
-        isValid: false,
-        message: "Individual quantity limit exceeded",
-        description: "Maximum quantity per design is 4.",
-      };
-    }
-    totalQty += qty;
-  }
+const validateTorsoItems = (items, targetBundleSize) => {
+  const adminTarget = getAdminTarget(targetBundleSize);
+  const totalQty = items.reduce(
+    (sum, item) => sum + (Number(item.quantity) || 0),
+    0,
+  );
 
-  if (totalQty !== minRequired) {
+  if (totalQty !== adminTarget) {
     return {
       isValid: false,
       message: "Invalid total quantity",
-      description: `Total designs quantity must equal the lowest bundle quantity (${minRequired}). Current total: ${totalQty}.`,
+      description: `Total designs quantity must equal ${adminTarget} (${targetBundleSize} minus ${getMiscQuantity(targetBundleSize)} miscellaneous). Current total: ${totalQty}.`,
     };
   }
 
@@ -108,10 +110,7 @@ const checkBundleQuantityConflict = async (
   return await Bundle.findOne(query);
 };
 
-const checkAddonNameConflict = async (
-  addonName,
-  excludeId = null,
-) => {
+const checkAddonNameConflict = async (addonName, excludeId = null) => {
   const query = {
     addonName: addonName.trim(),
   };
@@ -297,8 +296,14 @@ const processTorsoBagItemsForUpdate = async (
 
 export const createDealerBundle = async (req, res) => {
   try {
-    const { bundleName, minifigQuantity, totalPrice, features, isActive } =
-      req.body;
+    const {
+      bundleName,
+      minifigQuantity,
+      totalPrice,
+      torsoBagType,
+      features,
+      isActive,
+    } = req.body;
 
     // Validate features
     const featuresValidation = validateFeatures(features);
@@ -343,6 +348,7 @@ export const createDealerBundle = async (req, res) => {
       minifigQuantity,
       unitPrice,
       totalPrice,
+      torsoBagType: torsoBagType || "regular",
       isActive: isActive !== undefined ? isActive : true,
       createdBy: req.user._id,
     };
@@ -394,8 +400,14 @@ export const getAllDealerBundles = async (req, res) => {
 export const updateDealerBundle = async (req, res) => {
   try {
     const { id } = req.params;
-    const { bundleName, minifigQuantity, totalPrice, features, isActive } =
-      req.body;
+    const {
+      bundleName,
+      minifigQuantity,
+      totalPrice,
+      torsoBagType,
+      features,
+      isActive,
+    } = req.body;
 
     // Validate features
     const featuresValidation = validateFeatures(features);
@@ -433,12 +445,13 @@ export const updateDealerBundle = async (req, res) => {
     }
 
     if (totalPrice !== undefined) bundle.totalPrice = totalPrice;
-    
+    if (torsoBagType) bundle.torsoBagType = torsoBagType;
+
     if (features !== undefined) {
       const processedFeatures = processFeatures(features);
       bundle.features = processedFeatures;
     }
-    
+
     if (isActive !== undefined) bundle.isActive = isActive;
 
     // Recalculate unit price
@@ -577,10 +590,7 @@ export const updateDealerAddon = async (req, res) => {
     if (addonName) {
       const addonNameTrimmed = addonName.trim();
       if (addonNameTrimmed !== addon.addonName) {
-        const conflict = await checkAddonNameConflict(
-          addonNameTrimmed,
-          id,
-        );
+        const conflict = await checkAddonNameConflict(addonNameTrimmed, id);
         if (conflict) {
           return res.status(409).json({
             success: false,
@@ -826,7 +836,7 @@ export const deleteDealerExtraBag = async (req, res) => {
 
 export const createDealerTorsoBag = async (req, res) => {
   try {
-    const { bagName, items, isActive } = req.body;
+    const { bagName, items, targetBundleSize, isActive } = req.body;
 
     // Validate required fields
     if (!bagName) {
@@ -845,9 +855,9 @@ export const createDealerTorsoBag = async (req, res) => {
       });
     }
 
-    // Get required quantity and validate items
-    const minRequired = await getMinRequiredQuantity();
-    const validation = validateTorsoItems(items, minRequired);
+    // Determine target: use provided value or fall back to base bundle size
+    const resolvedTarget = targetBundleSize || (await getBaseBundleSize());
+    const validation = validateTorsoItems(items, resolvedTarget);
 
     if (!validation.isValid) {
       return res.status(400).json({
@@ -873,7 +883,7 @@ export const createDealerTorsoBag = async (req, res) => {
     const torsoBag = await DealerTorsoBag.create({
       bagName: bagName.trim(),
       items: uploadedItems,
-      minQuantity: minRequired,
+      targetBundleSize: resolvedTarget,
       isActive: isActive !== undefined ? isActive : true,
       createdBy: req.user._id,
     });
@@ -924,7 +934,7 @@ export const getAllDealerTorsoBags = async (req, res) => {
 export const updateDealerTorsoBag = async (req, res) => {
   try {
     const { id } = req.params;
-    const { bagName, items, isActive } = req.body;
+    const { bagName, items, targetBundleSize, isActive } = req.body;
 
     const torsoBag = await DealerTorsoBag.findById(id);
 
@@ -953,12 +963,13 @@ export const updateDealerTorsoBag = async (req, res) => {
     }
 
     if (isActive !== undefined) torsoBag.isActive = isActive;
+    if (targetBundleSize) torsoBag.targetBundleSize = targetBundleSize;
 
     // Process items if provided
     if (items && Array.isArray(items)) {
-      // Get required quantity and validate items
-      const minRequired = await getMinRequiredQuantity();
-      const validation = validateTorsoItems(items, minRequired);
+      const resolvedTarget =
+        targetBundleSize || torsoBag.targetBundleSize || 100;
+      const validation = validateTorsoItems(items, resolvedTarget);
 
       if (!validation.isValid) {
         return res.status(400).json({
@@ -974,7 +985,7 @@ export const updateDealerTorsoBag = async (req, res) => {
       );
 
       torsoBag.items = processedItems;
-      torsoBag.minQuantity = minRequired;
+      torsoBag.targetBundleSize = resolvedTarget;
     }
 
     torsoBag.updatedBy = req.user._id;
@@ -1091,12 +1102,18 @@ export const reorderTorsoBagItems = async (req, res) => {
 
 export const getDealerBundlesForUser = async (req, res) => {
   try {
-    const bundles = await Bundle.find({
+    const rawBundles = await Bundle.find({
       bundleType: "dealer",
       isActive: true,
     })
       .select("-createdBy -updatedBy -isActive -__v")
-      .sort({ minifigQuantity: 1 });
+      .sort({ minifigQuantity: 1 })
+      .lean();
+
+    const bundles = rawBundles.map((b) => ({
+      ...b,
+      miscQuantity: getMiscQuantity(b.minifigQuantity),
+    }));
 
     return res.status(200).json({
       success: true,
@@ -1146,7 +1163,14 @@ export const getDealerExtraBagsForUser = async (req, res) => {
 
 export const getDealerTorsoBagsForUser = async (req, res) => {
   try {
-    const torsoBags = await DealerTorsoBag.find({ isActive: true })
+    const query = { isActive: true };
+
+    // Filter by target bundle size when provided
+    if (req.query.targetBundleSize) {
+      query.targetBundleSize = Number(req.query.targetBundleSize);
+    }
+
+    const torsoBags = await DealerTorsoBag.find(query)
       .select("-createdBy -updatedBy -isActive -__v")
       .sort({ createdAt: 1 });
 

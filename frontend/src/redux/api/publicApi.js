@@ -7,6 +7,30 @@ const baseQuery = fetchBaseQuery({
   credentials: "include",
 });
 
+// Helper to build product list query params
+const buildProductParams = (params = {}) => {
+  const out = {};
+  if (params.page) out.page = params.page;
+  if (params.limit) out.limit = params.limit;
+  if (params.search && typeof params.search === "string" && params.search.trim())
+    out.search = params.search.trim();
+  if (params.priceMin != null) out.priceMin = params.priceMin;
+  if (params.priceMax != null) out.priceMax = params.priceMax;
+  if (params.categoryIds?.length > 0)
+    out.categoryIds = params.categoryIds.join(",");
+  if (params.subCategoryIds?.length > 0)
+    out.subCategoryIds = params.subCategoryIds.join(",");
+  if (params.collectionIds?.length > 0)
+    out.collectionIds = params.collectionIds.join(",");
+  if (params.subCollectionIds?.length > 0)
+    out.subCollectionIds = params.subCollectionIds.join(",");
+  if (params.colorIds?.length > 0) out.colorIds = params.colorIds.join(",");
+  if (params.skillLevelIds?.length > 0)
+    out.skillLevelIds = params.skillLevelIds.join(",");
+  if (params.sortBy) out.sortBy = params.sortBy;
+  return out;
+};
+
 export const publicApi = createApi({
   reducerPath: "publicApi",
   baseQuery,
@@ -21,42 +45,16 @@ export const publicApi = createApi({
     "RewardAddon",
   ],
   endpoints: (builder) => ({
-    // Get products with filters, pagination, and sorting
+    // ==================== Products ====================
     getProducts: builder.query({
-      query: (params = {}) => {
-        const queryParams = {};
-
-        if (params.page) queryParams.page = params.page;
-        if (params.limit) queryParams.limit = params.limit;
-        if (params.search) queryParams.search = params.search;
-        if (params.priceMin !== undefined && params.priceMin !== null)
-          queryParams.priceMin = params.priceMin;
-        if (params.priceMax !== undefined && params.priceMax !== null)
-          queryParams.priceMax = params.priceMax;
-        if (params.categoryIds?.length > 0)
-          queryParams.categoryIds = params.categoryIds.join(",");
-        if (params.subCategoryIds?.length > 0)
-          queryParams.subCategoryIds = params.subCategoryIds.join(",");
-        if (params.collectionIds?.length > 0)
-          queryParams.collectionIds = params.collectionIds.join(",");
-        if (params.subCollectionIds?.length > 0)
-          queryParams.subCollectionIds = params.subCollectionIds.join(",");
-        if (params.colorIds?.length > 0)
-          queryParams.colorIds = params.colorIds.join(",");
-        if (params.skillLevelIds?.length > 0)
-          queryParams.skillLevelIds = params.skillLevelIds.join(",");
-        if (params.sortBy) queryParams.sortBy = params.sortBy;
-
-        return {
-          url: "/",
-          method: "GET",
-          params: queryParams,
-        };
-      },
+      query: (params = {}) => ({
+        url: "/",
+        method: "GET",
+        params: buildProductParams(params),
+      }),
       providesTags: ["Product"],
     }),
 
-    // Get single product by ID (full details for detail page)
     getProductById: builder.query({
       query: (id) => ({
         url: `/${id}`,
@@ -65,7 +63,7 @@ export const publicApi = createApi({
       providesTags: (_, __, id) => [{ type: "Product", id }],
     }),
 
-    // Get categories with nested subcategories
+    // ==================== Filters ====================
     getPublicCategories: builder.query({
       query: () => ({
         url: "/filters/categories",
@@ -83,7 +81,6 @@ export const publicApi = createApi({
       providesTags: ["Collection"],
     }),
 
-    // Get colors
     getPublicColors: builder.query({
       query: () => ({
         url: "/filters/colors",
@@ -100,7 +97,7 @@ export const publicApi = createApi({
       }),
       providesTags: ["SkillLevel"],
     }),
-    // Get banners
+
     getPublicBanners: builder.query({
       query: () => ({
         url: "/banners",
@@ -109,7 +106,7 @@ export const publicApi = createApi({
       providesTags: ["Banner"],
     }),
 
-    // Get reward bundles
+    // ==================== Reward Program ====================
     getRewardBundles: builder.query({
       query: () => ({
         url: "/reward/bundles",
@@ -118,7 +115,6 @@ export const publicApi = createApi({
       providesTags: ["RewardBundle"],
     }),
 
-    // Get reward addons
     getRewardAddons: builder.query({
       query: () => ({
         url: "/reward/addons",
@@ -132,11 +128,13 @@ export const publicApi = createApi({
 export const {
   useGetProductsQuery,
   useGetProductByIdQuery,
+
   useGetPublicCategoriesQuery,
   useGetPublicCollectionsQuery,
   useGetPublicColorsQuery,
   useGetPublicSkillLevelsQuery,
   useGetPublicBannersQuery,
+
   useGetRewardBundlesQuery,
   useGetRewardAddonsQuery,
 } = publicApi;

@@ -10,6 +10,28 @@ export const positionMap = {
   "bottom-right": "items-end justify-end text-right",
 };
 
+const getTextClass = (textTheme) =>
+  textTheme === "dark"
+    ? "text-foreground dark:text-secondary-foreground"
+    : "text-background dark:text-foreground";
+
+const getDescriptionClass = (textTheme) =>
+  textTheme === "dark"
+    ? " text-foreground dark:text-secondary-foreground"
+    : " text-background dark:text-foreground";
+
+const getButtonsContainerClass = (position) => {
+  if (position === "center") return "justify-center";
+  if (position === "bottom-right") return "justify-end";
+  return "";
+};
+
+const getButtonVariant = (variant) =>
+  variant === "outline" ? "bannerOutline" : "bannerDefault";
+
+const getPaginationIndicatorClass = (isSelected) =>
+  isSelected ? "w-8 bg-white" : "w-2 bg-white/40";
+
 export const useBanner = () => {
   const { data, isLoading, isError } = useGetPublicBannersQuery();
   const [currentInterval, setCurrentInterval] = useState(AUTO_SCROLL_INTERVAL);
@@ -25,12 +47,28 @@ export const useBanner = () => {
           (a.order || 0) - (b.order || 0) ||
           new Date(a.createdAt) - new Date(b.createdAt),
       )
-      .map((b) => ({
-        ...b,
-        position: b.position || "center",
-        textTheme: b.textTheme || "light",
-        alignmentClasses: positionMap[b.position] || positionMap.center,
-      }));
+      .map((b) => {
+        const position = b.position || "center";
+        const textTheme = b.textTheme || "light";
+        const buttons = (b.buttons || []).map((btn) => ({
+          ...btn,
+          buttonVariant: getButtonVariant(btn.variant),
+        }));
+        return {
+          ...b,
+          position,
+          textTheme,
+          alignmentClasses: positionMap[position] || positionMap.center,
+          textClass: getTextClass(textTheme),
+          descriptionClass: getDescriptionClass(textTheme),
+          buttonsContainerClass: getButtonsContainerClass(position),
+          mediaType: b.media?.resourceType,
+          mediaUrl: b.media?.url,
+          buttons,
+          showOverlay: textTheme === "light",
+          showButtons: !!b.enableButtons && (b.buttons?.length ?? 0) > 0,
+        };
+      });
   }, [data?.banners]);
 
   const { api, setApi, selectedIndex, scrollTo } = useCarousel({
@@ -101,6 +139,12 @@ export const useBanner = () => {
     [],
   );
 
+  const getPaginationIndicatorClassFor = (index) =>
+    getPaginationIndicatorClass(selectedIndex === index);
+
+  const getSlideAnimationState = (index) =>
+    selectedIndex === index ? "visible" : "hidden";
+
   return {
     banners,
     isLoading,
@@ -110,6 +154,8 @@ export const useBanner = () => {
     setApi,
     selectedIndex,
     scrollTo,
+    getPaginationIndicatorClass: getPaginationIndicatorClassFor,
+    getSlideAnimationState,
     ...animationVariants,
   };
 };

@@ -9,6 +9,7 @@ import { fileURLToPath } from "url";
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import publicRoutes from "./routes/publicRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,6 +30,7 @@ const validateEnv = () => {
     "CLOUDINARY_CLOUD_NAME",
     "CLOUDINARY_API_KEY",
     "CLOUDINARY_API_SECRET",
+    "STRIPE_SECRET_KEY",
   ];
 
   const missing = requiredVars.filter((name) => !process.env[name]);
@@ -90,6 +92,7 @@ app.use(
           "'self'",
           "https://res.cloudinary.com",
           "https://*.cloudinary.com",
+          "https://api.stripe.com",
         ],
       },
     },
@@ -103,9 +106,13 @@ app.use(
     credentials: true,
   }),
 );
+app.use(cookieParser());
+
+// Payment routes mounted before express.json - webhook needs raw body, router handles it
+app.use("/api/v1/payment", paymentRoutes);
+
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
-app.use(cookieParser());
 
 // Health check
 app.get("/health", (_req, res) => {

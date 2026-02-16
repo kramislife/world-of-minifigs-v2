@@ -24,14 +24,13 @@ const dealerTorsoBagSchema = new mongoose.Schema(
           type: Number,
           required: true,
           min: 1,
-          max: 4,
         },
       },
     ],
-    minQuantity: {
+    targetBundleSize: {
       type: Number,
       required: true,
-      default: 100, // Matching the common lowest bundle
+      default: 100,
     },
     isActive: {
       type: Boolean,
@@ -53,8 +52,8 @@ const dealerTorsoBagSchema = new mongoose.Schema(
 
 // Indexes
 
-// Fast lookup for active bags
-dealerTorsoBagSchema.index({ isActive: 1 });
+// Fast lookup for active bags filtered by target bundle size
+dealerTorsoBagSchema.index({ isActive: 1, targetBundleSize: 1 });
 
 // Case-insensitive name lookup
 dealerTorsoBagSchema.index(

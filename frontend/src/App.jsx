@@ -1,7 +1,7 @@
 import React from "react";
 import { useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
-import CartSheet from "@/components/cart/CartSheet";
+import CartSheet from "@/pages/CartSheet";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Router from "@/routes/Router";

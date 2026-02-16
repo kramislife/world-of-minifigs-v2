@@ -1,10 +1,17 @@
-import React, { useMemo } from "react";
-import { Plus, Upload, X, AlertCircle } from "lucide-react";
+import React from "react";
+import { Plus, Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -26,8 +33,10 @@ const DealerTorsoBagManagement = () => {
     totalItems,
     totalPages,
     columns,
-    minRequired,
-    isLoading,
+    targetBundleSizeOptions,
+    adminTarget,
+    miscQuantity,
+    isLoadingBags,
     isCreating,
     isUpdating,
     isDeleting,
@@ -76,10 +85,15 @@ const DealerTorsoBagManagement = () => {
         totalPages={totalPages}
         columns={columns}
         data={bags}
-        isLoading={isLoading}
+        isLoading={isLoadingBags}
         renderRow={(bag) => (
           <>
             <TableCell maxWidth="250px">{bag.bagName}</TableCell>
+            <TableCell>
+              <Badge variant="outline">
+                {bag.targetBundleSize || 100} Minifigs
+              </Badge>
+            </TableCell>
             <TableCell>{bag.items?.length || 0} Designs</TableCell>
             <TableCell>
               <Badge variant={bag.isActive ? "success" : "destructive"}>
@@ -118,8 +132,8 @@ const DealerTorsoBagManagement = () => {
       >
         <div className="space-y-5">
           {/* Metadata Section */}
-          <div className="space-y-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="space-y-2 col-span-2">
               <Label htmlFor="bagName">Bag Name</Label>
               <Input
                 id="bagName"
@@ -130,6 +144,26 @@ const DealerTorsoBagManagement = () => {
                 }
                 required
               />
+            </div>
+            <div className="space-y-2 col-span-1">
+              <Label htmlFor="targetBundleSize">Target Bundle Size</Label>
+              <Select
+                value={String(formData.targetBundleSize)}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, targetBundleSize: Number(value) })
+                }
+              >
+                <SelectTrigger id="targetBundleSize" className="w-full">
+                  <SelectValue placeholder="Select target" />
+                </SelectTrigger>
+                <SelectContent>
+                  {targetBundleSizeOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={String(opt.value)}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -165,15 +199,12 @@ const DealerTorsoBagManagement = () => {
                     </Button>
                   </div>
 
-                  {/* Metadata Overlay/Inputs */}
+                  {/* Quantity Input */}
                   <div className="p-3 space-y-2">
-                    <Label className="text-xs font-semibold">
-                      Quantity (1 - 4)
-                    </Label>
+                    <Label className="text-xs font-semibold">Quantity</Label>
                     <Input
                       type="number"
                       min="1"
-                      max="4"
                       placeholder="1"
                       value={item.quantity}
                       onChange={(e) =>
@@ -216,25 +247,25 @@ const DealerTorsoBagManagement = () => {
               <div className="flex items-center gap-1">
                 <span className="font-bold text-lg">{currentTotal}</span>
                 <span className="opacity-50">/</span>
-                <span className="font-bold">{minRequired}</span>
+                <span className="font-bold">{adminTarget}</span>
                 <span className="text-xs ml-1">designs configured</span>
-                {currentTotal === minRequired ? (
+                {currentTotal === adminTarget ? (
                   <Badge variant="success" className="ml-auto">
                     MATCHED
                   </Badge>
-                ) : currentTotal > minRequired ? (
+                ) : currentTotal > adminTarget ? (
                   <Badge variant="destructive" className="ml-auto">
-                    {currentTotal - minRequired} EXCEEDED
+                    {currentTotal - adminTarget} EXCEEDED
                   </Badge>
                 ) : (
                   <Badge variant="warning" className="ml-auto">
-                    {minRequired - currentTotal} REMAINING
+                    {adminTarget - currentTotal} REMAINING
                   </Badge>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                * Total quantity of all items must equal the min dealer bundle (
-                {minRequired}).
+                * Admin designs must total {adminTarget} + {miscQuantity}{" "}
+                miscellaneous = {adminTarget + miscQuantity} minifigs.
               </p>
             </div>
           </div>

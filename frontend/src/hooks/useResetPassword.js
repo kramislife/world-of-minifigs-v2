@@ -6,6 +6,12 @@ import {
   useForgotPasswordMutation,
 } from "@/redux/api/authApi";
 import { passwordRequirementsConfig } from "@/constant/passwordRequirements";
+import { handleApiError, handleApiSuccess } from "@/utils/apiHelpers";
+import {
+  getPasswordRequirements,
+  isPasswordValid,
+  showPasswordError,
+} from "@/utils/validation";
 
 export const useResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -30,20 +36,8 @@ export const useResetPassword = () => {
   const isValidating = useRef(false);
 
   // Password requirement checks
-  const passwordRequirements = {
-    minLength: formData.password.length >= 6,
-    hasUppercase: /[A-Z]/.test(formData.password),
-    hasLowercase: /[a-z]/.test(formData.password),
-    hasNumber: /[0-9]/.test(formData.password),
-    hasSpecialChar: /[!@#$%^&*_]/.test(formData.password),
-  };
-
-  const isPasswordValid =
-    passwordRequirements.minLength &&
-    passwordRequirements.hasUppercase &&
-    passwordRequirements.hasLowercase &&
-    passwordRequirements.hasNumber &&
-    passwordRequirements.hasSpecialChar;
+  const passwordRequirements = getPasswordRequirements(formData.password);
+  const passwordValid = isPasswordValid(passwordRequirements);
 
   // Validate token on mount
   useEffect(() => {
@@ -119,35 +113,8 @@ export const useResetPassword = () => {
       return false;
     }
 
-    if (!isPasswordValid) {
-      if (!passwordRequirements.minLength) {
-        toast.error("Password must be at least 6 characters", {
-          description:
-            "Your password needs to be longer to meet security requirements.",
-        });
-      } else if (!passwordRequirements.hasUppercase) {
-        toast.error("Password must contain at least one uppercase letter", {
-          description:
-            "Add at least one capital letter (A-Z) to your password.",
-        });
-      } else if (!passwordRequirements.hasLowercase) {
-        toast.error("Password must contain at least one lowercase letter", {
-          description:
-            "Add at least one lowercase letter (a-z) to your password.",
-        });
-      } else if (!passwordRequirements.hasNumber) {
-        toast.error("Password must contain at least one number", {
-          description: "Add at least one number (0-9) to your password.",
-        });
-      } else if (!passwordRequirements.hasSpecialChar) {
-        toast.error(
-          "Password must contain at least one special character (!@#$%^&*_)",
-          {
-            description:
-              "Add at least one special character to strengthen your password.",
-          }
-        );
-      }
+    if (!passwordValid) {
+      showPasswordError(passwordRequirements);
       return false;
     }
 
@@ -179,11 +146,11 @@ export const useResetPassword = () => {
         password: formData.password,
       }).unwrap();
 
-      toast.success(response?.message || "Password reset successful", {
-        description:
-          response?.description ||
-          "You can now sign in with your new password.",
-      });
+      handleApiSuccess(
+        response,
+        "Password reset successful",
+        "You can now sign in with your new password.",
+      );
 
       setResetStatus("success");
     } catch (error) {
@@ -194,11 +161,11 @@ export const useResetPassword = () => {
         setResetStatus("error");
       }
 
-      toast.error(error?.data?.message || "Password reset failed", {
-        description:
-          error?.data?.description ||
-          "Unable to reset password. Please try again.",
-      });
+      handleApiError(
+        error,
+        "Password reset failed",
+        "Unable to reset password. Please try again.",
+      );
     }
   };
 
@@ -216,16 +183,18 @@ export const useResetPassword = () => {
     try {
       const response = await forgotPassword({ email }).unwrap();
 
-      toast.success(response?.message || "Reset link sent", {
-        description:
-          response?.description || "Check your email for the new reset link.",
-      });
+      handleApiSuccess(
+        response,
+        "Reset link sent",
+        "Check your email for the new reset link.",
+      );
     } catch (error) {
       console.error("Resend reset link error:", error);
-
-      toast.error(error?.data?.message || "Unable to send reset link", {
-        description: error?.data?.description || "Please try again later.",
-      });
+      handleApiError(
+        error,
+        "Unable to send reset link",
+        "Please try again later.",
+      );
     }
   };
 

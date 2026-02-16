@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { toast } from "sonner";
 import {
   useGetUsersQuery,
   useUpdateUserRoleMutation,
 } from "@/redux/api/adminApi";
+import { extractPaginatedData } from "@/utils/apiHelpers";
+import { handleApiError, handleApiSuccess } from "@/utils/apiHelpers";
 
 const useUserManagement = () => {
   const { user: currentUser } = useSelector((state) => state.auth);
@@ -14,7 +15,7 @@ const useUserManagement = () => {
   const [limit, setLimit] = useState("10");
   const [search, setSearch] = useState("");
 
-  // Fetch data with pagination and search
+  // Fetch data
   const { data: usersResponse, isLoading: isLoadingUsers } = useGetUsersQuery({
     page,
     limit,
@@ -24,13 +25,12 @@ const useUserManagement = () => {
   const [updateUserRole, { isLoading: isUpdatingRole }] =
     useUpdateUserRoleMutation();
 
-  // Extract data from server response
-  const users = usersResponse?.users || [];
+  const {
+    items: users,
+    totalItems,
+    totalPages,
+  } = extractPaginatedData(usersResponse, "users");
 
-  const totalItems = usersResponse?.pagination?.totalItems || 0;
-  const totalPages = usersResponse?.pagination?.totalPages || 1;
-
-  // Column definitions
   const columns = [
     { key: "user", label: "User" },
     { key: "username", label: "Username" },
@@ -69,36 +69,21 @@ const useUserManagement = () => {
       }).unwrap();
 
       if (response.success) {
-        toast.success(response.message, {
-          description:
-            response.description ||
-            `The user's role has been updated to ${newRole}.`,
-        });
+        handleApiSuccess(response, "User role updated successfully");
       }
     } catch (error) {
-      console.error("Update user role error:", error);
-      toast.error(error?.data?.message || "Failed to update user role", {
-        description:
-          error?.data?.description ||
-          "An unexpected error occurred. Please try again.",
-      });
+      handleApiError(error, "Failed to update user role");
     }
   };
 
-  const canUpdateRole = (user) => {
-    // Only allow updating non-admin users
-    return user.role !== "admin";
-  };
+  const canUpdateRole = (user) => user.role !== "admin";
 
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
-  };
-
+  // Pagination Handlers
+  const handlePageChange = (newPage) => setPage(newPage);
   const handleLimitChange = (newLimit) => {
     setLimit(newLimit);
     setPage(1);
   };
-
   const handleSearchChange = (value) => {
     setSearch(value);
     setPage(1);

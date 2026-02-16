@@ -1,6 +1,8 @@
 import Product from "../../models/product.model.js";
 
-// Get product counts for categories and subcategories
+
+//------------------------------------- Category Counts -------------------------------------------------
+
 export const getCategoryCounts = async () => {
   const categoryCounts = await Product.aggregate([
     { $match: { isActive: true } },
@@ -24,7 +26,8 @@ export const getCategoryCounts = async () => {
   return { categoryCountMap, subCategoryCountMap };
 };
 
-// Get product counts for collections and subcollections
+//------------------------------------- Collection Counts -------------------------------------------------
+
 export const getCollectionCounts = async () => {
   const collectionCounts = await Product.aggregate([
     { $match: { isActive: true } },
@@ -48,7 +51,8 @@ export const getCollectionCounts = async () => {
   return { collectionCountMap, subCollectionCountMap };
 };
 
-// Get product counts for colors (standalone + variants)
+//------------------------------------- Color Counts -------------------------------------------------
+
 export const getColorCounts = async () => {
   const standaloneColorCounts = await Product.aggregate([
     {
@@ -89,7 +93,8 @@ export const getColorCounts = async () => {
   return colorCountMap;
 };
 
-// Get product counts for skill levels
+//------------------------------------- Skill Level Counts -------------------------------------------------
+
 export const getSkillLevelCounts = async () => {
   const skillLevelCounts = await Product.aggregate([
     { $match: { isActive: true } },

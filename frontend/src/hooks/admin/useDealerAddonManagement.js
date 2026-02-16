@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import {
   useGetDealerAddonsQuery,
@@ -7,38 +7,25 @@ import {
   useDeleteDealerAddonMutation,
   useGetColorsQuery,
 } from "@/redux/api/adminApi";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
+import { extractPaginatedData } from "@/utils/apiHelpers";
+
+const initialFormData = {
+  addonName: "",
+  price: "",
+  description: "",
+  isActive: true,
+  items: [],
+};
 
 const useDealerAddonManagement = () => {
-  // Dialog State
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState("add");
-  const [selectedAddon, setSelectedAddon] = useState(null);
-
-  // Form State
-  const [formData, setFormData] = useState({
-    addonName: "",
-    price: "",
-    description: "",
-    isActive: true,
-    items: [],
-  });
-
-  // Image Preview State
   const [imagePreviews, setImagePreviews] = useState([]);
   const fileInputRef = useRef(null);
 
-  // Pagination & Search State
-  const [search, setSearch] = useState("");
-  const [limit, setLimit] = useState("10");
-  const [page, setPage] = useState(1);
-
-  // API Hooks
-  const { data, isLoading, isFetching } = useGetDealerAddonsQuery({
-    page,
-    limit,
-    search: search || undefined,
-  });
+  const resetImages = useCallback(() => {
+    setImagePreviews([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
 
   const [createAddon, { isLoading: isCreating }] =
     useCreateDealerAddonMutation();
@@ -47,6 +34,23 @@ const useDealerAddonManagement = () => {
   const [deleteAddon, { isLoading: isDeleting }] =
     useDeleteDealerAddonMutation();
 
+  const crud = useAdminCrud({
+    initialFormData,
+    createFn: createAddon,
+    updateFn: updateAddon,
+    deleteFn: deleteAddon,
+    entityName: "add-on",
+    onReset: resetImages,
+  });
+
+  // Fetch data
+  const { data: addonsResponse, isLoading: isLoadingAddons } =
+    useGetDealerAddonsQuery({
+      page: crud.page,
+      limit: crud.limit,
+      search: crud.search || undefined,
+    });
+
   const { data: colorData } = useGetColorsQuery();
   const colors = colorData?.colors
     ? [...colorData.colors].sort((a, b) =>
@@ -54,58 +58,23 @@ const useDealerAddonManagement = () => {
       )
     : [];
 
-  const addons = data?.addons || [];
-  const totalItems = data?.pagination?.totalItems || 0;
-  const totalPages = data?.pagination?.totalPages || 0;
+  const {
+    items: addons,
+    totalItems,
+    totalPages,
+  } = extractPaginatedData(addonsResponse, "addons");
 
   const columns = [
-    { label: "Add-on", key: "addonName" },
-    { label: "Description", key: "description" },
-    { label: "Price", key: "price" },
-    { label: "Status", key: "isActive" },
-    { label: "Created At", key: "createdAt" },
-    { label: "Updated At", key: "updatedAt" },
-    { label: "Actions", key: "actions" },
+    { key: "addonName", label: "Add-on" },
+    { key: "description", label: "Description" },
+    { key: "price", label: "Price" },
+    { key: "isActive", label: "Status" },
+    { key: "createdAt", label: "Created At" },
+    { key: "updatedAt", label: "Updated At" },
+    { key: "actions", label: "Actions" },
   ];
 
-  // Handlers
-  const handleDialogClose = (open) => {
-    setDialogOpen(open);
-    if (!open) {
-      setFormData({
-        addonName: "",
-        price: "",
-        description: "",
-        isActive: true,
-        items: [],
-      });
-      setImagePreviews([]);
-      setSelectedAddon(null);
-      setDialogMode("add");
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
-
-  const handleAdd = () => {
-    setDialogMode("add");
-    setSelectedAddon(null);
-    setImagePreviews([]);
-    setFormData({
-      addonName: "",
-      price: "",
-      description: "",
-      isActive: true,
-      items: [],
-    });
-    setDialogOpen(true);
-  };
-
   const handleEdit = (addon) => {
-    setDialogMode("edit");
-    setSelectedAddon(addon);
-
     const existingItems =
       addon.items?.map((item) => ({
         url: item.image?.url,
@@ -117,19 +86,13 @@ const useDealerAddonManagement = () => {
 
     setImagePreviews(existingItems);
 
-    setFormData({
+    crud.openEdit(addon, {
       addonName: addon.addonName,
       price: addon.price,
       description: addon.description,
       isActive: addon.isActive,
       items: existingItems,
     });
-    setDialogOpen(true);
-  };
-
-  const handleDelete = (addon) => {
-    setSelectedAddon(addon);
-    setDeleteDialogOpen(true);
   };
 
   const handleImageChange = (e) => {
@@ -153,7 +116,7 @@ const useDealerAddonManagement = () => {
           color: "",
         };
         setImagePreviews((prev) => [...prev, newImageData]);
-        setFormData((prev) => ({
+        crud.setFormData((prev) => ({
           ...prev,
           items: [
             ...prev.items,
@@ -174,7 +137,7 @@ const useDealerAddonManagement = () => {
     setImagePreviews((prev) =>
       prev.map((img, i) => (i === index ? { ...img, [field]: value } : img)),
     );
-    setFormData((prev) => ({
+    crud.setFormData((prev) => ({
       ...prev,
       items: prev.items.map((img, i) =>
         i === index ? { ...img, [field]: value } : img,
@@ -184,7 +147,7 @@ const useDealerAddonManagement = () => {
 
   const handleRemoveImage = (index) => {
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
-    setFormData((prev) => ({
+    crud.setFormData((prev) => ({
       ...prev,
       items: prev.items.filter((_, i) => i !== index),
     }));
@@ -193,118 +156,70 @@ const useDealerAddonManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.addonName.trim()) {
+    if (!crud.formData.addonName?.trim()) {
       toast.error("Add-on name is required");
       return;
     }
 
-    const payload = {
-      ...formData,
-      price: formData.price ? Number(formData.price) : undefined,
-    };
+    const items = (crud.formData.items || []).map((item) => {
+      const image = item?.image?.publicId
+        ? { publicId: item.image.publicId, url: item.image.url }
+        : (typeof item?.image === "string" ? item.image : item?.image?.url);
+      return {
+        image,
+        itemName: (item?.itemName ?? "").trim(),
+        itemPrice: item?.itemPrice ? Number(item.itemPrice) : undefined,
+        color: item?.color || undefined,
+      };
+    });
 
-    try {
-      if (dialogMode === "add") {
-        const response = await createAddon(payload).unwrap();
-        if (response.success) {
-          toast.success(response.message || "Add-on created successfully", {
-            description:
-              response.description ||
-              `The add-on "${response.addon.addonName}" has been added.`,
-          });
-          handleDialogClose(false);
-        }
-      } else {
-        const response = await updateAddon({
-          id: selectedAddon._id,
-          ...payload,
-        }).unwrap();
-        if (response.success) {
-          toast.success(response.message || "Add-on updated successfully", {
-            description:
-              response.description ||
-              `The add-on "${response.addon.addonName}" has been updated.`,
-          });
-          handleDialogClose(false);
-        }
-      }
-    } catch (err) {
-      toast.error(err?.data?.message || "Failed to save add-on", {
-        description:
-          err?.data?.description ||
-          "An unexpected error occurred. Please try again.",
-      });
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!selectedAddon) return;
-    try {
-      const response = await deleteAddon(selectedAddon._id).unwrap();
-      if (response.success) {
-        toast.success(response.message || "Add-on deleted successfully", {
-          description: response.description || "The add-on has been removed.",
-        });
-        setDeleteDialogOpen(false);
-        setSelectedAddon(null);
-      }
-    } catch (err) {
-      toast.error(err?.data?.message || "Failed to delete add-on", {
-        description:
-          err?.data?.description ||
-          "An unexpected error occurred. Please try again.",
-      });
-    }
-  };
-
-  const handlePageChange = (p) => setPage(p);
-  const handleLimitChange = (l) => {
-    setLimit(l);
-    setPage(1);
-  };
-  const handleSearchChange = (s) => {
-    setSearch(s);
-    setPage(1);
+    await crud.submitForm({
+      addonName: crud.formData.addonName.trim(),
+      price: crud.formData.price ? Number(crud.formData.price) : undefined,
+      description: (crud.formData.description ?? "").trim(),
+      isActive: crud.formData.isActive,
+      items,
+    });
   };
 
   return {
     // State
-    search,
-    limit,
-    page,
-    dialogOpen,
-    deleteDialogOpen,
-    dialogMode,
-    selectedAddon,
+    dialogOpen: crud.dialogOpen,
+    deleteDialogOpen: crud.deleteDialogOpen,
+    selectedAddon: crud.selectedItem,
+    dialogMode: crud.dialogMode,
+    formData: crud.formData,
     imagePreviews,
-    formData,
+    fileInputRef,
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search,
     addons,
     totalItems,
     totalPages,
     columns,
-    isLoading: isLoading || isFetching,
+    isLoadingAddons,
     isCreating,
     isUpdating,
     isDeleting,
-    fileInputRef,
     colors,
 
     // Handlers
-    handleDialogClose,
-    setDeleteDialogOpen,
-    setFormData,
+    handleDialogClose: crud.handleDialogClose,
+    setDeleteDialogOpen: crud.setDeleteDialogOpen,
+    setFormData: crud.setFormData,
     setImagePreviews,
-    handleAdd,
+    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete,
+    handleDelete: crud.handleDelete,
     handleImageChange,
     handleUpdateImageMetadata,
     handleRemoveImage,
     handleSubmit,
-    handleConfirmDelete,
-    handlePageChange,
-    handleLimitChange,
-    handleSearchChange,
+    handleConfirmDelete: crud.handleConfirmDelete,
+    handlePageChange: crud.handlePageChange,
+    handleLimitChange: crud.handleLimitChange,
+    handleSearchChange: crud.handleSearchChange,
   };
 };
 

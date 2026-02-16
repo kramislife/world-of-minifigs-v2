@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { toast } from "sonner";
 import {
   useGetRewardAddonsQuery,
@@ -6,31 +5,18 @@ import {
   useUpdateRewardAddonMutation,
   useDeleteRewardAddonMutation,
 } from "@/redux/api/adminApi";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
+import { extractPaginatedData } from "@/utils/apiHelpers";
+
+const initialFormData = {
+  price: "",
+  quantity: "",
+  duration: "",
+  isActive: true,
+  features: [""],
+};
 
 const useRewardAddonManagement = () => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [dialogMode, setDialogMode] = useState("add");
-  const [selectedAddon, setSelectedAddon] = useState(null);
-
-  const [formData, setFormData] = useState({
-    price: "",
-    quantity: "",
-    duration: "",
-    isActive: true,
-    features: [""],
-  });
-
-  const [search, setSearch] = useState("");
-  const [limit, setLimit] = useState("10");
-  const [page, setPage] = useState(1);
-
-  const { data, isLoading, isFetching } = useGetRewardAddonsQuery({
-    page,
-    limit,
-    search: search || undefined,
-  });
-
   const [createAddon, { isLoading: isCreating }] =
     useCreateRewardAddonMutation();
   const [updateAddon, { isLoading: isUpdating }] =
@@ -38,187 +24,104 @@ const useRewardAddonManagement = () => {
   const [deleteAddon, { isLoading: isDeleting }] =
     useDeleteRewardAddonMutation();
 
-  const addons = data?.addons || [];
-  const totalItems = data?.pagination?.totalItems || 0;
-  const totalPages = data?.pagination?.totalPages || 0;
+  const crud = useAdminCrud({
+    initialFormData,
+    createFn: createAddon,
+    updateFn: updateAddon,
+    deleteFn: deleteAddon,
+    entityName: "reward add-on",
+  });
+
+  // Fetch data
+  const { data: addonsResponse, isLoading: isLoadingAddons } =
+    useGetRewardAddonsQuery({
+      page: crud.page,
+      limit: crud.limit,
+      search: crud.search || undefined,
+    });
+
+  const {
+    items: addons,
+    totalItems,
+    totalPages,
+  } = extractPaginatedData(addonsResponse, "addons");
 
   const columns = [
-    { label: "Duration", key: "duration" },
-    { label: "Quantity", key: "quantity" },
-    { label: "Price monthly", key: "price" },
-    { label: "Status", key: "isActive" },
-    { label: "Created At", key: "createdAt" },
-    { label: "Updated At", key: "updatedAt" },
-    { label: "Actions", key: "actions" },
+    { key: "duration", label: "Duration" },
+    { key: "quantity", label: "Quantity" },
+    { key: "price", label: "Price monthly" },
+    { key: "isActive", label: "Status" },
+    { key: "createdAt", label: "Created At" },
+    { key: "updatedAt", label: "Updated At" },
+    { key: "actions", label: "Actions" },
   ];
 
-  const handleDialogClose = (open) => {
-    setDialogOpen(open);
-    if (!open) {
-      setFormData({
-        price: "",
-        quantity: "",
-        duration: "",
-        isActive: true,
-        features: [""],
-      });
-      setSelectedAddon(null);
-      setDialogMode("add");
-    }
-  };
-
-  const handleAdd = () => {
-    setDialogMode("add");
-    setSelectedAddon(null);
-    setFormData({
-      price: "",
-      quantity: "",
-      duration: "",
-      isActive: true,
-      features: [""],
-    });
-    setDialogOpen(true);
-  };
-
   const handleEdit = (addon) => {
-    setDialogMode("edit");
-    setSelectedAddon(addon);
-    setFormData({
+    crud.openEdit(addon, {
       price: addon.price,
       quantity: addon.quantity || "",
       duration: addon.duration || "",
       isActive: addon.isActive,
       features: addon.features?.length > 0 ? addon.features : [""],
     });
-    setDialogOpen(true);
-  };
-
-  const handleDelete = (addon) => {
-    setSelectedAddon(addon);
-    setDeleteDialogOpen(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.quantity) {
+    if (!crud.formData.quantity) {
       toast.error("Quantity is required");
       return;
     }
 
-    const cleanFeatures = formData.features
-      ? formData.features.map((f) => (f || "").trim()).filter((f) => f !== "")
-      : [];
+    const cleanFeatures = (crud.formData.features || [])
+      .map((f) => (f || "").trim())
+      .filter((f) => f !== "");
 
-    const payload = {
-      ...formData,
-      price: formData.price ? Number(formData.price) : undefined,
-      quantity: formData.quantity
-        ? Number(formData.quantity)
+    await crud.submitForm({
+      price: crud.formData.price ? Number(crud.formData.price) : undefined,
+      quantity: crud.formData.quantity
+        ? Number(crud.formData.quantity)
         : undefined,
-      duration: formData.duration
-        ? Number(formData.duration)
-        : undefined, 
+      duration: crud.formData.duration
+        ? Number(crud.formData.duration)
+        : undefined,
+      isActive: crud.formData.isActive,
       features: cleanFeatures,
-    };
-
-    try {
-      if (dialogMode === "add") {
-        const response = await createAddon(payload).unwrap();
-        if (response.success) {
-          toast.success(
-            response.message || "Reward add-on created successfully",
-            {
-              description: response.description || "The add-on has been added.",
-            },
-          );
-          handleDialogClose(false);
-        }
-      } else {
-        const response = await updateAddon({
-          id: selectedAddon._id,
-          ...payload,
-        }).unwrap();
-        if (response.success) {
-          toast.success(
-            response.message || "Reward add-on updated successfully",
-            {
-              description: response.description || "The add-on has been updated.",
-            },
-          );
-          handleDialogClose(false);
-        }
-      }
-    } catch (err) {
-      toast.error(err?.data?.message || "Failed to save add-on", {
-        description:
-          err?.data?.description ||
-          "An unexpected error occurred. Please try again.",
-      });
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!selectedAddon) return;
-    try {
-      const response = await deleteAddon(selectedAddon._id).unwrap();
-      if (response.success) {
-        toast.success(
-          response.message || "Reward add-on deleted successfully",
-          {
-            description: response.description || "The add-on has been removed.",
-          },
-        );
-        setDeleteDialogOpen(false);
-        setSelectedAddon(null);
-      }
-    } catch (err) {
-      toast.error(err?.data?.message || "Failed to delete add-on", {
-        description:
-          err?.data?.description ||
-          "An unexpected error occurred. Please try again.",
-      });
-    }
-  };
-
-  const handlePageChange = (p) => setPage(p);
-  const handleLimitChange = (l) => {
-    setLimit(l);
-    setPage(1);
-  };
-  const handleSearchChange = (s) => {
-    setSearch(s);
-    setPage(1);
+    });
   };
 
   return {
-    search,
-    limit,
-    page,
-    dialogOpen,
-    deleteDialogOpen,
-    dialogMode,
-    selectedAddon,
-    formData,
+    // State
+    dialogOpen: crud.dialogOpen,
+    deleteDialogOpen: crud.deleteDialogOpen,
+    selectedAddon: crud.selectedItem,
+    dialogMode: crud.dialogMode,
+    formData: crud.formData,
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search,
     addons,
     totalItems,
     totalPages,
     columns,
-    isLoading: isLoading || isFetching,
+    isLoadingAddons,
     isCreating,
     isUpdating,
     isDeleting,
-    handleDialogClose,
-    setDeleteDialogOpen,
-    setFormData,
-    handleAdd,
+
+    // Handlers
+    handleDialogClose: crud.handleDialogClose,
+    setDeleteDialogOpen: crud.setDeleteDialogOpen,
+    setFormData: crud.setFormData,
+    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete,
+    handleDelete: crud.handleDelete,
     handleSubmit,
-    handleConfirmDelete,
-    handlePageChange,
-    handleLimitChange,
-    handleSearchChange,
+    handleConfirmDelete: crud.handleConfirmDelete,
+    handlePageChange: crud.handlePageChange,
+    handleLimitChange: crud.handleLimitChange,
+    handleSearchChange: crud.handleSearchChange,
   };
 };
 

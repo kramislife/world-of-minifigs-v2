@@ -10,6 +10,12 @@ import {
 } from "@/redux/api/publicApi";
 import { PRICE_RANGES, DEFAULT_SORT } from "@/constant/filterOptions";
 import { useCarousel } from "./useCarousel";
+import {
+  getProductDisplayInfo,
+  parseArrayParam,
+  toggleArrayItem,
+  toggleSetItem,
+} from "@/utils/formatting";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 12;
@@ -21,30 +27,6 @@ const DEFAULT_PAGINATION = {
   totalPages: 0,
   hasNextPage: false,
   hasPreviousPage: false,
-};
-
-// Utility: Parse comma-separated URL param to array
-const parseArrayParam = (param) => param?.split(",").filter(Boolean) || [];
-
-// Utility: Calculate display price and discount
-const getProductDisplayInfo = (product) => ({
-  displayPrice: product?.discountPrice ?? product?.price,
-  hasDiscount: Boolean(product?.discountPrice),
-});
-
-// Utility: Toggle item in array
-const toggleArrayItem = (array, item) =>
-  array.includes(item) ? array.filter((id) => id !== item) : [...array, item];
-
-// Utility: Toggle item in Set
-const toggleSetItem = (set, item) => {
-  const newSet = new Set(set);
-  if (newSet.has(item)) {
-    newSet.delete(item);
-  } else {
-    newSet.add(item);
-  }
-  return newSet;
 };
 
 export const useProducts = () => {
@@ -572,6 +554,7 @@ export const useProductDetails = (id) => {
   const product = productData?.product;
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(null);
+  const [quantity, setQuantity] = useState(1);
   const thumbnailScrollRef = useRef(null);
 
   const allImages = product?.allImages || [];
@@ -697,6 +680,7 @@ export const useProductDetails = (id) => {
   // Reset to first image/variant when product changes
   useEffect(() => {
     setSelectedImageIndex(0);
+    setQuantity(1);
     // For variant products, default to first variant (index 0)
     // For standalone products, set to null
     if (product?.productType === "variant" && product.variants?.length > 0) {
@@ -728,6 +712,22 @@ export const useProductDetails = (id) => {
 
     return undefined;
   }, [product, selectedVariantIndex]);
+
+  // Clamp quantity when variant/stock changes
+  useEffect(() => {
+    if (currentStock !== undefined && quantity > currentStock) {
+      setQuantity(Math.max(1, currentStock));
+    }
+  }, [currentStock, quantity]);
+
+  const handleQuantityDecrement = useCallback(() => {
+    setQuantity((q) => Math.max(1, q - 1));
+  }, []);
+
+  const handleQuantityIncrement = useCallback(() => {
+    const max = currentStock ?? Infinity;
+    setQuantity((q) => Math.min(max, q + 1));
+  }, [currentStock]);
 
   // Get stock alert info (status, color, message)
   const stockAlert = useMemo(() => {
@@ -846,6 +846,10 @@ export const useProductDetails = (id) => {
     handlePreviousImage,
     handleNextImage,
     handleColorVariantClick,
+    quantity,
+    handleQuantityDecrement,
+    handleQuantityIncrement,
+    maxQuantity: currentStock ?? Infinity,
   };
 };
 

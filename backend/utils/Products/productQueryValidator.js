@@ -38,7 +38,9 @@ export const validatePriceParams = (priceMin, priceMax) => {
   };
 };
 
-// Validate sortBy parameter
+//------------------------------------------------ Sort -------------------------------------------------
+
+/** Validate sortBy parameter */
 export const validateSortBy = (sortBy) => {
   const validSortOptions = [
     "name_asc",
@@ -56,19 +58,38 @@ export const validateSortBy = (sortBy) => {
   return validSortOptions.includes(sortBy) ? sortBy : "date_desc";
 };
 
-// Validate MongoDB ObjectId format
+//------------------------------------------------ IDs -------------------------------------------------
+
+/** Parse comma-separated IDs or array into array of valid ObjectIds */
+export const parseIds = (value) => {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value.filter((id) => mongoose.Types.ObjectId.isValid(id));
+  }
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((id) => id.trim())
+      .filter((id) => mongoose.Types.ObjectId.isValid(id));
+  }
+  return [];
+};
+
+/** Validate MongoDB ObjectId format */
 export const isValidObjectId = (id) => {
   if (!id || typeof id !== "string") return false;
   return mongoose.Types.ObjectId.isValid(id);
 };
 
-// Validate and filter array of IDs
+/** Validate and filter array of IDs */
 export const validateAndFilterIds = (ids) => {
   if (!ids || !Array.isArray(ids)) return [];
   return ids.filter((id) => isValidObjectId(id));
 };
 
-// Validate pagination limit for public products
+//------------------------------------------------ Limit -------------------------------------------------
+
+/** Validate pagination limit for public products */
 export const validatePublicProductLimit = (limit) => {
   const DEFAULT_LIMIT = 12;
   const MAX_LIMIT = 100;

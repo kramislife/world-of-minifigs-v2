@@ -34,7 +34,7 @@ const DealerAddonManagement = () => {
     totalItems,
     totalPages,
     columns,
-    isLoading,
+    isLoadingAddons,
     isCreating,
     isUpdating,
     isDeleting,
@@ -83,7 +83,7 @@ const DealerAddonManagement = () => {
         totalPages={totalPages}
         columns={columns}
         data={addons}
-        isLoading={isLoading}
+        isLoading={isLoadingAddons}
         renderRow={(addon) => (
           <>
             <TableCell maxWidth="200px">{addon.addonName}</TableCell>

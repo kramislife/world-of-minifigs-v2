@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { useSendContactMessageMutation } from "@/redux/api/authApi";
+import { handleApiError, handleApiSuccess } from "@/utils/apiHelpers";
 
 export const useContactForm = () => {
-  const [formData, setFormData] = useState({
+  const initialFormData = {
     name: "",
     email: "",
     subject: "",
     message: "",
     consent: false,
-  });
+  };
 
+  const [formData, setFormData] = useState(initialFormData);
   const [sendContact, { isLoading }] = useSendContactMessageMutation();
 
   const handleChange = (e) => {
@@ -77,25 +79,20 @@ export const useContactForm = () => {
         message: message.trim(),
       }).unwrap();
 
-      toast.success(response?.message || "Message sent", {
-        description: response?.description || "Thank you for reaching out.",
-      });
+      handleApiSuccess(
+        response,
+        "Message sent",
+        "Thank you for reaching out.",
+      );
 
-      setFormData({
-        name: "",
-        email: "",
-        subject: "",
-        message: "",
-        consent: false,
-      });
+      setFormData(initialFormData);
     } catch (error) {
       console.error("Contact form error:", error);
-
-      toast.error(error?.data?.message || "Unable to send your message", {
-        description:
-          error?.data?.description ||
-          "An unexpected error occurred while sending your message. Please try again later.",
-      });
+      handleApiError(
+        error,
+        "Unable to send your message",
+        "An unexpected error occurred while sending your message. Please try again later.",
+      );
     }
   };
 

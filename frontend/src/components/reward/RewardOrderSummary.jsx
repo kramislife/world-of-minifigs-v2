@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { CheckoutButton } from "@/components/shared/OrderActionButton";
 
 const RewardOrderSummary = ({
   selectedBundle,
@@ -83,13 +83,11 @@ const RewardOrderSummary = ({
             </div>
           )}
 
-          <Button
-            variant="dark"
-            className="w-full h-12 mb-3"
+          <CheckoutButton
+            label="Checkout"
             disabled={!selectedBundle}
-          >
-            Checkout
-          </Button>
+            className="mb-3 h-12"
+          />
         </div>
       </Card>
     </aside>
