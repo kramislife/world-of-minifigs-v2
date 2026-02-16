@@ -49,9 +49,11 @@ const cartSlice = createSlice({
           ? variant?.secondaryColorId?.colorName
           : product.secondaryColorId?.colorName;
 
-        price = isVariant ? variant?.price : product.price;
+        price = isVariant
+          ? (variant?.price ?? product.price)
+          : product.price;
         discountPrice = isVariant
-          ? variant?.discountPrice
+          ? (variant?.discountPrice ?? product.discountPrice)
           : product.discountPrice;
         stock = isVariant ? variant?.stock : product.stock;
         image = isVariant
