@@ -17,7 +17,7 @@ const useCollectionsBase = (filterFn) => {
   const { data, isLoading, isError } = useGetPublicCollectionsQuery();
 
   const collections = useMemo(() => {
-    if (!data?.collections) return [];
+    if (!Array.isArray(data?.collections)) return [];
     return filterFn ? data.collections.filter(filterFn) : data.collections;
   }, [data?.collections, filterFn]);
 
@@ -63,7 +63,7 @@ export const useSubCollections = () => {
   const { data, isLoading, isError } = useGetPublicCollectionsQuery();
 
   const result = useMemo(() => {
-    if (!data?.collections || !collectionId) {
+    if (!Array.isArray(data?.collections) || !collectionId) {
       return { collection: null, subCollections: [] };
     }
 

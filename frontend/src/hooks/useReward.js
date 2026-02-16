@@ -20,7 +20,7 @@ export const useReward = () => {
     isError: isErrorAddons,
   } = useGetRewardAddonsQuery();
 
-  const bundles = bundleData?.bundles || [];
+  const bundles = Array.isArray(bundleData?.bundles) ? bundleData.bundles : [];
   const addons = addonData?.addons || [];
 
   // Add isSelected property to bundles

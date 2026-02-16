@@ -20,8 +20,11 @@ export const handleApiSuccess = (
   });
 };
 
+export const ensureArray = (value) =>
+  Array.isArray(value) ? value : [];
+
 export const extractPaginatedData = (data, key) => ({
-  items: data?.[key] || [],
+  items: ensureArray(data?.[key]),
   totalItems: data?.pagination?.totalItems || 0,
   totalPages: data?.pagination?.totalPages || 1,
 });

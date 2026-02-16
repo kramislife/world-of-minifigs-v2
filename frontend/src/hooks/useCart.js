@@ -266,7 +266,7 @@ export const useCart = () => {
   // Sync server data to local state for authenticated users
   // Also persist to localStorage so cart survives logout (unified cart experience)
   useEffect(() => {
-    if (isAuthenticated && serverCartData?.cart?.items) {
+    if (isAuthenticated && Array.isArray(serverCartData?.cart?.items)) {
       const items = serverCartData.cart.items;
       dispatch(setCartItems(items));
       localStorage.setItem("cart", JSON.stringify(items));
@@ -317,9 +317,11 @@ export const useCart = () => {
 
   const items = useMemo(() => {
     const rawItems = isAuthenticated
-      ? serverCartData?.cart?.items || []
+      ? (Array.isArray(serverCartData?.cart?.items)
+          ? serverCartData.cart.items
+          : [])
       : localItems;
-    return rawItems.map(formatCartItem);
+    return Array.isArray(rawItems) ? rawItems.map(formatCartItem) : [];
   }, [isAuthenticated, serverCartData, localItems, formatCartItem]);
 
   const cartTotals = useMemo(() => {

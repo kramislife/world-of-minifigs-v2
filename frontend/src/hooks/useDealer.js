@@ -52,9 +52,11 @@ export const useDealer = () => {
 
   const [reorderTorsoBagItems] = useReorderTorsoBagItemsMutation();
 
-  const bundles = bundleData?.bundles || [];
-  const addons = addonData?.addons || [];
-  const extraBags = extraBagData?.extraBags || [];
+  const bundles = Array.isArray(bundleData?.bundles) ? bundleData.bundles : [];
+  const addons = Array.isArray(addonData?.addons) ? addonData.addons : [];
+  const extraBags = Array.isArray(extraBagData?.extraBags)
+    ? extraBagData.extraBags
+    : [];
 
   // ==================== Bundle Selection ====================
 
@@ -112,7 +114,9 @@ export const useDealer = () => {
     skip: !selectedBundle,
   });
 
-  const torsoBags = torsoBagData?.torsoBags || [];
+  const torsoBags = Array.isArray(torsoBagData?.torsoBags)
+    ? torsoBagData.torsoBags
+    : [];
 
   // ==================== Computed Selections ====================
 

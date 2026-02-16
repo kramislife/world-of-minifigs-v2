@@ -38,7 +38,7 @@ export const useBanner = () => {
 
   // Prepare banners for rendering (active + defaults)
   const banners = useMemo(() => {
-    if (!data?.banners) return [];
+    if (!Array.isArray(data?.banners)) return [];
 
     return [...data.banners]
       .filter((b) => b.isActive)

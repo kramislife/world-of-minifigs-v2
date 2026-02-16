@@ -215,7 +215,9 @@ export const useProducts = () => {
   }, [setSearchParams]);
 
   const products = useMemo(() => {
-    const rawProducts = productsData?.products || [];
+    const rawProducts = Array.isArray(productsData?.products)
+      ? productsData.products
+      : [];
     return rawProducts.map((product) => ({
       ...product,
       ...getProductDisplayInfo(product),
@@ -225,7 +227,8 @@ export const useProducts = () => {
   const pagination = productsData?.pagination || DEFAULT_PAGINATION;
 
   // Extract data from API responses with fallback
-  const extractData = (data, key) => data?.[key] || [];
+  const extractData = (data, key) =>
+    Array.isArray(data?.[key]) ? data[key] : [];
   const categories = extractData(categoriesData, "categories");
   const collections = extractData(collectionsData, "collections");
   const colors = extractData(colorsData, "colors");
@@ -871,7 +874,9 @@ export const useLatestProducts = ({ limit = 12 } = {}) => {
   );
 
   const products = useMemo(() => {
-    const rawProducts = productsData?.products || [];
+    const rawProducts = Array.isArray(productsData?.products)
+      ? productsData.products
+      : [];
     return rawProducts.map((product) => ({
       ...product,
       ...getProductDisplayInfo(product),
