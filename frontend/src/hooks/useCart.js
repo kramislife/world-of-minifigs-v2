@@ -103,7 +103,7 @@ export const useProductCheckout = ({
   const handleProductCheckout = useCallback(async () => {
     if (!isAuthenticated) {
       toast.error("Please sign in to checkout", {
-        description: "You need to be signed in to complete your purchase.",
+        description: "You need to be signed in to complete your purchase",
       });
       return;
     }
@@ -121,11 +121,11 @@ export const useProductCheckout = ({
         handleApiError(
           null,
           "Checkout failed",
-          "Could not start checkout. Please try again.",
+          "Could not start checkout, please try again",
         );
       }
     } catch (err) {
-      handleApiError(err, "Checkout failed", "Please try again.");
+      handleApiError(err, "Checkout failed", "Please try again");
     }
   }, [
     isAuthenticated,
@@ -391,7 +391,7 @@ export const useCart = () => {
           handleApiError(
             err,
             "Cart error",
-            `${displayName} has reached its maximum stock.`,
+            `${displayName} has reached its maximum stock`,
           );
           return;
         }
@@ -444,7 +444,7 @@ export const useCart = () => {
           handleApiError(
             err,
             "Update failed",
-            "Unable to update quantity. Please try again.",
+            "Unable to update quantity, please try again",
           );
         }
       } else {
@@ -492,7 +492,7 @@ export const useCart = () => {
           handleApiError(
             err,
             "Remove failed",
-            "Unable to remove item from cart. Please try again.",
+            "Unable to remove item from cart, please try again",
           );
         }
       } else {
@@ -510,7 +510,7 @@ export const useCart = () => {
         handleApiError(
           err,
           "Clear failed",
-          "Unable to empty your cart. Please try again.",
+          "Unable to empty your cart, please try again",
         );
       }
     } else {
@@ -533,7 +533,7 @@ export const useCart = () => {
         handleApiError(
           err,
           "Sync failed",
-          "Unable to sync your guest cart to your account.",
+          "Unable to sync your guest cart to your account",
         );
       }
     }
@@ -542,7 +542,7 @@ export const useCart = () => {
   const handleCheckout = useCallback(async () => {
     if (!isAuthenticated) {
       toast.error("Please sign in to checkout", {
-        description: "You need to be signed in to complete your purchase.",
+        description: "You need to be signed in to complete your purchase",
       });
       dispatch(closeSheet());
       return;
@@ -555,11 +555,11 @@ export const useCart = () => {
         handleApiError(
           null,
           "Checkout failed",
-          "Could not start checkout. Please try again.",
+          "Could not start checkout, please try again",
         );
       }
     } catch (err) {
-      handleApiError(err, "Checkout failed", "Please try again.");
+      handleApiError(err, "Checkout failed", "Please try again");
     }
   }, [isAuthenticated, createCheckoutSession, dispatch]);
 

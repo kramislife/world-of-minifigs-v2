@@ -2,6 +2,7 @@ import express from "express";
 import {
   getPublicProducts,
   getPublicProductById,
+  getPublicRelatedProducts,
   getPublicCategories,
   getPublicCollections,
   getPublicColors,
@@ -29,5 +30,6 @@ router.get("/reward/addons", getRewardAddonsForUser);
 // Public product routes
 router.get("/", getPublicProducts);
 router.get("/:id", getPublicProductById);
+router.get("/:id/related", getPublicRelatedProducts);
 
 export default router;

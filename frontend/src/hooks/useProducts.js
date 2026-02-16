@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   useGetProductsQuery,
   useGetProductByIdQuery,
+  useGetRelatedProductsQuery,
   useGetPublicCategoriesQuery,
   useGetPublicCollectionsQuery,
   useGetPublicColorsQuery,
@@ -17,6 +18,7 @@ import {
   toggleSetItem,
 } from "@/utils/formatting";
 
+// --------------------------------------------------------------- Helpers ----------------------------------------------------
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 12;
 
@@ -27,6 +29,30 @@ const DEFAULT_PAGINATION = {
   totalPages: 0,
   hasNextPage: false,
   hasPreviousPage: false,
+};
+
+const useProcessedProducts = (productsData) =>
+  useMemo(() => {
+    const raw = Array.isArray(productsData?.products)
+      ? productsData.products
+      : [];
+    return raw.map((product) => ({
+      ...product,
+      ...getProductDisplayInfo(product),
+    }));
+  }, [productsData?.products]);
+
+const useProductCarousel = (
+  products,
+  { autoScroll = false, autoScrollInterval = 3000 } = {},
+) => {
+  const carousel = useCarousel({
+    autoScroll,
+    autoScrollInterval,
+    itemCount: products.length,
+  });
+
+  return carousel;
 };
 
 export const useProducts = () => {
@@ -214,15 +240,7 @@ export const useProducts = () => {
     setSearchParams(new URLSearchParams(), { replace: true });
   }, [setSearchParams]);
 
-  const products = useMemo(() => {
-    const rawProducts = Array.isArray(productsData?.products)
-      ? productsData.products
-      : [];
-    return rawProducts.map((product) => ({
-      ...product,
-      ...getProductDisplayInfo(product),
-    }));
-  }, [productsData?.products]);
+  const products = useProcessedProducts(productsData);
 
   const pagination = productsData?.pagination || DEFAULT_PAGINATION;
 
@@ -873,20 +891,75 @@ export const useLatestProducts = ({ limit = 12 } = {}) => {
     },
   );
 
-  const products = useMemo(() => {
-    const rawProducts = Array.isArray(productsData?.products)
-      ? productsData.products
-      : [];
-    return rawProducts.map((product) => ({
-      ...product,
-      ...getProductDisplayInfo(product),
-    }));
-  }, [productsData?.products]);
+  const products = useProcessedProducts(productsData);
 
   const { setApi, canScrollPrev, canScrollNext, scrollPrev, scrollNext } =
-    useCarousel({
-      autoScroll: false, // No auto-scroll for latest products
-      itemCount: products.length,
+    useProductCarousel(products);
+
+  const hasProducts = products.length > 0;
+  const isError = Boolean(error);
+
+  return {
+    products,
+    isLoading,
+    isError,
+    hasProducts,
+    setApi,
+    canScrollPrev,
+    canScrollNext,
+    scrollPrev,
+    scrollNext,
+  };
+};
+
+// ------------------------------------------------------------ Related Products --------------------------------------------------
+
+const buildViewAllLink = (product) => {
+  if (!product) return "/products";
+
+  const params = new URLSearchParams();
+
+  const collectionIds = product.collectionIds
+    ?.map((c) => c._id || c)
+    .filter(Boolean);
+  const subCollectionIds = product.subCollectionIds
+    ?.map((sc) => sc._id || sc)
+    .filter(Boolean);
+  const categoryIds = product.categoryIds
+    ?.map((c) => c._id || c)
+    .filter(Boolean);
+
+  if (collectionIds?.length > 0) {
+    params.set("collectionIds", collectionIds.join(","));
+  }
+  if (subCollectionIds?.length > 0) {
+    params.set("subCollectionIds", subCollectionIds.join(","));
+  }
+  if (categoryIds?.length > 0) {
+    params.set("categoryIds", categoryIds.join(","));
+  }
+
+  const qs = params.toString();
+  return qs ? `/products?${qs}` : "/products";
+};
+
+export const useRelatedProducts = (productId, product) => {
+  const {
+    data: productsData,
+    isLoading,
+    error,
+  } = useGetRelatedProductsQuery(productId, {
+    skip: !productId,
+  });
+
+  const products = useProcessedProducts(productsData);
+
+  const viewAllLink = useMemo(() => buildViewAllLink(product), [product]);
+
+  const { setApi, canScrollPrev, canScrollNext, scrollPrev, scrollNext } =
+    useProductCarousel(products, {
+      autoScroll: true,
+      autoScrollInterval: 3000,
     });
 
   const hasProducts = products.length > 0;
@@ -897,6 +970,7 @@ export const useLatestProducts = ({ limit = 12 } = {}) => {
     isLoading,
     isError,
     hasProducts,
+    viewAllLink,
     setApi,
     canScrollPrev,
     canScrollNext,

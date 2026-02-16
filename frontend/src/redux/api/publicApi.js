@@ -12,7 +12,11 @@ const buildProductParams = (params = {}) => {
   const out = {};
   if (params.page) out.page = params.page;
   if (params.limit) out.limit = params.limit;
-  if (params.search && typeof params.search === "string" && params.search.trim())
+  if (
+    params.search &&
+    typeof params.search === "string" &&
+    params.search.trim()
+  )
     out.search = params.search.trim();
   if (params.priceMin != null) out.priceMin = params.priceMin;
   if (params.priceMax != null) out.priceMax = params.priceMax;
@@ -61,6 +65,14 @@ export const publicApi = createApi({
         method: "GET",
       }),
       providesTags: (_, __, id) => [{ type: "Product", id }],
+    }),
+
+    getRelatedProducts: builder.query({
+      query: (id) => ({
+        url: `/${id}/related`,
+        method: "GET",
+      }),
+      providesTags: (_, __, id) => [{ type: "Product", id: `related-${id}` }],
     }),
 
     // ==================== Filters ====================
@@ -128,6 +140,7 @@ export const publicApi = createApi({
 export const {
   useGetProductsQuery,
   useGetProductByIdQuery,
+  useGetRelatedProductsQuery,
 
   useGetPublicCategoriesQuery,
   useGetPublicCollectionsQuery,

@@ -10,6 +10,7 @@ import {
   CheckoutButton,
 } from "@/components/shared/OrderActionButton";
 import QuantityControl from "@/components/shared/QuantityControl";
+import RelatedProducts from "@/components/products/RelatedProducts";
 import { useProductDetails } from "@/hooks/useProducts";
 import { useProductCheckout } from "@/hooks/useCart";
 
@@ -100,7 +101,7 @@ const ProductDetails = () => {
                 <img
                   src={currentImageUrl}
                   alt={product.productName}
-                  className={`w-full h-full ${hasMultipleImages ? "object-cover" : "object-contain"}`}
+                  className="w-full h-full object-contain"
                 />
 
                 {/* Discount Badge */}
@@ -115,7 +116,7 @@ const ProductDetails = () => {
 
                 {/* Item ID */}
                 {hasItemId && (
-                  <span className="absolute bottom-3 right-3 z-10 text-sm">
+                  <span className="absolute bottom-2 right-2 z-10 text-sm">
                     # {currentItemId}
                   </span>
                 )}
@@ -183,10 +184,10 @@ const ProductDetails = () => {
 
         {/* Right Column - Product Details */}
         <div className="flex items-center">
-          <div className="space-y-5 w-full">
+          <div className="space-y-3 w-full">
             {/* Product Name */}
             <div>
-              <h1 className="text-3xl font-bold mb-3">
+              <h1 className="text-3xl font-bold mb-1">
                 {product.productName}
                 {hasPartId && (
                   <span className="text-sm text-muted-foreground font-normal ml-2">
@@ -235,7 +236,7 @@ const ProductDetails = () => {
 
             {/* Features & Classifications */}
             {hasFeatures && (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <h3 className="text-lg font-semibold">
                   Features & Classifications
                 </h3>
@@ -263,7 +264,7 @@ const ProductDetails = () => {
             )}
 
             {/* Minifig Guide and Instructions */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <h3 className="text-lg font-semibold">Includes</h3>
               <div className="text-sm text-muted-foreground space-y-2">
                 <Badge variant="outline" className="px-3 py-1">
@@ -274,7 +275,7 @@ const ProductDetails = () => {
 
             {/* Color Variants / Color */}
             {hasColorVariants && (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <h3 className="text-lg font-semibold">
                   {product.productType === "standalone"
                     ? "Color"
@@ -345,7 +346,7 @@ const ProductDetails = () => {
 
             {/* Description */}
             {hasDescriptions && (
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2 text-sm pt-2">
                 {descriptions.map((description, index) => (
                   <div key={index} className="flex items-start gap-2">
                     <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
@@ -385,6 +386,9 @@ const ProductDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* You May Also Like */}
+      <RelatedProducts productId={id} product={product} />
     </div>
   );
 };

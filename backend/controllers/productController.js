@@ -1,26 +1,6 @@
+import mongoose from "mongoose";
 import Product from "../models/product.model.js";
 import Category from "../models/category.model.js";
-
-//------------------------------------------------ Helpers ------------------------------------------
-
-const PRODUCT_DETAILS_POPULATE = [
-  { path: "categoryIds", select: "categoryName" },
-  { path: "subCategoryIds", select: "subCategoryName" },
-  { path: "collectionIds", select: "collectionName" },
-  { path: "subCollectionIds", select: "subCollectionName" },
-  { path: "colorId", select: "colorName hexCode" },
-  { path: "secondaryColorId", select: "colorName hexCode" },
-  { path: "skillLevelIds", select: "skillLevelName" },
-  { path: "createdBy", select: "firstName lastName username" },
-  { path: "variants.colorId", select: "colorName hexCode" },
-  { path: "variants.secondaryColorId", select: "colorName hexCode" },
-];
-
-const PRODUCT_DETAILS_POPULATE_WITH_UPDATED = [
-  ...PRODUCT_DETAILS_POPULATE,
-  { path: "updatedBy", select: "firstName lastName username" },
-];
-
 import SubCategory from "../models/subCategory.model.js";
 import Collection from "../models/collection.model.js";
 import SubCollection from "../models/subCollection.model.js";
@@ -63,6 +43,68 @@ import {
   validateAndFilterIds,
   validatePublicProductLimit,
 } from "../utils/Products/productQueryValidator.js";
+
+//------------------------------------------------ Helpers ------------------------------------------
+
+const PRODUCT_DETAILS_POPULATE = [
+  { path: "categoryIds", select: "categoryName" },
+  { path: "subCategoryIds", select: "subCategoryName" },
+  { path: "collectionIds", select: "collectionName" },
+  { path: "subCollectionIds", select: "subCollectionName" },
+  { path: "colorId", select: "colorName hexCode" },
+  { path: "secondaryColorId", select: "colorName hexCode" },
+  { path: "skillLevelIds", select: "skillLevelName" },
+  { path: "createdBy", select: "firstName lastName username" },
+  { path: "variants.colorId", select: "colorName hexCode" },
+  { path: "variants.secondaryColorId", select: "colorName hexCode" },
+];
+
+const PRODUCT_DETAILS_POPULATE_WITH_UPDATED = [
+  ...PRODUCT_DETAILS_POPULATE,
+  { path: "updatedBy", select: "firstName lastName username" },
+];
+
+// Shared select fields for public product listings
+const PUBLIC_LISTING_SELECT =
+  "_id productName price discount discountPrice productType createdAt images variants stock";
+
+// Shared populate chain for public product listings
+const PUBLIC_LISTING_POPULATE = [
+  { path: "categoryIds", select: "categoryName" },
+  { path: "subCategoryIds", select: "subCategoryName" },
+  { path: "collectionIds", select: "collectionName" },
+  { path: "subCollectionIds", select: "subCollectionName" },
+  { path: "colorId", select: "colorName hexCode" },
+  { path: "secondaryColorId", select: "colorName hexCode" },
+  { path: "skillLevelIds", select: "skillLevelName" },
+  { path: "variants.colorId", select: "colorName hexCode" },
+  { path: "variants.secondaryColorId", select: "colorName hexCode" },
+];
+
+// Apply populate chain to a Mongoose query
+const applyPublicPopulate = (query) => {
+  for (const pop of PUBLIC_LISTING_POPULATE) {
+    query = query.populate(pop.path, pop.select);
+  }
+  return query;
+};
+
+// Generic words to exclude from name-based product matching
+const NAME_MATCH_GENERIC_WORDS = [
+  "legs",
+  "torso",
+  "head",
+  "hair",
+  "helmet",
+  "cape",
+  "armor",
+  "shield",
+  "weapon",
+  "the",
+  "with",
+  "and",
+  "for",
+];
 
 //------------------------------------------------ Create Product ------------------------------------------
 export const createProduct = async (req, res) => {
@@ -1319,28 +1361,16 @@ export const getPublicProducts = async (req, res) => {
 
     // Apply pagination with minimal field selection
     const skip = (page - 1) * limit;
-    const selectFields =
-      "_id productName price discount discountPrice productType createdAt images variants stock";
 
-    // Build query with minimal fields
-    let mongooseQuery = Product.find(query)
-      .select(selectFields)
-      .sort(sort)
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    // Populate only essential fields
-    mongooseQuery = mongooseQuery
-      .populate("categoryIds", "categoryName")
-      .populate("subCategoryIds", "subCategoryName")
-      .populate("collectionIds", "collectionName")
-      .populate("subCollectionIds", "subCollectionName")
-      .populate("colorId", "colorName hexCode")
-      .populate("secondaryColorId", "colorName hexCode")
-      .populate("skillLevelIds", "skillLevelName")
-      .populate("variants.colorId", "colorName hexCode")
-      .populate("variants.secondaryColorId", "colorName hexCode");
+    // Build query with shared select and populate
+    const mongooseQuery = applyPublicPopulate(
+      Product.find(query)
+        .select(PUBLIC_LISTING_SELECT)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+    );
 
     // Execute queries in parallel
     const [totalItems, products] = await Promise.all([
@@ -1389,18 +1419,11 @@ export const getPublicProductById = async (req, res) => {
       });
     }
 
-    const product = await Product.findOne({ _id: id, isActive: true })
-      .select("-__v -createdBy -updatedBy")
-      .populate("categoryIds", "categoryName")
-      .populate("subCategoryIds", "subCategoryName")
-      .populate("collectionIds", "collectionName")
-      .populate("subCollectionIds", "subCollectionName")
-      .populate("colorId", "colorName hexCode")
-      .populate("secondaryColorId", "colorName hexCode")
-      .populate("skillLevelIds", "skillLevelName")
-      .populate("variants.colorId", "colorName hexCode")
-      .populate("variants.secondaryColorId", "colorName hexCode")
-      .lean();
+    const product = await applyPublicPopulate(
+      Product.findOne({ _id: id, isActive: true })
+        .select("-__v -createdBy -updatedBy")
+        .lean(),
+    );
 
     if (!product) {
       return res.status(404).json({
@@ -1422,6 +1445,175 @@ export const getPublicProductById = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch product",
+      description: "An unexpected error occurred. Please try again.",
+    });
+  }
+};
+
+//------------------------------------------------- Get Related Products ----------------------------------------------------
+export const getPublicRelatedProducts = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const limit = 12;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Product ID is required",
+        description: "Please provide a valid product ID.",
+      });
+    }
+
+    // Fetch current product to extract taxonomy and name
+    const currentProduct = await Product.findOne({ _id: id, isActive: true })
+      .select(
+        "productName categoryIds subCategoryIds collectionIds subCollectionIds",
+      )
+      .lean();
+
+    if (!currentProduct) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+        description:
+          "The requested product does not exist or is not available.",
+      });
+    }
+
+    const baseFilter = { _id: { $ne: id }, isActive: true };
+    const collectedIds = new Set();
+    let relatedProducts = [];
+
+    // Helper: fetch products matching a query, excluding already collected IDs
+    const fetchProducts = async (filter, remaining) => {
+      if (remaining <= 0) return [];
+      const excludeIds = [...collectedIds].map(
+        (sid) => new mongoose.Types.ObjectId(sid),
+      );
+      const combinedFilter = {
+        ...filter,
+        _id: { $ne: id, $nin: excludeIds },
+      };
+
+      return applyPublicPopulate(
+        Product.find(combinedFilter)
+          .select(PUBLIC_LISTING_SELECT)
+          .sort({ createdAt: -1 })
+          .limit(remaining)
+          .lean(),
+      ).exec();
+    };
+
+    const addProducts = (products) => {
+      for (const p of products) {
+        collectedIds.add(p._id.toString());
+      }
+      relatedProducts = [...relatedProducts, ...products];
+    };
+
+    // Priority 1: Similar name (match products sharing any significant word)
+    if (currentProduct.productName) {
+      const words = currentProduct.productName
+        .split(/\s+/)
+        .filter(
+          (w) =>
+            w.length > 2 && !NAME_MATCH_GENERIC_WORDS.includes(w.toLowerCase()),
+        )
+        .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")); // Escape regex chars
+
+      if (words.length > 0) {
+        const nameRegex = words.join("|"); // OR: match any word
+        const similarName = await fetchProducts(
+          {
+            ...baseFilter,
+            productName: { $regex: nameRegex, $options: "i" },
+          },
+          limit,
+        );
+        addProducts(similarName);
+      }
+    }
+
+    // Priority 2: Same sub-collection
+    if (
+      relatedProducts.length < limit &&
+      currentProduct.subCollectionIds?.length > 0
+    ) {
+      const subCollectionMatches = await fetchProducts(
+        {
+          ...baseFilter,
+          subCollectionIds: { $in: currentProduct.subCollectionIds },
+        },
+        limit - relatedProducts.length,
+      );
+      addProducts(subCollectionMatches);
+    }
+
+    // Priority 3: Same collection
+    if (
+      relatedProducts.length < limit &&
+      currentProduct.collectionIds?.length > 0
+    ) {
+      const collectionMatches = await fetchProducts(
+        {
+          ...baseFilter,
+          collectionIds: { $in: currentProduct.collectionIds },
+        },
+        limit - relatedProducts.length,
+      );
+      addProducts(collectionMatches);
+    }
+
+    // Priority 4: Same sub-category
+    if (
+      relatedProducts.length < limit &&
+      currentProduct.subCategoryIds?.length > 0
+    ) {
+      const subCategoryMatches = await fetchProducts(
+        {
+          ...baseFilter,
+          subCategoryIds: { $in: currentProduct.subCategoryIds },
+        },
+        limit - relatedProducts.length,
+      );
+      addProducts(subCategoryMatches);
+    }
+
+    // Priority 5: Same category
+    if (
+      relatedProducts.length < limit &&
+      currentProduct.categoryIds?.length > 0
+    ) {
+      const categoryMatches = await fetchProducts(
+        {
+          ...baseFilter,
+          categoryIds: { $in: currentProduct.categoryIds },
+        },
+        limit - relatedProducts.length,
+      );
+      addProducts(categoryMatches);
+    }
+
+    // Priority 6: General fallback - latest products
+    if (relatedProducts.length < limit) {
+      const latestProducts = await fetchProducts(
+        baseFilter,
+        limit - relatedProducts.length,
+      );
+      addProducts(latestProducts);
+    }
+
+    const processedProducts = processProductsForListing(relatedProducts);
+
+    return res.status(200).json({
+      success: true,
+      products: processedProducts,
+    });
+  } catch (error) {
+    console.error("Get public related products error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch related products",
       description: "An unexpected error occurred. Please try again.",
     });
   }
