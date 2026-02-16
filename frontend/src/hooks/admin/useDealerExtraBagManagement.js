@@ -31,11 +31,12 @@ const useDealerExtraBagManagement = () => {
   });
 
   // Fetch data
-  const { data, isLoading, isFetching } = useGetDealerExtraBagsQuery({
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search || undefined,
-  });
+  const { data: extraBagsResponse, isLoading: isLoadingExtraBags } =
+    useGetDealerExtraBagsQuery({
+      page: crud.page,
+      limit: crud.limit,
+      search: crud.search || undefined,
+    });
 
   const { data: subCollectionsData } = useGetSubCollectionsQuery({
     limit: 1000,
@@ -46,15 +47,15 @@ const useDealerExtraBagManagement = () => {
     items: extraBags,
     totalItems,
     totalPages,
-  } = extractPaginatedData(data, "extraBags");
+  } = extractPaginatedData(extraBagsResponse, "extraBags");
 
   const columns = [
-    { label: "Part Type", key: "subCollectionId" },
-    { label: "Price Per Bag", key: "price" },
-    { label: "Status", key: "isActive" },
-    { label: "Created At", key: "createdAt" },
-    { label: "Updated At", key: "updatedAt" },
-    { label: "Actions", key: "actions" },
+    { key: "subCollectionId", label: "Part Type" },
+    { key: "price", label: "Price Per Bag" },
+    { key: "isActive", label: "Status" },
+    { key: "createdAt", label: "Created At" },
+    { key: "updatedAt", label: "Updated At" },
+    { key: "actions", label: "Actions" },
   ];
 
   const handleEdit = (bag) => {
@@ -67,25 +68,30 @@ const useDealerExtraBagManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await crud.submitForm(crud.formData);
+
+    await crud.submitForm({
+      subCollectionId: (crud.formData.subCollectionId ?? "").trim(),
+      price: crud.formData.price ? Number(crud.formData.price) : undefined,
+      isActive: crud.formData.isActive,
+    });
   };
 
   return {
     // State
-    search: crud.search,
-    limit: crud.limit,
-    page: crud.page,
     dialogOpen: crud.dialogOpen,
     deleteDialogOpen: crud.deleteDialogOpen,
-    dialogMode: crud.dialogMode,
     selectedBag: crud.selectedItem,
+    dialogMode: crud.dialogMode,
     formData: crud.formData,
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search,
     subCollections,
     extraBags,
     totalItems,
     totalPages,
     columns,
-    isLoading: isLoading || isFetching,
+    isLoadingExtraBags,
     isCreating,
     isUpdating,
     isDeleting,

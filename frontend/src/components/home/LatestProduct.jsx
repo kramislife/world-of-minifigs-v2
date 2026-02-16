@@ -52,7 +52,7 @@ const LatestProduct = () => {
   return (
     <section className="p-5">
       {/* Header */}
-      <div className="flex items-end justify-between mb-8">
+      <div className="flex items-end justify-between mb-5">
         <div>
           <p className="tracking-widest uppercase text-xs sm:text-sm mb-1">
             Stay on-trend with new products
@@ -63,11 +63,7 @@ const LatestProduct = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="flex shadow-none uppercase"
-            asChild
-          >
+          <Button variant="outline" className="shadow-none uppercase" asChild>
             <Link to="/products">View All</Link>
           </Button>
 

@@ -33,26 +33,27 @@ const useRewardBundleManagement = () => {
   });
 
   // Fetch data
-  const { data, isLoading, isFetching } = useGetRewardBundlesQuery({
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search || undefined,
-  });
+  const { data: bundlesResponse, isLoading: isLoadingBundles } =
+    useGetRewardBundlesQuery({
+      page: crud.page,
+      limit: crud.limit,
+      search: crud.search || undefined,
+    });
 
   const {
     items: bundles,
     totalItems,
     totalPages,
-  } = extractPaginatedData(data, "bundles");
+  } = extractPaginatedData(bundlesResponse, "bundles");
 
   const columns = [
-    { label: "Bundle", key: "bundleName" },
-    { label: "Quantity", key: "minifigQuantity" },
-    { label: "Total Price", key: "totalPrice" },
-    { label: "Status", key: "isActive" },
-    { label: "Created At", key: "createdAt" },
-    { label: "Updated At", key: "updatedAt" },
-    { label: "Actions", key: "actions" },
+    { key: "bundleName", label: "Bundle" },
+    { key: "minifigQuantity", label: "Quantity" },
+    { key: "totalPrice", label: "Total Price" },
+    { key: "isActive", label: "Status" },
+    { key: "createdAt", label: "Created At" },
+    { key: "updatedAt", label: "Updated At" },
+    { key: "actions", label: "Actions" },
   ];
 
   const handleEdit = (bundle) => {
@@ -101,22 +102,25 @@ const useRewardBundleManagement = () => {
   };
 
   return {
-    search: crud.search,
-    limit: crud.limit,
-    page: crud.page,
+    // State
     dialogOpen: crud.dialogOpen,
     deleteDialogOpen: crud.deleteDialogOpen,
-    dialogMode: crud.dialogMode,
     selectedBundle: crud.selectedItem,
+    dialogMode: crud.dialogMode,
     formData: crud.formData,
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search,
     bundles,
     totalItems,
     totalPages,
     columns,
-    isLoading: isLoading || isFetching,
+    isLoadingBundles,
     isCreating,
     isUpdating,
     isDeleting,
+
+    // Handlers
     handleDialogClose: crud.handleDialogClose,
     setDeleteDialogOpen: crud.setDeleteDialogOpen,
     setFormData: crud.setFormData,

@@ -1,22 +1,24 @@
-import { GripVertical } from "lucide-react";
 import { DndContext, closestCenter } from "@dnd-kit/core";
-import {
-  SortableContext,
-  rectSortingStrategy,
-  useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Logo from "@/assets/media/Logo.png";
+import MiscellaneousPreview from "@/components/dealer/MiscellaneousPreview";
+import {
+  PreviewItem,
+  SortablePreviewItem,
+} from "@/components/dealer/TorsoPreviewItems";
 
 const DealerTorsoBag = ({
   torsoBags,
   lastSelectedBag,
   onSelect,
   isAdmin,
-  // Reorder props
+  isCustomBundle,
+  multiplier,
+  miscQuantity,
+  displayItems,
   localItems,
   hasReorderChanges,
   isSavingOrder,
@@ -28,7 +30,7 @@ const DealerTorsoBag = ({
 }) => {
   return (
     <section id="step4" className="overflow-visible">
-      <div className="text-left mb-10">
+      <div className="text-left mb-5">
         <h2 className="text-2xl font-bold mb-2 tracking-tight">
           Step 4 — Choose Your LEGO Torso
         </h2>
@@ -37,6 +39,7 @@ const DealerTorsoBag = ({
         </p>
       </div>
 
+      {/* Torso Bags */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {torsoBags.map((bag) => (
           <Card
@@ -58,23 +61,15 @@ const DealerTorsoBag = ({
             )}
 
             <div className="aspect-square flex items-center justify-center">
-              {bag.firstImage ? (
-                <img
-                  src={bag.firstImage}
-                  alt={bag.bagName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <img
-                  src={Logo}
-                  alt="Placeholder"
-                  className="max-h-40 max-w-40 object-contain opacity-80"
-                />
-              )}
+              <img
+                src={bag.firstImage || Logo}
+                alt={bag.bagName}
+                className="w-full h-full object-cover"
+              />
             </div>
 
             <div
-              className={`p-2 text-center border-t transition-colors ${
+              className={`p-2 text-center border-t ${
                 bag.isSelected ? "bg-accent text-accent-foreground" : ""
               }`}
             >
@@ -86,26 +81,32 @@ const DealerTorsoBag = ({
         ))}
       </div>
 
-      {lastSelectedBag && localItems.length > 0 && (
+      {/* Preview Section */}
+      {lastSelectedBag && displayItems.length > 0 && (
         <div className="mt-10 space-y-5 pt-5 border-t border-dashed">
-          <div className="flex items-center justify-between">
+          {/* HEADER */}
+          <div className="flex items-start justify-between">
             <div className="space-y-2">
-              <h3 className="text-2xl font-bold tracking-tight">
+              <h3 className="text-2xl font-bold tracking-tight flex items-center gap-3">
                 {lastSelectedBag.bagName} Preview
+                {!isCustomBundle && multiplier > 1 && (
+                  <Badge variant="accent" className="text-xs">
+                    {multiplier}× Bundle
+                  </Badge>
+                )}
               </h3>
+
               <p className="text-muted-foreground text-sm">
-                {localItems.length} unique designs • Premium printed genuine
-                LEGO torsos
+                {displayItems.length} unique designs • {multiplier} bags of the
+                same torso design •
                 {isAdmin && (
-                  <span className="ml-2 text-primary font-semibold">
-                    (Drag to reorder)
-                  </span>
+                  <span className="ml-1 text-primary">Drag to reorder</span>
                 )}
               </p>
             </div>
 
             {isAdmin && hasReorderChanges && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mt-1">
                 <Button
                   variant="outline"
                   size="sm"
@@ -126,6 +127,7 @@ const DealerTorsoBag = ({
             )}
           </div>
 
+          {/* GRID */}
           {isAdmin ? (
             <DndContext
               sensors={reorderSensors}
@@ -143,99 +145,39 @@ const DealerTorsoBag = ({
                       id={idx.toString()}
                       item={item}
                       idx={idx}
+                      displayQuantity={
+                        isCustomBundle
+                          ? item.quantity
+                          : item.quantity * multiplier
+                      }
                     />
                   ))}
+
+                  {miscQuantity > 0 && (
+                    <MiscellaneousPreview miscQuantity={miscQuantity} />
+                  )}
                 </div>
               </SortableContext>
             </DndContext>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {localItems.map((item, idx) => (
-                <Card
+              {displayItems.map((item, idx) => (
+                <PreviewItem
                   key={idx}
-                  className="relative p-0 border-border shadow-none"
-                >
-                  <div className="aspect-square rounded-md flex items-center justify-center relative overflow-hidden">
-                    <Badge
-                      variant="accent"
-                      className="absolute top-1 right-1 size-5"
-                    >
-                      {item.quantity}
-                    </Badge>
-                    {item.image?.url ? (
-                      <img
-                        src={item.image.url}
-                        alt={`Torso ${idx}`}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <img
-                        src={Logo}
-                        alt="Placeholder"
-                        className="max-h-40 max-w-40 object-contain opacity-80"
-                      />
-                    )}
-                  </div>
-                </Card>
+                  item={item}
+                  idx={idx}
+                  displayQuantity={item.displayQuantity}
+                />
               ))}
+
+              {miscQuantity > 0 && (
+                <MiscellaneousPreview miscQuantity={miscQuantity} />
+              )}
             </div>
           )}
         </div>
       )}
     </section>
-  );
-};
-
-// Sortable Preview Item for drag-and-drop
-const SortablePreviewItem = ({ id, item, idx }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : 1,
-  };
-
-  return (
-    <Card
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className={`relative p-0 border-border shadow-none cursor-grab active:cursor-grabbing ${
-        isDragging ? "ring-2 ring-accent" : ""
-      }`}
-    >
-      <div className="aspect-square rounded-md flex items-center justify-center relative overflow-hidden group">
-        <div className="absolute top-1 left-1 z-10 bg-background/80 backdrop-blur-sm rounded p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <GripVertical className="size-4 text-muted-foreground" />
-        </div>
-        <Badge variant="accent" className="absolute top-1 right-1 size-5">
-          {item.quantity}
-        </Badge>
-        {item.image?.url ? (
-          <img
-            src={item.image.url}
-            alt={`Torso ${idx}`}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <img
-            src={Logo}
-            alt="Placeholder"
-            className="max-h-40 max-w-40 object-contain opacity-80"
-          />
-        )}
-      </div>
-    </Card>
   );
 };
 

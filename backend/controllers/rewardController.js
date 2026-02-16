@@ -116,11 +116,7 @@ const checkBundleQuantityConflict = async (
   return await Bundle.findOne(query);
 };
 
-const checkAddonConflict = async (
-  quantity,
-  duration,
-  excludeId = null,
-) => {
+const checkAddonConflict = async (quantity, duration, excludeId = null) => {
   const query = {
     quantity,
     duration: duration || 3,
@@ -146,9 +142,7 @@ export const createRewardBundle = async (req, res) => {
     // Validate features
     const featuresResult = validateAndReturnFeatures(features);
     if (featuresResult.error) {
-      return res
-        .status(featuresResult.error.status)
-        .json(featuresResult.error);
+      return res.status(featuresResult.error.status).json(featuresResult.error);
     }
 
     // Validate required fields
@@ -160,7 +154,10 @@ export const createRewardBundle = async (req, res) => {
       });
     }
 
-    const quantityValidation = validateQuantity(minifigQuantity, "Valid quantity");
+    const quantityValidation = validateQuantity(
+      minifigQuantity,
+      "Valid quantity",
+    );
     if (!quantityValidation.isValid) {
       return res
         .status(quantityValidation.error.status)
@@ -193,11 +190,18 @@ export const createRewardBundle = async (req, res) => {
 
     const bundle = await Bundle.create(bundleData);
 
+    // torsoBagType is dealer-only; remove from reward bundles
+    await Bundle.updateOne(
+      { _id: bundle._id },
+      { $unset: { torsoBagType: "" } },
+    );
+    const cleanedBundle = await Bundle.findById(bundle._id);
+
     return res.status(201).json({
       success: true,
       message: "Reward bundle created successfully",
       description: `The "${bundle.bundleName}" reward bundle has been added.`,
-      bundle,
+      bundle: cleanedBundle,
     });
   } catch (error) {
     handleError(res, error, "Create reward bundle", "Failed to create bundle");
@@ -238,9 +242,7 @@ export const updateRewardBundle = async (req, res) => {
     // Validate features
     const featuresResult = validateAndReturnFeatures(features);
     if (featuresResult.error) {
-      return res
-        .status(featuresResult.error.status)
-        .json(featuresResult.error);
+      return res.status(featuresResult.error.status).json(featuresResult.error);
     }
 
     // Find bundle
@@ -261,7 +263,9 @@ export const updateRewardBundle = async (req, res) => {
             "Quantity conflict",
             `Another reward bundle with ${minifigQuantity} minifigs already exists.`,
           );
-          return res.status(conflictResponse.status).json(conflictResponse.body);
+          return res
+            .status(conflictResponse.status)
+            .json(conflictResponse.body);
         }
       }
       bundle.minifigQuantity = minifigQuantity;
@@ -278,11 +282,18 @@ export const updateRewardBundle = async (req, res) => {
     bundle.updatedBy = req.user._id;
     await bundle.save();
 
+    // torsoBagType is dealer-only; remove from reward bundles
+    await Bundle.updateOne(
+      { _id: bundle._id },
+      { $unset: { torsoBagType: "" } },
+    );
+    const cleanedBundle = await Bundle.findById(id);
+
     return res.status(200).json({
       success: true,
       message: "Reward bundle updated successfully",
       description: `The "${bundle.bundleName}" bundle has been successfully updated.`,
-      bundle,
+      bundle: cleanedBundle,
     });
   } catch (error) {
     handleError(res, error, "Update reward bundle", "Failed to update bundle");
@@ -323,9 +334,7 @@ export const createRewardAddon = async (req, res) => {
     // Validate features
     const featuresResult = validateAndReturnFeatures(features);
     if (featuresResult.error) {
-      return res
-        .status(featuresResult.error.status)
-        .json(featuresResult.error);
+      return res.status(featuresResult.error.status).json(featuresResult.error);
     }
 
     // Validate required fields
@@ -339,10 +348,7 @@ export const createRewardAddon = async (req, res) => {
     const finalDuration = duration || 3;
 
     // Check for existing addon with same combination
-    const existingAddon = await checkAddonConflict(
-      quantity,
-      finalDuration,
-    );
+    const existingAddon = await checkAddonConflict(quantity, finalDuration);
     if (existingAddon) {
       const conflict = createConflictResponse(
         "Add-on already exists",
@@ -383,11 +389,15 @@ export const getAllRewardAddons = async (req, res) => {
   try {
     const { page, limit } = normalizePagination(req.query);
 
-    const result = await paginateQuery(RewardAddon, {}, {
-      page,
-      limit,
-      populate: getStandardPopulateOptions(),
-    });
+    const result = await paginateQuery(
+      RewardAddon,
+      {},
+      {
+        page,
+        limit,
+        populate: getStandardPopulateOptions(),
+      },
+    );
 
     return res.status(200).json(createPaginationResponse(result, "addons"));
   } catch (error) {
@@ -405,9 +415,7 @@ export const updateRewardAddon = async (req, res) => {
     // Validate features
     const featuresResult = validateAndReturnFeatures(features);
     if (featuresResult.error) {
-      return res
-        .status(featuresResult.error.status)
-        .json(featuresResult.error);
+      return res.status(featuresResult.error.status).json(featuresResult.error);
     }
 
     // Find addon

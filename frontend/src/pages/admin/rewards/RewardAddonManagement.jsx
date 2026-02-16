@@ -33,7 +33,7 @@ const RewardAddonManagement = () => {
     totalItems,
     totalPages,
     columns,
-    isLoading,
+    isLoadingAddons,
     isCreating,
     isUpdating,
     isDeleting,
@@ -77,7 +77,7 @@ const RewardAddonManagement = () => {
         totalPages={totalPages}
         columns={columns}
         data={addons}
-        isLoading={isLoading}
+        isLoading={isLoadingAddons}
         renderRow={(addon) => (
           <>
             <TableCell>{addon.duration || "-"} months</TableCell>

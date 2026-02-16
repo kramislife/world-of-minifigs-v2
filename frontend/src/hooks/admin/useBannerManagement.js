@@ -173,7 +173,26 @@ const useBannerManagement = () => {
       return;
     }
 
-    const payload = {
+    const buttons = crud.formData.enableButtons
+      ? crud.formData.buttons
+          .filter((b) => b.label.trim() && b.href.trim())
+          .map((b) => ({
+            label: b.label.trim(),
+            href: b.href.trim(),
+            variant: b.variant || "default",
+          }))
+          .slice(0, 2)
+      : null;
+
+    if (crud.formData.enableButtons && (!buttons || buttons.length === 0)) {
+      toast.error("Button configuration incomplete", {
+        description:
+          "Please provide both label and link for enabled buttons.",
+      });
+      return;
+    }
+
+    await crud.submitForm({
       badge: crud.formData.badge?.trim() || undefined,
       label: crud.formData.label.trim(),
       description: crud.formData.description.trim(),
@@ -182,32 +201,9 @@ const useBannerManagement = () => {
       enableButtons: crud.formData.enableButtons,
       isActive: crud.formData.isActive,
       order: crud.formData.order,
-    };
-
-    if (crud.formData.enableButtons) {
-      payload.buttons = crud.formData.buttons
-        .filter((b) => b.label.trim() && b.href.trim())
-        .map((b) => ({
-          label: b.label.trim(),
-          href: b.href.trim(),
-          variant: b.variant || "default",
-        }))
-        .slice(0, 2);
-
-      if (payload.buttons.length === 0) {
-        toast.error("Button configuration incomplete", {
-          description:
-            "Please provide both label and link for enabled buttons.",
-        });
-        return;
-      }
-    }
-
-    if (crud.formData.media) {
-      payload.media = crud.formData.media;
-    }
-
-    await crud.submitForm(payload);
+      ...(buttons?.length && { buttons }),
+      ...(crud.formData.media && { media: crud.formData.media }),
+    });
   };
 
   return {

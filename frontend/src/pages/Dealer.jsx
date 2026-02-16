@@ -33,6 +33,12 @@ const Dealer = () => {
     extraBags,
     torsoBags,
 
+    // Bundle Type Info
+    isCustomBundle,
+    multiplier,
+    miscQuantity,
+    displayItems,
+
     // Memos
     selectedBundle,
     maxExtraBags,
@@ -146,6 +152,10 @@ const Dealer = () => {
             lastSelectedBag={lastSelectedBag}
             onSelect={handleSelectTorsoBag}
             isAdmin={isAdmin}
+            isCustomBundle={isCustomBundle}
+            multiplier={multiplier}
+            miscQuantity={miscQuantity}
+            displayItems={displayItems}
             localItems={localItems}
             hasReorderChanges={hasReorderChanges}
             isSavingOrder={isSavingOrder}
@@ -165,6 +175,9 @@ const Dealer = () => {
           extraBags={extraBags}
           selectedTorsoBagIds={selectedTorsoBagIds}
           torsoBags={torsoBags}
+          isCustomBundle={isCustomBundle}
+          multiplier={multiplier}
+          miscQuantity={miscQuantity}
           totalOrderPrice={totalOrderPrice}
         />
       </div>

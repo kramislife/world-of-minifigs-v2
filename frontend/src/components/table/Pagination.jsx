@@ -19,7 +19,7 @@ const Pagination = ({
         <Button
           variant="outline"
           size="sm"
-          onClick={onPrevious}
+          onClick={() => onPrevious?.()}
           disabled={currentPage === 1}
         >
           Previous
@@ -27,7 +27,7 @@ const Pagination = ({
         <Button
           variant="outline"
           size="sm"
-          onClick={onNext}
+          onClick={() => onNext?.()}
           disabled={currentPage >= totalPages}
         >
           Next

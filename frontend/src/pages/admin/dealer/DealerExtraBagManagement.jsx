@@ -33,7 +33,7 @@ const DealerExtraBagManagement = () => {
     totalItems,
     totalPages,
     columns,
-    isLoading,
+    isLoadingExtraBags,
     isCreating,
     isUpdating,
     isDeleting,
@@ -77,7 +77,7 @@ const DealerExtraBagManagement = () => {
         totalPages={totalPages}
         columns={columns}
         data={extraBags}
-        isLoading={isLoading}
+        isLoading={isLoadingExtraBags}
         renderRow={(bag) => (
           <>
             <TableCell maxWidth="200px">
@@ -161,7 +161,10 @@ const DealerExtraBagManagement = () => {
               id="extraBagActive"
               checked={formData.isActive}
               onCheckedChange={(checked) =>
-                setFormData({ ...formData, isActive: checked })
+                setFormData((prev) => ({
+                  ...prev,
+                  isActive: Boolean(checked),
+                }))
               }
             />
             <Label htmlFor="extraBagActive">Available to Dealers</Label>

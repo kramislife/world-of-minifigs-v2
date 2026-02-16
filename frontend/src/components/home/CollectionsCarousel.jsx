@@ -37,16 +37,23 @@ const CollectionsCarousel = () => {
   return (
     <section className="p-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight uppercase">
-          Themes
-        </h2>
+      <div className="flex items-end justify-between mb-5">
+        <div>
+          <p className="tracking-widest uppercase text-xs sm:text-sm mb-1">
+            Explore worlds waiting to be built
+          </p>
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tighter uppercase">
+            Themes
+          </h2>
+        </div>
 
-        {hasMore && (
-          <Button variant="outline" className="shadow-none uppercase" asChild>
-            <Link to="/collections">View All</Link>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {hasMore && (
+            <Button variant="outline" className="shadow-none uppercase" asChild>
+              <Link to="/collections">View All</Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Grid - 4 columns */}

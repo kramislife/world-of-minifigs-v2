@@ -44,11 +44,12 @@ const useDealerAddonManagement = () => {
   });
 
   // Fetch data
-  const { data, isLoading, isFetching } = useGetDealerAddonsQuery({
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search || undefined,
-  });
+  const { data: addonsResponse, isLoading: isLoadingAddons } =
+    useGetDealerAddonsQuery({
+      page: crud.page,
+      limit: crud.limit,
+      search: crud.search || undefined,
+    });
 
   const { data: colorData } = useGetColorsQuery();
   const colors = colorData?.colors
@@ -61,16 +62,16 @@ const useDealerAddonManagement = () => {
     items: addons,
     totalItems,
     totalPages,
-  } = extractPaginatedData(data, "addons");
+  } = extractPaginatedData(addonsResponse, "addons");
 
   const columns = [
-    { label: "Add-on", key: "addonName" },
-    { label: "Description", key: "description" },
-    { label: "Price", key: "price" },
-    { label: "Status", key: "isActive" },
-    { label: "Created At", key: "createdAt" },
-    { label: "Updated At", key: "updatedAt" },
-    { label: "Actions", key: "actions" },
+    { key: "addonName", label: "Add-on" },
+    { key: "description", label: "Description" },
+    { key: "price", label: "Price" },
+    { key: "isActive", label: "Status" },
+    { key: "createdAt", label: "Created At" },
+    { key: "updatedAt", label: "Updated At" },
+    { key: "actions", label: "Actions" },
   ];
 
   const handleEdit = (addon) => {
@@ -155,37 +156,52 @@ const useDealerAddonManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!crud.formData.addonName.trim()) {
+    if (!crud.formData.addonName?.trim()) {
       toast.error("Add-on name is required");
       return;
     }
 
+    const items = (crud.formData.items || []).map((item) => {
+      const image = item?.image?.publicId
+        ? { publicId: item.image.publicId, url: item.image.url }
+        : (typeof item?.image === "string" ? item.image : item?.image?.url);
+      return {
+        image,
+        itemName: (item?.itemName ?? "").trim(),
+        itemPrice: item?.itemPrice ? Number(item.itemPrice) : undefined,
+        color: item?.color || undefined,
+      };
+    });
+
     await crud.submitForm({
-      ...crud.formData,
+      addonName: crud.formData.addonName.trim(),
       price: crud.formData.price ? Number(crud.formData.price) : undefined,
+      description: (crud.formData.description ?? "").trim(),
+      isActive: crud.formData.isActive,
+      items,
     });
   };
 
   return {
     // State
-    search: crud.search,
-    limit: crud.limit,
-    page: crud.page,
     dialogOpen: crud.dialogOpen,
     deleteDialogOpen: crud.deleteDialogOpen,
-    dialogMode: crud.dialogMode,
     selectedAddon: crud.selectedItem,
-    imagePreviews,
+    dialogMode: crud.dialogMode,
     formData: crud.formData,
+    imagePreviews,
+    fileInputRef,
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search,
     addons,
     totalItems,
     totalPages,
     columns,
-    isLoading: isLoading || isFetching,
+    isLoadingAddons,
     isCreating,
     isUpdating,
     isDeleting,
-    fileInputRef,
     colors,
 
     // Handlers

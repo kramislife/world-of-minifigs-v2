@@ -27,6 +27,11 @@ const bundleSchema = new mongoose.Schema(
       required: true,
       min: [0, "Total price cannot be negative"],
     },
+    torsoBagType: {
+      type: String,
+      enum: ["regular", "custom"],
+      default: "regular",
+    },
     features: {
       type: [String],
     },

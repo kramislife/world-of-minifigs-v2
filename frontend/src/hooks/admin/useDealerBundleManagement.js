@@ -12,6 +12,7 @@ const initialFormData = {
   bundleName: "",
   minifigQuantity: "",
   unitPrice: "",
+  torsoBagType: "regular",
   isActive: true,
   features: [""],
 };
@@ -33,17 +34,18 @@ const useDealerBundleManagement = () => {
   });
 
   // Fetch data
-  const { data, isLoading, isFetching } = useGetDealerBundlesQuery({
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search || undefined,
-  });
+  const { data: bundlesResponse, isLoading: isLoadingBundles } =
+    useGetDealerBundlesQuery({
+      page: crud.page,
+      limit: crud.limit,
+      search: crud.search || undefined,
+    });
 
   const {
     items: bundles,
     totalItems,
     totalPages,
-  } = extractPaginatedData(data, "bundles");
+  } = extractPaginatedData(bundlesResponse, "bundles");
 
   // Derived State
   const calculatedTotal = (
@@ -52,14 +54,15 @@ const useDealerBundleManagement = () => {
   ).toFixed(2);
 
   const columns = [
-    { label: "Bundle", key: "bundleName" },
-    { label: "Quantity", key: "minifigQuantity" },
-    { label: "Unit Price", key: "unitPrice" },
-    { label: "Total Price", key: "totalPrice" },
-    { label: "Status", key: "isActive" },
-    { label: "Created At", key: "createdAt" },
-    { label: "Updated At", key: "updatedAt" },
-    { label: "Actions", key: "actions" },
+    { key: "bundleName", label: "Bundle" },
+    { key: "minifigQuantity", label: "Quantity" },
+    { key: "torsoBagType", label: "Torso Type" },
+    { key: "unitPrice", label: "Unit Price" },
+    { key: "totalPrice", label: "Total Price" },
+    { key: "isActive", label: "Status" },
+    { key: "createdAt", label: "Created At" },
+    { key: "updatedAt", label: "Updated At" },
+    { key: "actions", label: "Actions" },
   ];
 
   const handleEdit = (bundle) => {
@@ -67,6 +70,7 @@ const useDealerBundleManagement = () => {
       bundleName: bundle.bundleName,
       minifigQuantity: bundle.minifigQuantity,
       unitPrice: bundle.unitPrice,
+      torsoBagType: bundle.torsoBagType || "regular",
       isActive: bundle.isActive,
       features: bundle.features?.length > 0 ? bundle.features : [""],
     });
@@ -75,7 +79,7 @@ const useDealerBundleManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!crud.formData.bundleName.trim()) {
+    if (!crud.formData.bundleName?.trim()) {
       toast.error("Bundle name is required");
       return;
     }
@@ -91,35 +95,36 @@ const useDealerBundleManagement = () => {
       return;
     }
 
-    const cleanFeatures = crud.formData.features
-      .map((f) => f.trim())
+    const cleanFeatures = (crud.formData.features || [])
+      .map((f) => String(f).trim())
       .filter((f) => f !== "");
 
     await crud.submitForm({
-      ...crud.formData,
+      bundleName: crud.formData.bundleName.trim(),
       minifigQuantity: Number(crud.formData.minifigQuantity),
-      unitPrice: Number(crud.formData.unitPrice),
       totalPrice: Number(calculatedTotal),
+      torsoBagType: crud.formData.torsoBagType || "regular",
+      isActive: crud.formData.isActive,
       features: cleanFeatures,
     });
   };
 
   return {
     // State
-    search: crud.search,
-    limit: crud.limit,
-    page: crud.page,
     dialogOpen: crud.dialogOpen,
     deleteDialogOpen: crud.deleteDialogOpen,
-    dialogMode: crud.dialogMode,
     selectedBundle: crud.selectedItem,
+    dialogMode: crud.dialogMode,
     formData: crud.formData,
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search,
     bundles,
     totalItems,
     totalPages,
     calculatedTotal,
     columns,
-    isLoading: isLoading || isFetching,
+    isLoadingBundles,
     isCreating,
     isUpdating,
     isDeleting,

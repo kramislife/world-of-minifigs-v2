@@ -106,7 +106,7 @@ export const authApi = createApi({
 
     // ==================== Cart Management ====================
     getCart: builder.query({
-      query: () => "/cart",
+      query: () => ({ url: "/cart", method: "GET" }),
       providesTags: ["Cart"],
     }),
 
@@ -204,19 +204,22 @@ export const authApi = createApi({
 
     // ==================== Dealer Management ====================
     getDealerBundles: builder.query({
-      query: () => "/dealer/bundles",
+      query: () => ({ url: "/dealer/bundles", method: "GET" }),
       providesTags: ["Bundle"],
     }),
     getDealerAddons: builder.query({
-      query: () => "/dealer/addons",
+      query: () => ({ url: "/dealer/addons", method: "GET" }),
       providesTags: ["Addon"],
     }),
     getDealerExtraBags: builder.query({
-      query: () => "/dealer/extra-bags",
+      query: () => ({ url: "/dealer/extra-bags", method: "GET" }),
       providesTags: ["ExtraBag"],
     }),
     getDealerTorsoBags: builder.query({
-      query: () => "/dealer/torso-bags",
+      query: (params = {}) => ({
+        url: "/dealer/torso-bags",
+        params,
+      }),
       providesTags: ["TorsoBag"],
     }),
   }),
@@ -230,14 +233,18 @@ export const {
   useResendVerificationMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
+
   useGetCurrentUserQuery,
+
   useGetCartQuery,
   useAddToCartMutation,
   useUpdateCartItemMutation,
   useRemoveCartItemMutation,
   useClearCartMutation,
   useSyncCartMutation,
+
   useSendContactMessageMutation,
+
   useGetDealerBundlesQuery,
   useGetDealerAddonsQuery,
   useGetDealerExtraBagsQuery,

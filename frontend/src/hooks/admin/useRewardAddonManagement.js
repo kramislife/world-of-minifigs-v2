@@ -33,26 +33,27 @@ const useRewardAddonManagement = () => {
   });
 
   // Fetch data
-  const { data, isLoading, isFetching } = useGetRewardAddonsQuery({
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search || undefined,
-  });
+  const { data: addonsResponse, isLoading: isLoadingAddons } =
+    useGetRewardAddonsQuery({
+      page: crud.page,
+      limit: crud.limit,
+      search: crud.search || undefined,
+    });
 
   const {
     items: addons,
     totalItems,
     totalPages,
-  } = extractPaginatedData(data, "addons");
+  } = extractPaginatedData(addonsResponse, "addons");
 
   const columns = [
-    { label: "Duration", key: "duration" },
-    { label: "Quantity", key: "quantity" },
-    { label: "Price monthly", key: "price" },
-    { label: "Status", key: "isActive" },
-    { label: "Created At", key: "createdAt" },
-    { label: "Updated At", key: "updatedAt" },
-    { label: "Actions", key: "actions" },
+    { key: "duration", label: "Duration" },
+    { key: "quantity", label: "Quantity" },
+    { key: "price", label: "Price monthly" },
+    { key: "isActive", label: "Status" },
+    { key: "createdAt", label: "Created At" },
+    { key: "updatedAt", label: "Updated At" },
+    { key: "actions", label: "Actions" },
   ];
 
   const handleEdit = (addon) => {
@@ -73,14 +74,11 @@ const useRewardAddonManagement = () => {
       return;
     }
 
-    const cleanFeatures = crud.formData.features
-      ? crud.formData.features
-          .map((f) => (f || "").trim())
-          .filter((f) => f !== "")
-      : [];
+    const cleanFeatures = (crud.formData.features || [])
+      .map((f) => (f || "").trim())
+      .filter((f) => f !== "");
 
     await crud.submitForm({
-      ...crud.formData,
       price: crud.formData.price ? Number(crud.formData.price) : undefined,
       quantity: crud.formData.quantity
         ? Number(crud.formData.quantity)
@@ -88,27 +86,31 @@ const useRewardAddonManagement = () => {
       duration: crud.formData.duration
         ? Number(crud.formData.duration)
         : undefined,
+      isActive: crud.formData.isActive,
       features: cleanFeatures,
     });
   };
 
   return {
-    search: crud.search,
-    limit: crud.limit,
-    page: crud.page,
+    // State
     dialogOpen: crud.dialogOpen,
     deleteDialogOpen: crud.deleteDialogOpen,
-    dialogMode: crud.dialogMode,
     selectedAddon: crud.selectedItem,
+    dialogMode: crud.dialogMode,
     formData: crud.formData,
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search,
     addons,
     totalItems,
     totalPages,
     columns,
-    isLoading: isLoading || isFetching,
+    isLoadingAddons,
     isCreating,
     isUpdating,
     isDeleting,
+
+    // Handlers
     handleDialogClose: crud.handleDialogClose,
     setDeleteDialogOpen: crud.setDeleteDialogOpen,
     setFormData: crud.setFormData,

@@ -26,7 +26,7 @@ const RewardBundleManagement = () => {
     totalItems,
     totalPages,
     columns,
-    isLoading,
+    isLoadingBundles,
     isCreating,
     isUpdating,
     isDeleting,
@@ -70,7 +70,7 @@ const RewardBundleManagement = () => {
         totalPages={totalPages}
         columns={columns}
         data={bundles}
-        isLoading={isLoading}
+        isLoading={isLoadingBundles}
         renderRow={(bundle) => (
           <>
             <TableCell maxWidth="200px">{bundle.bundleName}</TableCell>
