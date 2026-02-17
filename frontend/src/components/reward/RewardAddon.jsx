@@ -13,10 +13,11 @@ const RewardAddon = ({
     <div className="flex items-center justify-between mb-10">
       <div className="text-left">
         <h2 className="text-2xl font-bold mb-2 tracking-tight">
-          Optional Monthly Add-ons
+          Genuine Minifigs, Every Month!
         </h2>
         <p className="text-muted-foreground text-sm">
-          Keep the excitement going with monthly deliveries
+          Join the subscription that delivers brand-new LEGO® characters
+          straight to you
         </p>
       </div>
 
@@ -29,7 +30,7 @@ const RewardAddon = ({
                 checked={option.isSelected}
                 onCheckedChange={(checked) =>
                   onQuantityChange(
-                    checked ? option.value : quantityOptions[index - 1].value
+                    checked ? option.value : quantityOptions[index - 1].value,
                   )
                 }
                 aria-label="Toggle quantity"
