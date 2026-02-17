@@ -16,7 +16,7 @@ export const POPULATE_COLORS_NAMES_ONLY = [
 export const CART_POPULATE = {
   path: "items.productId",
   select:
-    "productName price discountPrice productType variants images isActive stock colorId secondaryColorId",
+    "productName price discount discountPrice productType variants images isActive stock colorId secondaryColorId",
   populate: POPULATE_COLORS,
 };
 
@@ -32,6 +32,6 @@ export const CART_POPULATE_ORDER = {
 export const CART_POPULATE_CHECKOUT = {
   path: "items.productId",
   select:
-    "productName price discountPrice productType variants images isActive colorId secondaryColorId",
+    "productName price discount discountPrice productType variants images isActive colorId secondaryColorId",
   populate: POPULATE_COLORS_NAMES_ONLY,
 };

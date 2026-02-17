@@ -123,7 +123,7 @@ const Header = () => {
                 variant="ghost"
                 size="icon"
                 aria-label="Search"
-                title="Search Products"
+                title="Search Items"
                 className="hover:bg-transparent hover:text-background dark:hover:text-foreground"
               >
                 <Search />

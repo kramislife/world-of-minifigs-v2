@@ -199,18 +199,20 @@ export const useVariantSelection = ({ product }) => {
       : current.colorName;
   }, [normalizedColorVariants, selectedVariantIndex]);
 
-  const displayPrice = (
-    selectedVariant?.discountPrice ||
-    selectedVariant?.price ||
-    product?.price ||
-    0
-  ).toFixed(2);
-  const originalPrice = (selectedVariant?.price || product?.price || 0).toFixed(
-    2,
-  );
-  const hasDiscount = Boolean(
-    selectedVariant?.discountPrice || product?.discountPrice,
-  );
+  // Price calculations: variants inherit parent product pricing
+  const basePrice = selectedVariant?.price ?? product?.price ?? 0;
+  const salePrice =
+    selectedVariant?.discountPrice ?? product?.discountPrice ?? null;
+  const effectivePrice =
+    salePrice != null && salePrice >= 0 ? salePrice : basePrice;
+  const hasDiscount =
+    salePrice != null &&
+    salePrice >= 0 &&
+    salePrice < basePrice &&
+    basePrice > 0;
+
+  const displayPrice = effectivePrice.toFixed(2);
+  const originalPrice = basePrice.toFixed(2);
 
   return {
     selectedVariantIndex,
@@ -317,9 +319,9 @@ export const useCart = () => {
 
   const items = useMemo(() => {
     const rawItems = isAuthenticated
-      ? (Array.isArray(serverCartData?.cart?.items)
-          ? serverCartData.cart.items
-          : [])
+      ? Array.isArray(serverCartData?.cart?.items)
+        ? serverCartData.cart.items
+        : []
       : localItems;
     return Array.isArray(rawItems) ? rawItems.map(formatCartItem) : [];
   }, [isAuthenticated, serverCartData, localItems, formatCartItem]);

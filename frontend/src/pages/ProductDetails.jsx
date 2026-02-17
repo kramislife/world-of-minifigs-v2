@@ -366,7 +366,7 @@ const ProductDetails = () => {
                   min={1}
                   max={maxQuantity}
                   className="h-12 col-span-1"
-                  valueClassName="w-24"
+                  valueClassName="w-full"
                 />
                 <AddToCartButton
                   product={product}

@@ -11,8 +11,8 @@ import {
   decrementProductStock,
   decrementProductStockForItems,
   extractShippingAddress,
-  getFullSessionIfNeeded,
   buildStripeLineItem,
+  buildOrderItem,
 } from "../utils/paymentHelpers.js";
 import {
   getCartItemInfoForOrder,
@@ -28,35 +28,33 @@ const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const STRIPE_SESSION_CONFIG = {
   mode: "payment",
   automatic_tax: { enabled: true },
+  invoice_creation: { enabled: true },
   shipping_address_collection: {
-    allowed_countries: ["US", "CA", "GB", "AU"],
+    allowed_countries: ["US"],
   },
 };
 
 //---------------------------------------- Create Order from Stripe Session -----------------------------------
-async function buildOrderFromCart(cart, session) {
+async function buildOrderFromCart(cart) {
   const orderItems = [];
   for (const item of cart.items) {
     const product = item.productId;
     if (!product) continue;
 
-    const { price, discount, productName, imageUrl } = getCartItemInfoForOrder(
-      product,
-      item,
+    const { price, discount, discountPrice, productName, imageUrl } =
+      getCartItemInfoForOrder(product, item);
+    orderItems.push(
+      buildOrderItem({
+        productId: product._id,
+        productName,
+        variantIndex: item.variantIndex,
+        quantity: Number(item.quantity) || 1,
+        price,
+        discount,
+        discountPrice,
+        imageUrl,
+      }),
     );
-    const quantity = Number(item.quantity) || 1;
-    const discountPrice = price * quantity;
-
-    orderItems.push({
-      productId: product._id,
-      productName,
-      variantIndex: item.variantIndex,
-      quantity,
-      price,
-      discount: discount || undefined,
-      discountPrice,
-      imageUrl: imageUrl || undefined,
-    });
   }
   return orderItems;
 }
@@ -74,28 +72,21 @@ async function buildOrderFromDirectMetadata(metadata) {
 
   if (!product) return null;
 
-  const item = {
-    productType: product.productType,
-    variantIndex,
-    quantity,
-  };
-  const { price, discount, productName, imageUrl } = getCartItemInfoForOrder(
-    product,
-    item,
-  );
-  const discountPrice = price * quantity;
+  const item = { productType: product.productType, variantIndex, quantity };
+  const { price, discount, discountPrice, productName, imageUrl } =
+    getCartItemInfoForOrder(product, item);
 
   return [
-    {
+    buildOrderItem({
       productId: product._id,
       productName,
       variantIndex,
       quantity,
       price,
-      discount: discount || undefined,
+      discount,
       discountPrice,
-      imageUrl: imageUrl || undefined,
-    },
+      imageUrl,
+    }),
   ];
 }
 
@@ -135,7 +126,7 @@ async function createOrderFromStripeSession(session) {
       );
       return null;
     }
-    orderItems = await buildOrderFromCart(cart, session);
+    orderItems = await buildOrderFromCart(cart);
     if (!orderItems.length) {
       console.error(
         "createOrderFromStripeSession: no valid items for user",
@@ -146,12 +137,15 @@ async function createOrderFromStripeSession(session) {
   }
 
   const shippingAddress = extractShippingAddress(session);
-  const subtotal = orderItems.reduce((s, i) => s + i.discountPrice, 0);
-  const amountSubtotal = (session.amount_subtotal ?? subtotal * 100) / 100;
-  const amountTotal = (session.amount_total ?? subtotal * 100) / 100;
-  const taxAmount =
+  const subtotal =
+    Math.round(orderItems.reduce((s, i) => s + i.totalPrice, 0) * 100) / 100;
+  const amountSubtotal =
+    Math.round(session.amount_subtotal ?? subtotal * 100) / 100;
+  const amountTotal = Math.round(session.amount_total ?? subtotal * 100) / 100;
+  const rawTax =
     (session.total_details?.amount_tax ?? 0) / 100 ||
     Math.max(0, amountTotal - amountSubtotal);
+  const taxAmount = Math.round(rawTax * 100) / 100;
   const email = session.customer_details?.email || session.customer_email;
 
   const order = await Order.create({
@@ -164,7 +158,9 @@ async function createOrderFromStripeSession(session) {
     totalAmount: amountTotal,
     status: "paid",
     stripeSessionId: session.id,
-    stripePaymentIntentId: session.payment_intent,
+    stripePaymentIntentId: session.payment_intent?.id || session.payment_intent,
+    stripeInvoiceNumber: session.invoice?.number,
+    invoiceUrl: session.invoice?.hosted_invoice_url || undefined,
     ...(shippingAddress && { shippingAddress }),
   });
 
@@ -319,6 +315,10 @@ export const createCheckoutSession = async (req, res) => {
       success_url: `${FRONTEND_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: FRONTEND_URL,
       client_reference_id: userId.toString(),
+      customer_email: req.user.email,
+      payment_intent_data: {
+        receipt_email: req.user.email,
+      },
       metadata,
     });
 
@@ -349,7 +349,9 @@ export const confirmOrder = async (req, res) => {
       });
     }
 
-    const session = await getStripe().checkout.sessions.retrieve(sessionId);
+    const session = await getStripe().checkout.sessions.retrieve(sessionId, {
+      expand: ["invoice"],
+    });
     if (session.payment_status !== "paid") {
       return res.status(400).json({
         success: false,
@@ -404,7 +406,9 @@ export const stripeWebhook = async (req, res) => {
 
     if (event.type === "checkout.session.completed") {
       const rawSession = event.data.object;
-      const session = await getFullSessionIfNeeded(rawSession, stripe);
+      const session = await stripe.checkout.sessions.retrieve(rawSession.id, {
+        expand: ["invoice"],
+      });
 
       try {
         await createOrderFromStripeSession(session);

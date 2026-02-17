@@ -1,9 +1,4 @@
-import {
-  getPriceDisplayInfo,
-  getPriceAndDiscount,
-} from "./Products/productPriceUtils.js";
-
-const getPriceSource = (product) => product;
+import { getPriceDisplayInfo } from "./Products/productPriceUtils.js";
 
 //------------------------------------------- Variant Index -------------------------------------------------
 
@@ -75,8 +70,7 @@ export const formatCartItemForDisplay = (item) => {
   const variantIndex = item.variantIndex;
   const isVariant = productType === "variant";
 
-  const priceSource = getPriceSource(product);
-  const priceInfo = getPriceDisplayInfo(priceSource, item.quantity);
+  const priceInfo = getPriceDisplayInfo(product, item.quantity);
   const colorLabel = getColorLabel(product, productType, variantIndex);
   const imageUrl = getImageUrl(product, productType, variantIndex);
   const stock = getStock(product, productType, variantIndex);
@@ -108,12 +102,16 @@ export const formatCartItemForDisplay = (item) => {
 export const getCartItemInfoForOrder = (product, item) => {
   const productType = item.productType || product?.productType;
   const variantIndex = item.variantIndex;
-  const priceSource = getPriceSource(product);
-  const { price, discount } = getPriceAndDiscount(priceSource);
+
+  // Return the original fields from the product model
+  const price = Number(product?.price) || 0;
+  const discount = Number(product?.discount) || 0;
+  const discountPrice = product?.discountPrice;
 
   return {
     price,
     discount,
+    discountPrice,
     productName: getProductDisplayName(product, productType, variantIndex),
     imageUrl: getImageUrl(product, productType, variantIndex),
   };

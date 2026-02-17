@@ -47,20 +47,58 @@ export const decrementProductStock = async (cart) => {
   }
 };
 
-/** Decrement stock for explicit items (e.g. direct product checkout). */
+// Decrement stock for explicit items (e.g. direct product checkout).
 export const decrementProductStockForItems = async (items) => {
   for (const { productId, variantIndex, quantity } of items) {
     await decrementStockForItem(productId, variantIndex, quantity);
   }
 };
 
-/** Build a Stripe line_item from product + item (productType, variantIndex, quantity). */
+// Compute the effective unit price: use discountPrice if set, otherwise calculate from percentage.
+const computeUnitPrice = (price, discount, discountPrice) => {
+  if (discountPrice != null && discountPrice >= 0) return Number(discountPrice);
+  const disc = discount || 0;
+  return Math.round(price * (1 - disc / 100) * 100) / 100;
+};
+
+// Build a saved order item from raw product info.
+export const buildOrderItem = ({
+  productId,
+  productName,
+  variantIndex,
+  quantity,
+  price,
+  discount,
+  discountPrice,
+  imageUrl,
+}) => {
+  const basePrice = price;
+  const disc = discount || 0;
+  const unitPrice = computeUnitPrice(basePrice, disc, discountPrice);
+  const totalPrice = Math.round(unitPrice * quantity * 100) / 100;
+
+  return {
+    productId,
+    productName,
+    variantIndex,
+    quantity,
+    basePrice,
+    discount: disc,
+    unitPrice,
+    totalPrice,
+    imageUrl: imageUrl || undefined,
+  };
+};
+
+// Build a Stripe line_item from product + item (productType, variantIndex, quantity).
 export const buildStripeLineItem = (product, item) => {
-  const { price, productName, imageUrl } = getCartItemInfoForOrder(
-    product,
-    item,
-  );
+  const { price, discount, discountPrice, productName, imageUrl } =
+    getCartItemInfoForOrder(product, item);
   const quantity = Number(item?.quantity) || 1;
+  const unitAmount = Math.round(
+    computeUnitPrice(price, discount, discountPrice) * 100,
+  );
+
   return {
     price_data: {
       currency: "usd",
@@ -68,7 +106,7 @@ export const buildStripeLineItem = (product, item) => {
         name: productName,
         ...(imageUrl && { images: [imageUrl] }),
       },
-      unit_amount: Math.round(price * 100),
+      unit_amount: unitAmount,
       tax_behavior: "exclusive",
     },
     quantity,
