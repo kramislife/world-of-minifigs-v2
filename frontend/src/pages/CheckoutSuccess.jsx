@@ -1,61 +1,25 @@
-import React, { useEffect, useState } from "react";
-import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import React from "react";
+import { Link } from "react-router-dom";
 import { CheckCircle, Download, Copy, Check, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useConfirmOrderQuery } from "@/redux/api/paymentApi";
-import { authApi } from "@/redux/api/authApi";
-import { publicApi } from "@/redux/api/publicApi";
-import { clearCartLocal } from "@/redux/slices/cartSlice";
-import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Logo from "@/assets/media/Logo.png";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import ErrorState from "@/components/shared/ErrorState";
+import Logo from "@/assets/media/Logo.png";
+import useCheckoutSuccess from "@/hooks/useCheckoutSuccess";
 
 const CheckoutSuccess = () => {
-  const dispatch = useDispatch();
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const sessionId = searchParams.get("session_id");
-  const [copied, setCopied] = useState(false);
-
-  const { data, isLoading, isError, error } = useConfirmOrderQuery(
-    sessionId ?? "",
-    {
-      skip: !sessionId,
-    },
-  );
-
-  useEffect(() => {
-    if (!sessionId) {
-      navigate("/", { replace: true });
-    }
-  }, [sessionId, navigate]);
-
-  useEffect(() => {
-    if (data?.success && data?.order) {
-      dispatch(authApi.util.invalidateTags(["Cart"]));
-      dispatch(clearCartLocal());
-
-      const productIds =
-        data.order.items?.map((item) => ({
-          type: "Product",
-          id: item.productId?.toString?.() ?? item.productId,
-        })) ?? [];
-      if (productIds.length > 0) {
-        dispatch(publicApi.util.invalidateTags([...productIds, "Product"]));
-      }
-    }
-  }, [data, dispatch]);
-
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const order = data?.order;
+  const {
+    sessionId,
+    order,
+    isLoading,
+    isError,
+    copied,
+    invoiceLabel,
+    invoiceValue,
+    copyToClipboard,
+  } = useCheckoutSuccess();
 
   if (!sessionId) {
     return (
@@ -99,14 +63,10 @@ const CheckoutSuccess = () => {
         {/* Order ID Badge */}
         <Badge
           variant="outline"
-          onClick={() =>
-            copyToClipboard(order?.stripeInvoiceNumber || order?._id)
-          }
+          onClick={() => copyToClipboard(invoiceValue)}
           className="inline-flex items-center gap-2 px-5 py-3 font-bold cursor-pointer tracking-wider uppercase"
         >
-          <span>
-            Invoice #{order?.stripeInvoiceNumber || order?._id?.substring(0, 7)}
-          </span>
+          <span>Invoice #{invoiceLabel}</span>
           {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
         </Badge>
       </div>
