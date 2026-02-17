@@ -121,20 +121,7 @@ export const getAllColors = async (req, res) => {
       ],
     });
 
-    // Select fields (exclude __v)
-    const colors = result.data.map((color) => {
-      const { __v, ...colorData } = color;
-      return colorData;
-    });
-
-    return res
-      .status(200)
-      .json(
-        createPaginationResponse(
-          { data: colors, pagination: result.pagination },
-          "colors"
-        )
-      );
+    return res.status(200).json(createPaginationResponse(result, "colors"));
   } catch (error) {
     console.error("Get all colors error:", error);
     res.status(500).json({

@@ -56,9 +56,10 @@ export const adminApi = createApi({
 
     // Get all banners
     getBanners: builder.query({
-      query: () => ({
+      query: (params = {}) => ({
         url: "/banners",
         method: "GET",
+        params: buildPaginationParams(params),
       }),
       providesTags: ["Banner"],
     }),
