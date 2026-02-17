@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import ErrorState from "@/components/shared/ErrorState";
 import ProductCard from "@/components/products/ProductCard";
-import { useLatestProducts } from "@/hooks/useProducts";
+import { useLatestProducts } from "@/hooks/useLatestProducts";
 
 const LatestProduct = () => {
   const {

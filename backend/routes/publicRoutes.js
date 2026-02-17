@@ -8,6 +8,7 @@ import {
   getPublicColors,
   getPublicSkillLevels,
 } from "../controllers/productController.js";
+import { globalSearch } from "../controllers/searchController.js";
 import { getPublicBanners } from "../controllers/bannerController.js";
 import {
   getRewardBundlesForUser,
@@ -22,6 +23,9 @@ router.get("/filters/collections", getPublicCollections);
 router.get("/filters/colors", getPublicColors);
 router.get("/filters/skill-levels", getPublicSkillLevels);
 router.get("/banners", getPublicBanners);
+
+// Global search route
+router.get("/search", globalSearch);
 
 // Public reward routes
 router.get("/reward/bundles", getRewardBundlesForUser);

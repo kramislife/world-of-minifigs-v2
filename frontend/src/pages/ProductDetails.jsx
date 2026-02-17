@@ -11,7 +11,7 @@ import {
 } from "@/components/shared/OrderActionButton";
 import QuantityControl from "@/components/shared/QuantityControl";
 import RelatedProducts from "@/components/products/RelatedProducts";
-import { useProductDetails } from "@/hooks/useProducts";
+import { useProductDetails } from "@/hooks/useProductDetails";
 import { useProductCheckout } from "@/hooks/useCart";
 
 const ProductDetails = () => {

@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { SORT_OPTIONS } from "@/constant/filterOptions";
+import { SORT_OPTIONS } from "@/constant/productFilters";
 
 const ProductSort = ({
   sortBy,
@@ -23,7 +23,10 @@ const ProductSort = ({
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       {showLabel && (
-        <Label htmlFor={id} className={isMobile ? "text-sm whitespace-nowrap" : ""}>
+        <Label
+          htmlFor={id}
+          className={isMobile ? "text-sm whitespace-nowrap" : ""}
+        >
           {labelText}
         </Label>
       )}
@@ -44,4 +47,3 @@ const ProductSort = ({
 };
 
 export default ProductSort;
-

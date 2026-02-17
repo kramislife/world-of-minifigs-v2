@@ -7,6 +7,7 @@ import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 import Logo from "@/assets/media/Logo.png";
 import { headerNavigation, userMenu } from "@/constant/headerNavigation";
 import { APP_NAME } from "@/constant/appConfig";
+import GlobalSearch from "@/components/layout/GlobalSearch";
 import MobileMenu from "@/components/layout/MobileMenu";
 import UserDropdown from "@/components/layout/UserDropdown";
 import Auth from "@/pages/Auth";
@@ -19,6 +20,7 @@ const Header = () => {
   const { darkMode, toggleDarkMode } = useThemeToggle();
   const [authOpen, setAuthOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const location = useLocation();
   const { handleLogout, isLoggingOut } = useLogout();
@@ -114,16 +116,24 @@ const Header = () => {
 
         {/* Header Actions */}
         <div className="flex items-center gap-1">
-          {/* Search Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Search"
-            title="Search Products"
-            className="hover:bg-transparent hover:text-background dark:hover:text-foreground"
-          >
-            <Search />
-          </Button>
+          {/* Search */}
+          <Sheet open={searchOpen} onOpenChange={setSearchOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Search"
+                title="Search Products"
+                className="hover:bg-transparent hover:text-background dark:hover:text-foreground"
+              >
+                <Search />
+              </Button>
+            </SheetTrigger>
+            <GlobalSearch
+              isOpen={searchOpen}
+              onClose={() => setSearchOpen(false)}
+            />
+          </Sheet>
           {/* Cart Button */}
           <Button
             variant="ghost"

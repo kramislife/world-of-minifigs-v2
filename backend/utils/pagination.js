@@ -62,12 +62,17 @@ export const buildSearchQuery = (search, searchFields = []) => {
 export const paginateQuery = async (
   Model,
   query = {},
-  { page, limit, sort = { createdAt: -1 }, populate = "" }
+  { page, limit, sort = { createdAt: -1 }, populate = "", select = "-__v" },
 ) => {
   const skip = (page - 1) * limit;
 
   // Build query
   let mongooseQuery = Model.find(query).sort(sort).skip(skip).limit(limit);
+
+  // Apply field selection
+  if (select) {
+    mongooseQuery = mongooseQuery.select(select);
+  }
 
   // Handle populate - can be string, array, or array of objects
   if (populate) {
@@ -83,7 +88,7 @@ export const paginateQuery = async (
   // Execute count and data queries in parallel for better performance
   const [totalItems, data] = await Promise.all([
     Model.countDocuments(query),
-    mongooseQuery.select("-__v").lean().exec(),
+    mongooseQuery.lean().exec(),
   ]);
 
   const totalPages = Math.ceil(totalItems / limit);
