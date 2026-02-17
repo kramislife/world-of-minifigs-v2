@@ -81,14 +81,16 @@ const buildViewAllLink = (product) => {
 // Hook for fetching and managing related products.
 export const useRelatedProducts = (productId, product) => {
   const {
-    data: productsData,
-    isLoading,
+    currentData,
+    isLoading: isQueryLoading,
+    isFetching,
     error,
   } = useGetRelatedProductsQuery(productId, {
     skip: !productId,
   });
 
-  const products = useProcessedProducts(productsData);
+  const products = useProcessedProducts(currentData);
+  const isLoading = isQueryLoading || isFetching;
   const viewAllLink = useMemo(() => buildViewAllLink(product), [product]);
   const carousel = useProductCarousel(products, {
     autoScroll: true,

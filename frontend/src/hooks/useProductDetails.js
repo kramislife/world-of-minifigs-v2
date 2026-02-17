@@ -5,14 +5,16 @@ import { getProductDisplayInfo } from "@/utils/formatting";
 // Hook for managing logic on the Product Details page. Handles variant selection, image gallery navigation, quantity, and stock status.
 export const useProductDetails = (id) => {
   const {
-    data: productData,
-    isLoading,
+    currentData,
+    isLoading: isQueryLoading,
+    isFetching,
     error,
   } = useGetProductByIdQuery(id, {
     skip: !id,
   });
 
-  const product = productData?.product;
+  const product = currentData?.product;
+  const isLoading = isQueryLoading || (isFetching && product?._id !== id);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(null);
   const [quantity, setQuantity] = useState(1);

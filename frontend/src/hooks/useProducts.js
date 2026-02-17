@@ -89,10 +89,13 @@ export const useProducts = () => {
 
   // 3. DATA FETCHING
   const {
-    data: productsData,
-    isLoading: isLoadingProducts,
+    currentData: productsData,
+    isLoading: isQueryLoading,
+    isFetching,
     error: productsError,
   } = useGetProductsQuery(queryParams);
+
+  const isLoadingProducts = isQueryLoading || isFetching;
 
   const { data: categoriesData, isLoading: isLoadingCategories } =
     useGetPublicCategoriesQuery();
