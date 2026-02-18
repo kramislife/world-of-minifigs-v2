@@ -12,6 +12,7 @@ import {
   FILTER_KEYS,
   PRICE_RANGES,
   DEFAULT_SORT,
+  DEFAULT_PRODUCT_LIMIT,
 } from "@/constant/productFilters";
 import {
   parseArrayParam,
@@ -22,11 +23,10 @@ import { useProcessedProducts } from "./useLatestProducts";
 
 // --------------------------------------------------------------- Constants ----------------------------------------------------
 const DEFAULT_PAGE = 1;
-const DEFAULT_LIMIT = 12;
 
 const INITIAL_PAGINATION = {
   page: 1,
-  limit: DEFAULT_LIMIT,
+  limit: DEFAULT_PRODUCT_LIMIT,
   totalItems: 0,
   totalPages: 0,
   hasNextPage: false,
@@ -54,7 +54,7 @@ export const useProducts = () => {
 
   // Non-dynamic params
   const page = parseInt(searchParams.get("page") || DEFAULT_PAGE, 10);
-  const limit = parseInt(searchParams.get("limit") || DEFAULT_LIMIT, 10);
+  const limit = parseInt(searchParams.get("limit") || DEFAULT_PRODUCT_LIMIT, 10);
   const search = searchParams.get("search") || "";
   const sortBy = searchParams.get("sortBy") || DEFAULT_SORT;
 

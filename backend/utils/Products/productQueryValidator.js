@@ -88,18 +88,18 @@ export const validateAndFilterIds = (ids) => {
 };
 
 //------------------------------------------------ Limit -------------------------------------------------
+export const DEFAULT_PUBLIC_PRODUCT_LIMIT = 15;
+export const MAX_PRODUCT_LIMIT = 100;
+export const MIN_PRODUCT_LIMIT = 1;
 
 /** Validate pagination limit for public products */
 export const validatePublicProductLimit = (limit) => {
-  const DEFAULT_LIMIT = 12;
-  const MAX_LIMIT = 100;
-  const MIN_LIMIT = 1;
-
-  if (!limit) return DEFAULT_LIMIT;
+  if (!limit) return DEFAULT_PUBLIC_PRODUCT_LIMIT;
 
   const parsed = parseInt(limit, 10);
-  if (isNaN(parsed) || parsed < MIN_LIMIT) return DEFAULT_LIMIT;
-  if (parsed > MAX_LIMIT) return MAX_LIMIT;
+  if (isNaN(parsed) || parsed < MIN_PRODUCT_LIMIT)
+    return DEFAULT_PUBLIC_PRODUCT_LIMIT;
+  if (parsed > MAX_PRODUCT_LIMIT) return MAX_PRODUCT_LIMIT;
 
   return parsed;
 };

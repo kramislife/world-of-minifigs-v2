@@ -109,3 +109,5 @@ export const FILTER_KEYS = Object.values(PRODUCT_FILTERS).map((f) => f.id);
 export const ARRAY_FILTER_KEYS = Object.values(PRODUCT_FILTERS)
   .filter((f) => f.isArray)
   .map((f) => f.id);
+
+export const DEFAULT_PRODUCT_LIMIT = 15;

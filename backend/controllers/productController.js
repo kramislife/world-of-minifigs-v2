@@ -42,6 +42,7 @@ import {
   validateSortBy,
   validateAndFilterIds,
   validatePublicProductLimit,
+  DEFAULT_PUBLIC_PRODUCT_LIMIT,
 } from "../utils/Products/productQueryValidator.js";
 
 //------------------------------------------------ Helpers ------------------------------------------
@@ -1454,7 +1455,7 @@ export const getPublicProductById = async (req, res) => {
 export const getPublicRelatedProducts = async (req, res) => {
   try {
     const { id } = req.params;
-    const limit = 12;
+    const limit = DEFAULT_PUBLIC_PRODUCT_LIMIT;
 
     if (!id) {
       return res.status(400).json({
