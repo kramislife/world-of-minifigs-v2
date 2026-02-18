@@ -5,7 +5,7 @@ import { Search, ShoppingCart, Sun, Moon, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 import Logo from "@/assets/media/Logo.png";
-import { headerNavigation, userMenu } from "@/constant/headerNavigation";
+import { headerNavigation, userMenu } from "@/constant/pageNavigation";
 import { APP_NAME } from "@/constant/appConfig";
 import GlobalSearch from "@/components/layout/GlobalSearch";
 import MobileMenu from "@/components/layout/MobileMenu";
@@ -30,7 +30,7 @@ const Header = () => {
 
   // Check if current page is Home
   const isHomePage = location.pathname === "/";
-  
+
   // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
@@ -81,7 +81,7 @@ const Header = () => {
         className={`${headerBaseClasses} ${isTransparent ? headerTransparentClasses : headerSolidClasses}`}
       >
         <Link to="/" className="flex items-center">
-          <img src={Logo} alt={APP_NAME} className="h-20 p-1" />
+          <img src={Logo} title={APP_NAME} className="h-20 p-1" />
         </Link>
 
         {/* Desktop Navigation */}

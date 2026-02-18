@@ -35,7 +35,7 @@ const CollectionsCarousel = () => {
   }
 
   return (
-    <section className="p-5">
+    <section className="p-5 bg-input/50 dark:bg-card/50">
       {/* Header */}
       <div className="flex items-end justify-between mb-5">
         <div>

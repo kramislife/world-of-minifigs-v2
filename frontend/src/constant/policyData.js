@@ -11,7 +11,11 @@ import {
   Settings,
   ShieldCheck,
 } from "lucide-react";
-import { APP_EMAIL, APP_ADDRESS, APP_COMPANY_NAME } from "@/constant/appConfig";
+import {
+  SMTP_FROM_EMAIL,
+  APP_ADDRESS,
+  APP_COMPANY_NAME,
+} from "@/constant/appConfig";
 
 export const policyMetadata = {
   title: "Privacy Policy",
@@ -26,8 +30,8 @@ export const policyMetadata = {
       icon: MapPin,
     },
     email: {
-      email: APP_EMAIL,
-      emailPath: `mailto: ${APP_EMAIL}`,
+      email: SMTP_FROM_EMAIL,
+      emailPath: `mailto: ${SMTP_FROM_EMAIL}`,
       icon: Mail,
     },
   },

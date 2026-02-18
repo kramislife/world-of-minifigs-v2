@@ -13,7 +13,11 @@ import {
   CheckCircle2,
   FileCheck,
 } from "lucide-react";
-import { APP_EMAIL, APP_ADDRESS, APP_COMPANY_NAME } from "@/constant/appConfig";
+import {
+  SMTP_FROM_EMAIL,
+  APP_ADDRESS,
+  APP_COMPANY_NAME,
+} from "@/constant/appConfig";
 
 export const termsMetadata = {
   title: "Terms of Use",
@@ -28,8 +32,8 @@ export const termsMetadata = {
       icon: MapPin,
     },
     email: {
-      email: APP_EMAIL,
-      emailPath: `mailto: ${APP_EMAIL}`,
+      email: SMTP_FROM_EMAIL,
+      emailPath: `mailto: ${SMTP_FROM_EMAIL}`,
       icon: Mail,
     },
   },

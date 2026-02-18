@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
-import { footerNavigation } from "@/constant/footerNavigation";
+import { footerNavigation } from "@/constant/pageNavigation";
 import { APP_NAME } from "@/constant/appConfig";
 
 const Footer = () => {

@@ -1,5 +1,5 @@
 import { Facebook, Instagram, Mail } from "lucide-react";
-import { APP_EMAIL, APP_SOCIAL_LINKS } from "@/constant/appConfig";
+import { SMTP_FROM_EMAIL, APP_SOCIAL_LINKS } from "@/constant/appConfig";
 
 export const contactHero = {
   title: "Get in",
@@ -29,7 +29,7 @@ export const contactChannels = {
     {
       id: "email",
       icon: Mail,
-      path: `mailto:${APP_EMAIL}`,
+      path: `mailto:${SMTP_FROM_EMAIL}`,
       label: "Email",
       type: "mailto",
     },
