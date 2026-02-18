@@ -28,7 +28,12 @@ const BannerManagement = () => {
     formData,
     mediaPreview,
 
+    page,
+    limit,
+    search,
     banners,
+    totalItems,
+    totalPages,
     columns,
 
     isLoadingBanners,
@@ -46,6 +51,9 @@ const BannerManagement = () => {
     handleEdit,
     handleDelete,
     handleConfirmDelete,
+    handlePageChange,
+    handleLimitChange,
+    handleSearchChange,
     setDeleteDialogOpen,
   } = useBannerManagement();
 
@@ -67,10 +75,18 @@ const BannerManagement = () => {
       </div>
 
       <TableLayout
+        searchPlaceholder="Search banners..."
+        searchValue={search}
+        onSearchChange={handleSearchChange}
+        entriesValue={limit}
+        onEntriesChange={handleLimitChange}
+        page={page}
+        onPageChange={handlePageChange}
+        totalItems={totalItems}
+        totalPages={totalPages}
         columns={columns}
         data={banners}
         isLoading={isLoadingBanners}
-        searchPlaceholder="Search banners..."
         renderRow={(banner) => (
           <>
             <TableCell maxWidth="200px" className="font-medium">

@@ -11,7 +11,7 @@ import {
 } from "@/components/shared/OrderActionButton";
 import QuantityControl from "@/components/shared/QuantityControl";
 import RelatedProducts from "@/components/products/RelatedProducts";
-import { useProductDetails } from "@/hooks/useProducts";
+import { useProductDetails } from "@/hooks/useProductDetails";
 import { useProductCheckout } from "@/hooks/useCart";
 
 const ProductDetails = () => {
@@ -94,7 +94,7 @@ const ProductDetails = () => {
           {/* Main Image */}
           <div
             className={`relative border border-border rounded-lg overflow-hidden group order-1 lg:order-2 
-  aspect-square max-h-[660px] w-full flex flex-1 items-center justify-center`}
+  aspect-square ${hasMultipleImages ? "max-h-[630px]" : "max-h-[600px]"} w-full flex flex-1 items-center justify-center`}
           >
             {currentImageUrl ? (
               <>
@@ -158,7 +158,7 @@ const ProductDetails = () => {
           {hasMultipleImages && (
             <div
               ref={thumbnailScrollRef}
-              className="flex lg:flex-col gap-2 overflow-y-auto lg:h-[650px] order-2 lg:order-1"
+              className="flex lg:flex-col gap-2 overflow-y-auto lg:h-[610px] order-2 lg:order-1"
             >
               {allImages.map((img, index) => (
                 <Button
@@ -187,7 +187,7 @@ const ProductDetails = () => {
           <div className="space-y-3 w-full">
             {/* Product Name */}
             <div>
-              <h1 className="text-3xl font-bold mb-1">
+              <h1 className="text-3xl font-bold mb-2">
                 {product.productName}
                 {hasPartId && (
                   <span className="text-sm text-muted-foreground font-normal ml-2">
@@ -366,7 +366,7 @@ const ProductDetails = () => {
                   min={1}
                   max={maxQuantity}
                   className="h-12 col-span-1"
-                  valueClassName="w-24"
+                  valueClassName="w-full"
                 />
                 <AddToCartButton
                   product={product}

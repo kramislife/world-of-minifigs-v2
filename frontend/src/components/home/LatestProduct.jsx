@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import ErrorState from "@/components/shared/ErrorState";
 import ProductCard from "@/components/products/ProductCard";
-import { useLatestProducts } from "@/hooks/useProducts";
+import { useLatestProducts } from "@/hooks/useLatestProducts";
 
 const LatestProduct = () => {
   const {
@@ -55,10 +55,10 @@ const LatestProduct = () => {
       <div className="flex items-end justify-between mb-5">
         <div>
           <p className="tracking-widest uppercase text-xs sm:text-sm mb-1">
-            Stay on-trend with new products
+            Stay ahead of the build
           </p>
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tighter uppercase">
-            Just Arrived
+            New Arrivals
           </h2>
         </div>
 

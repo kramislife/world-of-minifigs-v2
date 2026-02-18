@@ -4,7 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Logo from "@/assets/media/Logo.png";
 import { AddToCartButton } from "@/components/shared/OrderActionButton";
-import { useProductCard, useProductCardHoverImages } from "@/hooks/useProducts";
+import {
+  useProductCard,
+  useProductCardHoverImages,
+} from "@/hooks/useProductCard";
 
 const ProductCard = ({ product }) => {
   const { handleNavigate, isSoldOut } = useProductCard(product);

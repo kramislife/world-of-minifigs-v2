@@ -126,9 +126,9 @@ export const dealerBenefits = {
 };
 
 export const dealerCta = {
-  title: "Ready to stock your",
-  highlight: "Shelves?",
+  title: "Grow Your Shop with",
+  highlight: "World of Minifigs",
   description:
-    "Join our network of successful dealers today and get access to the best LEGO parts at the best prices",
+    "Join our network of successful LEGO dealers. Get first pick of new arrivals and genuine parts at prices designed to help you succeed",
   buttonText: "Register as Dealer",
 };

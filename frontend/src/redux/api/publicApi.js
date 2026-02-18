@@ -47,6 +47,7 @@ export const publicApi = createApi({
     "Banner",
     "RewardBundle",
     "RewardAddon",
+    "Search",
   ],
   endpoints: (builder) => ({
     // ==================== Products ====================
@@ -134,6 +135,17 @@ export const publicApi = createApi({
       }),
       providesTags: ["RewardAddon"],
     }),
+
+    // ==================== Global Search ====================
+    globalSearch: builder.query({
+      query: (search) => ({
+        url: "/search",
+        method: "GET",
+        params: { search },
+      }),
+      providesTags: ["Search"],
+      keepUnusedDataFor: 60,
+    }),
   }),
 });
 
@@ -150,4 +162,6 @@ export const {
 
   useGetRewardBundlesQuery,
   useGetRewardAddonsQuery,
+
+  useGlobalSearchQuery,
 } = publicApi;

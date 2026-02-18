@@ -4,6 +4,12 @@ import {
   uploadBannerMedia,
   deleteMedia,
 } from "../utils/cloudinary.js";
+import {
+  normalizePagination,
+  buildSearchQuery,
+  paginateQuery,
+  createPaginationResponse,
+} from "../utils/pagination.js";
 
 //------------------------------------------------ Helpers ------------------------------------------
 
@@ -284,16 +290,29 @@ export const createBanner = async (req, res) => {
 //------------------------------------------------ Get All Banners ------------------------------------------
 export const getAllBanners = async (req, res) => {
   try {
-    const banners = await Banner.find()
-      .sort({ order: 1 })
-      .populate("createdBy", "firstName lastName username")
-      .populate("updatedBy", "firstName lastName username")
-      .lean();
-
-    return res.status(200).json({
-      success: true,
-      banners,
+    // Extract and normalize pagination parameters
+    const { page, limit, search } = normalizePagination({
+      page: req.query.page,
+      limit: req.query.limit,
+      search: req.query.search,
     });
+
+    // Build search query
+    const searchFields = ["label", "badge", "description"];
+    const searchQuery = buildSearchQuery(search, searchFields);
+
+    // Apply pagination
+    const result = await paginateQuery(Banner, searchQuery, {
+      page,
+      limit,
+      sort: { order: 1 },
+      populate: [
+        { path: "createdBy", select: "firstName lastName username" },
+        { path: "updatedBy", select: "firstName lastName username" },
+      ],
+    });
+
+    return res.status(200).json(createPaginationResponse(result, "banners"));
   } catch (error) {
     console.error("Get all banners error:", error);
 

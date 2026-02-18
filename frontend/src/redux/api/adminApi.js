@@ -50,15 +50,17 @@ export const adminApi = createApi({
     "DealerTorsoBag",
     "RewardBundle",
     "RewardAddon",
+    "Order",
   ],
   endpoints: (builder) => ({
     // ==================== Banner Management ====================
 
     // Get all banners
     getBanners: builder.query({
-      query: () => ({
+      query: (params = {}) => ({
         url: "/banners",
         method: "GET",
+        params: buildPaginationParams(params),
       }),
       providesTags: ["Banner"],
     }),
@@ -669,6 +671,17 @@ export const adminApi = createApi({
       invalidatesTags: ["SkillLevel"],
     }),
 
+    // ==================== Order Management ====================
+    // Get all orders
+    getOrders: builder.query({
+      query: (params = {}) => ({
+        url: "/orders",
+        method: "GET",
+        params: buildPaginationParams(params),
+      }),
+      providesTags: ["Order"],
+    }),
+
     // ==================== User Management ====================
     // Get all users
     getUsers: builder.query({
@@ -768,6 +781,7 @@ export const {
   useUpdateSkillLevelMutation,
   useDeleteSkillLevelMutation,
 
+  useGetOrdersQuery,
   useGetUsersQuery,
   useUpdateUserRoleMutation,
 } = adminApi;

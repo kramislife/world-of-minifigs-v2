@@ -115,9 +115,13 @@ const ProductManagement = () => {
               </Badge>
             </TableCell>
             <TableCell>
-              <span className="font-semibold">
-                ${Number(product.price).toFixed(2)}
-              </span>
+              {product.price ? (
+                <span className="font-semibold">
+                  ${Number(product.price).toFixed(2)}
+                </span>
+              ) : (
+                "-"
+              )}
             </TableCell>
             <TableCell>
               {product.discount > 0 ? `${product.discount}%` : "-"}

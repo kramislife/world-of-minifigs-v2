@@ -387,17 +387,16 @@ export const createRewardAddon = async (req, res) => {
 
 export const getAllRewardAddons = async (req, res) => {
   try {
-    const { page, limit } = normalizePagination(req.query);
+    const { page, limit, search } = normalizePagination(req.query);
 
-    const result = await paginateQuery(
-      RewardAddon,
-      {},
-      {
-        page,
-        limit,
-        populate: getStandardPopulateOptions(),
-      },
-    );
+    // Search across features (string array)
+    const searchQuery = buildSearchQuery(search, ["features"]);
+
+    const result = await paginateQuery(RewardAddon, searchQuery, {
+      page,
+      limit,
+      populate: getStandardPopulateOptions(),
+    });
 
     return res.status(200).json(createPaginationResponse(result, "addons"));
   } catch (error) {

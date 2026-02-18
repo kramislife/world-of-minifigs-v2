@@ -1511,7 +1511,67 @@ export const getPublicRelatedProducts = async (req, res) => {
       relatedProducts = [...relatedProducts, ...products];
     };
 
-    // Priority 1: Similar name (match products sharing any significant word)
+    // Priority 1: Same sub-collection
+    if (
+      relatedProducts.length < limit &&
+      currentProduct.subCollectionIds?.length > 0
+    ) {
+      const subCollectionMatches = await fetchProducts(
+        {
+          ...baseFilter,
+          subCollectionIds: { $in: currentProduct.subCollectionIds },
+        },
+        limit - relatedProducts.length,
+      );
+      addProducts(subCollectionMatches);
+    }
+
+    // Priority 2: Same collection
+    if (
+      relatedProducts.length < limit &&
+      currentProduct.collectionIds?.length > 0
+    ) {
+      const collectionMatches = await fetchProducts(
+        {
+          ...baseFilter,
+          collectionIds: { $in: currentProduct.collectionIds },
+        },
+        limit - relatedProducts.length,
+      );
+      addProducts(collectionMatches);
+    }
+
+    // Priority 3: Same sub-category
+    if (
+      relatedProducts.length < limit &&
+      currentProduct.subCategoryIds?.length > 0
+    ) {
+      const subCategoryMatches = await fetchProducts(
+        {
+          ...baseFilter,
+          subCategoryIds: { $in: currentProduct.subCategoryIds },
+        },
+        limit - relatedProducts.length,
+      );
+      addProducts(subCategoryMatches);
+    }
+
+    // Priority 4: Same category
+    if (
+      relatedProducts.length < limit &&
+      currentProduct.categoryIds?.length > 0
+    ) {
+      const categoryMatches = await fetchProducts(
+        {
+          ...baseFilter,
+          categoryIds: { $in: currentProduct.categoryIds },
+        },
+        limit - relatedProducts.length,
+      );
+      addProducts(categoryMatches);
+    }
+
+    // Priority 5: Similar name (match products sharing any significant word)
     if (currentProduct.productName) {
       const words = currentProduct.productName
         .split(/\s+/)
@@ -1532,66 +1592,6 @@ export const getPublicRelatedProducts = async (req, res) => {
         );
         addProducts(similarName);
       }
-    }
-
-    // Priority 2: Same sub-collection
-    if (
-      relatedProducts.length < limit &&
-      currentProduct.subCollectionIds?.length > 0
-    ) {
-      const subCollectionMatches = await fetchProducts(
-        {
-          ...baseFilter,
-          subCollectionIds: { $in: currentProduct.subCollectionIds },
-        },
-        limit - relatedProducts.length,
-      );
-      addProducts(subCollectionMatches);
-    }
-
-    // Priority 3: Same collection
-    if (
-      relatedProducts.length < limit &&
-      currentProduct.collectionIds?.length > 0
-    ) {
-      const collectionMatches = await fetchProducts(
-        {
-          ...baseFilter,
-          collectionIds: { $in: currentProduct.collectionIds },
-        },
-        limit - relatedProducts.length,
-      );
-      addProducts(collectionMatches);
-    }
-
-    // Priority 4: Same sub-category
-    if (
-      relatedProducts.length < limit &&
-      currentProduct.subCategoryIds?.length > 0
-    ) {
-      const subCategoryMatches = await fetchProducts(
-        {
-          ...baseFilter,
-          subCategoryIds: { $in: currentProduct.subCategoryIds },
-        },
-        limit - relatedProducts.length,
-      );
-      addProducts(subCategoryMatches);
-    }
-
-    // Priority 5: Same category
-    if (
-      relatedProducts.length < limit &&
-      currentProduct.categoryIds?.length > 0
-    ) {
-      const categoryMatches = await fetchProducts(
-        {
-          ...baseFilter,
-          categoryIds: { $in: currentProduct.categoryIds },
-        },
-        limit - relatedProducts.length,
-      );
-      addProducts(categoryMatches);
     }
 
     // Priority 6: General fallback - latest products

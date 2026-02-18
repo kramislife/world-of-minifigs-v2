@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import ErrorState from "@/components/shared/ErrorState";
 import ProductCard from "@/components/products/ProductCard";
-import { useRelatedProducts } from "@/hooks/useProducts";
+import { useRelatedProducts } from "@/hooks/useLatestProducts";
 
 const RelatedProducts = ({ productId, product }) => {
   const {
