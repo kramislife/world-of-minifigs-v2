@@ -24,8 +24,9 @@ const useOrderManagement = () => {
 
   const columns = [
     { key: "invoice", label: "Invoice Number" },
-    { key: "recipient", label: "Recipient" },
+    { key: "customer", label: "Customer" },
     { key: "email", label: "Email" },
+    { key: "recipient", label: "Recipient" },
     { key: "orderType", label: "Order Type" },
     { key: "items", label: "Items" },
     { key: "totalAmount", label: "Total Amount" },

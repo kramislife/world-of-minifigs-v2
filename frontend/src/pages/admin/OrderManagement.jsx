@@ -1,5 +1,4 @@
 import React from "react";
-import { Badge } from "@/components/ui/badge";
 import TableLayout from "@/components/table/TableLayout";
 import { TableCell } from "@/components/table/BaseColumn";
 import useOrderManagement from "@/hooks/admin/useOrderManagement";
@@ -49,24 +48,19 @@ const OrderManagement = () => {
             <TableCell maxWidth="140px" className="font-mono text-xs">
               {order.stripeInvoiceNumber || order._id?.substring(0, 7) || "-"}
             </TableCell>
-            <TableCell maxWidth="200px">
-              <div className="flex flex-col">
-                <span className="font-medium">
-                  {order.shippingAddress.name || "-"}
-                </span>
-              </div>
+            <TableCell maxWidth="180px">
+              {order.userId
+                ? `${order.userId.firstName} ${order.userId.lastName}`
+                : "-"}
             </TableCell>
             <TableCell maxWidth="220px">{order.email}</TableCell>
-            <TableCell>
-              <Badge variant="secondary" className="capitalize">
-                {order.orderType}
-              </Badge>
+            <TableCell maxWidth="180px">
+              {order.shippingAddress?.name || "-"}
             </TableCell>
-            <TableCell className="text-center">
-              <span className="font-medium">
-                {Array.isArray(order.items) ? order.items.length : 0}
-              </span>
+            <TableCell className="capitalize">
+              {order.orderType || "-"}
             </TableCell>
+            <TableCell>{order.items?.length || 0}</TableCell>
             <TableCell>
               {order.totalAmount ? (
                 <span className="font-semibold">
@@ -76,10 +70,8 @@ const OrderManagement = () => {
                 "-"
               )}
             </TableCell>
-            <TableCell>
-              <Badge variant="outline" className="capitalize">
-                {order.status || "unknown"}
-              </Badge>
+            <TableCell className="capitalize">
+              {order.status || "unknown"}
             </TableCell>
             <TableCell>
               {order.createdAt

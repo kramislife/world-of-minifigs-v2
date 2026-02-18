@@ -35,6 +35,10 @@ export const getAllOrders = async (req, res) => {
       sort: { createdAt: -1 },
       // Hide heavy/internal fields from list view
       select: "-metadata -stripeSessionId -stripePaymentIntentId -__v",
+      populate: {
+        path: "userId",
+        select: "firstName lastName",
+      },
     });
 
     return res.status(200).json(createPaginationResponse(result, "orders"));
@@ -62,7 +66,12 @@ export const getOrderById = async (req, res) => {
       });
     }
 
-    const order = await Order.findById(id).lean();
+    const order = await Order.findById(id)
+      .populate({
+        path: "userId",
+        select: "firstName lastName",
+      })
+      .lean();
 
     if (!order) {
       return res.status(404).json({
