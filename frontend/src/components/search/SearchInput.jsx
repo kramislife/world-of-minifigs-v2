@@ -19,7 +19,7 @@ const SearchInput = ({
         onChange={(e) => setSearchTerm(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Search products, collections, categories..."
-        className="w-full pl-12 h-10 border-none text-md md:text-xl focus-visible:ring-0 dark:bg-background dark:placeholder:text-foreground"
+        className="w-full pl-12 h-10 border-none text-md md:text-xl focus-visible:ring-0 dark:bg-background dark:placeholder:text-foreground dark:text-foreground"
       />
     </div>
     {isLoading && <LoadingSpinner minHeight="10px" size="h-5 w-5" />}

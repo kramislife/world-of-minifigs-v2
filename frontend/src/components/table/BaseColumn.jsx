@@ -1,5 +1,5 @@
 import React from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // Helper function to extract text content from React children
@@ -61,14 +61,26 @@ export const TableCell = ({
 
 // Actions Column Component
 export const ActionsColumn = ({
+  onView,
   onEdit,
   onDelete,
+  viewTitle = "View",
   editTitle = "Edit",
   deleteTitle = "Delete",
 }) => {
   return (
     <td className="px-4 py-3">
       <div className="flex items-center justify-center gap-2">
+        {onView && (
+          <Button
+            variant="outline"
+            size="icon"
+            title={viewTitle}
+            onClick={onView}
+          >
+            <Eye className="size-4" />
+          </Button>
+        )}
         {onEdit && (
           <Button size="icon" title={editTitle} onClick={onEdit}>
             <Pencil className="size-4" />

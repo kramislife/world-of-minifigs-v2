@@ -32,3 +32,18 @@ export const toggleSetItem = (set, item) => {
   }
   return newSet;
 };
+
+// Format a numeric value as a two-decimal currency string (e.g. "12.99")
+export const formatCurrency = (value) => Number(value ?? 0).toFixed(2);
+
+// Format a date string to a readable format with time
+export const formatDate = (date) => {
+  if (!date) return null;
+  return new Date(date).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+};

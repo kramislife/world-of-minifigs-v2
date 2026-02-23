@@ -2,23 +2,48 @@ import Product from "../models/product.model.js";
 import { getCartItemInfoForOrder } from "./productItemUtils.js";
 
 export const extractShippingAddress = (session) => {
-  const shippingDetails = session.shipping_details;
-  const customerDetails = session.customer_details;
-  const addr = shippingDetails?.address || customerDetails?.address;
-  if (!addr) return undefined;
+  const shipping = session.collected_information?.shipping_details;
 
-  const name = shippingDetails?.name || customerDetails?.name;
+  if (!shipping?.address?.line1) {
+    console.error("Shipping address missing or incomplete:", shipping);
+    return undefined;
+  }
+
   return {
-    name: name || undefined,
-    line1: addr.line1,
-    line2: addr.line2 || undefined,
-    city: addr.city,
-    state: addr.state,
-    postalCode: addr.postal_code,
-    country: addr.country,
+    name: shipping.name,
+    line1: shipping.address.line1,
+    line2: shipping.address?.line2 || undefined,
+    city: shipping.address?.city,
+    state: shipping.address?.state,
+    postalCode: shipping.address?.postal_code,
+    country: shipping.address?.country,
   };
 };
 
+export const extractBillingDetails = (session, shippingAddress) => {
+  const customer = session.customer_details;
+  if (!customer?.name && !customer?.address?.country) return undefined;
+
+  const billingName = customer.name || "";
+  const billingCountry = customer.address?.country || "";
+  const shippingName = shippingAddress?.name || "";
+  const shippingCountry = shippingAddress?.country || "";
+
+  // Skip billing when it matches shipping
+  if (
+    billingName.toLowerCase() === shippingName.toLowerCase() &&
+    billingCountry.toUpperCase() === shippingCountry.toUpperCase()
+  ) {
+    return undefined;
+  }
+
+  return {
+    cardHolderName: customer.name || undefined,
+    country: customer.address?.country || undefined,
+  };
+};
+
+// Decrement stock logic
 const decrementStockForItem = async (productId, variantIndex, quantity) => {
   const qty = Number(quantity) || 1;
   const id = productId?._id ?? productId;
@@ -35,6 +60,24 @@ const decrementStockForItem = async (productId, variantIndex, quantity) => {
   }
 };
 
+// Increment stock logic (for cancellations/refunds)
+const incrementStockForItem = async (productId, variantIndex, quantity) => {
+  const qty = Number(quantity) || 1;
+  const id = productId?._id ?? productId;
+  if (!id) return;
+
+  if (variantIndex != null) {
+    await Product.findByIdAndUpdate(id, {
+      $inc: { [`variants.${variantIndex}.stock`]: qty },
+    });
+  } else {
+    await Product.findByIdAndUpdate(id, {
+      $inc: { stock: qty },
+    });
+  }
+};
+
+// Decrement stock for all products that is added in the cart
 export const decrementProductStock = async (cart) => {
   for (const item of cart.items) {
     const product = item.productId;
@@ -47,10 +90,21 @@ export const decrementProductStock = async (cart) => {
   }
 };
 
-// Decrement stock for explicit items (e.g. direct product checkout).
+// Decrement stock for the products in direct checkout
 export const decrementProductStockForItems = async (items) => {
   for (const { productId, variantIndex, quantity } of items) {
     await decrementStockForItem(productId, variantIndex, quantity);
+  }
+};
+
+// Restore stock for order items (e.g. cancellation / refund).
+export const incrementProductStockForItems = async (items) => {
+  for (const item of items) {
+    await incrementStockForItem(
+      item.productId,
+      item.variantIndex,
+      item.quantity,
+    );
   }
 };
 
@@ -80,7 +134,7 @@ export const buildOrderItem = ({
   return {
     productId,
     productName,
-    variantIndex,
+    variantIndex: variantIndex ?? undefined,
     quantity,
     basePrice,
     discount: disc,

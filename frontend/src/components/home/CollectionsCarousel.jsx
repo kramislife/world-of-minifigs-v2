@@ -57,7 +57,7 @@ const CollectionsCarousel = () => {
       </div>
 
       {/* Grid - 4 columns */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
         {collections.map((collection) => (
           <Link
             key={collection._id}

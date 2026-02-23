@@ -29,6 +29,12 @@ import {
   getDealerExtraBagsForUser,
   getDealerTorsoBagsForUser,
 } from "../controllers/dealerController.js";
+import {
+  getOrderConfig,
+  getUserOrders,
+  getUserOrderById,
+  cancelOrder,
+} from "../controllers/orderController.js";
 
 const router = express.Router();
 
@@ -59,6 +65,12 @@ router
   .route("/cart/item")
   .put(authenticate, updateCartItem)
   .delete(authenticate, removeCartItem);
+
+// Order routes (Authenticated)
+router.get("/orders/config", authenticate, getOrderConfig);
+router.get("/orders", authenticate, getUserOrders);
+router.get("/orders/:id", authenticate, getUserOrderById);
+router.post("/orders/:id/cancel", authenticate, cancelOrder);
 
 // Dealer routes (Requires Dealer or Admin role)
 router.get(

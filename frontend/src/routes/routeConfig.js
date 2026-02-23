@@ -66,10 +66,10 @@ export const publicRoutes = [
     path: "/about",
     element: About,
   },
-  {
-    path: "/designer",
-    element: Designer,
-  },
+  // {
+  //   path: "/designer",
+  //   element: Designer,
+  // },
   {
     path: "/privacy-policy",
     element: PrivacyPolicy,

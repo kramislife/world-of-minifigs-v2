@@ -4,7 +4,7 @@ import { useGetPublicCollectionsQuery } from "@/redux/api/publicApi";
 
 const DISPLAY_LIMIT = 8;
 
-/** Helper function to determine collection link based on sub-collections */
+// Helper function to determine collection link based on sub-collections 
 export const getCollectionLink = (collection) => {
   const hasSubCollections = collection.subCollections?.length > 0;
   return hasSubCollections
@@ -32,13 +32,13 @@ export const useFeaturedCollections = () => {
   return useCollectionsBase(filterFn);
 };
 
-/** Hook for non-featured collections */
+// Hook for non-featured collections 
 export const useCollections = () => {
   const filterFn = useCallback((c) => !c.isFeatured, []);
   return useCollectionsBase(filterFn);
 };
 
-/** Hook for collections grid: limit to 8, show View All when more exist */
+// Hook for collections grid: limit to 8, show View All when more exist 
 export const useCollectionsGrid = () => {
   const { collections, isLoading, isError, hasCollections } = useCollections();
 
@@ -57,7 +57,7 @@ export const useCollectionsGrid = () => {
   };
 };
 
-/** Hook for sub-collections page */
+// Hook for sub-collections page 
 export const useSubCollections = () => {
   const { collectionId } = useParams();
   const { data, isLoading, isError } = useGetPublicCollectionsQuery();

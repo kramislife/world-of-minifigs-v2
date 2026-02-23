@@ -11,6 +11,7 @@ import {
   decrementProductStock,
   decrementProductStockForItems,
   extractShippingAddress,
+  extractBillingDetails,
   buildStripeLineItem,
   buildOrderItem,
 } from "../utils/paymentHelpers.js";
@@ -18,12 +19,15 @@ import {
   getCartItemInfoForOrder,
   parseVariantIndex,
 } from "../utils/productItemUtils.js";
+import { ORDER_STATUSES, REFUND_STATUSES } from "../models/order.model.js";
 
 //------------------------------------------------ Helpers ------------------------------------------
 
 const getStripe = () => new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+
+const SHIPPING_RATE_AMOUNT = 1000; // $10.00 in cents
 
 const STRIPE_SESSION_CONFIG = {
   mode: "payment",
@@ -32,6 +36,19 @@ const STRIPE_SESSION_CONFIG = {
   shipping_address_collection: {
     allowed_countries: ["US"],
   },
+  shipping_options: [
+    {
+      shipping_rate_data: {
+        type: "fixed_amount",
+        fixed_amount: { amount: SHIPPING_RATE_AMOUNT, currency: "usd" },
+        display_name: "Standard Shipping",
+        delivery_estimate: {
+          minimum: { unit: "business_day", value: 7 },
+          maximum: { unit: "business_day", value: 14 },
+        },
+      },
+    },
+  ],
 };
 
 //---------------------------------------- Create Order from Stripe Session -----------------------------------
@@ -91,7 +108,9 @@ async function buildOrderFromDirectMetadata(metadata) {
 }
 
 async function createOrderFromStripeSession(session) {
-  const existingOrder = await Order.findOne({ stripeSessionId: session.id });
+  const existingOrder = await Order.findOne({
+    "payment.stripeSessionId": session.id,
+  });
   if (existingOrder) return { order: existingOrder, created: false };
 
   const userId = session.client_reference_id;
@@ -137,14 +156,17 @@ async function createOrderFromStripeSession(session) {
   }
 
   const shippingAddress = extractShippingAddress(session);
+  const billingDetails = extractBillingDetails(session, shippingAddress);
   const subtotal =
     Math.round(orderItems.reduce((s, i) => s + i.totalPrice, 0) * 100) / 100;
   const amountSubtotal =
     Math.round(session.amount_subtotal ?? subtotal * 100) / 100;
   const amountTotal = Math.round(session.amount_total ?? subtotal * 100) / 100;
+  const shippingFee =
+    Math.round(session.total_details?.amount_shipping ?? 0) / 100;
   const rawTax =
     (session.total_details?.amount_tax ?? 0) / 100 ||
-    Math.max(0, amountTotal - amountSubtotal);
+    Math.max(0, amountTotal - amountSubtotal - shippingFee);
   const taxAmount = Math.round(rawTax * 100) / 100;
   const email = session.customer_details?.email || session.customer_email;
 
@@ -153,15 +175,21 @@ async function createOrderFromStripeSession(session) {
     email: email || undefined,
     orderType: "product",
     items: orderItems,
-    subtotal: amountSubtotal,
-    taxAmount,
-    totalAmount: amountTotal,
-    status: "paid",
-    stripeSessionId: session.id,
-    stripePaymentIntentId: session.payment_intent?.id || session.payment_intent,
-    stripeInvoiceNumber: session.invoice?.number,
-    invoiceUrl: session.invoice?.hosted_invoice_url || undefined,
-    ...(shippingAddress && { shippingAddress }),
+    payment: {
+      subtotal: amountSubtotal,
+      shippingFee,
+      taxAmount,
+      totalAmount: amountTotal,
+      paidAt: new Date(),
+      stripeSessionId: session.id,
+      stripePaymentIntentId:
+        session.payment_intent?.id || session.payment_intent,
+      stripeInvoiceNumber: session.invoice?.number,
+      invoiceUrl: session.invoice?.hosted_invoice_url || undefined,
+    },
+    status: ORDER_STATUSES.PAID,
+    ...(shippingAddress && { shipping: { address: shippingAddress } }),
+    ...(billingDetails && { billing: billingDetails }),
   });
 
   if (isDirect) {
@@ -341,7 +369,8 @@ export const createCheckoutSession = async (req, res) => {
 //----------------------------------- Confirm Order (Success Page) -------------------------------------------
 export const confirmOrder = async (req, res) => {
   try {
-    const sessionId = req.query.session_id || req.body?.session_id;
+    const sessionId = req.query.session_id;
+
     if (!sessionId) {
       return res.status(400).json({
         success: false,
@@ -349,44 +378,26 @@ export const confirmOrder = async (req, res) => {
       });
     }
 
-    const session = await getStripe().checkout.sessions.retrieve(sessionId, {
-      expand: ["invoice"],
+    const order = await Order.findOne({
+      "payment.stripeSessionId": sessionId,
     });
-    if (session.payment_status !== "paid") {
-      return res.status(400).json({
-        success: false,
-        message: "Payment not completed",
-      });
-    }
 
-    const userId = req.user._id.toString();
-    if (session.client_reference_id !== userId) {
-      return res.status(403).json({
+    if (!order) {
+      return res.status(404).json({
         success: false,
-        message: "This session does not belong to you",
-      });
-    }
-
-    const result = await createOrderFromStripeSession(session);
-    if (!result) {
-      return res.status(400).json({
-        success: false,
-        message: "Could not create order",
-        description: "Cart may be empty or session invalid.",
+        message: "Order not found yet. Please refresh.",
       });
     }
 
     return res.status(200).json({
       success: true,
-      order: result.order,
-      created: result.created,
+      order,
     });
   } catch (error) {
     console.error("Confirm order error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to confirm order",
-      description: error?.message || "An unexpected error occurred.",
+      message: "Failed to load order",
     });
   }
 };
@@ -404,18 +415,33 @@ export const stripeWebhook = async (req, res) => {
     const stripe = getStripe();
     const event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
 
-    if (event.type === "checkout.session.completed") {
-      const rawSession = event.data.object;
-      const session = await stripe.checkout.sessions.retrieve(rawSession.id, {
-        expand: ["invoice"],
-      });
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const rawSession = event.data.object;
+        const session = await stripe.checkout.sessions.retrieve(rawSession.id, {
+          expand: ["invoice"],
+        });
 
-      try {
-        await createOrderFromStripeSession(session);
-      } catch (err) {
-        console.error("Webhook: error creating order:", err);
-        return res.status(500).json({ received: false });
+        try {
+          await createOrderFromStripeSession(session);
+        } catch (err) {
+          console.error("Webhook: error creating order:", err);
+          return res.status(500).json({ received: false });
+        }
+        break;
       }
+      case "refund.updated": {
+        try {
+          await handleRefundUpdated(event.data.object);
+        } catch (err) {
+          console.error("Webhook: error processing refund:", err);
+          return res.status(500).json({ received: false });
+        }
+        break;
+      }
+
+      default:
+        break;
     }
 
     res.status(200).json({ received: true });
@@ -424,3 +450,40 @@ export const stripeWebhook = async (req, res) => {
     res.status(400).json({ received: false });
   }
 };
+
+//----------------------------------- Handle refund.updated webhook event -----------------------------------
+async function handleRefundUpdated(refund) {
+  if (refund.status !== "succeeded") return;
+
+  const paymentIntentId = refund.payment_intent;
+  if (!paymentIntentId) return;
+
+  const order = await Order.findOne({
+    "payment.stripePaymentIntentId": paymentIntentId,
+  });
+
+  if (!order) return;
+
+  // Only skip if already completed
+  if (order.refund.status === REFUND_STATUSES.COMPLETED) {
+    return;
+  }
+
+  order.refund.status = REFUND_STATUSES.COMPLETED;
+  order.refund.completedAt = new Date();
+  order.cancellation.isLocked = false;
+  order.refund.stripeRefundId = refund.id;
+  order.refund.amount = refund.amount / 100;
+
+  // Store ARN if available
+  const cardDetails = refund.destination_details?.card;
+  if (
+    cardDetails?.reference_status === "available" &&
+    cardDetails?.reference &&
+    !order.refund.arn
+  ) {
+    order.refund.arn = cardDetails.reference;
+  }
+
+  await order.save();
+}

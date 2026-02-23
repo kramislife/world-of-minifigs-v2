@@ -682,6 +682,40 @@ export const adminApi = createApi({
       providesTags: ["Order"],
     }),
 
+    // Get single order by ID
+    getOrderById: builder.query({
+      query: (id) => ({
+        url: `/orders/${id}`,
+        method: "GET",
+      }),
+      providesTags: (_, __, id) => [{ type: "Order", id }],
+    }),
+
+    // Update order status (admin only)
+    updateOrderStatus: builder.mutation({
+      query: ({
+        id,
+        status,
+        carrier,
+        trackingNumber,
+        trackingLink,
+        reason,
+        notes,
+      }) => ({
+        url: `/orders/${id}/status`,
+        method: "PATCH",
+        body: {
+          status,
+          ...(carrier && { carrier }),
+          ...(trackingNumber && { trackingNumber }),
+          ...(trackingLink && { trackingLink }),
+          ...(reason && { reason }),
+          ...(notes && { notes }),
+        },
+      }),
+      invalidatesTags: ["Order"],
+    }),
+
     // ==================== User Management ====================
     // Get all users
     getUsers: builder.query({
@@ -782,6 +816,8 @@ export const {
   useDeleteSkillLevelMutation,
 
   useGetOrdersQuery,
+  useGetOrderByIdQuery,
+  useUpdateOrderStatusMutation,
   useGetUsersQuery,
   useUpdateUserRoleMutation,
 } = adminApi;
