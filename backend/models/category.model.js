@@ -11,6 +11,12 @@ const categorySchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -38,6 +44,8 @@ categorySchema.index(
 
 // Faster sorting for getAllCategories
 categorySchema.index({ createdAt: -1 });
+
+categorySchema.index({ isActive: 1 });
 
 const Category = mongoose.model("Category", categorySchema);
 

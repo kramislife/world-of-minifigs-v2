@@ -13,6 +13,7 @@ const initialFormData = {
   subCategoryName: "",
   description: "",
   category: "",
+  isActive: true,
 };
 
 const useSubCategoryManagement = () => {
@@ -52,6 +53,7 @@ const useSubCategoryManagement = () => {
     { key: "subCategoryName", label: "Sub-category" },
     { key: "category", label: "Category" },
     { key: "description", label: "Description" },
+    { key: "isActive", label: "Status" },
     { key: "createdAt", label: "Created At" },
     { key: "updatedAt", label: "Updated At" },
     { key: "actions", label: "Actions" },
@@ -66,11 +68,16 @@ const useSubCategoryManagement = () => {
     crud.setFormData((prev) => ({ ...prev, category: value }));
   };
 
+  const handleIsActiveChange = (checked) => {
+    crud.setFormData((prev) => ({ ...prev, isActive: checked }));
+  };
+
   const handleEdit = (subCategory) => {
     crud.openEdit(subCategory, {
       subCategoryName: subCategory.subCategoryName || "",
       description: subCategory.description || "",
       category: subCategory.categoryId?._id || subCategory.categoryId || "",
+      isActive: subCategory.isActive !== false,
     });
   };
 
@@ -95,6 +102,7 @@ const useSubCategoryManagement = () => {
       subCategoryName: crud.formData.subCategoryName.trim(),
       description: crud.formData.description.trim(),
       category: crud.formData.category,
+      isActive: crud.formData.isActive,
     });
   };
 
@@ -122,6 +130,7 @@ const useSubCategoryManagement = () => {
     // Handlers
     handleChange,
     handleCategoryChange,
+    handleIsActiveChange,
     handleSubmit,
     handleDialogClose: crud.handleDialogClose,
     handleAdd: crud.handleAdd,

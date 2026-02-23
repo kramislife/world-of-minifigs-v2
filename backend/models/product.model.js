@@ -146,6 +146,11 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isVisible: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -182,7 +187,9 @@ productSchema.index({ isActive: 1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index({ categoryIds: 1, isActive: 1, price: 1 });
 productSchema.index({ isActive: 1, createdAt: -1 });
+productSchema.index({ isVisible: 1, createdAt: -1 });
 productSchema.index({ productType: 1, isActive: 1 });
+productSchema.index({ productType: 1, isVisible: 1 });
 
 const Product = mongoose.model("Product", productSchema);
 

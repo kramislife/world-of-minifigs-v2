@@ -11,6 +11,7 @@ import { extractPaginatedData } from "@/utils/apiHelpers";
 const initialFormData = {
   colorName: "",
   hexCode: "",
+  isActive: true,
 };
 
 const useColorManagement = () => {
@@ -40,6 +41,7 @@ const useColorManagement = () => {
   const columns = [
     { key: "colorName", label: "Color Name" },
     { key: "hexCode", label: "Hex Code" },
+    { key: "isActive", label: "Status" },
     { key: "createdAt", label: "Created At" },
     { key: "updatedAt", label: "Updated At" },
     { key: "actions", label: "Actions" },
@@ -58,6 +60,10 @@ const useColorManagement = () => {
     }));
   };
 
+  const handleIsActiveChange = (checked) => {
+    crud.setFormData((prev) => ({ ...prev, isActive: checked }));
+  };
+
   const getColorPickerValue = () => {
     if (!crud.formData.hexCode.trim()) return "#000000";
     const hex = crud.formData.hexCode.trim();
@@ -68,6 +74,7 @@ const useColorManagement = () => {
     crud.openEdit(color, {
       colorName: color.colorName || "",
       hexCode: color.hexCode || "",
+      isActive: color.isActive !== false,
     });
   };
 
@@ -100,6 +107,7 @@ const useColorManagement = () => {
     await crud.submitForm({
       colorName: crud.formData.colorName.trim(),
       hexCode: crud.formData.hexCode.trim(),
+      isActive: crud.formData.isActive,
     });
   };
 
@@ -125,6 +133,7 @@ const useColorManagement = () => {
     // Handlers
     handleChange,
     handleColorPickerChange,
+    handleIsActiveChange,
     getColorPickerValue,
     handleSubmit,
     handleDialogClose: crud.handleDialogClose,

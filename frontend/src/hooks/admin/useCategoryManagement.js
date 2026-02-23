@@ -11,6 +11,7 @@ import { extractPaginatedData } from "@/utils/apiHelpers";
 const initialFormData = {
   categoryName: "",
   description: "",
+  isActive: true,
 };
 
 const useCategoryManagement = () => {
@@ -43,6 +44,7 @@ const useCategoryManagement = () => {
   const columns = [
     { key: "categoryName", label: "Name" },
     { key: "description", label: "Description" },
+    { key: "isActive", label: "Status" },
     { key: "createdAt", label: "Created At" },
     { key: "updatedAt", label: "Updated At" },
     { key: "actions", label: "Actions" },
@@ -53,10 +55,15 @@ const useCategoryManagement = () => {
     crud.setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleIsActiveChange = (checked) => {
+    crud.setFormData((prev) => ({ ...prev, isActive: checked }));
+  };
+
   const handleEdit = (category) => {
     crud.openEdit(category, {
       categoryName: category.categoryName || "",
       description: category.description || "",
+      isActive: category.isActive !== false,
     });
   };
 
@@ -73,6 +80,7 @@ const useCategoryManagement = () => {
     await crud.submitForm({
       categoryName: crud.formData.categoryName.trim(),
       description: crud.formData.description.trim(),
+      isActive: crud.formData.isActive,
     });
   };
 
@@ -97,6 +105,7 @@ const useCategoryManagement = () => {
 
     // Handlers
     handleChange,
+    handleIsActiveChange,
     handleSubmit,
     handleDialogClose: crud.handleDialogClose,
     handleAdd: crud.handleAdd,

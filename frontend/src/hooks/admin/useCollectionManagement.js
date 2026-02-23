@@ -14,6 +14,7 @@ const initialFormData = {
   collectionName: "",
   description: "",
   isFeatured: false,
+  isActive: true,
   image: null,
 };
 
@@ -56,7 +57,8 @@ const useCollectionManagement = () => {
   const columns = [
     { key: "collectionName", label: "Collection" },
     { key: "description", label: "Description" },
-    { key: "isFeatured", label: "Status" },
+    { key: "isFeatured", label: "Featured" },
+    { key: "isActive", label: "Status" },
     { key: "createdAt", label: "Created At" },
     { key: "updatedAt", label: "Updated At" },
     { key: "actions", label: "Actions" },
@@ -69,6 +71,10 @@ const useCollectionManagement = () => {
 
   const handleSwitchChange = (checked) => {
     crud.setFormData((prev) => ({ ...prev, isFeatured: checked }));
+  };
+
+  const handleIsActiveChange = (checked) => {
+    crud.setFormData((prev) => ({ ...prev, isActive: checked }));
   };
 
   const handleImageChange = async (e) => {
@@ -91,6 +97,7 @@ const useCollectionManagement = () => {
       collectionName: collection.collectionName || "",
       description: collection.description || "",
       isFeatured: collection.isFeatured || false,
+      isActive: collection.isActive !== false,
       image: null,
     });
     setImagePreview(collection.image?.url || null);
@@ -117,6 +124,7 @@ const useCollectionManagement = () => {
       collectionName: crud.formData.collectionName.trim(),
       description: crud.formData.description.trim(),
       isFeatured: crud.formData.isFeatured,
+      isActive: crud.formData.isActive,
       ...(crud.formData.image && { image: crud.formData.image }),
     });
   };
@@ -145,6 +153,7 @@ const useCollectionManagement = () => {
     // Handlers
     handleChange,
     handleSwitchChange,
+    handleIsActiveChange,
     handleImageChange,
     handleRemoveImage,
     handleSubmit,

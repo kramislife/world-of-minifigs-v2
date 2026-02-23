@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
@@ -29,6 +31,7 @@ const SkillLevelManagement = () => {
     isUpdating,
     isDeleting,
     handleChange,
+    handleIsActiveChange,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -75,6 +78,13 @@ const SkillLevelManagement = () => {
             <TableCell maxWidth="200px">{skillLevel.skillLevelName}</TableCell>
             <TableCell maxWidth="300px">
               {skillLevel.description || "-"}
+            </TableCell>
+            <TableCell>
+              {skillLevel.isActive ? (
+                <Badge variant="accent">Active</Badge>
+              ) : (
+                <Badge variant="destructive">Inactive</Badge>
+              )}
             </TableCell>
             <TableCell>
               {skillLevel.createdAt
@@ -136,6 +146,23 @@ const SkillLevelManagement = () => {
             onChange={handleChange}
             disabled={dialogMode === "edit" ? isUpdating : isCreating}
             rows={4}
+          />
+        </div>
+
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <Label htmlFor="isActive">Visibility</Label>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              When disabled, this skill level will not appear in product filters
+              or public listings
+            </p>
+          </div>
+
+          <Switch
+            id="isActive"
+            checked={formData.isActive}
+            onCheckedChange={handleIsActiveChange}
+            disabled={dialogMode === "edit" ? isUpdating : isCreating}
           />
         </div>
       </AddUpdateItemDialog>

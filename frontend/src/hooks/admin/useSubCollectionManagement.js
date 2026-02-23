@@ -15,6 +15,7 @@ const initialFormData = {
   subCollectionName: "",
   description: "",
   collection: "",
+  isActive: true,
   image: null,
 };
 
@@ -64,6 +65,7 @@ const useSubCollectionManagement = () => {
     { key: "subCollectionName", label: "Sub-collection" },
     { key: "collection", label: "Collection" },
     { key: "description", label: "Description" },
+    { key: "isActive", label: "Status" },
     { key: "createdAt", label: "Created At" },
     { key: "updatedAt", label: "Updated At" },
     { key: "actions", label: "Actions" },
@@ -76,6 +78,10 @@ const useSubCollectionManagement = () => {
 
   const handleCollectionChange = (value) => {
     crud.setFormData((prev) => ({ ...prev, collection: value }));
+  };
+
+  const handleIsActiveChange = (checked) => {
+    crud.setFormData((prev) => ({ ...prev, isActive: checked }));
   };
 
   const handleImageChange = async (e) => {
@@ -99,6 +105,7 @@ const useSubCollectionManagement = () => {
       description: subCollection.description || "",
       collection:
         subCollection.collectionId?._id || subCollection.collectionId || "",
+      isActive: subCollection.isActive !== false,
       image: null,
     });
     setImagePreview(subCollection.image?.url || null);
@@ -132,6 +139,7 @@ const useSubCollectionManagement = () => {
       subCollectionName: crud.formData.subCollectionName.trim(),
       description: crud.formData.description.trim(),
       collection: crud.formData.collection,
+      isActive: crud.formData.isActive,
       ...(crud.formData.image && { image: crud.formData.image }),
     });
   };
@@ -162,6 +170,7 @@ const useSubCollectionManagement = () => {
     // Handlers
     handleChange,
     handleCollectionChange,
+    handleIsActiveChange,
     handleImageChange,
     handleRemoveImage,
     handleSubmit,

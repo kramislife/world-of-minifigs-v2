@@ -34,6 +34,7 @@ const CollectionManagement = () => {
     isDeleting,
     handleChange,
     handleSwitchChange,
+    handleIsActiveChange,
     handleImageChange,
     handleRemoveImage,
     handleSubmit,
@@ -88,6 +89,13 @@ const CollectionManagement = () => {
                 <Badge variant="accent">Featured</Badge>
               ) : (
                 <Badge variant="secondary">Collection</Badge>
+              )}
+            </TableCell>
+            <TableCell>
+              {collection.isActive ? (
+                <Badge variant="accent">Active</Badge>
+              ) : (
+                <Badge variant="destructive">Inactive</Badge>
               )}
             </TableCell>
             <TableCell>
@@ -200,17 +208,35 @@ const CollectionManagement = () => {
           )}
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between">
           <div className="space-y-1">
             <Label htmlFor="isFeatured">Featured Collection</Label>
-            <p className="text-xs text-popover-foreground/80">
-              Mark as featured (max 2 featured collections)
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              You can feature up to 2 collections
             </p>
           </div>
+
           <Switch
             id="isFeatured"
             checked={formData.isFeatured}
             onCheckedChange={handleSwitchChange}
+            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+          />
+        </div>
+
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <Label htmlFor="isActive">Visibility</Label>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              When disabled, this collection, related sub-collections and
+              products will be hidden
+            </p>
+          </div>
+
+          <Switch
+            id="isActive"
+            checked={formData.isActive}
+            onCheckedChange={handleIsActiveChange}
             disabled={dialogMode === "edit" ? isUpdating : isCreating}
           />
         </div>

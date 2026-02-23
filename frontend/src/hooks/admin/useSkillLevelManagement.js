@@ -11,6 +11,7 @@ import { extractPaginatedData } from "@/utils/apiHelpers";
 const initialFormData = {
   skillLevelName: "",
   description: "",
+  isActive: true,
 };
 
 const useSkillLevelManagement = () => {
@@ -46,6 +47,7 @@ const useSkillLevelManagement = () => {
   const columns = [
     { key: "skillLevelName", label: "Skill Level" },
     { key: "description", label: "Description" },
+    { key: "isActive", label: "Status" },
     { key: "createdAt", label: "Created At" },
     { key: "updatedAt", label: "Updated At" },
     { key: "actions", label: "Actions" },
@@ -56,10 +58,15 @@ const useSkillLevelManagement = () => {
     crud.setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleIsActiveChange = (checked) => {
+    crud.setFormData((prev) => ({ ...prev, isActive: checked }));
+  };
+
   const handleEdit = (skillLevel) => {
     crud.openEdit(skillLevel, {
       skillLevelName: skillLevel.skillLevelName || "",
       description: skillLevel.description || "",
+      isActive: skillLevel.isActive !== false,
     });
   };
 
@@ -76,6 +83,7 @@ const useSkillLevelManagement = () => {
     await crud.submitForm({
       skillLevelName: crud.formData.skillLevelName.trim(),
       description: crud.formData.description.trim(),
+      isActive: crud.formData.isActive,
     });
   };
 
@@ -100,6 +108,7 @@ const useSkillLevelManagement = () => {
 
     // Handlers
     handleChange,
+    handleIsActiveChange,
     handleSubmit,
     handleDialogClose: crud.handleDialogClose,
     handleAdd: crud.handleAdd,

@@ -29,6 +29,11 @@ const subCollectionSchema = new mongoose.Schema(
       index: true,
     },
 
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -40,22 +45,21 @@ const subCollectionSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Indexes
 
-// Fast lookup + uniqueness guarantee
 subCollectionSchema.index(
   { collectionId: 1, subCollectionName: 1 },
   {
     unique: true,
-    collation: { locale: "en", strength: 2 }, // case-insensitive
-  }
+    collation: { locale: "en", strength: 2 },
+  },
 );
 
-// Faster sorting for getAllSubCollections
 subCollectionSchema.index({ createdAt: -1 });
+subCollectionSchema.index({ isActive: 1 });
 
 const SubCollection = mongoose.model("SubCollection", subCollectionSchema);
 

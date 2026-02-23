@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -39,6 +41,7 @@ const SubCategoryManagement = () => {
     isDeleting,
     handleChange,
     handleCategoryChange,
+    handleIsActiveChange,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -90,6 +93,13 @@ const SubCategoryManagement = () => {
             </TableCell>
             <TableCell maxWidth="300px">
               {subCategory.description || "-"}
+            </TableCell>
+            <TableCell>
+              {subCategory.isActive ? (
+                <Badge variant="accent">Active</Badge>
+              ) : (
+                <Badge variant="destructive">Inactive</Badge>
+              )}
             </TableCell>
             <TableCell>
               {subCategory.createdAt
@@ -187,6 +197,23 @@ const SubCategoryManagement = () => {
             rows={4}
           />
         </div>
+
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <Label htmlFor="isActive">Visibility</Label>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              When disabled, this sub-category will not appear in product
+              filters or public listings
+            </p>
+          </div>
+
+          <Switch
+            id="isActive"
+            checked={formData.isActive}
+            onCheckedChange={handleIsActiveChange}
+            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+          />
+        </div>
       </AddUpdateItemDialog>
 
       {/* Delete Confirmation Dialog */}
@@ -203,4 +230,3 @@ const SubCategoryManagement = () => {
 };
 
 export default SubCategoryManagement;
-

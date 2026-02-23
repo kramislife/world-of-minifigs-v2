@@ -13,6 +13,7 @@ import {
   paginateQuery,
   createPaginationResponse,
 } from "../utils/pagination.js";
+import { onSubCollectionToggle } from "../utils/Products/visibilityUtils.js";
 
 //------------------------------------------------ Create Sub-collection ------------------------------------------
 export const createSubCollection = async (req, res) => {
@@ -366,10 +367,23 @@ export const updateSubCollection = async (req, res) => {
       }
     }
 
+    // Update isActive if provided
+    const isActiveChanged =
+      req.body.isActive !== undefined &&
+      Boolean(req.body.isActive) !== subCollection.isActive;
+    if (req.body.isActive !== undefined) {
+      subCollection.isActive = Boolean(req.body.isActive);
+    }
+
     // Update updatedBy
     subCollection.updatedBy = req.user._id;
 
     await subCollection.save();
+
+    // Cascade visibility recalculation when isActive changes
+    if (isActiveChanged) {
+      await onSubCollectionToggle(subCollection._id);
+    }
 
     // Populate collection details
     await subCollection.populate("collectionId", "collectionName");
@@ -383,6 +397,7 @@ export const updateSubCollection = async (req, res) => {
         description: subCollection.description,
         collection: subCollection.collectionId,
         image: subCollection.image,
+        isActive: subCollection.isActive,
         updatedAt: subCollection.updatedAt,
       },
     });

@@ -44,6 +44,7 @@ import {
   validatePublicProductLimit,
   DEFAULT_PUBLIC_PRODUCT_LIMIT,
 } from "../utils/Products/productQueryValidator.js";
+import { onProductToggle } from "../utils/Products/visibilityUtils.js";
 
 //------------------------------------------------ Helpers ------------------------------------------
 
@@ -1152,6 +1153,8 @@ export const updateProduct = async (req, res) => {
 
     await product.save();
 
+    await onProductToggle(product._id);
+
     // Delete old images that are no longer needed
     for (const img of imagesToDelete) {
       try {
@@ -1421,7 +1424,7 @@ export const getPublicProductById = async (req, res) => {
     }
 
     const product = await applyPublicPopulate(
-      Product.findOne({ _id: id, isActive: true })
+      Product.findOne({ _id: id, isVisible: true })
         .select("-__v -createdBy -updatedBy")
         .lean(),
     );
@@ -1466,7 +1469,7 @@ export const getPublicRelatedProducts = async (req, res) => {
     }
 
     // Fetch current product to extract taxonomy and name
-    const currentProduct = await Product.findOne({ _id: id, isActive: true })
+    const currentProduct = await Product.findOne({ _id: id, isVisible: true })
       .select(
         "productName categoryIds subCategoryIds collectionIds subCollectionIds",
       )
@@ -1481,7 +1484,7 @@ export const getPublicRelatedProducts = async (req, res) => {
       });
     }
 
-    const baseFilter = { _id: { $ne: id }, isActive: true };
+    const baseFilter = { _id: { $ne: id }, isVisible: true };
     const collectedIds = new Set();
     let relatedProducts = [];
 
@@ -1623,12 +1626,12 @@ export const getPublicRelatedProducts = async (req, res) => {
 // Get public categories with nested subcategories and product counts
 export const getPublicCategories = async (req, res) => {
   try {
-    const categories = await Category.find()
+    const categories = await Category.find({ isActive: { $ne: false } })
       .select("_id categoryName")
       .sort({ categoryName: 1 })
       .lean();
 
-    const subCategories = await SubCategory.find()
+    const subCategories = await SubCategory.find({ isActive: { $ne: false } })
       .select("_id subCategoryName categoryId")
       .sort({ subCategoryName: 1 })
       .lean();
@@ -1671,12 +1674,14 @@ export const getPublicCategories = async (req, res) => {
 // Get public collections with nested subcollections and product counts
 export const getPublicCollections = async (req, res) => {
   try {
-    const collections = await Collection.find()
+    const collections = await Collection.find({ isActive: { $ne: false } })
       .select("_id collectionName description image isFeatured createdAt")
       .sort({ createdAt: -1 })
       .lean();
 
-    const subCollections = await SubCollection.find()
+    const subCollections = await SubCollection.find({
+      isActive: { $ne: false },
+    })
       .select("_id subCollectionName image collectionId createdAt")
       .sort({ createdAt: -1 })
       .lean();
@@ -1726,7 +1731,7 @@ export const getPublicCollections = async (req, res) => {
 // Get public colors with product counts
 export const getPublicColors = async (req, res) => {
   try {
-    const colors = await Color.find()
+    const colors = await Color.find({ isActive: { $ne: false } })
       .select("_id colorName hexCode")
       .sort({ colorName: 1 })
       .lean();
@@ -1757,7 +1762,7 @@ export const getPublicColors = async (req, res) => {
 // Get public skill levels with product counts
 export const getPublicSkillLevels = async (req, res) => {
   try {
-    const skillLevels = await SkillLevel.find()
+    const skillLevels = await SkillLevel.find({ isActive: { $ne: false } })
       .select("_id skillLevelName")
       .sort({ skillLevelName: 1 })
       .lean();

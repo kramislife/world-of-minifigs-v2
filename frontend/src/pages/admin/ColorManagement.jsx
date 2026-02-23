@@ -3,6 +3,8 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -29,6 +31,7 @@ const ColorManagement = () => {
     isDeleting,
     handleChange,
     handleColorPickerChange,
+    handleIsActiveChange,
     getColorPickerValue,
     handleSubmit,
     handleDialogClose,
@@ -84,6 +87,13 @@ const ColorManagement = () => {
                 )}
                 <span>{color.hexCode || "-"}</span>
               </div>
+            </TableCell>
+            <TableCell>
+              {color.isActive ? (
+                <Badge variant="accent">Active</Badge>
+              ) : (
+                <Badge variant="destructive">Inactive</Badge>
+              )}
             </TableCell>
             <TableCell>
               {color.createdAt
@@ -157,6 +167,23 @@ const ColorManagement = () => {
               title="Pick a color"
             />
           </div>
+        </div>
+
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <Label htmlFor="isActive">Visibility</Label>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              When disabled, this color will not appear in product filters or
+              public listings
+            </p>
+          </div>
+
+          <Switch
+            id="isActive"
+            checked={formData.isActive}
+            onCheckedChange={handleIsActiveChange}
+            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+          />
         </div>
       </AddUpdateItemDialog>
 

@@ -11,6 +11,7 @@ import {
   paginateQuery,
   createPaginationResponse,
 } from "../utils/pagination.js";
+import { onCollectionToggle } from "../utils/Products/visibilityUtils.js";
 
 const FEATURED_COLLECTION_LIMIT = 2;
 
@@ -320,10 +321,23 @@ export const updateCollection = async (req, res) => {
       }
     }
 
+    // Update isActive if provided
+    const isActiveChanged =
+      req.body.isActive !== undefined &&
+      Boolean(req.body.isActive) !== collection.isActive;
+    if (req.body.isActive !== undefined) {
+      collection.isActive = Boolean(req.body.isActive);
+    }
+
     // Update updatedBy
     collection.updatedBy = req.user._id;
 
     await collection.save();
+
+    // Cascade visibility recalculation when isActive changes
+    if (isActiveChanged) {
+      await onCollectionToggle(collection._id);
+    }
 
     return res.status(200).json({
       success: true,
@@ -334,6 +348,7 @@ export const updateCollection = async (req, res) => {
         description: collection.description,
         image: collection.image,
         isFeatured: collection.isFeatured,
+        isActive: collection.isActive,
         updatedAt: collection.updatedAt,
       },
     });

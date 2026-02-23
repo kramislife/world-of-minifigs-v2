@@ -273,10 +273,16 @@ export const updateSubCategory = async (req, res) => {
       subCategory.description = description ? String(description).trim() : "";
     }
 
+    // Update isActive if provided
+    if (req.body.isActive !== undefined) {
+      subCategory.isActive = Boolean(req.body.isActive);
+    }
+
     // Update updatedBy
     subCategory.updatedBy = req.user._id;
 
     await subCategory.save();
+
     await subCategory.populate("categoryId", "categoryName");
 
     return res.status(200).json({
@@ -287,6 +293,7 @@ export const updateSubCategory = async (req, res) => {
         subCategoryName: subCategory.subCategoryName,
         description: subCategory.description,
         category: subCategory.categoryId,
+        isActive: subCategory.isActive,
         updatedAt: subCategory.updatedAt,
       },
     });

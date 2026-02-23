@@ -13,6 +13,11 @@ const colorSchema = new mongoose.Schema(
       trim: true,
     },
 
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -40,6 +45,8 @@ colorSchema.index(
 
 // Faster sorting for getAllColors
 colorSchema.index({ createdAt: -1 });
+
+colorSchema.index({ isActive: 1 });
 
 const Color = mongoose.model("Color", colorSchema);
 

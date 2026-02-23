@@ -5,13 +5,13 @@ import Product from "../../models/product.model.js";
 
 export const getCategoryCounts = async () => {
   const categoryCounts = await Product.aggregate([
-    { $match: { isActive: true } },
+    { $match: { isVisible: true } },
     { $unwind: "$categoryIds" },
     { $group: { _id: "$categoryIds", count: { $sum: 1 } } },
   ]);
 
   const subCategoryCounts = await Product.aggregate([
-    { $match: { isActive: true } },
+    { $match: { isVisible: true } },
     { $unwind: "$subCategoryIds" },
     { $group: { _id: "$subCategoryIds", count: { $sum: 1 } } },
   ]);
@@ -30,13 +30,13 @@ export const getCategoryCounts = async () => {
 
 export const getCollectionCounts = async () => {
   const collectionCounts = await Product.aggregate([
-    { $match: { isActive: true } },
+    { $match: { isVisible: true } },
     { $unwind: "$collectionIds" },
     { $group: { _id: "$collectionIds", count: { $sum: 1 } } },
   ]);
 
   const subCollectionCounts = await Product.aggregate([
-    { $match: { isActive: true } },
+    { $match: { isVisible: true } },
     { $unwind: "$subCollectionIds" },
     { $group: { _id: "$subCollectionIds", count: { $sum: 1 } } },
   ]);
@@ -57,7 +57,7 @@ export const getColorCounts = async () => {
   const standaloneColorCounts = await Product.aggregate([
     {
       $match: {
-        isActive: true,
+        isVisible: true,
         productType: "standalone",
         colorId: { $exists: true },
       },
@@ -68,7 +68,7 @@ export const getColorCounts = async () => {
   const variantColorCounts = await Product.aggregate([
     {
       $match: {
-        isActive: true,
+        isVisible: true,
         productType: "variant",
         "variants.colorId": { $exists: true },
       },
@@ -97,7 +97,7 @@ export const getColorCounts = async () => {
 
 export const getSkillLevelCounts = async () => {
   const skillLevelCounts = await Product.aggregate([
-    { $match: { isActive: true } },
+    { $match: { isVisible: true } },
     { $unwind: "$skillLevelIds" },
     { $group: { _id: "$skillLevelIds", count: { $sum: 1 } } },
   ]);

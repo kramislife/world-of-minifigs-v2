@@ -199,6 +199,11 @@ export const updateSkillLevel = async (req, res) => {
       skillLevel.description = description ? String(description).trim() : "";
     }
 
+    // Update isActive if provided
+    if (req.body.isActive !== undefined) {
+      skillLevel.isActive = Boolean(req.body.isActive);
+    }
+
     // Update updatedBy
     skillLevel.updatedBy = req.user._id;
 
@@ -211,6 +216,7 @@ export const updateSkillLevel = async (req, res) => {
         id: skillLevel._id,
         skillLevelName: skillLevel.skillLevelName,
         description: skillLevel.description,
+        isActive: skillLevel.isActive,
         updatedAt: skillLevel.updatedAt,
       },
     });

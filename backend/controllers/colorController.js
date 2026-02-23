@@ -234,6 +234,11 @@ export const updateColor = async (req, res) => {
         : `#${hexCodeStr}`;
     }
 
+    // Update isActive if provided
+    if (req.body.isActive !== undefined) {
+      color.isActive = Boolean(req.body.isActive);
+    }
+
     // Update updatedBy
     color.updatedBy = req.user._id;
 
@@ -246,6 +251,7 @@ export const updateColor = async (req, res) => {
         id: color._id,
         colorName: color.colorName,
         hexCode: color.hexCode,
+        isActive: color.isActive,
         updatedAt: color.updatedAt,
       },
     });

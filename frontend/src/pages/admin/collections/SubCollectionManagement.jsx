@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -41,6 +43,7 @@ const SubCollectionManagement = () => {
     isDeleting,
     handleChange,
     handleCollectionChange,
+    handleIsActiveChange,
     handleImageChange,
     handleRemoveImage,
     handleSubmit,
@@ -94,6 +97,13 @@ const SubCollectionManagement = () => {
             </TableCell>
             <TableCell maxWidth="300px">
               {subCollection.description || "-"}
+            </TableCell>
+            <TableCell>
+              {subCollection.isActive ? (
+                <Badge variant="accent">Active</Badge>
+              ) : (
+                <Badge variant="destructive">Inactive</Badge>
+              )}
             </TableCell>
             <TableCell>
               {subCollection.createdAt
@@ -243,6 +253,23 @@ const SubCollectionManagement = () => {
             </label>
           )}
         </div>
+
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <Label htmlFor="isActive">Visibility</Label>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              When disabled, this sub-collection and its associated products
+              will be hidden
+            </p>
+          </div>
+
+          <Switch
+            id="isActive"
+            checked={formData.isActive}
+            onCheckedChange={handleIsActiveChange}
+            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+          />
+        </div>
       </AddUpdateItemDialog>
 
       {/* Delete Confirmation Dialog */}
@@ -259,5 +286,3 @@ const SubCollectionManagement = () => {
 };
 
 export default SubCollectionManagement;
-
-

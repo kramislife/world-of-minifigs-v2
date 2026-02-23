@@ -12,11 +12,11 @@ import { buildSearchQuery } from "../utils/pagination.js";
 const GLOBAL_SEARCH_LIMIT = 10; // Max results per category
 
 // Search a single model by name field and return limited results.
-const searchModel = async (Model, searchFields, search, selectFields) => {
+const searchModel = async (Model, searchFields, search, selectFields, extraFilter = {}) => {
   const query = buildSearchQuery(search, searchFields);
   if (Object.keys(query).length === 0) return [];
 
-  return Model.find(query)
+  return Model.find({ ...query, ...extraFilter })
     .select(selectFields)
     .limit(GLOBAL_SEARCH_LIMIT)
     .lean();
@@ -55,9 +55,10 @@ export const globalSearch = async (req, res) => {
       colors,
       skillLevels,
     ] = await Promise.all([
-      Product.find(
-        buildSearchQuery(searchTerm, ["productName", "partId", "itemId"]),
-      )
+      Product.find({
+        ...buildSearchQuery(searchTerm, ["productName", "partId", "itemId"]),
+        isVisible: true,
+      })
         .select(
           "_id productName price discountPrice images variants productType colorId secondaryColorId",
         )
@@ -69,31 +70,35 @@ export const globalSearch = async (req, res) => {
         ])
         .limit(GLOBAL_SEARCH_LIMIT)
         .lean(),
-      searchModel(Category, ["categoryName"], searchTerm, "_id categoryName"),
+      searchModel(Category, ["categoryName"], searchTerm, "_id categoryName", { isActive: { $ne: false } }),
       searchModel(
         SubCategory,
         ["subCategoryName"],
         searchTerm,
         "_id subCategoryName categoryId",
+        { isActive: { $ne: false } },
       ),
       searchModel(
         Collection,
         ["collectionName"],
         searchTerm,
         "_id collectionName",
+        { isActive: { $ne: false } },
       ),
       searchModel(
         SubCollection,
         ["subCollectionName"],
         searchTerm,
         "_id subCollectionName collectionId image",
+        { isActive: { $ne: false } },
       ),
-      searchModel(Color, ["colorName"], searchTerm, "_id colorName hexCode"),
+      searchModel(Color, ["colorName"], searchTerm, "_id colorName hexCode", { isActive: { $ne: false } }),
       searchModel(
         SkillLevel,
         ["skillLevelName"],
         searchTerm,
         "_id skillLevelName",
+        { isActive: { $ne: false } },
       ),
     ]);
 

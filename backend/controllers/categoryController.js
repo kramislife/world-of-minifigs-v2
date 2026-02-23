@@ -200,6 +200,11 @@ export const updateCategory = async (req, res) => {
       category.description = description ? String(description).trim() : "";
     }
 
+    // Update isActive if provided
+    if (req.body.isActive !== undefined) {
+      category.isActive = Boolean(req.body.isActive);
+    }
+
     // Update updatedBy
     category.updatedBy = req.user._id;
 
@@ -212,6 +217,7 @@ export const updateCategory = async (req, res) => {
         id: category._id,
         categoryName: category.categoryName,
         description: category.description,
+        isActive: category.isActive,
         updatedAt: category.updatedAt,
       },
     });
