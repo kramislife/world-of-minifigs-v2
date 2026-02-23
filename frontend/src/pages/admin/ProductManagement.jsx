@@ -17,6 +17,7 @@ import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
+import { formatCurrency } from "@/utils/formatting";
 import useProductManagement from "@/hooks/admin/useProductManagement";
 
 const ProductManagement = () => {
@@ -117,7 +118,7 @@ const ProductManagement = () => {
             <TableCell>
               {product.price ? (
                 <span className="font-semibold">
-                  ${Number(product.price).toFixed(2)}
+                  ${formatCurrency(product.price)}
                 </span>
               ) : (
                 "-"
@@ -129,7 +130,7 @@ const ProductManagement = () => {
             <TableCell>
               {product.discountPrice ? (
                 <Badge variant="success">
-                  ${Number(product.discountPrice).toFixed(2)}
+                  ${formatCurrency(product.discountPrice)}
                 </Badge>
               ) : (
                 "-"

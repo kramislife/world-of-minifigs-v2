@@ -16,6 +16,7 @@ import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
+import { formatCurrency } from "@/utils/formatting";
 import useDealerExtraBagManagement from "@/hooks/admin/useDealerExtraBagManagement";
 
 const DealerExtraBagManagement = () => {
@@ -84,7 +85,7 @@ const DealerExtraBagManagement = () => {
               {bag.subCollectionId?.subCollectionName}
             </TableCell>
             <TableCell className="font-bold text-success dark:text-accent">
-              ${bag.price?.toFixed(2)}
+              ${formatCurrency(bag.price)}
             </TableCell>
             <TableCell>
               <Badge variant={bag.isActive ? "success" : "destructive"}>

@@ -23,6 +23,7 @@ import {
   setSheetMode,
 } from "@/redux/slices/cartSlice";
 import { handleApiError } from "@/utils/apiHelpers";
+import { formatCurrency } from "@/utils/formatting";
 
 //------------------------------------------- Helpers -------------------------------------------
 
@@ -211,8 +212,8 @@ export const useVariantSelection = ({ product }) => {
     salePrice < basePrice &&
     basePrice > 0;
 
-  const displayPrice = effectivePrice.toFixed(2);
-  const originalPrice = basePrice.toFixed(2);
+  const displayPrice = formatCurrency(effectivePrice);
+  const originalPrice = formatCurrency(basePrice);
 
   return {
     selectedVariantIndex,
@@ -306,10 +307,10 @@ export const useCart = () => {
 
       return {
         ...item,
-        displayPrice: effectivePrice.toFixed(2),
-        originalPrice: price.toFixed(2),
+        displayPrice: formatCurrency(effectivePrice),
+        originalPrice: formatCurrency(price),
         hasDiscount,
-        totalItemPrice: (effectivePrice * item.quantity).toFixed(2),
+        totalItemPrice: formatCurrency(effectivePrice * item.quantity),
         colorLabel,
         colorDisplay: getColorDisplay({ ...item, colorLabel }),
       };
@@ -339,7 +340,7 @@ export const useCart = () => {
       totalPriceFormatted:
         serverSubtotalFormatted != null
           ? serverSubtotalFormatted
-          : (computedTotal || 0).toFixed(2),
+          : formatCurrency(computedTotal || 0),
     };
   }, [items, serverCartData]);
 

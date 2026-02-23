@@ -110,7 +110,7 @@ const OrderManagement = () => {
               <TableCell>
                 {order.payment?.totalAmount ? (
                   <span className="font-semibold">
-                    ${Number(order.payment.totalAmount).toFixed(2)}
+                    ${formatCurrency(order.payment.totalAmount)}
                   </span>
                 ) : (
                   "-"

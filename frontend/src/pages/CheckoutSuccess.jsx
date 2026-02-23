@@ -8,8 +8,8 @@ import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import ErrorState from "@/components/shared/ErrorState";
 import CancelOrderModal from "@/components/products/CancelOrderModal";
 import Logo from "@/assets/media/Logo.png";
+import { formatCurrency, formatDate } from "@/utils/formatting";
 import useCheckoutSuccess from "@/hooks/useCheckoutSuccess";
-import { formatDate } from "@/utils/formatting";
 
 const CheckoutSuccess = () => {
   const {
@@ -141,7 +141,7 @@ const CheckoutSuccess = () => {
                           {item.productName}
                         </Link>
                         <span className="font-bold text-lg text-success dark:text-accent whitespace-nowrap">
-                          ${item.totalPrice?.toFixed(2)}
+                          ${formatCurrency(item.totalPrice)}
                         </span>
                       </div>
                       <div className="space-y-2">
@@ -150,11 +150,11 @@ const CheckoutSuccess = () => {
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-md font-bold text-success dark:text-accent">
-                            ${item.unitPrice?.toFixed(2)}
+                            ${formatCurrency(item.unitPrice)}
                           </span>
                           {item.unitPrice < item.basePrice && (
                             <span className="text-xs text-muted-foreground line-through">
-                              ${item.basePrice?.toFixed(2)}
+                              ${formatCurrency(item.basePrice)}
                             </span>
                           )}
                         </div>
@@ -335,19 +335,19 @@ const CheckoutSuccess = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Subtotal</span>
                   <span className="font-bold">
-                    ${order?.payment?.subtotal?.toFixed(2)}
+                    ${formatCurrency(order?.payment?.subtotal)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Shipping Fee</span>
                   <span className="font-bold">
-                    ${order?.payment?.shippingFee?.toFixed(2) ?? "0.00"}
+                    ${formatCurrency(order?.payment?.shippingFee)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Sales Tax (Included)</span>
                   <span className="font-bold">
-                    ${order?.payment?.taxAmount?.toFixed(2)}
+                    ${formatCurrency(order?.payment?.taxAmount)}
                   </span>
                 </div>
               </div>
@@ -404,11 +404,11 @@ const CheckoutSuccess = () => {
                   }`}
                 >
                   $
-                  {Number(
+                  {formatCurrency(
                     status === "cancelled"
                       ? order?.refund?.amount || order?.payment?.totalAmount
                       : order?.payment?.totalAmount,
-                  ).toFixed(2)}
+                  )}
                 </span>
               </div>
 

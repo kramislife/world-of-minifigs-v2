@@ -10,6 +10,7 @@ import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
+import { formatCurrency } from "@/utils/formatting";
 import useRewardBundleManagement from "@/hooks/admin/useRewardBundleManagement";
 
 const RewardBundleManagement = () => {
@@ -78,7 +79,7 @@ const RewardBundleManagement = () => {
               {bundle.minifigQuantity}
             </TableCell>
             <TableCell className="font-semibold text-success">
-              ${bundle.totalPrice?.toFixed(2)}
+              ${formatCurrency(bundle.totalPrice)}
             </TableCell>
             <TableCell>
               <Badge variant={bundle.isActive ? "success" : "destructive"}>

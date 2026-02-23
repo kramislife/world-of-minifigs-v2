@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { CheckoutButton } from "@/components/shared/OrderActionButton";
+import { formatCurrency } from "@/utils/formatting";
 
 const DealerOrderSummary = ({
   selectedBundle,
@@ -24,11 +25,11 @@ const DealerOrderSummary = ({
               <div className="space-y-1">
                 <p className="text-sm font-bold">{selectedBundle.bundleName}</p>
                 <p className="text-xs text-muted-foreground">
-                  ${selectedBundle.unitPrice?.toFixed(2)} / each
+                  ${formatCurrency(selectedBundle.unitPrice)} / each
                 </p>
               </div>
               <p className="text-sm font-bold text-primary dark:text-accent">
-                ${selectedBundle.totalPrice?.toFixed(2)}
+                ${formatCurrency(selectedBundle.totalPrice)}
               </p>
             </div>
           </div>
@@ -42,7 +43,7 @@ const DealerOrderSummary = ({
                 {!selectedAddonData.price ||
                 Number(selectedAddonData.price) === 0
                   ? "Free"
-                  : `$${selectedAddonData.price?.toFixed(2)}`}
+                  : `$${formatCurrency(selectedAddonData.price)}`}
               </span>
             </div>
           </div>
@@ -68,7 +69,7 @@ const DealerOrderSummary = ({
                       {qty} x {bag.subCollectionId?.subCollectionName}
                     </span>
                     <span className="font-bold shrink-0 text-primary dark:text-accent">
-                      ${(bag.price * qty).toFixed(2)}
+                      ${formatCurrency(bag.price * qty)}
                     </span>
                   </div>
                 );
@@ -97,7 +98,7 @@ const DealerOrderSummary = ({
           <span className="text-lg font-bold uppercase">Estimated Total</span>
           <div className="text-right">
             <p className="text-3xl font-bold text-success dark:text-accent">
-              ${totalOrderPrice.toFixed(2)}
+              ${formatCurrency(totalOrderPrice)}
             </p>
           </div>
         </div>

@@ -17,6 +17,7 @@ import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
+import { formatCurrency } from "@/utils/formatting";
 import useDealerAddonManagement from "@/hooks/admin/useDealerAddonManagement";
 
 const DealerAddonManagement = () => {
@@ -91,7 +92,7 @@ const DealerAddonManagement = () => {
             <TableCell className="text-success dark:text-accent font-bold">
               {!addon.price || Number(addon.price) === 0
                 ? "Free"
-                : `$${addon.price?.toFixed(2)}`}
+                : `$${formatCurrency(addon.price)}`}
             </TableCell>
             <TableCell>
               <Badge variant={addon.isActive ? "success" : "destructive"}>

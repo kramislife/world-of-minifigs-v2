@@ -7,6 +7,7 @@ import {
 } from "@/redux/api/adminApi";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
 import { extractPaginatedData } from "@/utils/apiHelpers";
+import { formatCurrency } from "@/utils/formatting";
 
 const initialFormData = {
   bundleName: "",
@@ -48,10 +49,10 @@ const useDealerBundleManagement = () => {
   } = extractPaginatedData(bundlesResponse, "bundles");
 
   // Derived State
-  const calculatedTotal = (
+  const calculatedTotal = formatCurrency(
     Number(crud.formData.minifigQuantity || 0) *
-    Number(crud.formData.unitPrice || 0)
-  ).toFixed(2);
+      Number(crud.formData.unitPrice || 0),
+  );
 
   const columns = [
     { key: "bundleName", label: "Bundle" },

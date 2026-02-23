@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { CheckoutButton } from "@/components/shared/OrderActionButton";
+import { formatCurrency } from "@/utils/formatting";
 
 const RewardOrderSummary = ({
   selectedBundle,
@@ -19,7 +20,7 @@ const RewardOrderSummary = ({
               <div className="flex justify-between items-start">
                 <p className="text-sm font-bold">{selectedBundle.bundleName}</p>
                 <p className="text-sm font-bold text-primary dark:text-accent">
-                  ${selectedBundle.totalPrice?.toFixed(2)}
+                  ${formatCurrency(selectedBundle.totalPrice)}
                 </p>
               </div>
             </div>
@@ -34,11 +35,11 @@ const RewardOrderSummary = ({
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {selectedAddon.duration} Months x $
-                    {selectedAddon.price?.toFixed(2)}/month
+                    {formatCurrency(selectedAddon.price)}/month
                   </p>
                 </div>
                 <p className="text-sm font-bold text-primary dark:text-accent">
-                  ${selectedAddon.price?.toFixed(2)}
+                  ${formatCurrency(selectedAddon.price)}
                 </p>
               </div>
             </div>
@@ -52,7 +53,7 @@ const RewardOrderSummary = ({
                 </span>
                 <div className="text-right">
                   <p className="text-3xl font-bold text-success dark:text-accent">
-                    ${totalOrderPrice.toFixed(2)}
+                    ${formatCurrency(totalOrderPrice)}
                   </p>
                 </div>
               </div>
@@ -64,7 +65,7 @@ const RewardOrderSummary = ({
                       &nbsp;This first payment covers your bundle. After that,
                       you'll only be billed&nbsp;
                       <span className="font-bold text-primary">
-                        ${selectedAddon.price?.toFixed(2)}
+                        ${formatCurrency(selectedAddon.price)}
                       </span>
                       &nbsp;for the next {selectedAddon.duration - 1} month
                       {selectedAddon.duration - 1 !== 1 ? "s" : ""}.

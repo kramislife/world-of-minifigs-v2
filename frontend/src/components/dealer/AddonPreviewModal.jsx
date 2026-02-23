@@ -8,6 +8,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { formatCurrency } from "@/utils/formatting";
 import Logo from "@/assets/media/Logo.png";
 
 const AddonPreviewModal = ({ addon, onClose, onSelect }) => {
@@ -68,7 +69,7 @@ const AddonPreviewModal = ({ addon, onClose, onSelect }) => {
                         <div className="flex items-center gap-1 text-lg">
                           <span className="font-semibold">Total Value:</span>
                           <span className="text-success dark:text-accent font-bold">
-                            ${item.itemPrice.toFixed(2)}
+                            ${formatCurrency(item.itemPrice)}
                           </span>
                         </div>
                       )}
@@ -143,7 +144,7 @@ export default AddonPreviewModal;
             )}
             {item.itemPrice > 0 && (
               <p className="text-sm font-bold text-success dark:text-accent mt-1">
-                ${item.itemPrice.toFixed(2)}
+                ${formatCurrency(item.itemPrice)}
               </p>
             )}
           </div>

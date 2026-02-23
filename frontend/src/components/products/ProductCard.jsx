@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Logo from "@/assets/media/Logo.png";
 import { AddToCartButton } from "@/components/shared/OrderActionButton";
+import { formatCurrency } from "@/utils/formatting";
 import {
   useProductCard,
   useProductCardHoverImages,
@@ -105,11 +106,11 @@ const ProductCard = ({ product }) => {
         {/* Price */}
         <div className="flex items-center gap-2">
           <span className="text-2xl font-bold text-success dark:text-accent">
-            ${product.displayPrice?.toFixed(2) || "0.00"}
+            ${formatCurrency(product.displayPrice)}
           </span>
           {product.hasDiscount && (
             <span className="text-sm text-muted-foreground line-through">
-              ${product.price?.toFixed(2)}
+              ${formatCurrency(product.price)}
             </span>
           )}
         </div>

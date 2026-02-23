@@ -1,6 +1,7 @@
 import { Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { formatCurrency } from "@/utils/formatting";
 
 const DealerBundle = ({ bundles, onSelect }) => (
   <section className="px-5 py-10 bg-input/50 dark:bg-card/50">
@@ -42,7 +43,7 @@ const DealerBundle = ({ bundles, onSelect }) => (
               ${bundle.totalPrice}
             </span>
             <span className="text-xs text-primary font-semibold mt-2">
-              ${bundle.unitPrice?.toFixed(2)} / each
+              ${formatCurrency(bundle.unitPrice)} / each
             </span>
           </div>
 

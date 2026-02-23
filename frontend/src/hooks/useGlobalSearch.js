@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { PRODUCT_FILTERS } from "@/constant/productFilters";
+import { formatCurrency } from "@/utils/formatting";
 import { useGlobalSearchQuery } from "@/redux/api/publicApi";
 
 //------------------------------------------------ Constants ------------------------------------------
@@ -89,9 +90,9 @@ export const useGlobalSearch = ({ isOpen, onClose }) => {
       if (key === "products") {
         // Pre-process products with display-ready price and color data
         items = rawItems.map((item) => {
-          const price = Number(item.price).toFixed(2);
+          const price = formatCurrency(item.price);
           const discountPrice = item.discountPrice
-            ? Number(item.discountPrice).toFixed(2)
+            ? formatCurrency(item.discountPrice)
             : null;
           const hasDiscount = discountPrice !== null;
           const colorDisplay = item.colorName

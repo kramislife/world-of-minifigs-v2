@@ -17,6 +17,7 @@ import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
+import { formatCurrency } from "@/utils/formatting";
 import useRewardAddonManagement from "@/hooks/admin/useRewardAddonManagement";
 
 const RewardAddonManagement = () => {
@@ -83,7 +84,7 @@ const RewardAddonManagement = () => {
             <TableCell>{addon.duration || "-"} months</TableCell>
             <TableCell>{addon.quantity || "-"} Minifigs</TableCell>
             <TableCell className="text-success dark:text-accent font-bold">
-              ${addon.price?.toFixed(2)}
+              ${formatCurrency(addon.price)}
             </TableCell>
             <TableCell>
               <Badge variant={addon.isActive ? "success" : "destructive"}>

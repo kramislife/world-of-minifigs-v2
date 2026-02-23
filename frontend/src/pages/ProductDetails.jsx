@@ -12,6 +12,7 @@ import {
 import QuantityControl from "@/components/shared/QuantityControl";
 import RelatedProducts from "@/components/products/RelatedProducts";
 import { useProductDetails } from "@/hooks/useProductDetails";
+import { formatCurrency } from "@/utils/formatting";
 import { useProductCheckout } from "@/hooks/useCart";
 
 const ProductDetails = () => {
@@ -210,11 +211,11 @@ const ProductDetails = () => {
             {/* Price */}
             <div className="flex items-center gap-2">
               <span className="text-5xl font-bold text-success dark:text-accent">
-                ${displayPrice?.toFixed(2) || "0.00"}
+                ${formatCurrency(displayPrice)}
               </span>
               {hasDiscount && product.price && (
                 <span className="text-sm text-muted-foreground line-through">
-                  ${product.price.toFixed(2)}
+                  ${formatCurrency(product.price)}
                 </span>
               )}
             </div>

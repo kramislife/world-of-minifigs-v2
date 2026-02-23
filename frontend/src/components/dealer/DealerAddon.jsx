@@ -48,7 +48,7 @@ const DealerAddon = ({ addons, onSelect, onPreview }) => (
             <span className="text-5xl font-extrabold text-success dark:text-accent">
               {!addon.price || Number(addon.price) === 0
                 ? "Free"
-                : `$${Number(addon.price).toFixed(2)}`}
+                : `$${Number(addon.price)}`}
             </span>
             <span className="text-xs text-muted-foreground mt-2">
               add-on price
