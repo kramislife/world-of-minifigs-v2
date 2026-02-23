@@ -111,7 +111,7 @@ const useOrderManagement = () => {
     [resetStatusFields],
   );
 
-  const openStatusModal = useCallback(
+  const handleEdit = useCallback(
     (order) => {
       resetStatusFields();
       setSelectedOrder(order);
@@ -132,7 +132,7 @@ const useOrderManagement = () => {
     }
   }, []);
 
-  const openViewModal = useCallback((order) => {
+  const handleView = useCallback((order) => {
     setViewOrder(order);
     setViewModalOpen(true);
   }, []);
@@ -250,10 +250,8 @@ const useOrderManagement = () => {
     setTrackingLink,
     setCancelReason,
     setCancelNotes,
-    openStatusModal,
-    closeStatusModal,
-    openViewModal,
-    closeViewModal,
+    handleEdit,
+    handleView,
     handleStatusModalChange,
     handleViewModalChange,
     handleUpdateStatus,

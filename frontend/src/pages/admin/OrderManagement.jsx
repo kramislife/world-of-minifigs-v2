@@ -19,7 +19,6 @@ import useOrderManagement from "@/hooks/admin/useOrderManagement";
 
 const OrderManagement = () => {
   const {
-    // State
     page,
     limit,
     search,
@@ -40,8 +39,6 @@ const OrderManagement = () => {
     viewModalOpen,
     viewOrder,
     orderReference,
-
-    // Handlers
     handlePageChange,
     handleLimitChange,
     handleSearchChange,
@@ -51,9 +48,8 @@ const OrderManagement = () => {
     setTrackingLink,
     setCancelReason,
     setCancelNotes,
-    openStatusModal,
-    openViewModal,
-    handleUpdateStatus,
+    handleEdit,
+    handleView,
     getAvailableTransitions,
     handleStatusModalChange,
     handleViewModalChange,
@@ -73,7 +69,7 @@ const OrderManagement = () => {
       </div>
 
       <TableLayout
-        searchPlaceholder="Search order..."
+        searchPlaceholder="Search orders..."
         searchValue={search}
         onSearchChange={handleSearchChange}
         entriesValue={limit}
@@ -132,21 +128,19 @@ const OrderManagement = () => {
                   : "-"}
               </TableCell>
               <ActionsColumn
-                onView={() => openViewModal(order)}
+                onView={() => handleView(order)}
                 onEdit={
                   transitions.length > 0
-                    ? () => openStatusModal(order)
+                    ? () => handleEdit(order)
                     : undefined
                 }
-                viewTitle="View Details"
-                editTitle="Update Status"
               />
             </>
           );
         }}
       />
 
-      {/* Status Update Modal */}
+      {/* Update Order Status Dialog */}
       <AddUpdateItemDialog
         open={statusModalOpen}
         onOpenChange={handleStatusModalChange}
@@ -238,7 +232,7 @@ const OrderManagement = () => {
         </div>
       </AddUpdateItemDialog>
 
-      {/* View Order Details Modal */}
+      {/* View Order Details Dialog */}
       <ViewAdminDialog
         open={viewModalOpen}
         onOpenChange={handleViewModalChange}
@@ -248,311 +242,301 @@ const OrderManagement = () => {
           `#${viewOrder?._id?.substring(0, 7).toUpperCase()}`
         }
       >
-            {/* ── Order Information ── */}
-            <section className="space-y-2">
-              <Label className="font-semibold text-xs uppercase">
-                Order Information
-              </Label>
-              <div className="rounded-lg border divide-y text-sm">
-                <div className="grid grid-cols-[140px_1fr] p-3">
-                  <span className="font-semibold text-xs">Invoice Number</span>
-                  {viewOrder?.payment?.invoiceUrl &&
-                  viewOrder?.payment?.stripeInvoiceNumber ? (
-                    <a
-                      href={viewOrder.payment.invoiceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary underline underline-offset-2"
-                    >
-                      {viewOrder.payment.stripeInvoiceNumber}
-                    </a>
-                  ) : (
-                    <span className="text-xs">
-                      {viewOrder?.payment?.stripeInvoiceNumber || "—"}
+        {/* ── Order Information ── */}
+        <section className="space-y-2">
+          <Label className="font-semibold text-xs uppercase">
+            Order Information
+          </Label>
+          <div className="rounded-lg border divide-y text-sm">
+            <div className="grid grid-cols-[140px_1fr] p-3">
+              <span className="font-semibold text-xs">Invoice Number</span>
+              {viewOrder?.payment?.invoiceUrl &&
+              viewOrder?.payment?.stripeInvoiceNumber ? (
+                <a
+                  href={viewOrder.payment.invoiceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary underline underline-offset-2"
+                >
+                  {viewOrder.payment.stripeInvoiceNumber}
+                </a>
+              ) : (
+                <span className="text-xs">
+                  {viewOrder?.payment?.stripeInvoiceNumber || "—"}
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-[140px_1fr] p-3">
+              <span className="font-semibold text-xs">Status</span>
+              <span className="text-xs capitalize">
+                {viewOrder?.status || "—"}
+              </span>
+            </div>
+            <div className="grid grid-cols-[140px_1fr] p-3">
+              <span className="font-semibold text-xs">Order Type</span>
+              <span className="text-xs capitalize">
+                {viewOrder?.orderType || "—"}
+              </span>
+            </div>
+            <div className="grid grid-cols-[140px_1fr] p-3">
+              <span className="font-semibold text-xs">Paid At</span>
+              <span className="text-xs">
+                {viewOrder?.payment?.paidAt
+                  ? formatDate(viewOrder.payment.paidAt)
+                  : "—"}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Customer ── */}
+        <section className="space-y-2">
+          <Label className="font-semibold text-xs uppercase">Customer</Label>
+          <div className="rounded-lg border divide-y text-sm">
+            <div className="grid grid-cols-[140px_1fr] p-3">
+              <span className="font-semibold text-xs">Name</span>
+              <span className="text-xs">
+                {viewOrder?.userId
+                  ? `${viewOrder.userId.firstName} ${viewOrder.userId.lastName}`
+                  : "—"}
+              </span>
+            </div>
+            <div className="grid grid-cols-[140px_1fr] p-3">
+              <span className="font-semibold text-xs">Email</span>
+              <span className="text-xs break-all">
+                {viewOrder?.email || "—"}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Billing Details ── */}
+        {(viewOrder?.billing?.cardHolderName ||
+          viewOrder?.billing?.country) && (
+          <section className="space-y-2">
+            <Label className="font-semibold text-xs uppercase">
+              Billing Details
+            </Label>
+            <div className="rounded-lg border divide-y text-sm">
+              <div className="grid grid-cols-[140px_1fr] p-3">
+                <span className="font-semibold text-xs">
+                  Cardholder Name
+                </span>
+                <span className="text-xs">
+                  {viewOrder.billing.cardHolderName || "—"}
+                </span>
+              </div>
+              <div className="grid grid-cols-[140px_1fr] p-3">
+                <span className="font-semibold text-xs">Country</span>
+                <span className="text-xs">
+                  {viewOrder.billing.country || "—"}
+                </span>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── Shipping Address ── */}
+        {viewOrder?.shipping?.address && (
+          <section className="space-y-2">
+            <Label className="font-semibold text-xs uppercase">
+              Shipping Address
+            </Label>
+            <div className="rounded-lg border divide-y text-sm">
+              <div className="grid grid-cols-[140px_1fr] p-3">
+                <span className="font-semibold text-xs">Recipient</span>
+                <span className="text-xs">
+                  {viewOrder?.shipping?.address?.name || "—"}
+                </span>
+              </div>
+              <div className="grid grid-cols-[140px_1fr] p-3">
+                <span className="font-semibold text-xs">Address</span>
+                <span className="text-xs">
+                  {[
+                    viewOrder?.shipping?.address?.line1,
+                    viewOrder?.shipping?.address?.line2,
+                  ]
+                    .filter(Boolean)
+                    .join(", ") || "—"}
+                </span>
+              </div>
+              <div className="grid grid-cols-[140px_1fr] p-3">
+                <span className="font-semibold text-xs">City</span>
+                <span className="text-xs">
+                  {viewOrder?.shipping?.address?.city || "—"}
+                </span>
+              </div>
+              <div className="grid grid-cols-[140px_1fr] p-3">
+                <span className="font-semibold text-xs">State</span>
+                <span className="text-xs">
+                  {viewOrder?.shipping?.address?.state || "—"}
+                </span>
+              </div>
+              <div className="grid grid-cols-[140px_1fr] p-3">
+                <span className="font-semibold text-xs">Postal Code</span>
+                <span className="text-xs">
+                  {viewOrder?.shipping?.address?.postalCode || "—"}
+                </span>
+              </div>
+              <div className="grid grid-cols-[140px_1fr] p-3">
+                <span className="font-semibold text-xs">Country</span>
+                <span className="text-xs">
+                  {viewOrder?.shipping?.address?.country || "—"}
+                </span>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── Shipping & Tracking ── */}
+        {viewOrder?.shipping?.carrier && (
+          <section className="space-y-2">
+            <Label className="font-semibold text-xs uppercase">
+              Shipping & Tracking
+            </Label>
+            <div className="rounded-lg border divide-y text-sm">
+              <div className="grid grid-cols-[140px_1fr] p-3">
+                <span className="font-semibold text-xs">Carrier</span>
+                <span className="text-xs">
+                  {viewOrder.shipping.carrier || "—"}
+                </span>
+              </div>
+              <div className="grid grid-cols-[140px_1fr] p-3">
+                <span className="font-semibold text-xs">
+                  Tracking Number
+                </span>
+                <span className="text-xs">
+                  {viewOrder.shipping.trackingNumber || "—"}
+                </span>
+              </div>
+              <div className="grid grid-cols-[140px_1fr] p-3">
+                <span className="font-semibold text-xs truncate">
+                  Tracking Link
+                </span>
+                <a
+                  href={viewOrder.shipping.trackingLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary underline underline-offset-2 break-all"
+                >
+                  {viewOrder.shipping.trackingLink || "—"}
+                </a>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── Order Items ── */}
+        <section className="space-y-2">
+          <Label className="font-semibold text-xs uppercase">
+            Items ({viewOrder?.items?.length || 0})
+          </Label>
+          <div className="rounded-lg border divide-y text-sm">
+            {viewOrder?.items?.map((item, index) => (
+              <div
+                key={index}
+                className="grid grid-cols-[1fr_auto_auto] gap-4 items-center p-3"
+              >
+                <span className="text-xs truncate">{item.productName}</span>
+                <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                  {item.quantity} × ${formatCurrency(item.unitPrice)}
+                  {item.unitPrice < item.basePrice && (
+                    <span className="text-[10px] line-through text-muted-foreground/50 ml-1">
+                      ${formatCurrency(item.basePrice)}
                     </span>
                   )}
-                </div>
+                </span>
+                <span className="text-xs font-semibold whitespace-nowrap">
+                  ${formatCurrency(item.totalPrice)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Payment Summary ── */}
+        <section className="space-y-2">
+          <Label className="font-semibold text-xs uppercase">
+            Payment Summary
+          </Label>
+          <div className="rounded-lg border divide-y text-sm">
+            <div className="grid grid-cols-[140px_1fr] p-3">
+              <span className="font-semibold text-xs">Subtotal</span>
+              <span className="text-xs">
+                ${formatCurrency(viewOrder?.payment?.subtotal)}
+              </span>
+            </div>
+            <div className="grid grid-cols-[140px_1fr] p-3">
+              <span className="font-semibold text-xs">Shipping Fee</span>
+              <span className="text-xs">
+                ${formatCurrency(viewOrder?.payment?.shippingFee)}
+              </span>
+            </div>
+            {viewOrder?.payment?.taxAmount > 0 && (
+              <div className="grid grid-cols-[140px_1fr] p-3">
+                <span className="font-semibold text-xs">Tax</span>
+                <span className="text-xs">
+                  ${formatCurrency(viewOrder.payment.taxAmount)}
+                </span>
+              </div>
+            )}
+            <div className="grid grid-cols-[140px_1fr] p-3 font-semibold">
+              <span>Total</span>
+              <span>
+                ${formatCurrency(viewOrder?.payment?.totalAmount)}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Refund ── */}
+        {viewOrder?.refund?.status &&
+          viewOrder.refund.status !== "none" && (
+            <section className="space-y-2">
+              <Label className="font-semibold text-xs uppercase">
+                Refund
+              </Label>
+              <div className="rounded-lg border divide-y text-sm">
                 <div className="grid grid-cols-[140px_1fr] p-3">
                   <span className="font-semibold text-xs">Status</span>
                   <span className="text-xs capitalize">
-                    {viewOrder?.status || "—"}
+                    {viewOrder.refund.status || "—"}
                   </span>
                 </div>
-                <div className="grid grid-cols-[140px_1fr] p-3">
-                  <span className="font-semibold text-xs">Order Type</span>
-                  <span className="text-xs capitalize">
-                    {viewOrder?.orderType || "—"}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-[140px_1fr] p-3">
-                  <span className="font-semibold text-xs">Paid At</span>
-                  <span className="text-xs">
-                    {viewOrder?.payment?.paidAt
-                      ? formatDate(viewOrder.payment.paidAt)
-                      : "—"}
-                  </span>
-                </div>
-              </div>
-            </section>
-
-            {/* ── Customer ── */}
-            <section className="space-y-2">
-              <Label className="font-semibold text-xs uppercase">
-                Customer
-              </Label>
-              <div className="rounded-lg border divide-y text-sm">
-                <div className="grid grid-cols-[140px_1fr] p-3">
-                  <span className="font-semibold text-xs">Name</span>
-                  <span className="text-xs">
-                    {viewOrder?.userId
-                      ? `${viewOrder.userId.firstName} ${viewOrder.userId.lastName}`
-                      : "—"}
-                  </span>
-                </div>
-                <div className="grid grid-cols-[140px_1fr] p-3">
-                  <span className="font-semibold text-xs">Email</span>
-                  <span className="text-xs break-all">
-                    {viewOrder?.email || "—"}
-                  </span>
-                </div>
-              </div>
-            </section>
-
-            {/* ── Billing Details ── */}
-            {(viewOrder?.billing?.cardHolderName ||
-              viewOrder?.billing?.country) && (
-              <section className="space-y-2">
-                <Label className="font-semibold text-xs uppercase">
-                  Billing Details
-                </Label>
-                <div className="rounded-lg border divide-y text-sm">
+                {viewOrder.refund.amount != null && (
                   <div className="grid grid-cols-[140px_1fr] p-3">
-                    <span className="font-semibold text-xs">
-                      Cardholder Name
-                    </span>
+                    <span className="font-semibold text-xs">Amount</span>
                     <span className="text-xs">
-                      {viewOrder.billing.cardHolderName || "—"}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-[140px_1fr] p-3">
-                    <span className="font-semibold text-xs">Country</span>
-                    <span className="text-xs">
-                      {viewOrder.billing.country || "—"}
-                    </span>
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* ── Shipping Address ── */}
-            {viewOrder?.shipping?.address && (
-              <section className="space-y-2">
-                <Label className="font-semibold text-xs uppercase">
-                  Shipping Address
-                </Label>
-
-                <div className="rounded-lg border divide-y text-sm">
-                  <div className="grid grid-cols-[140px_1fr] p-3">
-                    <span className="font-semibold text-xs">Recipient</span>
-                    <span className="text-xs">
-                      {viewOrder?.shipping?.address?.name || "—"}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-[140px_1fr] p-3">
-                    <span className="font-semibold text-xs">Address</span>
-                    <span className="text-xs">
-                      {[
-                        viewOrder?.shipping?.address?.line1,
-                        viewOrder?.shipping?.address?.line2,
-                      ]
-                        .filter(Boolean)
-                        .join(", ") || "—"}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-[140px_1fr] p-3">
-                    <span className="font-semibold text-xs">City</span>
-                    <span className="text-xs">
-                      {viewOrder?.shipping?.address?.city || "—"}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-[140px_1fr] p-3">
-                    <span className="font-semibold text-xs">State</span>
-                    <span className="text-xs">
-                      {viewOrder?.shipping?.address?.state || "—"}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-[140px_1fr] p-3">
-                    <span className="font-semibold text-xs">Postal Code</span>
-                    <span className="text-xs">
-                      {viewOrder?.shipping?.address?.postalCode || "—"}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-[140px_1fr] p-3">
-                    <span className="font-semibold text-xs">Country</span>
-                    <span className="text-xs">
-                      {viewOrder?.shipping?.address?.country || "—"}
-                    </span>
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* ── Shipping & Tracking ── */}
-            {viewOrder?.shipping?.carrier && (
-              <section className="space-y-2">
-                <Label className="font-semibold text-xs uppercase">
-                  Shipping & Tracking
-                </Label>
-                <div className="rounded-lg border divide-y text-sm">
-                  <div className="grid grid-cols-[140px_1fr] p-3">
-                    <span className="font-semibold text-xs">Carrier</span>
-                    <span className="text-xs">
-                      {viewOrder.shipping.carrier || "—"}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-[140px_1fr] p-3">
-                    <span className="font-semibold text-xs">
-                      Tracking Number
-                    </span>
-                    <span className="text-xs">
-                      {viewOrder.shipping.trackingNumber || "—"}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-[140px_1fr] p-3">
-                    <span className="font-semibold text-xs truncate">
-                      Tracking Link
-                    </span>
-                    <a
-                      href={viewOrder.shipping.trackingLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary underline underline-offset-2 break-all"
-                    >
-                      {viewOrder.shipping.trackingLink || "—"}
-                    </a>
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* ── Order Items ── */}
-            <section className="space-y-2">
-              <Label className="font-semibold text-xs uppercase">
-                Items ({viewOrder?.items?.length || 0})
-              </Label>
-              <div className="rounded-lg border divide-y text-sm">
-                {viewOrder?.items?.map((item, index) => (
-                  <div
-                    key={index}
-                    className="grid grid-cols-[1fr_auto_auto] gap-4 items-center p-3"
-                  >
-                    <span className="text-xs truncate">{item.productName}</span>
-                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                      {item.quantity} × ${formatCurrency(item.unitPrice)}
-                      {item.unitPrice < item.basePrice && (
-                        <span className="text-[10px] line-through text-muted-foreground/50 ml-1">
-                          ${formatCurrency(item.basePrice)}
-                        </span>
-                      )}
-                    </span>
-                    <span className="text-xs font-semibold whitespace-nowrap">
-                      ${formatCurrency(item.totalPrice)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* ── Payment Summary ── */}
-            <section className="space-y-2">
-              <Label className="font-semibold text-xs uppercase">
-                Payment Summary
-              </Label>
-              <div className="rounded-lg border divide-y text-sm">
-                <div className="grid grid-cols-[140px_1fr] p-3">
-                  <span className="font-semibold text-xs">Subtotal</span>
-                  <span className="text-xs">
-                    ${formatCurrency(viewOrder?.payment?.subtotal)}
-                  </span>
-                </div>
-                <div className="grid grid-cols-[140px_1fr] p-3">
-                  <span className="font-semibold text-xs">Shipping Fee</span>
-                  <span className="text-xs">
-                    ${formatCurrency(viewOrder?.payment?.shippingFee)}
-                  </span>
-                </div>
-                {viewOrder?.payment?.taxAmount > 0 && (
-                  <div className="grid grid-cols-[140px_1fr] p-3">
-                    <span className="font-semibold text-xs">Tax</span>
-                    <span className="text-xs">
-                      ${formatCurrency(viewOrder.payment.taxAmount)}
+                      ${formatCurrency(viewOrder.refund.amount) || "-"}
                     </span>
                   </div>
                 )}
-                <div className="grid grid-cols-[140px_1fr] p-3 font-semibold">
-                  <span>Total</span>
-                  <span>
-                    ${formatCurrency(viewOrder?.payment?.totalAmount)}
-                  </span>
-                </div>
               </div>
             </section>
+          )}
 
-            {/* ── Refund ── */}
-            {viewOrder?.refund?.status &&
-              viewOrder.refund.status !== "none" && (
-                <section className="space-y-2">
-                  <Label className="font-semibold text-xs uppercase">
-                    Refund
-                  </Label>
-                  <div className="rounded-lg border divide-y text-sm">
-                    <div className="grid grid-cols-[140px_1fr] p-3">
-                      <span className="font-semibold text-xs">Status</span>
-                      <span className="text-xs capitalize">
-                        {viewOrder.refund.status || "—"}
-                      </span>
-                    </div>
-                    {viewOrder.refund.amount != null && (
-                      <div className="grid grid-cols-[140px_1fr] p-3">
-                        <span className="font-semibold text-xs">Amount</span>
-                        <span className="text-xs">
-                          ${formatCurrency(viewOrder.refund.amount) || "-"}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </section>
-              )}
-
-            {/* ── Cancellation ── */}
-            {viewOrder?.cancellation?.reason && (
-              <section className="space-y-2">
-                <Label className="font-semibold text-xs uppercase text-destructive">
-                  Cancellation
-                </Label>
-                <div className="rounded-lg border divide-y text-sm">
-                  <div className="grid grid-cols-[140px_1fr] p-3">
-                    <span className="font-semibold text-xs">Reason</span>
-                    <span className="text-xs">
-                      {viewOrder.cancellation.reason || "—"}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-[140px_1fr] p-3">
-                    <span className="font-semibold text-xs">Cancelled By</span>
-                    <span className="text-xs capitalize">
-                      {viewOrder.cancellation.cancelledByRole || "—"}
-                    </span>
-                  </div>
-                </div>
-              </section>
-            )}
+        {/* ── Cancellation ── */}
+        {viewOrder?.cancellation?.reason && (
+          <section className="space-y-2">
+            <Label className="font-semibold text-xs uppercase text-destructive">
+              Cancellation
+            </Label>
+            <div className="rounded-lg border divide-y text-sm">
+              <div className="grid grid-cols-[140px_1fr] p-3">
+                <span className="font-semibold text-xs">Reason</span>
+                <span className="text-xs">
+                  {viewOrder.cancellation.reason || "—"}
+                </span>
+              </div>
+              <div className="grid grid-cols-[140px_1fr] p-3">
+                <span className="font-semibold text-xs">Cancelled By</span>
+                <span className="text-xs capitalize">
+                  {viewOrder.cancellation.cancelledByRole || "—"}
+                </span>
+              </div>
+            </div>
+          </section>
+        )}
       </ViewAdminDialog>
     </div>
   );

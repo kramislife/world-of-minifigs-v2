@@ -1,5 +1,5 @@
 import React from "react";
-import { Plus, Upload, X, Trash2, TrashIcon, Trash } from "lucide-react";
+import { Plus, Upload, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

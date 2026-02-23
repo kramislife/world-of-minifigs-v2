@@ -1,6 +1,12 @@
 import React from "react";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Ellipsis } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Helper function to extract text content from React children
 const getTextContent = (children) => {
@@ -65,38 +71,57 @@ export const ActionsColumn = ({
   onEdit,
   onDelete,
   viewTitle = "View",
-  editTitle = "Edit",
+  editTitle = "Update",
   deleteTitle = "Delete",
 }) => {
   return (
-    <td className="px-4 py-3">
-      <div className="flex items-center justify-center gap-2">
-        {onView && (
+    <td className="px-4 py-3 flex items-center justify-center gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
             size="icon"
-            title={viewTitle}
-            onClick={onView}
+            title="More actions"
+            className="mx-auto border-none shadow-none hover:bg-transparent focus:ring-0 focus:bg-transparent"
           >
-            <Eye className="size-4" />
+            <Ellipsis className="size-5" />
+            <span className="sr-only">Open actions menu</span>
           </Button>
-        )}
-        {onEdit && (
-          <Button size="icon" title={editTitle} onClick={onEdit}>
-            <Pencil className="size-4" />
-          </Button>
-        )}
-        {onDelete && (
-          <Button
-            variant="destructive"
-            size="icon"
-            title={deleteTitle}
-            onClick={onDelete}
-          >
-            <Trash2 className="size-4" />
-          </Button>
-        )}
-      </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {onView && (
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                onView();
+              }}
+            >
+              {viewTitle}
+            </DropdownMenuItem>
+          )}
+          {onEdit && (
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                onEdit();
+              }}
+            >
+              {editTitle}
+            </DropdownMenuItem>
+          )}
+          {onDelete && (
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={(event) => {
+                event.preventDefault();
+                onDelete();
+              }}
+            >
+              {deleteTitle}
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </td>
   );
 };
