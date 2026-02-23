@@ -1,147 +1,25 @@
-import Stripe from "stripe";
 import Order from "../models/order.model.js";
-import {
-  ORDER_STATUSES,
-  REFUND_STATUSES,
-  VALID_STATUS_TRANSITIONS,
-  CANCELLATION_REASONS,
-} from "../models/order.model.js";
+import { ORDER_STATUSES } from "../models/order.model.js";
 import {
   normalizePagination,
   buildSearchQuery,
   paginateQuery,
   createPaginationResponse,
 } from "../utils/pagination.js";
-import { incrementProductStockForItems } from "../utils/paymentHelpers.js";
+import {
+  buildErrorResponse,
+  validateUserCancellationRequest,
+  ensureOrderIsUserCancellable,
+  acquireCancellationLock,
+  releaseCancellationLock,
+  createStripeRefundForOrder,
+  applyCancellationMetadata,
+  restockOrderItemsSafely,
+  buildCancellationSuccessResponse,
+  validateStatusTransition,
+} from "../services/orderService.js";
 
 //------------------------------------------------ Helpers ------------------------------------------
-
-const getStripe = () => new Stripe(process.env.STRIPE_SECRET_KEY);
-
-const LOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
-
-const buildErrorResponse = (status, message, description) => ({
-  status,
-  body: { success: false, message, description },
-});
-
-const validateUserCancellationRequest = (reason, notes) => {
-  if (!reason) {
-    return buildErrorResponse(
-      400,
-      "Cancellation reason is required",
-      "Please select a reason for cancelling.",
-    );
-  }
-
-  if (!CANCELLATION_REASONS.includes(reason)) {
-    return buildErrorResponse(
-      400,
-      "Invalid cancellation reason",
-      "Please select a valid reason from the list.",
-    );
-  }
-
-  if (reason === "Other" && (!notes || !notes.trim())) {
-    return buildErrorResponse(
-      400,
-      "Additional details required",
-      'Please provide details when selecting "Other" as the reason.',
-    );
-  }
-
-  return null;
-};
-
-const ensureOrderIsUserCancellable = (order) => {
-  if (order.status === ORDER_STATUSES.PAID) return null;
-
-  return buildErrorResponse(
-    400,
-    "Order cannot be cancelled",
-    order.status === ORDER_STATUSES.SHIPPED ||
-      order.status === ORDER_STATUSES.DELIVERED
-      ? "This order has already been shipped and cannot be cancelled."
-      : "This order is not eligible for cancellation.",
-  );
-};
-
-const acquireCancellationLock = async (order) => {
-  if (order.cancellation.isLocked) {
-    const lockExpired =
-      order.cancellation.lockExpiresAt &&
-      order.cancellation.lockExpiresAt < new Date();
-
-    if (!lockExpired) {
-      return buildErrorResponse(
-        409,
-        "Cancellation already in progress",
-        "A cancellation request is already being processed. Please wait.",
-      );
-    }
-  }
-
-  order.cancellation.isLocked = true;
-  order.cancellation.lockExpiresAt = new Date(Date.now() + LOCK_DURATION_MS);
-  await order.save();
-  return null;
-};
-
-const releaseCancellationLock = async (order) => {
-  order.cancellation.isLocked = false;
-  order.cancellation.lockExpiresAt = undefined;
-  await order.save();
-};
-
-const createStripeRefundForOrder = async (order) => {
-  const stripe = getStripe();
-  return stripe.refunds.create(
-    { payment_intent: order.payment.stripePaymentIntentId },
-    { idempotencyKey: `refund_${order._id}` },
-  );
-};
-
-const applyCancellationMetadata = (order, {
-  role,
-  cancelledById,
-  reason,
-  notes,
-  stripeRefundId,
-}) => {
-  order.status = ORDER_STATUSES.CANCELLED;
-  order.refund.status = REFUND_STATUSES.PENDING;
-  order.cancellation.cancelledAt = new Date();
-  order.cancellation.cancelledByRole = role;
-  order.cancellation.cancelledById = cancelledById;
-  order.refund.initiatedAt = new Date();
-  order.cancellation.reason = reason?.trim();
-  order.cancellation.notes = notes?.trim() || undefined;
-  order.refund.stripeRefundId = stripeRefundId;
-  order.refund.amount = order.payment.totalAmount;
-};
-
-const restockOrderItemsSafely = async (orderId, items) => {
-  try {
-    await incrementProductStockForItems(items);
-  } catch (stockErr) {
-    console.error(
-      `Inventory restock failed for order ${orderId}:`,
-      stockErr.message,
-    );
-  }
-};
-
-const buildCancellationSuccessResponse = (order, message, description) => ({
-  success: true,
-  message,
-  description,
-  order: {
-    _id: order._id,
-    status: order.status,
-    refund: order.refund,
-    cancellation: order.cancellation,
-  },
-});
 
 const buildOrderSearchQuery = (search) => {
   if (!search) return {};
@@ -261,9 +139,7 @@ export const cancelOrder = async (req, res) => {
 
     const validationError = validateUserCancellationRequest(reason, notes);
     if (validationError) {
-      return res
-        .status(validationError.status)
-        .json(validationError.body);
+      return res.status(validationError.status).json(validationError.body);
     }
 
     // Find the order and validate ownership
@@ -278,9 +154,7 @@ export const cancelOrder = async (req, res) => {
 
     const cancellableError = ensureOrderIsUserCancellable(order);
     if (cancellableError) {
-      return res
-        .status(cancellableError.status)
-        .json(cancellableError.body);
+      return res.status(cancellableError.status).json(cancellableError.body);
     }
 
     const lockError = await acquireCancellationLock(order);
@@ -320,13 +194,15 @@ export const cancelOrder = async (req, res) => {
 
     await order.save();
 
-    return res.status(200).json(
-      buildCancellationSuccessResponse(
-        order,
-        "Order cancelled successfully",
-        "Your refund has been initiated, depending on your bank’s processing times, it may take 5–10 business days to post the credit to your account",
-      ),
-    );
+    return res
+      .status(200)
+      .json(
+        buildCancellationSuccessResponse(
+          order,
+          "Order cancelled successfully",
+          "Your refund has been initiated, depending on your bank’s processing times, it may take 5–10 business days to post the credit to your account",
+        ),
+      );
   } catch (error) {
     console.error("Cancel order error:", error);
     res.status(500).json({
@@ -441,13 +317,9 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     // Validate transition
-    const allowedNext = VALID_STATUS_TRANSITIONS[order.status];
-    if (!allowedNext || !allowedNext.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid status transition",
-        description: `Cannot change status from "${order.status}" to "${status}".`,
-      });
+    const transitionError = validateStatusTransition(order.status, status);
+    if (transitionError) {
+      return res.status(transitionError.status).json(transitionError.body);
     }
 
     // Cancelled — require reason, initiate refund + restock
@@ -496,13 +368,15 @@ export const updateOrderStatus = async (req, res) => {
 
       await order.save();
 
-      return res.status(200).json(
-        buildCancellationSuccessResponse(
-          order,
-          "Order cancelled successfully",
-          "The order has been cancelled and refund initiated.",
-        ),
-      );
+      return res
+        .status(200)
+        .json(
+          buildCancellationSuccessResponse(
+            order,
+            "Order cancelled successfully",
+            "The order has been cancelled and refund initiated.",
+          ),
+        );
     }
 
     // Shipped — require carrier, tracking number, and tracking link

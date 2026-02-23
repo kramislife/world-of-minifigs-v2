@@ -3,296 +3,50 @@ import DealerAddon from "../models/dealerAddon.model.js";
 import DealerExtraBag from "../models/dealerExtraBag.model.js";
 import DealerTorsoBag from "../models/dealerTorsoBag.model.js";
 import SubCollection from "../models/subCollection.model.js";
-import { uploadImage, deleteImage } from "../utils/cloudinary.js";
+import { cleanUpImages } from "../utils/cloudinary.js";
 import {
   normalizePagination,
   buildSearchQuery,
   paginateQuery,
   createPaginationResponse,
 } from "../utils/pagination.js";
+import { handleError } from "../utils/commonUtils.js";
+import { validateFeatures, processFeatures } from "../utils/bundleUtils.js";
+import { AUDIT_POPULATE } from "../utils/populateHelpers.js";
+import {
+  checkBundleQuantityConflict,
+  findBundleByIdAndType,
+} from "../utils/bundleUtils.js";
+import {
+  getMiscQuantity,
+  getBaseBundleSize,
+  validateTorsoItems,
+  checkAddonNameConflict,
+  checkTorsoBagNameConflict,
+  processAddonItems,
+  processAddonItemsForUpdate,
+  processTorsoBagItems,
+  processTorsoBagItemsForUpdate,
+} from "../services/bundleService.js";
 
-// ==================== Helper Functions ====================
+// -------------------------------- Helper Functions ---------------------------------- 
 
-const handleError = (res, error, logPrefix, customMessage) => {
-  console.error(`${logPrefix}:`, error);
-  res.status(500).json({
-    success: false,
-    message: customMessage || "Internal server error",
-    description: "An unexpected error occurred. Please try again.",
-  });
-};
+const findDealerBundleById = async (id) => findBundleByIdAndType("dealer", id);
 
-const validateFeatures = (features) => {
-  if (features && Array.isArray(features) && features.length > 5) {
-    return {
-      isValid: false,
-      error: {
-        status: 400,
-        message: "Too many features",
-        description: "A bundle can have a maximum of 5 features.",
-      },
-    };
-  }
-  return { isValid: true };
-};
+const findDealerAddonById = async (id) => DealerAddon.findById(id);
 
-const processFeatures = (features) => {
-  // Only include features if it's a non-empty array
-  if (features && Array.isArray(features) && features.length > 0) {
-    return features;
-  }
-  return undefined;
-};
-
-// Misc is always 20% of the target bundle size
-const MISC_RATIO = 0.2;
-
-const getMiscQuantity = (targetBundleSize) =>
-  Math.round(targetBundleSize * MISC_RATIO);
-
-const getAdminTarget = (targetBundleSize) =>
-  targetBundleSize - getMiscQuantity(targetBundleSize);
-
-const getBaseBundleSize = async () => {
-  const lowestBundle = await Bundle.findOne({
-    bundleType: "dealer",
-    isActive: true,
-  }).sort({ minifigQuantity: 1 });
-  return lowestBundle ? lowestBundle.minifigQuantity : 100;
-};
-
-const validateTorsoItems = (items, targetBundleSize) => {
-  const adminTarget = getAdminTarget(targetBundleSize);
-  const totalQty = items.reduce(
-    (sum, item) => sum + (Number(item.quantity) || 0),
-    0,
-  );
-
-  if (totalQty !== adminTarget) {
-    return {
-      isValid: false,
-      message: "Invalid total quantity",
-      description: `Total designs quantity must equal ${adminTarget} (${targetBundleSize} minus ${getMiscQuantity(targetBundleSize)} miscellaneous). Current total: ${totalQty}.`,
-    };
-  }
-
-  return { isValid: true };
-};
-
-const cleanUpImages = async (items) => {
-  if (!items || !Array.isArray(items) || items.length === 0) return;
-  for (const item of items) {
-    if (item.image?.publicId) {
-      await deleteImage(item.image.publicId);
-    }
-  }
-};
-
-const findDealerBundleById = async (id) => {
-  return await Bundle.findOne({ _id: id, bundleType: "dealer" });
-};
-
-const findDealerAddonById = async (id) => {
-  return await DealerAddon.findById(id);
-};
-
-const checkBundleQuantityConflict = async (
-  minifigQuantity,
-  excludeId = null,
-) => {
-  const query = {
-    bundleType: "dealer",
-    minifigQuantity,
-  };
-  if (excludeId) {
-    query._id = { $ne: excludeId };
-  }
-  return await Bundle.findOne(query);
-};
-
-const checkAddonNameConflict = async (addonName, excludeId = null) => {
-  const query = {
-    addonName: addonName.trim(),
-  };
-  if (excludeId) {
-    query._id = { $ne: excludeId };
-  }
-  return await DealerAddon.findOne(query);
-};
+const checkBundleConflict = async (minifigQuantity, excludeId = null) =>
+  checkBundleQuantityConflict("dealer", minifigQuantity, excludeId);
 
 const checkExtraBagConflict = async (subCollectionId, excludeId = null) => {
   const query = { subCollectionId };
-  if (excludeId) {
-    query._id = { $ne: excludeId };
-  }
-  return await DealerExtraBag.findOne(query);
+  if (excludeId) query._id = { $ne: excludeId };
+  return DealerExtraBag.findOne(query);
 };
 
-const checkTorsoBagNameConflict = async (bagName, excludeId = null) => {
-  const query = {
-    bagName: { $regex: new RegExp(`^${bagName.trim()}$`, "i") },
-  };
-  if (excludeId) {
-    query._id = { $ne: excludeId };
-  }
-  return await DealerTorsoBag.findOne(query);
-};
+const getStandardPopulateOptions = () => AUDIT_POPULATE;
 
-const getStandardPopulateOptions = () => [
-  { path: "createdBy", select: "firstName lastName username" },
-  { path: "updatedBy", select: "firstName lastName username" },
-];
-
-const processAddonItems = async (
-  items,
-  folderPath = "world-of-minifigs-v2/dealers/addons",
-) => {
-  if (!items || !Array.isArray(items) || items.length === 0) return [];
-
-  const processedItems = [];
-  for (const itemData of items) {
-    const isObject = typeof itemData === "object";
-    const imageToUpload = isObject ? itemData.image : itemData;
-
-    if (imageToUpload) {
-      const uploadResult = await uploadImage(imageToUpload, folderPath);
-      processedItems.push({
-        itemName: isObject ? itemData.itemName : undefined,
-        itemPrice: isObject ? itemData.itemPrice : undefined,
-        color: isObject ? itemData.color : undefined,
-        image: {
-          publicId: uploadResult.public_id,
-          url: uploadResult.url,
-        },
-      });
-    }
-  }
-  return processedItems;
-};
-
-const processAddonItemsForUpdate = async (
-  items,
-  existingItems,
-  folderPath = "world-of-minifigs-v2/dealers/addons",
-) => {
-  if (!items || !Array.isArray(items)) return null;
-
-  const processedItems = [];
-  const oldPublicIds = (existingItems || [])
-    .map((item) => item.image?.publicId)
-    .filter(Boolean);
-
-  for (const itemData of items) {
-    // If it has image object with publicId, it's an existing item
-    if (
-      typeof itemData === "object" &&
-      itemData.image &&
-      itemData.image.publicId
-    ) {
-      processedItems.push(itemData);
-    } else {
-      // New image/item
-      const isObject = typeof itemData === "object";
-      const imageToUpload = isObject ? itemData.image : itemData;
-
-      if (imageToUpload) {
-        const uploadResult = await uploadImage(imageToUpload, folderPath);
-        processedItems.push({
-          itemName: isObject ? itemData.itemName : undefined,
-          itemPrice: isObject ? itemData.itemPrice : undefined,
-          color: isObject ? itemData.color : undefined,
-          image: {
-            publicId: uploadResult.public_id,
-            url: uploadResult.url,
-          },
-        });
-      }
-    }
-  }
-
-  // Find images to delete
-  const newPublicIds = processedItems
-    .map((item) => item.image?.publicId)
-    .filter(Boolean);
-  const idsToDelete = oldPublicIds.filter((id) => !newPublicIds.includes(id));
-
-  // Delete removed images
-  for (const id of idsToDelete) {
-    await deleteImage(id);
-  }
-
-  return processedItems;
-};
-
-const processTorsoBagItems = async (
-  items,
-  folderPath = "world-of-minifigs-v2/dealers/torsos",
-) => {
-  const uploadedItems = [];
-  for (const item of items) {
-    const designUpload = await uploadImage(item.image, folderPath);
-    uploadedItems.push({
-      image: {
-        publicId: designUpload.public_id,
-        url: designUpload.url,
-      },
-      quantity: Number(item.quantity),
-    });
-  }
-  return uploadedItems;
-};
-
-const processTorsoBagItemsForUpdate = async (
-  items,
-  existingItems,
-  folderPath = "world-of-minifigs-v2/dealers/torsos",
-) => {
-  const processedItems = [];
-  const currentPublicIds = existingItems.map((item) => item.image.publicId);
-
-  for (const itemData of items) {
-    // If it has image object with publicId, it's an existing item
-    if (
-      typeof itemData === "object" &&
-      itemData.image &&
-      itemData.image.publicId
-    ) {
-      processedItems.push(itemData);
-    } else {
-      // New image/design
-      const imageToUpload =
-        typeof itemData.image === "string"
-          ? itemData.image
-          : itemData.image?.url;
-
-      if (imageToUpload && !imageToUpload.startsWith("http")) {
-        const uploadResult = await uploadImage(imageToUpload, folderPath);
-        processedItems.push({
-          image: {
-            publicId: uploadResult.public_id,
-            url: uploadResult.url,
-          },
-          quantity: Number(itemData.quantity),
-        });
-      }
-    }
-  }
-
-  // Find images to delete
-  const newPublicIds = processedItems.map((item) => item.image.publicId);
-  const idsToDelete = currentPublicIds.filter(
-    (id) => !newPublicIds.includes(id),
-  );
-
-  // Delete removed images
-  for (const id of idsToDelete) {
-    await deleteImage(id);
-  }
-
-  return processedItems;
-};
-
-// ==================== Create Dealer Bundle ====================
+// -------------------------------- Create Dealer Bundle ---------------------------------- 
 
 export const createDealerBundle = async (req, res) => {
   try {
@@ -331,7 +85,7 @@ export const createDealerBundle = async (req, res) => {
     }
 
     // Check for existing bundle with same quantity
-    const existingBundle = await checkBundleQuantityConflict(minifigQuantity);
+    const existingBundle = await checkBundleConflict(minifigQuantity);
     if (existingBundle) {
       return res.status(409).json({
         success: false,
@@ -372,7 +126,7 @@ export const createDealerBundle = async (req, res) => {
   }
 };
 
-// ==================== Get All Dealer Bundles ====================
+// -------------------------------- Get All Dealer Bundles ---------------------------------- 
 
 export const getAllDealerBundles = async (req, res) => {
   try {
@@ -395,7 +149,7 @@ export const getAllDealerBundles = async (req, res) => {
   }
 };
 
-// ==================== Update Dealer Bundle ====================
+// -------------------------------- Update Dealer Bundle ---------------------------------- 
 
 export const updateDealerBundle = async (req, res) => {
   try {
@@ -432,7 +186,7 @@ export const updateDealerBundle = async (req, res) => {
 
     if (minifigQuantity !== undefined) {
       if (minifigQuantity !== bundle.minifigQuantity) {
-        const conflict = await checkBundleQuantityConflict(minifigQuantity, id);
+        const conflict = await checkBundleConflict(minifigQuantity, id);
         if (conflict) {
           return res.status(409).json({
             success: false,
@@ -471,7 +225,7 @@ export const updateDealerBundle = async (req, res) => {
   }
 };
 
-// ==================== Delete Dealer Bundle ====================
+// -------------------------------- Delete Dealer Bundle ---------------------------------- 
 
 export const deleteDealerBundle = async (req, res) => {
   try {
@@ -499,7 +253,7 @@ export const deleteDealerBundle = async (req, res) => {
   }
 };
 
-// ==================== Create Dealer Addon ====================
+// -------------------------------- Create Dealer Addon ---------------------------------- 
 
 export const createDealerAddon = async (req, res) => {
   try {
@@ -547,7 +301,7 @@ export const createDealerAddon = async (req, res) => {
   }
 };
 
-// ==================== Get All Dealer Addons ====================
+// -------------------------------- Get All Dealer Addons ---------------------------------- 
 
 export const getAllDealerAddons = async (req, res) => {
   try {
@@ -569,7 +323,7 @@ export const getAllDealerAddons = async (req, res) => {
   }
 };
 
-// ==================== Update Dealer Addon ====================
+// -------------------------------- Update Dealer Addon ---------------------------------- 
 
 export const updateDealerAddon = async (req, res) => {
   try {
@@ -631,7 +385,7 @@ export const updateDealerAddon = async (req, res) => {
   }
 };
 
-// ==================== Delete Dealer Addon ====================
+// -------------------------------- Delete Dealer Addon ---------------------------------- 
 
 export const deleteDealerAddon = async (req, res) => {
   try {
@@ -661,7 +415,7 @@ export const deleteDealerAddon = async (req, res) => {
   }
 };
 
-// ==================== Create Dealer Extra Bag ====================
+// ------------------------------- Create Dealer Extra Bag ---------------------------------- 
 
 export const createDealerExtraBag = async (req, res) => {
   try {
@@ -709,7 +463,7 @@ export const createDealerExtraBag = async (req, res) => {
   }
 };
 
-// ==================== Get All Dealer Extra Bags ====================
+// ------------------------------- Get All Dealer Extra Bags --------------------------------
 
 export const getAllDealerExtraBags = async (req, res) => {
   try {
@@ -747,7 +501,7 @@ export const getAllDealerExtraBags = async (req, res) => {
   }
 };
 
-// ==================== Update Dealer Extra Bag ====================
+// ------------------------------- Update Dealer Extra Bag --------------------------------
 
 export const updateDealerExtraBag = async (req, res) => {
   try {
@@ -802,7 +556,7 @@ export const updateDealerExtraBag = async (req, res) => {
   }
 };
 
-// ==================== Delete Dealer Extra Bag ====================
+// ------------------------------- Delete Dealer Extra Bag --------------------------------
 
 export const deleteDealerExtraBag = async (req, res) => {
   try {
@@ -832,7 +586,7 @@ export const deleteDealerExtraBag = async (req, res) => {
   }
 };
 
-// ==================== Create Dealer Torso Bag ====================
+// ------------------------------- Create Dealer Torso Bag --------------------------------
 
 export const createDealerTorsoBag = async (req, res) => {
   try {
@@ -904,7 +658,7 @@ export const createDealerTorsoBag = async (req, res) => {
   }
 };
 
-// ==================== Get All Dealer Torso Bags ====================
+// ------------------------------- Get All Dealer Torso Bags --------------------------------
 
 export const getAllDealerTorsoBags = async (req, res) => {
   try {
@@ -929,7 +683,7 @@ export const getAllDealerTorsoBags = async (req, res) => {
   }
 };
 
-// ==================== Update Dealer Torso Bag ====================
+// ------------------------------- Update Dealer Torso Bag --------------------------------
 
 export const updateDealerTorsoBag = async (req, res) => {
   try {
@@ -1007,7 +761,7 @@ export const updateDealerTorsoBag = async (req, res) => {
   }
 };
 
-// ==================== Delete Dealer Torso Bag ====================
+// ------------------------------- Delete Dealer Torso Bag --------------------------------
 
 export const deleteDealerTorsoBag = async (req, res) => {
   try {
@@ -1042,7 +796,7 @@ export const deleteDealerTorsoBag = async (req, res) => {
   }
 };
 
-// ==================== Reorder Dealer Torso Bag Items ====================
+// ------------------------------- Reorder Dealer Torso Bag Items --------------------------------
 
 export const reorderTorsoBagItems = async (req, res) => {
   try {
@@ -1098,7 +852,7 @@ export const reorderTorsoBagItems = async (req, res) => {
   }
 };
 
-// ==================== Dealer Access (Public Endpoints) ====================
+// ---------------------------- Dealer Access (Public Endpoints) -----------------------------
 
 export const getDealerBundlesForUser = async (req, res) => {
   try {

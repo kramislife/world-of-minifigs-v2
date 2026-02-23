@@ -5,6 +5,8 @@ import {
   paginateQuery,
   createPaginationResponse,
 } from "../utils/pagination.js";
+import { checkNameConflict } from "../utils/commonUtils.js";
+import { AUDIT_POPULATE } from "../utils/populateHelpers.js";
 
 //------------------------------------------------ Create SkillLevel ------------------------------------------
 export const createSkillLevel = async (req, res) => {
@@ -32,11 +34,11 @@ export const createSkillLevel = async (req, res) => {
     }
 
     // Check if skill level with same name already exists
-    const existingSkillLevel = await SkillLevel.findOne({
-      skillLevelName: skillLevelNameStr,
-    })
-      .collation({ locale: "en", strength: 2 })
-      .lean();
+    const existingSkillLevel = await checkNameConflict(
+      SkillLevel,
+      "skillLevelName",
+      skillLevelNameStr,
+    );
 
     if (existingSkillLevel) {
       return res.status(409).json({
@@ -80,11 +82,7 @@ export const createSkillLevel = async (req, res) => {
 export const getAllSkillLevels = async (req, res) => {
   try {
     // Extract and normalize pagination parameters
-    const { page, limit, search } = normalizePagination({
-      page: req.query.page,
-      limit: req.query.limit,
-      search: req.query.search,
-    });
+    const { page, limit, search } = normalizePagination(req.query);
 
     // Build search query
     const searchFields = ["skillLevelName", "description"];
@@ -95,15 +93,12 @@ export const getAllSkillLevels = async (req, res) => {
       page,
       limit,
       sort: { createdAt: -1 },
-      populate: [
-        { path: "createdBy", select: "firstName lastName username" },
-        { path: "updatedBy", select: "firstName lastName username" },
-      ],
+      populate: AUDIT_POPULATE,
     });
 
-    return res.status(200).json(
-      createPaginationResponse(result, "skillLevels")
-    );
+    return res
+      .status(200)
+      .json(createPaginationResponse(result, "skillLevels"));
   } catch (error) {
     console.error("Get all skill levels error:", error);
     res.status(500).json({
@@ -176,12 +171,12 @@ export const updateSkillLevel = async (req, res) => {
       }
 
       // Check if another skill level with same name exists
-      const existingSkillLevel = await SkillLevel.findOne({
-        skillLevelName: skillLevelNameStr,
-        _id: { $ne: id },
-      })
-        .collation({ locale: "en", strength: 2 })
-        .lean();
+      const existingSkillLevel = await checkNameConflict(
+        SkillLevel,
+        "skillLevelName",
+        skillLevelNameStr,
+        id,
+      );
 
       if (existingSkillLevel) {
         return res.status(409).json({

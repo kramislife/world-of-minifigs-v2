@@ -5,6 +5,8 @@ import {
   paginateQuery,
   createPaginationResponse,
 } from "../utils/pagination.js";
+import { checkNameConflict } from "../utils/commonUtils.js";
+import { AUDIT_POPULATE } from "../utils/populateHelpers.js";
 
 //------------------------------------------------ Create Color ------------------------------------------
 export const createColor = async (req, res) => {
@@ -40,9 +42,11 @@ export const createColor = async (req, res) => {
     }
 
     // Check if color with same name already exists
-    const existingColor = await Color.findOne({
-      colorName: colorNameStr,
-    });
+    const existingColor = await checkNameConflict(
+      Color,
+      "colorName",
+      colorNameStr,
+    );
 
     if (existingColor) {
       return res.status(409).json({
@@ -100,11 +104,7 @@ export const createColor = async (req, res) => {
 export const getAllColors = async (req, res) => {
   try {
     // Extract and normalize pagination parameters
-    const { page, limit, search } = normalizePagination({
-      page: req.query.page,
-      limit: req.query.limit,
-      search: req.query.search,
-    });
+    const { page, limit, search } = normalizePagination(req.query);
 
     // Build search query
     const searchFields = ["colorName", "hexCode"];
@@ -115,10 +115,7 @@ export const getAllColors = async (req, res) => {
       page,
       limit,
       sort: { createdAt: -1 },
-      populate: [
-        { path: "createdBy", select: "firstName lastName username" },
-        { path: "updatedBy", select: "firstName lastName username" },
-      ],
+      populate: AUDIT_POPULATE,
     });
 
     return res.status(200).json(createPaginationResponse(result, "colors"));
@@ -193,10 +190,12 @@ export const updateColor = async (req, res) => {
       }
 
       // Check if another color with same name exists
-      const existingColor = await Color.findOne({
-        colorName: colorNameStr,
-        _id: { $ne: id },
-      });
+      const existingColor = await checkNameConflict(
+        Color,
+        "colorName",
+        colorNameStr,
+        id,
+      );
 
       if (existingColor) {
         return res.status(409).json({

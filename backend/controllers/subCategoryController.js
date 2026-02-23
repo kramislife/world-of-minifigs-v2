@@ -6,6 +6,8 @@ import {
   paginateQuery,
   createPaginationResponse,
 } from "../utils/pagination.js";
+import { checkNameConflict } from "../utils/commonUtils.js";
+import { AUDIT_POPULATE } from "../utils/populateHelpers.js";
 
 //------------------------------------------------ Create Sub-category ------------------------------------------
 export const createSubCategory = async (req, res) => {
@@ -51,12 +53,13 @@ export const createSubCategory = async (req, res) => {
     }
 
     // Check if subcategory with same name already exists in this category
-    const existingSubCategory = await SubCategory.findOne({
-      subCategoryName: subCategoryNameStr,
-      categoryId: category,
-    })
-      .collation({ locale: "en", strength: 2 })
-      .lean();
+    const existingSubCategory = await checkNameConflict(
+      SubCategory,
+      "subCategoryName",
+      subCategoryNameStr,
+      null,
+      { categoryId: category },
+    );
 
     if (existingSubCategory) {
       return res.status(409).json({
@@ -106,11 +109,7 @@ export const createSubCategory = async (req, res) => {
 export const getAllSubCategories = async (req, res) => {
   try {
     // Extract and normalize pagination parameters
-    const { page, limit, search } = normalizePagination({
-      page: req.query.page,
-      limit: req.query.limit,
-      search: req.query.search,
-    });
+    const { page, limit, search } = normalizePagination(req.query);
 
     // Build search query
     let searchQuery = {};
@@ -119,7 +118,7 @@ export const getAllSubCategories = async (req, res) => {
       const subCategorySearchFields = ["subCategoryName", "description"];
       const subCategoryQuery = buildSearchQuery(
         search,
-        subCategorySearchFields
+        subCategorySearchFields,
       );
 
       // Search in category names
@@ -152,8 +151,7 @@ export const getAllSubCategories = async (req, res) => {
       sort: { createdAt: -1 },
       populate: [
         { path: "categoryId", select: "categoryName" },
-        { path: "createdBy", select: "firstName lastName username" },
-        { path: "updatedBy", select: "firstName lastName username" },
+        ...AUDIT_POPULATE,
       ],
     });
 
@@ -234,13 +232,13 @@ export const updateSubCategory = async (req, res) => {
 
       // Check if another sub-category with same name exists in the same category
       const categoryToCheck = category || subCategory.categoryId;
-      const existingSubCategory = await SubCategory.findOne({
-        subCategoryName: subCategoryNameStr,
-        categoryId: categoryToCheck,
-        _id: { $ne: id },
-      })
-        .collation({ locale: "en", strength: 2 })
-        .lean();
+      const existingSubCategory = await checkNameConflict(
+        SubCategory,
+        "subCategoryName",
+        subCategoryNameStr,
+        id,
+        { categoryId: categoryToCheck },
+      );
 
       if (existingSubCategory) {
         return res.status(409).json({

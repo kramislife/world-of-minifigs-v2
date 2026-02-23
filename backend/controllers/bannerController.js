@@ -10,6 +10,7 @@ import {
   paginateQuery,
   createPaginationResponse,
 } from "../utils/pagination.js";
+import { AUDIT_POPULATE } from "../utils/populateHelpers.js";
 
 //------------------------------------------------ Helpers ------------------------------------------
 
@@ -291,11 +292,7 @@ export const createBanner = async (req, res) => {
 export const getAllBanners = async (req, res) => {
   try {
     // Extract and normalize pagination parameters
-    const { page, limit, search } = normalizePagination({
-      page: req.query.page,
-      limit: req.query.limit,
-      search: req.query.search,
-    });
+    const { page, limit, search } = normalizePagination(req.query);
 
     // Build search query
     const searchFields = ["label", "badge", "description"];
@@ -306,10 +303,7 @@ export const getAllBanners = async (req, res) => {
       page,
       limit,
       sort: { order: 1 },
-      populate: [
-        { path: "createdBy", select: "firstName lastName username" },
-        { path: "updatedBy", select: "firstName lastName username" },
-      ],
+      populate: AUDIT_POPULATE,
     });
 
     return res.status(200).json(createPaginationResponse(result, "banners"));

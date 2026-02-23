@@ -12,6 +12,8 @@ import {
   createPaginationResponse,
 } from "../utils/pagination.js";
 import { onCollectionToggle } from "../utils/Products/visibilityUtils.js";
+import { checkNameConflict } from "../utils/commonUtils.js";
+import { AUDIT_POPULATE } from "../utils/populateHelpers.js";
 
 const FEATURED_COLLECTION_LIMIT = 2;
 
@@ -59,11 +61,11 @@ export const createCollection = async (req, res) => {
     }
 
     // Check if collection with same name already exists
-    const existingCollection = await Collection.findOne({
-      collectionName: collectionNameStr,
-    })
-      .collation({ locale: "en", strength: 2 })
-      .lean();
+    const existingCollection = await checkNameConflict(
+      Collection,
+      "collectionName",
+      collectionNameStr,
+    );
 
     if (existingCollection) {
       return res.status(409).json({
@@ -93,7 +95,7 @@ export const createCollection = async (req, res) => {
     try {
       uploadedImage = await uploadImage(
         image,
-        "world-of-minifigs-v2/collections"
+        "world-of-minifigs-v2/collections",
       );
     } catch (uploadError) {
       console.error("Image upload error:", uploadError);
@@ -145,11 +147,7 @@ export const createCollection = async (req, res) => {
 export const getAllCollections = async (req, res) => {
   try {
     // Extract and normalize pagination parameters
-    const { page, limit, search } = normalizePagination({
-      page: req.query.page,
-      limit: req.query.limit,
-      search: req.query.search,
-    });
+    const { page, limit, search } = normalizePagination(req.query);
 
     // Build search query
     const searchFields = ["collectionName", "description"];
@@ -160,15 +158,12 @@ export const getAllCollections = async (req, res) => {
       page,
       limit,
       sort: { isFeatured: -1, createdAt: -1 }, // Featured first, then by date
-      populate: [
-        { path: "createdBy", select: "firstName lastName username" },
-        { path: "updatedBy", select: "firstName lastName username" },
-      ],
+      populate: AUDIT_POPULATE,
     });
 
-    return res.status(200).json(
-      createPaginationResponse(result, "collections")
-    );
+    return res
+      .status(200)
+      .json(createPaginationResponse(result, "collections"));
   } catch (error) {
     console.error("Get all collections error:", error);
     res.status(500).json({
@@ -241,12 +236,12 @@ export const updateCollection = async (req, res) => {
       }
 
       // Check if another collection with same name exists
-      const existingCollection = await Collection.findOne({
-        collectionName: collectionNameStr,
-        _id: { $ne: id },
-      })
-        .collation({ locale: "en", strength: 2 })
-        .lean();
+      const existingCollection = await checkNameConflict(
+        Collection,
+        "collectionName",
+        collectionNameStr,
+        id,
+      );
 
       if (existingCollection) {
         return res.status(409).json({
@@ -305,7 +300,7 @@ export const updateCollection = async (req, res) => {
         // Upload new image
         const uploadedImage = await uploadImage(
           image,
-          "world-of-minifigs-v2/collections"
+          "world-of-minifigs-v2/collections",
         );
         collection.image = {
           publicId: uploadedImage.public_id,

@@ -569,11 +569,7 @@ export const createProduct = async (req, res) => {
 export const getAllProducts = async (req, res) => {
   try {
     // Extract and normalize pagination parameters
-    const { page, limit, search } = normalizePagination({
-      page: req.query.page,
-      limit: req.query.limit,
-      search: req.query.search,
-    });
+    const { page, limit, search } = normalizePagination(req.query);
 
     // Build search query using utility function
     const searchQuery = await buildProductSearchQuery(search);

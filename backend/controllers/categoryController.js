@@ -6,6 +6,8 @@ import {
   paginateQuery,
   createPaginationResponse,
 } from "../utils/pagination.js";
+import { checkNameConflict } from "../utils/commonUtils.js";
+import { AUDIT_POPULATE } from "../utils/populateHelpers.js";
 
 //------------------------------------------------ Create Category ------------------------------------------
 export const createCategory = async (req, res) => {
@@ -33,11 +35,11 @@ export const createCategory = async (req, res) => {
     }
 
     // Check if category with same name already exists
-    const existingCategory = await Category.findOne({
-      categoryName: categoryNameStr,
-    })
-      .collation({ locale: "en", strength: 2 })
-      .lean();
+    const existingCategory = await checkNameConflict(
+      Category,
+      "categoryName",
+      categoryNameStr,
+    );
 
     if (existingCategory) {
       return res.status(409).json({
@@ -81,11 +83,7 @@ export const createCategory = async (req, res) => {
 export const getAllCategories = async (req, res) => {
   try {
     // Extract and normalize pagination parameters
-    const { page, limit, search } = normalizePagination({
-      page: req.query.page,
-      limit: req.query.limit,
-      search: req.query.search,
-    });
+    const { page, limit, search } = normalizePagination(req.query);
 
     // Build search query
     const searchFields = ["categoryName", "description"];
@@ -96,15 +94,10 @@ export const getAllCategories = async (req, res) => {
       page,
       limit,
       sort: { createdAt: -1 },
-      populate: [
-        { path: "createdBy", select: "firstName lastName username" },
-        { path: "updatedBy", select: "firstName lastName username" },
-      ],
+      populate: AUDIT_POPULATE,
     });
 
-    return res.status(200).json(
-      createPaginationResponse(result, "categories")
-    );
+    return res.status(200).json(createPaginationResponse(result, "categories"));
   } catch (error) {
     console.error("Get all categories error:", error);
     res.status(500).json({
@@ -177,12 +170,12 @@ export const updateCategory = async (req, res) => {
       }
 
       // Check if another category with same name exists
-      const existingCategory = await Category.findOne({
-        categoryName: categoryNameStr,
-        _id: { $ne: id },
-      })
-        .collation({ locale: "en", strength: 2 })
-        .lean();
+      const existingCategory = await checkNameConflict(
+        Category,
+        "categoryName",
+        categoryNameStr,
+        id,
+      );
 
       if (existingCategory) {
         return res.status(409).json({

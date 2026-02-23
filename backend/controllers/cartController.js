@@ -1,6 +1,6 @@
 import Cart from "../models/cart.model.js";
 import Product from "../models/product.model.js";
-import { CART_POPULATE } from "../utils/cartPopulate.js";
+import { CART_POPULATE } from "../utils/populateHelpers.js";
 import {
   findCartItemIndex,
   formatCartItemForDisplay,

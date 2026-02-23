@@ -14,6 +14,8 @@ import {
   createPaginationResponse,
 } from "../utils/pagination.js";
 import { onSubCollectionToggle } from "../utils/Products/visibilityUtils.js";
+import { checkNameConflict } from "../utils/commonUtils.js";
+import { AUDIT_POPULATE } from "../utils/populateHelpers.js";
 
 //------------------------------------------------ Create Sub-collection ------------------------------------------
 export const createSubCollection = async (req, res) => {
@@ -77,12 +79,13 @@ export const createSubCollection = async (req, res) => {
     }
 
     // Check if subcollection with same name already exists in this collection
-    const existingSubCollection = await SubCollection.findOne({
-      subCollectionName: subCollectionNameStr,
-      collectionId: collection,
-    })
-      .collation({ locale: "en", strength: 2 })
-      .lean();
+    const existingSubCollection = await checkNameConflict(
+      SubCollection,
+      "subCollectionName",
+      subCollectionNameStr,
+      null,
+      { collectionId: collection },
+    );
 
     if (existingSubCollection) {
       return res.status(409).json({
@@ -154,11 +157,7 @@ export const createSubCollection = async (req, res) => {
 export const getAllSubCollections = async (req, res) => {
   try {
     // Extract and normalize pagination parameters
-    const { page, limit, search } = normalizePagination({
-      page: req.query.page,
-      limit: req.query.limit,
-      search: req.query.search,
-    });
+    const { page, limit, search } = normalizePagination(req.query);
 
     // Build search query
     let searchQuery = {};
@@ -205,8 +204,7 @@ export const getAllSubCollections = async (req, res) => {
       sort: { createdAt: -1 },
       populate: [
         { path: "collectionId", select: "collectionName" },
-        { path: "createdBy", select: "firstName lastName username" },
-        { path: "updatedBy", select: "firstName lastName username" },
+        ...AUDIT_POPULATE,
       ],
     });
 
@@ -290,13 +288,13 @@ export const updateSubCollection = async (req, res) => {
         collection !== undefined ? collection : subCollection.collectionId;
 
       // Check if another subcollection with same name exists in the same collection
-      const existingSubCollection = await SubCollection.findOne({
-        subCollectionName: subCollectionNameStr,
-        collectionId: collectionToCheck,
-        _id: { $ne: id },
-      })
-        .collation({ locale: "en", strength: 2 })
-        .lean();
+      const existingSubCollection = await checkNameConflict(
+        SubCollection,
+        "subCollectionName",
+        subCollectionNameStr,
+        id,
+        { collectionId: collectionToCheck },
+      );
 
       if (existingSubCollection) {
         return res.status(409).json({

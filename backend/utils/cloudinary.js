@@ -194,3 +194,14 @@ export const deleteMedia = async (publicId, resourceType = "image") => {
     throw new Error(`Failed to delete media: ${error.message}`);
   }
 };
+
+// Delete Cloudinary images from an array of items
+
+export const cleanUpImages = async (items) => {
+  if (!items || !Array.isArray(items) || items.length === 0) return;
+  for (const item of items) {
+    if (item.image?.publicId) {
+      await deleteImage(item.image.publicId);
+    }
+  }
+};

@@ -1,3 +1,12 @@
+// ----------------- Standard createdBy/updatedBy populate for admin list views --------------
+
+export const AUDIT_POPULATE = [
+  { path: "createdBy", select: "firstName lastName username" },
+  { path: "updatedBy", select: "firstName lastName username" },
+];
+
+// ------------------------ Cart & Product Color Populate Configurations ----------------
+
 const POPULATE_COLORS = [
   { path: "variants.colorId", select: "colorName hexCode" },
   { path: "variants.secondaryColorId", select: "colorName hexCode" },
@@ -12,7 +21,8 @@ export const POPULATE_COLORS_NAMES_ONLY = [
   { path: "secondaryColorId", select: "colorName" },
 ];
 
-/** For getCart - includes isActive, stock, hexCode for swatches */
+// ------------ For getCart - includes isActive, stock, hexCode for swatches ----------------
+
 export const CART_POPULATE = {
   path: "items.productId",
   select:
@@ -20,7 +30,8 @@ export const CART_POPULATE = {
   populate: POPULATE_COLORS,
 };
 
-/** For payment order creation - includes discount */
+// ------------------------ For payment order creation - includes discount ----------------
+
 export const CART_POPULATE_ORDER = {
   path: "items.productId",
   select:
@@ -28,7 +39,8 @@ export const CART_POPULATE_ORDER = {
   populate: POPULATE_COLORS_NAMES_ONLY,
 };
 
-/** For Stripe checkout session - includes isActive */
+// ------------------------ For Stripe checkout session - includes isActive ----------------
+
 export const CART_POPULATE_CHECKOUT = {
   path: "items.productId",
   select:
