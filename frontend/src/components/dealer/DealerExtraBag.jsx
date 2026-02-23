@@ -18,10 +18,10 @@ const DealerExtraBag = ({
         </h2>
         {selectedBundle && (
           <Badge variant="outline" className="flex items-center">
-            <div className="flex items-center gap-1">
-              <span className="text-sm font-bold">{totalExtraBags}</span>
+            <div className="flex items-center gap-1 text-primary">
+              <span className="text-lg font-bold">{totalExtraBags}</span>
               <span className="text-muted-foreground">/</span>
-              <span className="text-sm font-bold">
+              <span className="text-lg font-bold">
                 {maxExtraBags} extra bags
               </span>
             </div>

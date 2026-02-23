@@ -46,7 +46,7 @@ export const dealerProcess = {
     {
       title: "Select Your Bag Quantity",
       description:
-        " Choose up to 300+ top-quality, 100% genuine LEGO minifigures",
+        " Choose up to 1000+ top-quality, 100% genuine LEGO minifigures",
       icon: MousePointerClick,
     },
     {
@@ -58,7 +58,7 @@ export const dealerProcess = {
     {
       title: "Choose Your LEGO Torso",
       description:
-        "Pick your favorite LEGO minifigure torsos and mix & match designs to build your perfect set",
+        "Expand your collection with our selection of premium pre-selected torso bags",
       icon: Shirt,
     },
     {
@@ -77,22 +77,22 @@ export const dealerIncluded = {
   items: [
     {
       title: "1 Torso",
-      description: "You choose!",
+      description: "Exciting Range of Premium Designs",
       icon: Shirt,
     },
     {
       title: "1 Head",
-      description: "Standard mix",
+      description: "Minimum of 20% flesh-tone minifig heads",
       icon: CircleUser,
     },
     {
       title: "1 Hair / Headgear",
-      description: "Standard mix",
+      description: "Premium, carefully selected mix",
       icon: Crown,
     },
     {
       title: "1 Pair of Legs",
-      description: "Standard mix",
+      description: " Exclusive handpicked blend",
       icon: Footprints,
     },
   ],
@@ -107,7 +107,7 @@ export const dealerBenefits = {
     {
       title: "Premium Quality",
       description:
-        "Every part is hand-sorted and 100% genuine LEGO. No fakes or knock-offs",
+        "Every piece is meticulously sorted and 100% authentic LEGO—no fakes or knock-offs",
       icon: Star,
     },
     {
@@ -119,7 +119,7 @@ export const dealerBenefits = {
     {
       title: "Design Variety",
       description:
-        "Gain access to thousands of unique torso designs and rare part combinations",
+        "Gain access to exclusive torso designs that bring personality, detail, and uniqueness to every build",
       icon: Origami,
     },
   ],

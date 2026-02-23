@@ -95,6 +95,7 @@ const Dealer = () => {
   return (
     <>
       <PageHero
+        bannerPadding="py-20"
         title={dealerHero.title}
         highlight={dealerHero.highlight}
         description={dealerHero.description}

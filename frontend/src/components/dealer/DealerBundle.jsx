@@ -10,7 +10,7 @@ const DealerBundle = ({ bundles, onSelect }) => (
         Step 1 — Select Your Bag Quantity
       </h2>
       <p className="text-muted-foreground text-sm">
-        Choose up to 300+ top-quality, 100% genuine LEGO minifigures
+        Choose up to 1000+ top-quality, 100% genuine LEGO minifigures
       </p>
     </div>
 
