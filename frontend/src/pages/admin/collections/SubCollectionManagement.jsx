@@ -1,7 +1,5 @@
 import React from "react";
 import { formatDate } from "@/utils/formatting";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
@@ -66,19 +65,12 @@ const SubCollectionManagement = () => {
 
   return (
     <div className="space-y-5">
-      {/* Header with Add Button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Sub-collection Management</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            Manage product sub-collections in your store
-          </p>
-        </div>
-        <Button variant="accent" onClick={handleAdd}>
-          <Plus className="size-4" />
-          Add Sub-collection
-        </Button>
-      </div>
+      <AdminManagementHeader
+        title="Sub-collection Management"
+        description="Manage product sub-collections in your store"
+        actionLabel="Add Sub-collection"
+        onAction={handleAdd}
+      />
 
       <TableLayout
         searchPlaceholder="Search sub-collections..."

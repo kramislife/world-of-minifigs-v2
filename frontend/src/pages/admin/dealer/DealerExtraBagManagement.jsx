@@ -1,8 +1,6 @@
 import React from "react";
 import { formatDate } from "@/utils/formatting";
-import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -57,18 +56,12 @@ const DealerExtraBagManagement = () => {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Extra Part Bags</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            Configure pricing for additional part bags in Step 3
-          </p>
-        </div>
-        <Button variant="accent" onClick={handleAdd}>
-          <Plus className="size-4 mr-2" />
-          Set Bag Price
-        </Button>
-      </div>
+      <AdminManagementHeader
+        title="Extra Part Bags"
+        description="Configure pricing for additional part bags in Step 3"
+        actionLabel="Set Bag Price"
+        onAction={handleAdd}
+      />
 
       <TableLayout
         searchPlaceholder="Search bags..."

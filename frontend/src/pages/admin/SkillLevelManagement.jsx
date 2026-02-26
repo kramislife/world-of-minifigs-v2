@@ -1,12 +1,11 @@
 import React from "react";
 import { formatDate } from "@/utils/formatting";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
@@ -50,19 +49,12 @@ const SkillLevelManagement = () => {
 
   return (
     <div className="space-y-5">
-      {/* Header with Add Button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Skill Level Management</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            Manage product skill levels in your store
-          </p>
-        </div>
-        <Button variant="accent" onClick={handleAdd}>
-          <Plus className="size-4" />
-          Add Skill Level
-        </Button>
-      </div>
+      <AdminManagementHeader
+        title="Skill Level Management"
+        description="Manage product skill levels in your store"
+        actionLabel="Add Skill Level"
+        onAction={handleAdd}
+      />
 
       <TableLayout
         searchPlaceholder="Search skill levels..."

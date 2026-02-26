@@ -1,6 +1,6 @@
 import React from "react";
 import { formatDate } from "@/utils/formatting";
-import { Plus, Upload, X } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -63,18 +64,12 @@ const DealerAddonManagement = () => {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Dealer Add-ons</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            Manage optional premium items for bulk orders
-          </p>
-        </div>
-        <Button variant="accent" onClick={handleAdd}>
-          <Plus className="size-4 mr-2" />
-          Add Add-on
-        </Button>
-      </div>
+      <AdminManagementHeader
+        title="Dealer Add-ons"
+        description="Manage optional premium items for bulk orders"
+        actionLabel="Add Add-on"
+        onAction={handleAdd}
+      />
 
       <TableLayout
         searchPlaceholder="Search add-ons..."

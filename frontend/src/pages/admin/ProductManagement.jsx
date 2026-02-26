@@ -1,6 +1,6 @@
 import React from "react";
 import { formatDate } from "@/utils/formatting";
-import { Plus, Upload, X, Trash2 } from "lucide-react";
+import { Upload, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
@@ -76,19 +77,12 @@ const ProductManagement = () => {
 
   return (
     <div className="space-y-5">
-      {/* Header with Add Button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Product Management</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            Manage products in your store
-          </p>
-        </div>
-        <Button variant="accent" onClick={handleAdd}>
-          <Plus className="size-4" />
-          Add Product
-        </Button>
-      </div>
+      <AdminManagementHeader
+        title="Product Management"
+        description="Manage products in your store"
+        actionLabel="Add Product"
+        onAction={handleAdd}
+      />
 
       <TableLayout
         searchPlaceholder="Search products..."

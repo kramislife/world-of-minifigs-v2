@@ -1,6 +1,6 @@
 import React from "react";
 import { formatDate } from "@/utils/formatting";
-import { Plus, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -58,18 +59,12 @@ const DealerBundleManagement = () => {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Dealer Bundles</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            Manage bulk packs and pricing steps
-          </p>
-        </div>
-        <Button variant="accent" onClick={handleAdd}>
-          <Plus className="size-4 mr-2" />
-          Add Bundle
-        </Button>
-      </div>
+      <AdminManagementHeader
+        title="Dealer Bundles"
+        description="Manage bulk packs and pricing steps"
+        actionLabel="Add Bundle"
+        onAction={handleAdd}
+      />
 
       <TableLayout
         searchPlaceholder="Search bundles..."

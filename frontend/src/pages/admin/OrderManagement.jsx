@@ -10,6 +10,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
@@ -62,15 +63,10 @@ const OrderManagement = () => {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Order Management</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            View and manage all orders placed by users
-          </p>
-        </div>
-      </div>
+      <AdminManagementHeader
+        title="Order Management"
+        description="View and manage all orders placed by users"
+      />
 
       <TableLayout
         searchPlaceholder="Search orders..."

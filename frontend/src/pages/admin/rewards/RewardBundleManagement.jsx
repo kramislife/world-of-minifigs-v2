@@ -1,12 +1,13 @@
 import React from "react";
 import { formatDate } from "@/utils/formatting";
-import { Plus, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -50,18 +51,12 @@ const RewardBundleManagement = () => {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Reward Bundles</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            Manage packs for the Reward Program
-          </p>
-        </div>
-        <Button variant="accent" onClick={handleAdd}>
-          <Plus className="size-4 mr-2" />
-          Add Bundle
-        </Button>
-      </div>
+      <AdminManagementHeader
+        title="Reward Bundles"
+        description="Manage packs for the Reward Program"
+        actionLabel="Add Bundle"
+        onAction={handleAdd}
+      />
 
       <TableLayout
         searchPlaceholder="Search bundles..."

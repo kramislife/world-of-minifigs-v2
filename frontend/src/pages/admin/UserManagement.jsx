@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import { TableCell } from "@/components/table/BaseColumn";
 import useUserManagement from "@/hooks/admin/useUserManagement";
@@ -38,15 +39,10 @@ const UserManagement = () => {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">User Management</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            View and manage all registered users
-          </p>
-        </div>
-      </div>
+      <AdminManagementHeader
+        title="User Management"
+        description="View and manage all registered users"
+      />
 
       <TableLayout
         searchPlaceholder="Search users..."
