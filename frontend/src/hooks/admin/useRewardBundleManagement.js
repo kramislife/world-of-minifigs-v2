@@ -75,18 +75,18 @@ const useRewardBundleManagement = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
     if (!validateRewardBundle(crud.formData)) return;
 
-    await crud.submitForm({
+    const payload = {
       bundleName: sanitizeString(crud.formData.bundleName),
       minifigQuantity: Number(crud.formData.minifigQuantity),
       totalPrice: Number(crud.formData.totalPrice),
       features: cleanFeatures(crud.formData.features),
       isActive: crud.formData.isActive,
-    });
+    };
+
+    await crud.submitForm(payload);
   };
 
   return {

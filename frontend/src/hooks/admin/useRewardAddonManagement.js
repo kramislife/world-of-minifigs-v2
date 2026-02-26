@@ -75,22 +75,24 @@ const useRewardAddonManagement = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
     if (!validateRewardAddon(crud.formData)) return;
 
-    await crud.submitForm({
-      price: crud.formData.price ? Number(crud.formData.price) : undefined,
-      quantity: crud.formData.quantity
-        ? Number(crud.formData.quantity)
-        : undefined,
-      duration: crud.formData.duration
-        ? Number(crud.formData.duration)
-        : undefined,
+    const payload = {
+      ...(crud.formData.price && {
+        price: Number(crud.formData.price),
+      }),
+      ...(crud.formData.quantity && {
+        quantity: Number(crud.formData.quantity),
+      }),
+      ...(crud.formData.duration && {
+        duration: Number(crud.formData.duration),
+      }),
       isActive: crud.formData.isActive,
       features: cleanFeatures(crud.formData.features),
-    });
+    };
+
+    await crud.submitForm(payload);
   };
 
   return {

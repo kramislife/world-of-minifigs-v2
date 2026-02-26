@@ -135,10 +135,6 @@ const useOrderManagement = () => {
     setViewModalOpen(true);
   }, []);
 
-  const closeViewModal = useCallback(() => {
-    handleViewModalChange(false);
-  }, [handleViewModalChange]);
-
   const handleUpdateStatus = useCallback(async () => {
     if (
       !validateOrderStatusUpdate({

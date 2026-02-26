@@ -43,7 +43,13 @@ const AddUpdateItemDialog = ({
             <DialogDescription>{dialogDescription}</DialogDescription>
           )}
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-5">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit(e);
+          }}
+          className="space-y-5"
+        >
           {children}
           <DialogFooter>
             <Button

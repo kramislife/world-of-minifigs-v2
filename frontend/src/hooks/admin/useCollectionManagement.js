@@ -97,17 +97,18 @@ const useCollectionManagement = () => {
     setFilePreview(collection.image?.url || null);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
     if (!validateCollection(crud.formData, crud.dialogMode)) return;
 
-    await crud.submitForm({
-      ...sanitizePayload(crud.formData, ["collectionName", "description"]),
+    const payload = {
+      collectionName: crud.formData.collectionName,
+      description: crud.formData.description,
       isFeatured: crud.formData.isFeatured,
       isActive: crud.formData.isActive,
       ...(crud.formData.image && { image: crud.formData.image }),
-    });
+    };
+
+    await crud.submitForm(payload);
   };
 
   return {

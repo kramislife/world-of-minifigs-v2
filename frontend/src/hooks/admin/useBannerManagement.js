@@ -158,9 +158,7 @@ const useBannerManagement = () => {
     setMediaPreview(banner.media?.url || "");
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
     if (!validateBanner(crud.formData, crud.dialogMode)) return;
 
     const buttons = crud.formData.enableButtons
@@ -174,7 +172,7 @@ const useBannerManagement = () => {
           .slice(0, 2)
       : null;
 
-    await crud.submitForm({
+    const payload = {
       badge: sanitizeOptional(crud.formData.badge),
       label: sanitizeString(crud.formData.label),
       description: sanitizeString(crud.formData.description),
@@ -185,7 +183,9 @@ const useBannerManagement = () => {
       order: crud.formData.order,
       ...(buttons?.length && { buttons }),
       ...(crud.formData.media && { media: crud.formData.media }),
-    });
+    };
+
+    await crud.submitForm(payload);
   };
 
   return {

@@ -130,28 +130,26 @@ const useDealerAddonManagement = () => {
     [setFilePreviews],
   );
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
     if (!validateDealerAddon(crud.formData)) return;
 
     const previews = Array.isArray(filePreviews) ? filePreviews : [];
 
-    const payload = sanitizePayload({
-      addonName: crud.formData.addonName,
-      price: crud.formData.price || 0,
-      description: crud.formData.description,
+    const payload = {
+      addonName: sanitizeString(crud.formData.addonName),
+      price: Number(crud.formData.price || 0),
+      description: sanitizeString(crud.formData.description),
       isActive: crud.formData.isActive,
       items: previews.map((item) => ({
         itemName: sanitizeString(item.itemName),
-        itemPrice: item.itemPrice || 0,
-        color: item.color || undefined,
+        itemPrice: Number(item.itemPrice || 0),
+        ...(item.color && { color: item.color }),
         image:
           typeof item.url === "string" && item.url.startsWith("data:")
             ? item.url
             : item.image,
       })),
-    });
+    };
 
     await crud.submitForm(payload);
   };

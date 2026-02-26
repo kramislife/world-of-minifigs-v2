@@ -350,9 +350,7 @@ const useProductManagement = () => {
   };
 
   // Submit handler (complex — builds product-specific payload)
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
     if (!validateProduct(crud.formData, productType, variants, galleryPreviews))
       return;
 
@@ -362,7 +360,7 @@ const useProductManagement = () => {
 
     const productData = {
       productName: sanitizeString(crud.formData.productName),
-      price: parseFloat(crud.formData.price),
+      price: Number(crud.formData.price),
       descriptions: validDescriptions.slice(0, 3),
       isActive: crud.formData.isActive,
     };
@@ -373,43 +371,60 @@ const useProductManagement = () => {
       productData.partId = sanitizeString(crud.formData.partId);
       productData.itemId = sanitizeString(crud.formData.itemId);
       productData.images = crud.formData.images;
+
       if (crud.formData.colorId) productData.colorId = crud.formData.colorId;
+
       if (crud.formData.secondaryColorId)
         productData.secondaryColorId = crud.formData.secondaryColorId;
+
       if (crud.formData.stock !== "")
-        productData.stock = parseInt(crud.formData.stock) || 0;
-    } else if (productType === "variant") {
+        productData.stock = Number(crud.formData.stock) || 0;
+    }
+
+    if (productType === "variant") {
       productData.productType = "variant";
       productData.partId = sanitizeString(crud.formData.partId);
+
       productData.variants = variants.map((variant) => ({
         colorId: variant.colorId,
-        secondaryColorId: variant.secondaryColorId || undefined,
+        ...(variant.secondaryColorId && {
+          secondaryColorId: variant.secondaryColorId,
+        }),
         itemId: sanitizeString(variant.itemId),
-        stock: parseInt(variant.stock) || 0,
+        stock: Number(variant.stock) || 0,
         image: variant.image || null,
       }));
     }
 
-    // Optional fields
-    if (crud.formData.discount)
-      productData.discount = parseFloat(crud.formData.discount);
-    if (crud.formData.categoryIds.length > 0)
+    // Optional numeric & relational fields
+    if (crud.formData.discount !== "")
+      productData.discount = Number(crud.formData.discount);
+
+    if (crud.formData.categoryIds?.length)
       productData.categoryIds = crud.formData.categoryIds;
-    if (crud.formData.subCategoryIds.length > 0)
+
+    if (crud.formData.subCategoryIds?.length)
       productData.subCategoryIds = crud.formData.subCategoryIds;
-    if (crud.formData.collectionIds.length > 0)
+
+    if (crud.formData.collectionIds?.length)
       productData.collectionIds = crud.formData.collectionIds;
-    if (crud.formData.subCollectionIds.length > 0)
+
+    if (crud.formData.subCollectionIds?.length)
       productData.subCollectionIds = crud.formData.subCollectionIds;
-    if (crud.formData.pieceCount)
-      productData.pieceCount = parseInt(crud.formData.pieceCount);
-    if (crud.formData.length)
-      productData.length = parseFloat(crud.formData.length);
-    if (crud.formData.width)
-      productData.width = parseFloat(crud.formData.width);
-    if (crud.formData.height)
-      productData.height = parseFloat(crud.formData.height);
-    if (crud.formData.skillLevelIds.length > 0)
+
+    if (crud.formData.pieceCount !== "")
+      productData.pieceCount = Number(crud.formData.pieceCount);
+
+    if (crud.formData.length !== "")
+      productData.length = Number(crud.formData.length);
+
+    if (crud.formData.width !== "")
+      productData.width = Number(crud.formData.width);
+
+    if (crud.formData.height !== "")
+      productData.height = Number(crud.formData.height);
+
+    if (crud.formData.skillLevelIds?.length)
       productData.skillLevelIds = crud.formData.skillLevelIds;
 
     await crud.submitForm(productData);

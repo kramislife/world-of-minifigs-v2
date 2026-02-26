@@ -248,9 +248,7 @@ const useDealerTorsoBagManagement = () => {
     [crud, setItemPreviews],
   );
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
     if (
       !validateDealerTorsoBag(
         crud.formData,
@@ -266,15 +264,20 @@ const useDealerTorsoBagManagement = () => {
         typeof item?.url === "string" && item.url.startsWith("data:")
           ? item.url
           : item?.image,
-      quantity: item.quantity === "" ? 1 : Number(item.quantity),
+      quantity:
+        item.quantity === "" || item.quantity == null
+          ? 1
+          : Number(item.quantity),
     }));
 
-    await crud.submitForm({
+    const payload = {
       bagName: sanitizeString(crud.formData.bagName),
       targetBundleSize: targetSize,
       isActive: crud.formData.isActive,
       items,
-    });
+    };
+
+    await crud.submitForm(payload);
   };
 
   return {

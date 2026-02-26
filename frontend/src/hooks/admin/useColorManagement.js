@@ -80,15 +80,16 @@ const useColorManagement = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
     if (!validateColor(crud.formData)) return;
 
-    await crud.submitForm({
-      ...sanitizePayload(crud.formData, ["colorName", "hexCode"]),
+    const payload = {
+      colorName: crud.formData.colorName,
+      hexCode: crud.formData.hexCode,
       isActive: crud.formData.isActive,
-    });
+    };
+
+    await crud.submitForm(payload);
   };
 
   return {

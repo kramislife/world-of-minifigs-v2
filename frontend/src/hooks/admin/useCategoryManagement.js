@@ -70,16 +70,17 @@ const useCategoryManagement = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async () => {
+  if (!validateCategory(crud.formData)) return;
 
-    if (!validateCategory(crud.formData)) return;
-
-    await crud.submitForm({
-      ...sanitizePayload(crud.formData, ["categoryName", "description"]),
-      isActive: crud.formData.isActive,
-    });
+  const payload = {
+    categoryName: crud.formData.categoryName,
+    description: crud.formData.description,
+    isActive: crud.formData.isActive,
   };
+
+  await crud.submitForm(payload);
+};
 
   return {
     ...crud,

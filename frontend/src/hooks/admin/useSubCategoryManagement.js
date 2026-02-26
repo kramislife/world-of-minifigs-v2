@@ -81,16 +81,17 @@ const useSubCategoryManagement = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
     if (!validateSubCategory(crud.formData)) return;
 
-    await crud.submitForm({
-      ...sanitizePayload(crud.formData, ["subCategoryName", "description"]),
+    const payload = {
+      subCategoryName: crud.formData.subCategoryName,
+      description: crud.formData.description,
       category: crud.formData.category,
       isActive: crud.formData.isActive,
-    });
+    };
+
+    await crud.submitForm(payload);
   };
 
   return {

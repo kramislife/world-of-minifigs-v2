@@ -76,16 +76,18 @@ const useDealerExtraBagManagement = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
     if (!validateDealerExtraBag(crud.formData)) return;
 
-    await crud.submitForm({
+    const payload = {
       subCollectionId: sanitizeString(crud.formData.subCollectionId),
-      price: crud.formData.price ? Number(crud.formData.price) : undefined,
+      ...(crud.formData.price && {
+        price: Number(crud.formData.price),
+      }),
       isActive: crud.formData.isActive,
-    });
+    };
+
+    await crud.submitForm(payload);
   };
 
   return {

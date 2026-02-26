@@ -89,19 +89,19 @@ const useDealerBundleManagement = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
     if (!validateDealerBundle(crud.formData)) return;
 
-    await crud.submitForm({
+    const payload = {
       bundleName: sanitizeString(crud.formData.bundleName),
       minifigQuantity: Number(crud.formData.minifigQuantity),
       totalPrice: Number(calculatedTotal),
       torsoBagType: crud.formData.torsoBagType || "regular",
       isActive: crud.formData.isActive,
       features: cleanFeatures(crud.formData.features),
-    });
+    };
+
+    await crud.submitForm(payload);
   };
 
   return {

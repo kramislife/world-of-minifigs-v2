@@ -106,17 +106,18 @@ const useSubCollectionManagement = () => {
     setFilePreview(subCollection.image?.url || null);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
     if (!validateSubCollection(crud.formData, crud.dialogMode)) return;
 
-    await crud.submitForm({
-      ...sanitizePayload(crud.formData, ["subCollectionName", "description"]),
+    const payload = {
+      subCollectionName: crud.formData.subCollectionName,
+      description: crud.formData.description,
       collection: crud.formData.collection,
       isActive: crud.formData.isActive,
       ...(crud.formData.image && { image: crud.formData.image }),
-    });
+    };
+
+    await crud.submitForm(payload);
   };
 
   return {
