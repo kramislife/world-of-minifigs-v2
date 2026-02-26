@@ -3,7 +3,6 @@ import { formatDate } from "@/utils/formatting";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -15,6 +14,7 @@ import {
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
+import AdminSwitchField from "@/components/shared/AdminSwitchField";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import MediaUpload from "@/components/shared/MediaUpload";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -209,24 +209,14 @@ const SubCollectionManagement = () => {
           description="PNG, JPG, WEBP"
         />
 
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <Label htmlFor="isActive">Visibility</Label>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              When disabled, this sub-collection and related products will be
-              hidden
-            </p>
-          </div>
-
-          <Switch
-            id="isActive"
-            checked={formData.isActive}
-            onCheckedChange={(checked) =>
-              handleSwitchChange("isActive", checked)
-            }
-            disabled={isSubmitting}
-          />
-        </div>
+        <AdminSwitchField
+          id="isActive"
+          label="Visibility"
+          description="When disabled, this sub-collection and related products will be hidden"
+          checked={formData.isActive}
+          onChange={handleSwitchChange("isActive")}
+          disabled={isSubmitting}
+        />
       </AddUpdateItemDialog>
 
       {/* Delete Confirmation Dialog */}

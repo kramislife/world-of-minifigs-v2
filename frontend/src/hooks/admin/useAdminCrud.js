@@ -156,9 +156,12 @@ const useAdminCrud = ({
   }, []);
 
   // Switch/toggle handler for any boolean field (e.g. isActive, isFeatured)
-  const handleSwitchChange = useCallback((field, checked) => {
-    setFormData((prev) => ({ ...prev, [field]: checked }));
-  }, []);
+  const handleSwitchChange = useCallback(
+    (field) => (checked) => {
+      setFormData((prev) => ({ ...prev, [field]: checked }));
+    },
+    [],
+  );
 
   return {
     // Table State
