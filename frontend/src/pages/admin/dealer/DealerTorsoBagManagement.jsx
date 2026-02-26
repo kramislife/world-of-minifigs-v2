@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDate } from "@/utils/formatting";
 import { Plus, Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,37 +21,41 @@ import useDealerTorsoBagManagement from "@/hooks/admin/useDealerTorsoBagManageme
 
 const DealerTorsoBagManagement = () => {
   const {
-    search,
-    limit,
-    page,
     dialogOpen,
     deleteDialogOpen,
+    selectedItem,
     dialogMode,
-    selectedBag,
-    itemPreviews,
     formData,
+    fileInputRef,
+    page,
+    limit,
+    search,
     bags,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     columns,
     targetBundleSizeOptions,
     adminTarget,
     miscQuantity,
-    isLoadingBags,
-    isCreating,
-    isUpdating,
-    isDeleting,
     currentTotal,
-    fileInputRef,
+    isLoadingBags,
+    isSubmitting,
+    isDeleting,
+
+    // Handlers
     handleDialogClose,
     setDeleteDialogOpen,
     setFormData,
-    handleItemImageChange,
-    handleUpdateItemQuantity,
-    handleRemoveItem,
     handleAdd,
     handleEdit,
     handleDelete,
+    handleFileChange,
+    handleUpdateItemQuantity,
+    handleRemoveFile,
     handleSubmit,
     handleConfirmDelete,
     handlePageChange,
@@ -60,15 +65,17 @@ const DealerTorsoBagManagement = () => {
 
   return (
     <div className="space-y-5">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Torso Bags</h1>
+          <h1 className="text-3xl font-bold">Torso Bag Management</h1>
           <p className="text-sm text-popover-foreground/80 mt-2">
-            Group torso designs into selectable themes or bags
+            Configure torso design bags for dealer bundles
           </p>
         </div>
+
         <Button variant="accent" onClick={handleAdd}>
-          <Plus className="size-4 mr-2" />
+          <Plus className="size-4" />
           Add Bag
         </Button>
       </div>
@@ -83,29 +90,43 @@ const DealerTorsoBagManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={bags}
         isLoading={isLoadingBags}
         renderRow={(bag) => (
           <>
-            <TableCell maxWidth="250px">{bag.bagName}</TableCell>
+            <TableCell maxWidth="200px" className="font-medium">
+              {bag.bagName}
+            </TableCell>
+
             <TableCell>
-              <Badge variant="outline">
-                {bag.targetBundleSize || 100} Minifigs
+              <Badge variant="outline">{bag.targetBundleSize} Minifigs</Badge>
+            </TableCell>
+
+            <TableCell>
+              <Badge variant="secondary">
+                {bag.items?.length || 0} Designs
               </Badge>
             </TableCell>
-            <TableCell>{bag.items?.length || 0} Designs</TableCell>
+
             <TableCell>
               <Badge variant={bag.isActive ? "success" : "destructive"}>
                 {bag.isActive ? "Active" : "Inactive"}
               </Badge>
             </TableCell>
+
             <TableCell>
-              {bag.createdAt ? new Date(bag.createdAt).toLocaleString() : "-"}
+              {bag.createdAt ? formatDate(bag.createdAt) : "-"}
             </TableCell>
+
             <TableCell>
-              {bag.updatedAt ? new Date(bag.updatedAt).toLocaleString() : "-"}
+              {bag.updatedAt ? formatDate(bag.updatedAt) : "-"}
             </TableCell>
+
             <ActionsColumn
               onEdit={() => handleEdit(bag)}
               onDelete={() => handleDelete(bag)}
@@ -114,51 +135,57 @@ const DealerTorsoBagManagement = () => {
         )}
       />
 
-      {/* Add/Edit Dialog */}
+      {/* Add/Edit Bag Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Torso Bag" : "Add New Bag"}
+        title={dialogMode === "edit" ? "Edit Torso Bag" : "Add Torso Bag"}
         description={
           dialogMode === "edit"
-            ? "Update the torso bag details and designs."
-            : "Define a folder/bag to group your torso designs."
+            ? "Update the bag name, target size, and designs."
+            : "Create a new torso design bag."
         }
         onSubmit={handleSubmit}
-        isLoading={isCreating || isUpdating}
+        isLoading={isSubmitting}
         submitButtonText={dialogMode === "edit" ? "Update Bag" : "Create Bag"}
         className="sm:max-w-4xl"
       >
         <div className="space-y-5">
-          {/* Metadata Section */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-2 col-span-2">
               <Label htmlFor="bagName">Bag Name</Label>
               <Input
                 id="bagName"
+                name="bagName"
                 placeholder="Bag 1001"
                 value={formData.bagName}
                 onChange={(e) =>
-                  setFormData({ ...formData, bagName: e.target.value })
+                  setFormData((p) => ({ ...p, bagName: e.target.value }))
                 }
                 required
+                disabled={isSubmitting}
               />
             </div>
+
             <div className="space-y-2 col-span-1">
-              <Label htmlFor="targetBundleSize">Target Bundle Size</Label>
+              <Label htmlFor="target">Target Size</Label>
               <Select
-                value={String(formData.targetBundleSize)}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, targetBundleSize: Number(value) })
+                value={formData.targetBundleSize.toString()}
+                onValueChange={(v) =>
+                  setFormData((p) => ({
+                    ...p,
+                    targetBundleSize: Number(v),
+                  }))
                 }
+                disabled={isSubmitting}
               >
-                <SelectTrigger id="targetBundleSize" className="w-full">
-                  <SelectValue placeholder="Select target" />
+                <SelectTrigger id="target" className="w-full">
+                  <SelectValue placeholder="Size" />
                 </SelectTrigger>
                 <SelectContent>
                   {targetBundleSizeOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={String(opt.value)}>
+                    <SelectItem key={opt.value} value={opt.value.toString()}>
                       {opt.label}
                     </SelectItem>
                   ))}
@@ -172,12 +199,12 @@ const DealerTorsoBagManagement = () => {
             <Label>Torso Designs Attachment</Label>
             <div
               className={`grid gap-4 ${
-                itemPreviews.length > 0
+                formData.items.length > 0
                   ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
                   : "grid-cols-1"
               }`}
             >
-              {itemPreviews.map((item, index) => (
+              {formData.items.map((item, index) => (
                 <div
                   key={index}
                   className="relative group border rounded-lg overflow-hidden"
@@ -192,8 +219,8 @@ const DealerTorsoBagManagement = () => {
                       variant="destructive"
                       size="icon"
                       className="absolute top-2 right-2"
-                      onClick={() => handleRemoveItem(index)}
-                      disabled={isUpdating || isCreating}
+                      onClick={() => handleRemoveFile(index)}
+                      disabled={isSubmitting}
                     >
                       <X className="size-4" />
                     </Button>
@@ -211,6 +238,7 @@ const DealerTorsoBagManagement = () => {
                         handleUpdateItemQuantity(index, e.target.value)
                       }
                       className="h-8 text-xs"
+                      disabled={isSubmitting}
                     />
                   </div>
                 </div>
@@ -218,23 +246,23 @@ const DealerTorsoBagManagement = () => {
 
               <Label
                 htmlFor="multi-upload"
-                className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors flex flex-col items-center justify-center min-h-[150px]"
+                className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:border-accent hover:bg-accent/5 transition-all flex flex-col items-center justify-center min-h-[150px]"
               >
                 <Upload className="h-8 w-8 text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground mb-1">
-                  Add designs
+                  Upload Image
                 </p>
                 <p className="text-xs text-muted-foreground">
                   PNG, JPG, WEBP (5MB max)
                 </p>
-                <Input
+                <input
                   id="multi-upload"
                   type="file"
                   multiple
                   className="hidden"
                   accept="image/*"
-                  onChange={handleItemImageChange}
-                  disabled={isUpdating || isCreating}
+                  onChange={handleFileChange}
+                  disabled={isSubmitting}
                   ref={fileInputRef}
                 />
               </Label>
@@ -276,8 +304,9 @@ const DealerTorsoBagManagement = () => {
               id="bagActive"
               checked={formData.isActive}
               onCheckedChange={(checked) =>
-                setFormData({ ...formData, isActive: !!checked })
+                setFormData((prev) => ({ ...prev, isActive: !!checked }))
               }
+              disabled={isSubmitting}
             />
             <Label htmlFor="bagActive">Available to Dealers</Label>
           </div>
@@ -288,7 +317,7 @@ const DealerTorsoBagManagement = () => {
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedBag?.bagName || ""}
+        itemName={selectedItem?.bagName || ""}
         title="Delete Torso Bag"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

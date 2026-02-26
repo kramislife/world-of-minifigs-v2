@@ -1,5 +1,4 @@
-import { useState, useRef, useCallback } from "react";
-import { toast } from "sonner";
+import { useCallback, useEffect } from "react";
 import {
   useGetDealerAddonsQuery,
   useCreateDealerAddonMutation,
@@ -7,25 +6,49 @@ import {
   useDeleteDealerAddonMutation,
   useGetColorsQuery,
 } from "@/redux/api/adminApi";
-import useAdminCrud from "@/hooks/admin/useAdminCrud";
+import useMediaPreview from "@/hooks/admin/useMediaPreview";
 import { extractPaginatedData } from "@/utils/apiHelpers";
+import { sanitizeString, sanitizePayload } from "@/utils/formatting";
+import { validateDealerAddon } from "@/utils/validation";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const initialFormData = {
   addonName: "",
   price: "",
   description: "",
   isActive: true,
-  items: [],
 };
 
-const useDealerAddonManagement = () => {
-  const [imagePreviews, setImagePreviews] = useState([]);
-  const fileInputRef = useRef(null);
+const columns = [
+  { key: "addonName", label: "Add-on" },
+  { key: "description", label: "Description" },
+  { key: "price", label: "Price" },
+  { key: "isActive", label: "Status" },
+  { key: "createdAt", label: "Created At" },
+  { key: "updatedAt", label: "Updated At" },
+  { key: "actions", label: "Actions" },
+];
 
-  const resetImages = useCallback(() => {
-    setImagePreviews([]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }, []);
+// Factory to build a rich metadata preview object from a new dataUrl
+const makeNewPreview = (url) => ({
+  url,
+  itemName: "",
+  itemPrice: "",
+  color: "",
+  image: { url },
+});
+
+const useDealerAddonManagement = () => {
+  const {
+    filePreview: filePreviews,
+    setFilePreview: setFilePreviews,
+    fileInputRef,
+    resetFile,
+    handleFileChange: onFileChange,
+    handleRemoveFile: handleRemoveFile,
+  } = useMediaPreview({
+    multiple: true,
+  });
 
   const [createAddon, { isLoading: isCreating }] =
     useCreateDealerAddonMutation();
@@ -40,7 +63,7 @@ const useDealerAddonManagement = () => {
     updateFn: updateAddon,
     deleteFn: deleteAddon,
     entityName: "add-on",
-    onReset: resetImages,
+    onReset: resetFile,
   });
 
   // Fetch data
@@ -54,7 +77,7 @@ const useDealerAddonManagement = () => {
   const { data: colorData } = useGetColorsQuery();
   const colors = colorData?.colors
     ? [...colorData.colors].sort((a, b) =>
-        a.colorName.localeCompare(b.colorName),
+        (a.colorName || "").localeCompare(b.colorName || ""),
       )
     : [];
 
@@ -64,15 +87,12 @@ const useDealerAddonManagement = () => {
     totalPages,
   } = extractPaginatedData(addonsResponse, "addons");
 
-  const columns = [
-    { key: "addonName", label: "Add-on" },
-    { key: "description", label: "Description" },
-    { key: "price", label: "Price" },
-    { key: "isActive", label: "Status" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-    { key: "actions", label: "Actions" },
-  ];
+  // Sync totalItems back to crud hook for calculations
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems, crud]);
+
+  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
 
   const handleEdit = (addon) => {
     const existingItems =
@@ -84,142 +104,78 @@ const useDealerAddonManagement = () => {
         image: item.image,
       })) || [];
 
-    setImagePreviews(existingItems);
-
+    setFilePreviews(existingItems);
     crud.openEdit(addon, {
       addonName: addon.addonName,
-      price: addon.price,
-      description: addon.description,
+      price: addon.price || "",
+      description: addon.description || "",
       isActive: addon.isActive,
-      items: existingItems,
     });
   };
 
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
+  // Delegate to useMediaPreview with mapFile to produce rich metadata objects
+  const handleFileChange = useCallback(
+    (e) => onFileChange(e, { mapFile: makeNewPreview }),
+    [onFileChange],
+  );
 
-    files.forEach((file) => {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error(`Image "${file.name}" is too large`, {
-          description: "Images must be less than 5MB.",
-        });
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const newImageData = {
-          url: reader.result,
-          itemPrice: "",
-          itemName: "",
-          color: "",
-        };
-        setImagePreviews((prev) => [...prev, newImageData]);
-        crud.setFormData((prev) => ({
-          ...prev,
-          items: [
-            ...prev.items,
-            {
-              image: reader.result,
-              itemPrice: "",
-              itemName: "",
-              color: "",
-            },
-          ],
-        }));
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const handleUpdateImageMetadata = (index, field, value) => {
-    setImagePreviews((prev) =>
-      prev.map((img, i) => (i === index ? { ...img, [field]: value } : img)),
-    );
-    crud.setFormData((prev) => ({
-      ...prev,
-      items: prev.items.map((img, i) =>
-        i === index ? { ...img, [field]: value } : img,
-      ),
-    }));
-  };
-
-  const handleRemoveImage = (index) => {
-    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
-    crud.setFormData((prev) => ({
-      ...prev,
-      items: prev.items.filter((_, i) => i !== index),
-    }));
-  };
+  const handleUpdateFileMetadata = useCallback(
+    (index, field, value) => {
+      setFilePreviews((prev) =>
+        prev.map((item, i) =>
+          i === index ? { ...item, [field]: value } : item,
+        ),
+      );
+    },
+    [setFilePreviews],
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!crud.formData.addonName?.trim()) {
-      toast.error("Add-on name is required");
-      return;
-    }
+    if (!validateDealerAddon(crud.formData)) return;
 
-    const items = (crud.formData.items || []).map((item) => {
-      const image = item?.image?.publicId
-        ? { publicId: item.image.publicId, url: item.image.url }
-        : (typeof item?.image === "string" ? item.image : item?.image?.url);
-      return {
-        image,
-        itemName: (item?.itemName ?? "").trim(),
-        itemPrice: item?.itemPrice ? Number(item.itemPrice) : undefined,
-        color: item?.color || undefined,
-      };
-    });
+    const previews = Array.isArray(filePreviews) ? filePreviews : [];
 
-    await crud.submitForm({
-      addonName: crud.formData.addonName.trim(),
-      price: crud.formData.price ? Number(crud.formData.price) : undefined,
-      description: (crud.formData.description ?? "").trim(),
+    const payload = sanitizePayload({
+      addonName: crud.formData.addonName,
+      price: crud.formData.price || 0,
+      description: crud.formData.description,
       isActive: crud.formData.isActive,
-      items,
+      items: previews.map((item) => ({
+        itemName: sanitizeString(item.itemName),
+        itemPrice: item.itemPrice || 0,
+        color: item.color || undefined,
+        image:
+          typeof item.url === "string" && item.url.startsWith("data:")
+            ? item.url
+            : item.image,
+      })),
     });
+
+    await crud.submitForm(payload);
   };
 
   return {
-    // State
-    dialogOpen: crud.dialogOpen,
-    deleteDialogOpen: crud.deleteDialogOpen,
+    ...crud,
     selectedAddon: crud.selectedItem,
-    dialogMode: crud.dialogMode,
-    formData: crud.formData,
-    imagePreviews,
-    fileInputRef,
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search,
+    filePreviews: Array.isArray(filePreviews) ? filePreviews : [],
     addons,
     totalItems,
     totalPages,
     columns,
     isLoadingAddons,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
+    fileInputRef,
     colors,
 
     // Handlers
-    handleDialogClose: crud.handleDialogClose,
-    setDeleteDialogOpen: crud.setDeleteDialogOpen,
-    setFormData: crud.setFormData,
-    setImagePreviews,
-    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete: crud.handleDelete,
-    handleImageChange,
-    handleUpdateImageMetadata,
-    handleRemoveImage,
+    handleFileChange,
+    handleUpdateFileMetadata,
+    handleRemoveFile,
     handleSubmit,
-    handleConfirmDelete: crud.handleConfirmDelete,
-    handlePageChange: crud.handlePageChange,
-    handleLimitChange: crud.handleLimitChange,
-    handleSearchChange: crud.handleSearchChange,
   };
 };
 

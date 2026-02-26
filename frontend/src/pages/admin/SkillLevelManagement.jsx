@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDate } from "@/utils/formatting";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,13 +26,16 @@ const SkillLevelManagement = () => {
     skillLevels,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     columns,
     isLoadingSkillLevels,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
     handleChange,
-    handleIsActiveChange,
+    handleSwitchChange,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -70,6 +74,10 @@ const SkillLevelManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={skillLevels}
         isLoading={isLoadingSkillLevels}
@@ -87,14 +95,10 @@ const SkillLevelManagement = () => {
               )}
             </TableCell>
             <TableCell>
-              {skillLevel.createdAt
-                ? new Date(skillLevel.createdAt).toLocaleString()
-                : "-"}
+              {skillLevel.createdAt ? formatDate(skillLevel.createdAt) : "-"}
             </TableCell>
             <TableCell>
-              {skillLevel.updatedAt
-                ? new Date(skillLevel.updatedAt).toLocaleString()
-                : "-"}
+              {skillLevel.updatedAt ? formatDate(skillLevel.updatedAt) : "-"}
             </TableCell>
             <ActionsColumn
               onEdit={() => handleEdit(skillLevel)}
@@ -118,7 +122,7 @@ const SkillLevelManagement = () => {
             : "Create a new skill level for your products."
         }
         onSubmit={handleSubmit}
-        isLoading={dialogMode === "edit" ? isUpdating : isCreating}
+        isLoading={isSubmitting}
         submitButtonText={
           dialogMode === "edit" ? "Update Skill Level" : "Create Skill Level"
         }
@@ -133,7 +137,7 @@ const SkillLevelManagement = () => {
             value={formData.skillLevelName}
             onChange={handleChange}
             required
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            disabled={isSubmitting}
           />
         </div>
         <div className="space-y-2">
@@ -144,7 +148,7 @@ const SkillLevelManagement = () => {
             placeholder="Enter skill level description (optional)"
             value={formData.description}
             onChange={handleChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            disabled={isSubmitting}
             rows={4}
           />
         </div>
@@ -161,8 +165,10 @@ const SkillLevelManagement = () => {
           <Switch
             id="isActive"
             checked={formData.isActive}
-            onCheckedChange={handleIsActiveChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            onCheckedChange={(checked) =>
+              handleSwitchChange("isActive", checked)
+            }
+            disabled={isSubmitting}
           />
         </div>
       </AddUpdateItemDialog>

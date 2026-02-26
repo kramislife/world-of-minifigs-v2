@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDate } from "@/utils/formatting";
 import { Plus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,10 +34,13 @@ const RewardAddonManagement = () => {
     addons,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     columns,
     isLoadingAddons,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
     handleDialogClose,
     setDeleteDialogOpen,
@@ -76,6 +80,10 @@ const RewardAddonManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={addons}
         isLoading={isLoadingAddons}
@@ -92,14 +100,10 @@ const RewardAddonManagement = () => {
               </Badge>
             </TableCell>
             <TableCell>
-              {addon.createdAt
-                ? new Date(addon.createdAt).toLocaleString()
-                : "-"}
+              {addon.createdAt ? formatDate(addon.createdAt) : "-"}
             </TableCell>
             <TableCell>
-              {addon.updatedAt
-                ? new Date(addon.updatedAt).toLocaleString()
-                : "-"}
+              {addon.updatedAt ? formatDate(addon.updatedAt) : "-"}
             </TableCell>
             <ActionsColumn
               onEdit={() => handleEdit(addon)}
@@ -122,7 +126,7 @@ const RewardAddonManagement = () => {
             : "Add a new item for the Reward Program."
         }
         onSubmit={handleSubmit}
-        isLoading={isCreating || isUpdating}
+        isLoading={isSubmitting}
         submitButtonText={
           dialogMode === "edit" ? "Update Add-on" : "Create Add-on"
         }
@@ -151,9 +155,7 @@ const RewardAddonManagement = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="quantity">
-                Quantity
-              </Label>
+              <Label htmlFor="quantity">Quantity</Label>
               <Select
                 value={formData.quantity}
                 onValueChange={(value) =>

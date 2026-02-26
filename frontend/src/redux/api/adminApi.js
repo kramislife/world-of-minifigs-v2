@@ -65,15 +65,6 @@ export const adminApi = createApi({
       providesTags: ["Banner"],
     }),
 
-    // Get single banner by ID
-    getBannerById: builder.query({
-      query: (id) => ({
-        url: `/banners/${id}`,
-        method: "GET",
-      }),
-      providesTags: (_, __, id) => [{ type: "Banner", id }],
-    }),
-
     // Create banner (admin only)
     createBanner: builder.mutation({
       query: (bannerData) => ({
@@ -112,15 +103,6 @@ export const adminApi = createApi({
         params: buildPaginationParams(params),
       }),
       providesTags: ["Product"],
-    }),
-
-    // Get single product by ID
-    getProductById: builder.query({
-      query: (id) => ({
-        url: `/products/${id}`,
-        method: "GET",
-      }),
-      providesTags: (_, __, id) => [{ type: "Product", id }],
     }),
 
     // Create product (admin only)
@@ -163,15 +145,6 @@ export const adminApi = createApi({
       providesTags: ["Color"],
     }),
 
-    // Get single color by ID
-    getColorById: builder.query({
-      query: (id) => ({
-        url: `/colors/${id}`,
-        method: "GET",
-      }),
-      providesTags: (_, __, id) => [{ type: "Color", id }],
-    }),
-
     // Create color (admin only)
     createColor: builder.mutation({
       query: (colorData) => ({
@@ -210,15 +183,6 @@ export const adminApi = createApi({
         params: buildPaginationParams(params),
       }),
       providesTags: ["Category"],
-    }),
-
-    // Get single category by ID
-    getCategoryById: builder.query({
-      query: (id) => ({
-        url: `/categories/${id}`,
-        method: "GET",
-      }),
-      providesTags: (_, __, id) => [{ type: "Category", id }],
     }),
 
     // Create category (admin only)
@@ -264,15 +228,6 @@ export const adminApi = createApi({
       providesTags: ["SubCategory"],
     }),
 
-    // Get single subCategory by ID
-    getSubCategoryById: builder.query({
-      query: (id) => ({
-        url: `/subCategories/${id}`,
-        method: "GET",
-      }),
-      providesTags: (_, __, id) => [{ type: "SubCategory", id }],
-    }),
-
     // Create subCategory (admin only)
     createSubCategory: builder.mutation({
       query: (subCategoryData) => ({
@@ -316,15 +271,6 @@ export const adminApi = createApi({
       providesTags: ["Collection"],
     }),
 
-    // Get single collection by ID
-    getCollectionById: builder.query({
-      query: (id) => ({
-        url: `/collections/${id}`,
-        method: "GET",
-      }),
-      providesTags: (_, __, id) => [{ type: "Collection", id }],
-    }),
-
     // Create collection (admin only)
     createCollection: builder.mutation({
       query: (collectionData) => ({
@@ -366,15 +312,6 @@ export const adminApi = createApi({
         params: buildPaginationParams(params),
       }),
       providesTags: ["SubCollection"],
-    }),
-
-    // Get single subCollection by ID
-    getSubCollectionById: builder.query({
-      query: (id) => ({
-        url: `/subCollections/${id}`,
-        method: "GET",
-      }),
-      providesTags: (_, __, id) => [{ type: "SubCollection", id }],
     }),
 
     // Create subCollection (admin only)
@@ -630,15 +567,6 @@ export const adminApi = createApi({
       providesTags: ["SkillLevel"],
     }),
 
-    // Get single skillLevel by ID
-    getSkillLevelById: builder.query({
-      query: (id) => ({
-        url: `/skillLevels/${id}`,
-        method: "GET",
-      }),
-      providesTags: (_, __, id) => [{ type: "SkillLevel", id }],
-    }),
-
     // Create skillLevel (admin only)
     createSkillLevel: builder.mutation({
       query: (skillLevelData) => ({
@@ -680,15 +608,6 @@ export const adminApi = createApi({
         params: buildPaginationParams(params),
       }),
       providesTags: ["Order"],
-    }),
-
-    // Get single order by ID
-    getOrderById: builder.query({
-      query: (id) => ({
-        url: `/orders/${id}`,
-        method: "GET",
-      }),
-      providesTags: (_, __, id) => [{ type: "Order", id }],
     }),
 
     // Update order status (admin only)
@@ -741,43 +660,36 @@ export const adminApi = createApi({
 
 export const {
   useGetBannersQuery,
-  useGetBannerByIdQuery,
   useCreateBannerMutation,
   useUpdateBannerMutation,
   useDeleteBannerMutation,
 
   useGetProductsQuery,
-  useGetProductByIdQuery,
   useCreateProductMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
 
   useGetColorsQuery,
-  useGetColorByIdQuery,
   useCreateColorMutation,
   useUpdateColorMutation,
   useDeleteColorMutation,
 
   useGetCategoriesQuery,
-  useGetCategoryByIdQuery,
   useCreateCategoryMutation,
   useUpdateCategoryMutation,
   useDeleteCategoryMutation,
 
   useGetSubCategoriesQuery,
-  useGetSubCategoryByIdQuery,
   useCreateSubCategoryMutation,
   useUpdateSubCategoryMutation,
   useDeleteSubCategoryMutation,
 
   useGetCollectionsQuery,
-  useGetCollectionByIdQuery,
   useCreateCollectionMutation,
   useUpdateCollectionMutation,
   useDeleteCollectionMutation,
 
   useGetSubCollectionsQuery,
-  useGetSubCollectionByIdQuery,
   useCreateSubCollectionMutation,
   useUpdateSubCollectionMutation,
   useDeleteSubCollectionMutation,
@@ -810,14 +722,13 @@ export const {
   useDeleteRewardAddonMutation,
 
   useGetSkillLevelsQuery,
-  useGetSkillLevelByIdQuery,
   useCreateSkillLevelMutation,
   useUpdateSkillLevelMutation,
   useDeleteSkillLevelMutation,
 
   useGetOrdersQuery,
-  useGetOrderByIdQuery,
   useUpdateOrderStatusMutation,
+
   useGetUsersQuery,
   useUpdateUserRoleMutation,
 } = adminApi;

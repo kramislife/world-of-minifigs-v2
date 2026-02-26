@@ -1,14 +1,15 @@
-import { useState, useCallback } from "react";
-import { toast } from "sonner";
+import { useEffect } from "react";
 import {
   useGetBannersQuery,
   useCreateBannerMutation,
   useUpdateBannerMutation,
   useDeleteBannerMutation,
 } from "@/redux/api/adminApi";
-import useAdminCrud from "@/hooks/admin/useAdminCrud";
 import { extractPaginatedData } from "@/utils/apiHelpers";
-import { validateFile, readFileAsDataURL } from "@/utils/fileHelpers";
+import { sanitizeString, sanitizeOptional } from "@/utils/formatting";
+import { validateBanner } from "@/utils/validation";
+import useMediaPreview from "@/hooks/admin/useMediaPreview";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const initialFormData = {
   badge: "",
@@ -27,12 +28,25 @@ const initialFormData = {
   order: 1,
 };
 
-const useBannerManagement = () => {
-  const [mediaPreview, setMediaPreview] = useState("");
+const columns = [
+  { key: "label", label: "Label" },
+  { key: "badge", label: "Badge" },
+  { key: "order", label: "Order" },
+  { key: "position", label: "Position" },
+  { key: "isActive", label: "Status" },
+  { key: "createdAt", label: "Created At" },
+  { key: "updatedAt", label: "Updated At" },
+  { key: "actions", label: "Actions" },
+];
 
-  const resetMedia = useCallback(() => {
-    setMediaPreview("");
-  }, []);
+const useBannerManagement = () => {
+  const {
+    filePreview: mediaPreview,
+    setFilePreview: setMediaPreview,
+    resetFile: resetMedia,
+    handleFileChange: onMediaChange,
+    handleRemoveFile: onRemoveMedia,
+  } = useMediaPreview({ allowVideo: true, maxSizeMB: 10 });
 
   const [createBanner, { isLoading: isCreating }] = useCreateBannerMutation();
   const [updateBanner, { isLoading: isUpdating }] = useUpdateBannerMutation();
@@ -48,34 +62,26 @@ const useBannerManagement = () => {
   });
 
   // Fetch data
-  const { data: bannersData, isLoading: isLoadingBanners } =
-    useGetBannersQuery({
+  const { data: bannersData, isLoading: isLoadingBanners } = useGetBannersQuery(
+    {
       page: crud.page,
       limit: crud.limit,
       search: crud.search || undefined,
-    });
+    },
+  );
 
-  const { items: banners, totalItems, totalPages } =
-    extractPaginatedData(bannersData, "banners");
+  const {
+    items: banners,
+    totalItems,
+    totalPages,
+  } = extractPaginatedData(bannersData, "banners");
 
-  const columns = [
-    { key: "label", label: "Label" },
-    { key: "badge", label: "Badge" },
-    { key: "order", label: "Order" },
-    { key: "position", label: "Position" },
-    { key: "isActive", label: "Status" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-    { key: "actions", label: "Actions" },
-  ];
+  // Sync totalItems back to crud hook for calculations
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems, crud]);
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    crud.setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
+  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
 
   const handleSelectChange = (name, value) => {
     // Handle nested button fields
@@ -92,23 +98,20 @@ const useBannerManagement = () => {
     crud.setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleMediaChange = async (e) => {
+  const handleFileChange = async (e) => {
+    // Detect mediaType before delegating to useMediaPreview
     const file = e.target.files?.[0];
-    if (!file || !validateFile(file, { maxSizeMB: 10, allowVideo: true }))
-      return;
-
-    const dataUrl = await readFileAsDataURL(file);
-    crud.setFormData((prev) => ({
-      ...prev,
-      media: dataUrl,
-      mediaType: file.type.startsWith("video") ? "video" : "image",
-    }));
-    setMediaPreview(dataUrl);
+    if (!file) return;
+    const mediaType = file.type.startsWith("video") ? "video" : "image";
+    const dataUrl = await onMediaChange(e);
+    if (dataUrl) {
+      crud.setFormData((prev) => ({ ...prev, media: dataUrl, mediaType }));
+    }
   };
 
-  const handleRemoveMedia = () => {
+  const handleRemoveFile = () => {
+    onRemoveMedia();
     crud.setFormData((prev) => ({ ...prev, media: null }));
-    setMediaPreview("");
   };
 
   const handleAdd = () => {
@@ -158,44 +161,23 @@ const useBannerManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!crud.formData.label.trim()) {
-      toast.error("Label is required");
-      return;
-    }
-
-    if (!crud.formData.description.trim()) {
-      toast.error("Description is required");
-      return;
-    }
-
-    if (crud.dialogMode === "add" && !crud.formData.media) {
-      toast.error("Banner media is required");
-      return;
-    }
+    if (!validateBanner(crud.formData, crud.dialogMode)) return;
 
     const buttons = crud.formData.enableButtons
       ? crud.formData.buttons
-          .filter((b) => b.label.trim() && b.href.trim())
+          .filter((b) => sanitizeString(b.label) && sanitizeString(b.href))
           .map((b) => ({
-            label: b.label.trim(),
-            href: b.href.trim(),
+            label: sanitizeString(b.label),
+            href: sanitizeString(b.href),
             variant: b.variant || "default",
           }))
           .slice(0, 2)
       : null;
 
-    if (crud.formData.enableButtons && (!buttons || buttons.length === 0)) {
-      toast.error("Button configuration incomplete", {
-        description:
-          "Please provide both label and link for enabled buttons.",
-      });
-      return;
-    }
-
     await crud.submitForm({
-      badge: crud.formData.badge?.trim() || undefined,
-      label: crud.formData.label.trim(),
-      description: crud.formData.description.trim(),
+      badge: sanitizeOptional(crud.formData.badge),
+      label: sanitizeString(crud.formData.label),
+      description: sanitizeString(crud.formData.description),
       position: crud.formData.position,
       textTheme: crud.formData.textTheme,
       enableButtons: crud.formData.enableButtons,
@@ -207,41 +189,23 @@ const useBannerManagement = () => {
   };
 
   return {
-    // State
-    dialogOpen: crud.dialogOpen,
-    deleteDialogOpen: crud.deleteDialogOpen,
-    selectedBanner: crud.selectedItem,
-    dialogMode: crud.dialogMode,
-    formData: crud.formData,
+    ...crud,
     mediaPreview,
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search,
     banners,
     totalItems,
     totalPages,
     columns,
     isLoadingBanners,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
 
     // Handlers
-    handleChange,
     handleSelectChange,
-    handleMediaChange,
-    handleRemoveMedia,
+    handleFileChange,
+    handleRemoveFile,
     handleSubmit,
-    handleDialogClose: crud.handleDialogClose,
     handleAdd,
     handleEdit,
-    handleDelete: crud.handleDelete,
-    handleConfirmDelete: crud.handleConfirmDelete,
-    handlePageChange: crud.handlePageChange,
-    handleLimitChange: crud.handleLimitChange,
-    handleSearchChange: crud.handleSearchChange,
-    setDeleteDialogOpen: crud.setDeleteDialogOpen,
-    setFormData: crud.setFormData,
   };
 };
 

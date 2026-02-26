@@ -1,13 +1,18 @@
-import { toast } from "sonner";
+import { useEffect } from "react";
 import {
   useGetDealerBundlesQuery,
   useCreateDealerBundleMutation,
   useUpdateDealerBundleMutation,
   useDeleteDealerBundleMutation,
 } from "@/redux/api/adminApi";
-import useAdminCrud from "@/hooks/admin/useAdminCrud";
 import { extractPaginatedData } from "@/utils/apiHelpers";
-import { formatCurrency } from "@/utils/formatting";
+import {
+  formatCurrency,
+  cleanFeatures,
+  sanitizeString,
+} from "@/utils/formatting";
+import { validateDealerBundle } from "@/utils/validation";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const initialFormData = {
   bundleName: "",
@@ -17,6 +22,18 @@ const initialFormData = {
   isActive: true,
   features: [""],
 };
+
+const columns = [
+  { key: "bundleName", label: "Bundle" },
+  { key: "minifigQuantity", label: "Quantity" },
+  { key: "torsoBagType", label: "Torso Type" },
+  { key: "unitPrice", label: "Unit Price" },
+  { key: "totalPrice", label: "Total Price" },
+  { key: "isActive", label: "Status" },
+  { key: "createdAt", label: "Created At" },
+  { key: "updatedAt", label: "Updated At" },
+  { key: "actions", label: "Actions" },
+];
 
 const useDealerBundleManagement = () => {
   const [createBundle, { isLoading: isCreating }] =
@@ -48,23 +65,18 @@ const useDealerBundleManagement = () => {
     totalPages,
   } = extractPaginatedData(bundlesResponse, "bundles");
 
+  // Sync totalItems back to crud hook for calculations
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems, crud]);
+
   // Derived State
   const calculatedTotal = formatCurrency(
     Number(crud.formData.minifigQuantity || 0) *
       Number(crud.formData.unitPrice || 0),
   );
 
-  const columns = [
-    { key: "bundleName", label: "Bundle" },
-    { key: "minifigQuantity", label: "Quantity" },
-    { key: "torsoBagType", label: "Torso Type" },
-    { key: "unitPrice", label: "Unit Price" },
-    { key: "totalPrice", label: "Total Price" },
-    { key: "isActive", label: "Status" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-    { key: "actions", label: "Actions" },
-  ];
+  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
 
   const handleEdit = (bundle) => {
     crud.openEdit(bundle, {
@@ -80,68 +92,33 @@ const useDealerBundleManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!crud.formData.bundleName?.trim()) {
-      toast.error("Bundle name is required");
-      return;
-    }
-    if (
-      !crud.formData.minifigQuantity ||
-      Number(crud.formData.minifigQuantity) <= 0
-    ) {
-      toast.error("Valid quantity is required");
-      return;
-    }
-    if (crud.formData.unitPrice === "" || Number(crud.formData.unitPrice) < 0) {
-      toast.error("Valid unit price is required");
-      return;
-    }
-
-    const cleanFeatures = (crud.formData.features || [])
-      .map((f) => String(f).trim())
-      .filter((f) => f !== "");
+    if (!validateDealerBundle(crud.formData)) return;
 
     await crud.submitForm({
-      bundleName: crud.formData.bundleName.trim(),
+      bundleName: sanitizeString(crud.formData.bundleName),
       minifigQuantity: Number(crud.formData.minifigQuantity),
       totalPrice: Number(calculatedTotal),
       torsoBagType: crud.formData.torsoBagType || "regular",
       isActive: crud.formData.isActive,
-      features: cleanFeatures,
+      features: cleanFeatures(crud.formData.features),
     });
   };
 
   return {
-    // State
-    dialogOpen: crud.dialogOpen,
-    deleteDialogOpen: crud.deleteDialogOpen,
+    ...crud,
     selectedBundle: crud.selectedItem,
-    dialogMode: crud.dialogMode,
-    formData: crud.formData,
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search,
     bundles,
     totalItems,
     totalPages,
     calculatedTotal,
     columns,
     isLoadingBundles,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
 
     // Handlers
-    handleDialogClose: crud.handleDialogClose,
-    setDeleteDialogOpen: crud.setDeleteDialogOpen,
-    setFormData: crud.setFormData,
-    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete: crud.handleDelete,
     handleSubmit,
-    handleConfirmDelete: crud.handleConfirmDelete,
-    handlePageChange: crud.handlePageChange,
-    handleLimitChange: crud.handleLimitChange,
-    handleSearchChange: crud.handleSearchChange,
   };
 };
 

@@ -1,12 +1,14 @@
-import { toast } from "sonner";
+import { useEffect } from "react";
 import {
   useGetRewardAddonsQuery,
   useCreateRewardAddonMutation,
   useUpdateRewardAddonMutation,
   useDeleteRewardAddonMutation,
 } from "@/redux/api/adminApi";
-import useAdminCrud from "@/hooks/admin/useAdminCrud";
 import { extractPaginatedData } from "@/utils/apiHelpers";
+import { cleanFeatures } from "@/utils/formatting";
+import { validateRewardAddon } from "@/utils/validation";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const initialFormData = {
   price: "",
@@ -15,6 +17,16 @@ const initialFormData = {
   isActive: true,
   features: [""],
 };
+
+const columns = [
+  { key: "duration", label: "Duration" },
+  { key: "quantity", label: "Quantity" },
+  { key: "price", label: "Price monthly" },
+  { key: "isActive", label: "Status" },
+  { key: "createdAt", label: "Created At" },
+  { key: "updatedAt", label: "Updated At" },
+  { key: "actions", label: "Actions" },
+];
 
 const useRewardAddonManagement = () => {
   const [createAddon, { isLoading: isCreating }] =
@@ -46,15 +58,12 @@ const useRewardAddonManagement = () => {
     totalPages,
   } = extractPaginatedData(addonsResponse, "addons");
 
-  const columns = [
-    { key: "duration", label: "Duration" },
-    { key: "quantity", label: "Quantity" },
-    { key: "price", label: "Price monthly" },
-    { key: "isActive", label: "Status" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-    { key: "actions", label: "Actions" },
-  ];
+  // Sync totalItems back to crud hook for calculations
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems, crud]);
+
+  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
 
   const handleEdit = (addon) => {
     crud.openEdit(addon, {
@@ -69,14 +78,7 @@ const useRewardAddonManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!crud.formData.quantity) {
-      toast.error("Quantity is required");
-      return;
-    }
-
-    const cleanFeatures = (crud.formData.features || [])
-      .map((f) => (f || "").trim())
-      .filter((f) => f !== "");
+    if (!validateRewardAddon(crud.formData)) return;
 
     await crud.submitForm({
       price: crud.formData.price ? Number(crud.formData.price) : undefined,
@@ -87,41 +89,24 @@ const useRewardAddonManagement = () => {
         ? Number(crud.formData.duration)
         : undefined,
       isActive: crud.formData.isActive,
-      features: cleanFeatures,
+      features: cleanFeatures(crud.formData.features),
     });
   };
 
   return {
-    // State
-    dialogOpen: crud.dialogOpen,
-    deleteDialogOpen: crud.deleteDialogOpen,
+    ...crud,
     selectedAddon: crud.selectedItem,
-    dialogMode: crud.dialogMode,
-    formData: crud.formData,
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search,
     addons,
     totalItems,
     totalPages,
     columns,
     isLoadingAddons,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
 
     // Handlers
-    handleDialogClose: crud.handleDialogClose,
-    setDeleteDialogOpen: crud.setDeleteDialogOpen,
-    setFormData: crud.setFormData,
-    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete: crud.handleDelete,
     handleSubmit,
-    handleConfirmDelete: crud.handleConfirmDelete,
-    handlePageChange: crud.handlePageChange,
-    handleLimitChange: crud.handleLimitChange,
-    handleSearchChange: crud.handleSearchChange,
   };
 };
 

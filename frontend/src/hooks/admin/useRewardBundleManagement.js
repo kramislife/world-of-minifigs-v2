@@ -1,12 +1,14 @@
-import { toast } from "sonner";
+import { useEffect } from "react";
 import {
   useGetRewardBundlesQuery,
   useCreateRewardBundleMutation,
   useUpdateRewardBundleMutation,
   useDeleteRewardBundleMutation,
 } from "@/redux/api/adminApi";
-import useAdminCrud from "@/hooks/admin/useAdminCrud";
 import { extractPaginatedData } from "@/utils/apiHelpers";
+import { cleanFeatures, sanitizeString } from "@/utils/formatting";
+import { validateRewardBundle } from "@/utils/validation";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const initialFormData = {
   bundleName: "",
@@ -15,6 +17,16 @@ const initialFormData = {
   isActive: true,
   features: [""],
 };
+
+const columns = [
+  { key: "bundleName", label: "Bundle" },
+  { key: "minifigQuantity", label: "Quantity" },
+  { key: "totalPrice", label: "Total Price" },
+  { key: "isActive", label: "Status" },
+  { key: "createdAt", label: "Created At" },
+  { key: "updatedAt", label: "Updated At" },
+  { key: "actions", label: "Actions" },
+];
 
 const useRewardBundleManagement = () => {
   const [createBundle, { isLoading: isCreating }] =
@@ -46,15 +58,12 @@ const useRewardBundleManagement = () => {
     totalPages,
   } = extractPaginatedData(bundlesResponse, "bundles");
 
-  const columns = [
-    { key: "bundleName", label: "Bundle" },
-    { key: "minifigQuantity", label: "Quantity" },
-    { key: "totalPrice", label: "Total Price" },
-    { key: "isActive", label: "Status" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-    { key: "actions", label: "Actions" },
-  ];
+  // Sync totalItems back to crud hook for calculations
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems, crud]);
+
+  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
 
   const handleEdit = (bundle) => {
     crud.openEdit(bundle, {
@@ -69,69 +78,31 @@ const useRewardBundleManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!crud.formData.bundleName.trim()) {
-      toast.error("Bundle name is required");
-      return;
-    }
-    if (
-      !crud.formData.minifigQuantity ||
-      Number(crud.formData.minifigQuantity) <= 0
-    ) {
-      toast.error("Valid quantity is required");
-      return;
-    }
-    if (
-      crud.formData.totalPrice === "" ||
-      Number(crud.formData.totalPrice) < 0
-    ) {
-      toast.error("Valid total price is required");
-      return;
-    }
-
-    const cleanFeatures = crud.formData.features
-      .map((f) => f.trim())
-      .filter((f) => f !== "");
+    if (!validateRewardBundle(crud.formData)) return;
 
     await crud.submitForm({
-      bundleName: crud.formData.bundleName.trim(),
+      bundleName: sanitizeString(crud.formData.bundleName),
       minifigQuantity: Number(crud.formData.minifigQuantity),
       totalPrice: Number(crud.formData.totalPrice),
-      features: cleanFeatures,
+      features: cleanFeatures(crud.formData.features),
       isActive: crud.formData.isActive,
     });
   };
 
   return {
-    // State
-    dialogOpen: crud.dialogOpen,
-    deleteDialogOpen: crud.deleteDialogOpen,
+    ...crud,
     selectedBundle: crud.selectedItem,
-    dialogMode: crud.dialogMode,
-    formData: crud.formData,
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search,
     bundles,
     totalItems,
     totalPages,
     columns,
     isLoadingBundles,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
 
     // Handlers
-    handleDialogClose: crud.handleDialogClose,
-    setDeleteDialogOpen: crud.setDeleteDialogOpen,
-    setFormData: crud.setFormData,
-    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete: crud.handleDelete,
     handleSubmit,
-    handleConfirmDelete: crud.handleConfirmDelete,
-    handlePageChange: crud.handlePageChange,
-    handleLimitChange: crud.handleLimitChange,
-    handleSearchChange: crud.handleSearchChange,
   };
 };
 

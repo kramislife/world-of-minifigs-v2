@@ -1,14 +1,15 @@
-import { useState, useRef, useCallback } from "react";
-import { toast } from "sonner";
+import { useEffect } from "react";
 import {
   useCreateCollectionMutation,
   useUpdateCollectionMutation,
   useGetCollectionsQuery,
   useDeleteCollectionMutation,
 } from "@/redux/api/adminApi";
-import useAdminCrud from "@/hooks/admin/useAdminCrud";
 import { extractPaginatedData } from "@/utils/apiHelpers";
-import { validateFile, readFileAsDataURL } from "@/utils/fileHelpers";
+import { sanitizePayload } from "@/utils/formatting";
+import { validateCollection } from "@/utils/validation";
+import useMediaPreview from "@/hooks/admin/useMediaPreview";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const initialFormData = {
   collectionName: "",
@@ -18,14 +19,25 @@ const initialFormData = {
   image: null,
 };
 
-const useCollectionManagement = () => {
-  const [imagePreview, setImagePreview] = useState(null);
-  const fileInputRef = useRef(null);
+const columns = [
+  { key: "collectionName", label: "Collection" },
+  { key: "description", label: "Description" },
+  { key: "isFeatured", label: "Featured" },
+  { key: "isActive", label: "Status" },
+  { key: "createdAt", label: "Created At" },
+  { key: "updatedAt", label: "Updated At" },
+  { key: "actions", label: "Actions" },
+];
 
-  const resetImages = useCallback(() => {
-    setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }, []);
+const useCollectionManagement = () => {
+  const {
+    filePreview,
+    setFilePreview,
+    fileInputRef,
+    resetFile,
+    handleFileChange: onFileChange,
+    handleRemoveFile: onRemoveFile,
+  } = useMediaPreview();
 
   const [createCollection, { isLoading: isCreating }] =
     useCreateCollectionMutation();
@@ -40,7 +52,7 @@ const useCollectionManagement = () => {
     updateFn: updateCollection,
     deleteFn: deleteCollection,
     entityName: "collection",
-    onReset: resetImages,
+    onReset: resetFile,
   });
 
   // Fetch data
@@ -51,45 +63,27 @@ const useCollectionManagement = () => {
       search: crud.search || undefined,
     });
 
-  const { items: collections, totalItems, totalPages } =
-    extractPaginatedData(collectionsResponse, "collections");
+  const {
+    items: collections,
+    totalItems,
+    totalPages,
+  } = extractPaginatedData(collectionsResponse, "collections");
 
-  const columns = [
-    { key: "collectionName", label: "Collection" },
-    { key: "description", label: "Description" },
-    { key: "isFeatured", label: "Featured" },
-    { key: "isActive", label: "Status" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-    { key: "actions", label: "Actions" },
-  ];
+  // Sync totalItems back to crud hook for calculations
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems, crud]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    crud.setFormData((prev) => ({ ...prev, [name]: value }));
+  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
+
+  const handleFileChange = async (e) => {
+    const dataUrl = await onFileChange(e);
+    if (dataUrl) crud.setFormData((prev) => ({ ...prev, image: dataUrl }));
   };
 
-  const handleSwitchChange = (checked) => {
-    crud.setFormData((prev) => ({ ...prev, isFeatured: checked }));
-  };
-
-  const handleIsActiveChange = (checked) => {
-    crud.setFormData((prev) => ({ ...prev, isActive: checked }));
-  };
-
-  const handleImageChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file || !validateFile(file)) return;
-
-    const dataUrl = await readFileAsDataURL(file);
-    setImagePreview(dataUrl);
-    crud.setFormData((prev) => ({ ...prev, image: dataUrl }));
-  };
-
-  const handleRemoveImage = () => {
-    setImagePreview(null);
+  const handleRemoveFile = () => {
+    onRemoveFile();
     crud.setFormData((prev) => ({ ...prev, image: null }));
-    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleEdit = (collection) => {
@@ -100,29 +94,16 @@ const useCollectionManagement = () => {
       isActive: collection.isActive !== false,
       image: null,
     });
-    setImagePreview(collection.image?.url || null);
+    setFilePreview(collection.image?.url || null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!crud.formData.collectionName.trim()) {
-      toast.error("Collection name is required", {
-        description: "Please enter a collection name.",
-      });
-      return;
-    }
-
-    if (crud.dialogMode === "add" && !crud.formData.image) {
-      toast.error("Collection image is required", {
-        description: "Please upload an image for the collection.",
-      });
-      return;
-    }
+    if (!validateCollection(crud.formData, crud.dialogMode)) return;
 
     await crud.submitForm({
-      collectionName: crud.formData.collectionName.trim(),
-      description: crud.formData.description.trim(),
+      ...sanitizePayload(crud.formData, ["collectionName", "description"]),
       isFeatured: crud.formData.isFeatured,
       isActive: crud.formData.isActive,
       ...(crud.formData.image && { image: crud.formData.image }),
@@ -130,42 +111,23 @@ const useCollectionManagement = () => {
   };
 
   return {
-    // State
-    dialogOpen: crud.dialogOpen,
-    deleteDialogOpen: crud.deleteDialogOpen,
+    ...crud,
     selectedCollection: crud.selectedItem,
-    dialogMode: crud.dialogMode,
-    formData: crud.formData,
-    imagePreview,
+    filePreview,
     fileInputRef,
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search,
     collections,
     totalItems,
     totalPages,
     columns,
     isLoadingCollections,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
 
     // Handlers
-    handleChange,
-    handleSwitchChange,
-    handleIsActiveChange,
-    handleImageChange,
-    handleRemoveImage,
+    handleFileChange,
+    handleRemoveFile,
     handleSubmit,
-    handleDialogClose: crud.handleDialogClose,
-    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete: crud.handleDelete,
-    handleConfirmDelete: crud.handleConfirmDelete,
-    handlePageChange: crud.handlePageChange,
-    handleLimitChange: crud.handleLimitChange,
-    handleSearchChange: crud.handleSearchChange,
-    setDeleteDialogOpen: crud.setDeleteDialogOpen,
   };
 };
 

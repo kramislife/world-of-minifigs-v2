@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   useGetDealerExtraBagsQuery,
   useCreateDealerExtraBagMutation,
@@ -5,14 +6,25 @@ import {
   useDeleteDealerExtraBagMutation,
   useGetSubCollectionsQuery,
 } from "@/redux/api/adminApi";
-import useAdminCrud from "@/hooks/admin/useAdminCrud";
 import { extractPaginatedData } from "@/utils/apiHelpers";
+import { sanitizeString } from "@/utils/formatting";
+import { validateDealerExtraBag } from "@/utils/validation";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const initialFormData = {
   subCollectionId: "",
   price: "",
   isActive: true,
 };
+
+const columns = [
+  { key: "subCollectionId", label: "Part Type" },
+  { key: "price", label: "Price Per Bag" },
+  { key: "isActive", label: "Status" },
+  { key: "createdAt", label: "Created At" },
+  { key: "updatedAt", label: "Updated At" },
+  { key: "actions", label: "Actions" },
+];
 
 const useDealerExtraBagManagement = () => {
   const [createExtraBag, { isLoading: isCreating }] =
@@ -49,14 +61,12 @@ const useDealerExtraBagManagement = () => {
     totalPages,
   } = extractPaginatedData(extraBagsResponse, "extraBags");
 
-  const columns = [
-    { key: "subCollectionId", label: "Part Type" },
-    { key: "price", label: "Price Per Bag" },
-    { key: "isActive", label: "Status" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-    { key: "actions", label: "Actions" },
-  ];
+  // Sync totalItems back to crud hook for calculations
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems, crud]);
+
+  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
 
   const handleEdit = (bag) => {
     crud.openEdit(bag, {
@@ -69,45 +79,30 @@ const useDealerExtraBagManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!validateDealerExtraBag(crud.formData)) return;
+
     await crud.submitForm({
-      subCollectionId: (crud.formData.subCollectionId ?? "").trim(),
+      subCollectionId: sanitizeString(crud.formData.subCollectionId),
       price: crud.formData.price ? Number(crud.formData.price) : undefined,
       isActive: crud.formData.isActive,
     });
   };
 
   return {
-    // State
-    dialogOpen: crud.dialogOpen,
-    deleteDialogOpen: crud.deleteDialogOpen,
+    ...crud,
     selectedBag: crud.selectedItem,
-    dialogMode: crud.dialogMode,
-    formData: crud.formData,
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search,
     subCollections,
     extraBags,
     totalItems,
     totalPages,
     columns,
     isLoadingExtraBags,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
 
     // Handlers
-    handleDialogClose: crud.handleDialogClose,
-    setDeleteDialogOpen: crud.setDeleteDialogOpen,
-    setFormData: crud.setFormData,
-    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete: crud.handleDelete,
     handleSubmit,
-    handleConfirmDelete: crud.handleConfirmDelete,
-    handlePageChange: crud.handlePageChange,
-    handleLimitChange: crud.handleLimitChange,
-    handleSearchChange: crud.handleSearchChange,
   };
 };
 

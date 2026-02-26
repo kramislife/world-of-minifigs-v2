@@ -18,7 +18,10 @@ import {
   getCartItemInfoForOrder,
   parseVariantIndex,
 } from "../utils/productItemUtils.js";
-import { ORDER_STATUSES, REFUND_STATUSES } from "../models/order.model.js";
+import {
+  ORDER_STATUSES,
+  REFUND_STATUSES,
+} from "../constants/orderConstants.js";
 
 // ------------------------ Constants --------------------------------
 

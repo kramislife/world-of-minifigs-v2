@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDate } from "@/utils/formatting";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -13,12 +14,16 @@ import useUserManagement from "@/hooks/admin/useUserManagement";
 
 const UserManagement = () => {
   const {
-    page,
-    limit,
-    search,
     users,
     totalItems,
     totalPages,
+    page,
+    limit,
+    search,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     columns,
     isLoadingUsers,
     isUpdatingRole,
@@ -53,6 +58,10 @@ const UserManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={users}
         isLoading={isLoadingUsers}
@@ -125,9 +134,7 @@ const UserManagement = () => {
 
             {/* Joined Date */}
             <TableCell>
-              {user.createdAt
-                ? new Date(user.createdAt).toLocaleDateString()
-                : "-"}
+              {user.createdAt ? formatDate(user.createdAt) : "-"}
             </TableCell>
           </>
         )}

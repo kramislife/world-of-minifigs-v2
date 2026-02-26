@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDate } from "@/utils/formatting";
 import { Plus, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +27,7 @@ const SubCollectionManagement = () => {
     selectedSubCollection,
     dialogMode,
     formData,
-    imagePreview,
+    filePreview,
     fileInputRef,
     page,
     limit,
@@ -34,18 +35,23 @@ const SubCollectionManagement = () => {
     subCollections,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     collections,
     columns,
     isLoadingSubCollections,
     isLoadingCollections,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
+
+    // Handlers
     handleChange,
     handleCollectionChange,
-    handleIsActiveChange,
-    handleImageChange,
-    handleRemoveImage,
+    handleSwitchChange,
+    handleFileChange,
+    handleRemoveFile,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -84,6 +90,10 @@ const SubCollectionManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={subCollections}
         isLoading={isLoadingSubCollections}
@@ -93,7 +103,9 @@ const SubCollectionManagement = () => {
               {subCollection.subCollectionName}
             </TableCell>
             <TableCell maxWidth="200px">
-              {subCollection.collectionId?.collectionName || "-"}
+              {subCollection.collectionId?.collectionName ||
+                subCollection.collectionId ||
+                "-"}
             </TableCell>
             <TableCell maxWidth="300px">
               {subCollection.description || "-"}
@@ -107,12 +119,12 @@ const SubCollectionManagement = () => {
             </TableCell>
             <TableCell>
               {subCollection.createdAt
-                ? new Date(subCollection.createdAt).toLocaleString()
+                ? formatDate(subCollection.createdAt)
                 : "-"}
             </TableCell>
             <TableCell>
               {subCollection.updatedAt
-                ? new Date(subCollection.updatedAt).toLocaleString()
+                ? formatDate(subCollection.updatedAt)
                 : "-"}
             </TableCell>
             <ActionsColumn
@@ -139,7 +151,7 @@ const SubCollectionManagement = () => {
             : "Create a new sub-collection for your products."
         }
         onSubmit={handleSubmit}
-        isLoading={dialogMode === "edit" ? isUpdating : isCreating}
+        isLoading={isSubmitting}
         submitButtonText={
           dialogMode === "edit"
             ? "Update Sub-collection"
@@ -147,50 +159,37 @@ const SubCollectionManagement = () => {
         }
       >
         <div className="space-y-2">
-          <Label htmlFor="collection">Collection</Label>
-          <Select
-            value={formData.collection}
-            onValueChange={handleCollectionChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
-          >
-            <SelectTrigger id="collection" className="w-full">
-              <SelectValue placeholder="Select a collection" />
-            </SelectTrigger>
-            <SelectContent>
-              {isLoadingCollections ? (
-                <SelectItem value="loading" disabled>
-                  Loading collections...
-                </SelectItem>
-              ) : collections.length === 0 ? (
-                <SelectItem value="empty" disabled>
-                  No collections available
-                </SelectItem>
-              ) : (
-                collections.map((collection) => (
-                  <SelectItem
-                    key={collection._id || collection.id}
-                    value={collection._id || collection.id}
-                  >
-                    {collection.collectionName}
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
           <Label htmlFor="subCollectionName">Sub-collection Name</Label>
           <Input
             id="subCollectionName"
             name="subCollectionName"
             type="text"
-            placeholder="e.g., The Mandalorian, Hogwarts Castle"
+            placeholder="e.g., Star Wars, Harry Potter, Marvel"
             value={formData.subCollectionName}
             onChange={handleChange}
             required
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            disabled={isSubmitting}
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="collection">Parent Collection</Label>
+          <Select
+            value={formData.collection}
+            onValueChange={handleCollectionChange}
+            disabled={isSubmitting || isLoadingCollections}
+          >
+            <SelectTrigger id="collection">
+              <SelectValue placeholder="Select parent collection" />
+            </SelectTrigger>
+            <SelectContent>
+              {collections.map((collection) => (
+                <SelectItem key={collection._id} value={collection._id}>
+                  {collection.collectionName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">
@@ -201,17 +200,17 @@ const SubCollectionManagement = () => {
             placeholder="Enter sub-collection description (optional)"
             value={formData.description}
             onChange={handleChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            disabled={isSubmitting}
             rows={4}
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="image">Sub-collection Image</Label>
-          {imagePreview ? (
-            <div className="relative w-full h-48 border rounded-lg overflow-hidden">
+          <Label htmlFor="image">Image Attachment</Label>
+          {filePreview ? (
+            <div className="relative w-full h-60 border rounded-lg overflow-hidden">
               <img
-                src={imagePreview}
+                src={filePreview}
                 alt="Preview"
                 className="w-full h-full object-contain"
               />
@@ -220,25 +219,25 @@ const SubCollectionManagement = () => {
                 variant="destructive"
                 size="icon"
                 className="absolute top-2 right-2"
-                onClick={handleRemoveImage}
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                onClick={handleRemoveFile}
+                disabled={isSubmitting}
               >
                 <X className="size-4" />
               </Button>
             </div>
           ) : (
-            <label
+            <Label
               htmlFor="image"
-              className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors block"
+              className="border-2 border-dashed rounded-md p-7 text-center cursor-pointer hover:border-accent/50 transition-colors block"
             >
-              <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-              <p className="mt-2 text-sm text-muted-foreground">
+              <Upload className="mx-auto h-12 w-12 text-popover-foreground/80" />
+              <p className="mt-2 text-sm text-popover-foreground/80">
                 {dialogMode === "edit"
                   ? "Upload a new image to replace the current one"
                   : "Click to upload an image"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                PNG, JPG, WEBP up to 5MB
+              <p className="text-xs text-popover-foreground/80 mt-1">
+                PNG, JPG, WEBP
               </p>
               <Input
                 ref={fileInputRef}
@@ -246,11 +245,11 @@ const SubCollectionManagement = () => {
                 name="image"
                 type="file"
                 accept="image/*"
-                onChange={handleImageChange}
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                onChange={handleFileChange}
+                disabled={isSubmitting}
                 className="hidden"
               />
-            </label>
+            </Label>
           )}
         </div>
 
@@ -258,16 +257,18 @@ const SubCollectionManagement = () => {
           <div className="space-y-1">
             <Label htmlFor="isActive">Visibility</Label>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              When disabled, this sub-collection and its associated products
-              will be hidden
+              When disabled, this sub-collection and related products will be
+              hidden
             </p>
           </div>
 
           <Switch
             id="isActive"
             checked={formData.isActive}
-            onCheckedChange={handleIsActiveChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            onCheckedChange={(checked) =>
+              handleSwitchChange("isActive", checked)
+            }
+            disabled={isSubmitting}
           />
         </div>
       </AddUpdateItemDialog>

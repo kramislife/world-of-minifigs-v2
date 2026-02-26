@@ -1,18 +1,29 @@
-import { toast } from "sonner";
+import { useEffect } from "react";
 import {
   useCreateCategoryMutation,
   useUpdateCategoryMutation,
   useGetCategoriesQuery,
   useDeleteCategoryMutation,
 } from "@/redux/api/adminApi";
-import useAdminCrud from "@/hooks/admin/useAdminCrud";
 import { extractPaginatedData } from "@/utils/apiHelpers";
+import { sanitizePayload } from "@/utils/formatting";
+import { validateCategory } from "@/utils/validation";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const initialFormData = {
   categoryName: "",
   description: "",
   isActive: true,
 };
+
+const columns = [
+  { key: "categoryName", label: "Name" },
+  { key: "description", label: "Description" },
+  { key: "isActive", label: "Status" },
+  { key: "createdAt", label: "Created At" },
+  { key: "updatedAt", label: "Updated At" },
+  { key: "actions", label: "Actions" },
+];
 
 const useCategoryManagement = () => {
   const [createCategory, { isLoading: isCreating }] =
@@ -38,26 +49,18 @@ const useCategoryManagement = () => {
       search: crud.search || undefined,
     });
 
-  const { items: categories, totalItems, totalPages } =
-    extractPaginatedData(categoriesResponse, "categories");
+  const {
+    items: categories,
+    totalItems,
+    totalPages,
+  } = extractPaginatedData(categoriesResponse, "categories");
 
-  const columns = [
-    { key: "categoryName", label: "Name" },
-    { key: "description", label: "Description" },
-    { key: "isActive", label: "Status" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-    { key: "actions", label: "Actions" },
-  ];
+  // Sync totalItems back to crud hook for calculations
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems, crud]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    crud.setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleIsActiveChange = (checked) => {
-    crud.setFormData((prev) => ({ ...prev, isActive: checked }));
-  };
+  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
 
   const handleEdit = (category) => {
     crud.openEdit(category, {
@@ -70,52 +73,25 @@ const useCategoryManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!crud.formData.categoryName.trim()) {
-      toast.error("Category name is required", {
-        description: "Please enter a category name.",
-      });
-      return;
-    }
+    if (!validateCategory(crud.formData)) return;
 
     await crud.submitForm({
-      categoryName: crud.formData.categoryName.trim(),
-      description: crud.formData.description.trim(),
+      ...sanitizePayload(crud.formData, ["categoryName", "description"]),
       isActive: crud.formData.isActive,
     });
   };
 
   return {
-    // State
-    dialogOpen: crud.dialogOpen,
-    deleteDialogOpen: crud.deleteDialogOpen,
-    selectedCategory: crud.selectedItem,
-    dialogMode: crud.dialogMode,
-    formData: crud.formData,
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search,
+    ...crud,
     categories,
     totalItems,
     totalPages,
     columns,
     isLoadingCategories,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
-
-    // Handlers
-    handleChange,
-    handleIsActiveChange,
-    handleSubmit,
-    handleDialogClose: crud.handleDialogClose,
-    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete: crud.handleDelete,
-    handleConfirmDelete: crud.handleConfirmDelete,
-    handlePageChange: crud.handlePageChange,
-    handleLimitChange: crud.handleLimitChange,
-    handleSearchChange: crud.handleSearchChange,
-    setDeleteDialogOpen: crud.setDeleteDialogOpen,
+    handleSubmit,
   };
 };
 

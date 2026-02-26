@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import { useEffect } from "react";
 import {
   useGetSubCategoriesQuery,
   useCreateSubCategoryMutation,
@@ -6,8 +6,10 @@ import {
   useDeleteSubCategoryMutation,
   useGetCategoriesQuery,
 } from "@/redux/api/adminApi";
-import useAdminCrud from "@/hooks/admin/useAdminCrud";
+import { sanitizePayload } from "@/utils/formatting";
+import { validateSubCategory } from "@/utils/validation";
 import { extractPaginatedData } from "@/utils/apiHelpers";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const initialFormData = {
   subCategoryName: "",
@@ -15,6 +17,16 @@ const initialFormData = {
   category: "",
   isActive: true,
 };
+
+const columns = [
+  { key: "subCategoryName", label: "Sub-category" },
+  { key: "category", label: "Category" },
+  { key: "description", label: "Description" },
+  { key: "isActive", label: "Status" },
+  { key: "createdAt", label: "Created At" },
+  { key: "updatedAt", label: "Updated At" },
+  { key: "actions", label: "Actions" },
+];
 
 const useSubCategoryManagement = () => {
   const [createSubCategory, { isLoading: isCreating }] =
@@ -49,27 +61,15 @@ const useSubCategoryManagement = () => {
   } = extractPaginatedData(subCategoriesData, "subCategories");
   const categories = categoriesData?.categories || [];
 
-  const columns = [
-    { key: "subCategoryName", label: "Sub-category" },
-    { key: "category", label: "Category" },
-    { key: "description", label: "Description" },
-    { key: "isActive", label: "Status" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-    { key: "actions", label: "Actions" },
-  ];
+  // Sync totalItems back to crud hook for calculations
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems, crud]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    crud.setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
 
   const handleCategoryChange = (value) => {
     crud.setFormData((prev) => ({ ...prev, category: value }));
-  };
-
-  const handleIsActiveChange = (checked) => {
-    crud.setFormData((prev) => ({ ...prev, isActive: checked }));
   };
 
   const handleEdit = (subCategory) => {
@@ -84,38 +84,18 @@ const useSubCategoryManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!crud.formData.subCategoryName.trim()) {
-      toast.error("Sub-category name is required", {
-        description: "Please enter a sub-category name.",
-      });
-      return;
-    }
-
-    if (!crud.formData.category) {
-      toast.error("Category is required", {
-        description: "Please select a parent category.",
-      });
-      return;
-    }
+    if (!validateSubCategory(crud.formData)) return;
 
     await crud.submitForm({
-      subCategoryName: crud.formData.subCategoryName.trim(),
-      description: crud.formData.description.trim(),
+      ...sanitizePayload(crud.formData, ["subCategoryName", "description"]),
       category: crud.formData.category,
       isActive: crud.formData.isActive,
     });
   };
 
   return {
-    // State
-    dialogOpen: crud.dialogOpen,
-    deleteDialogOpen: crud.deleteDialogOpen,
+    ...crud,
     selectedSubCategory: crud.selectedItem,
-    dialogMode: crud.dialogMode,
-    formData: crud.formData,
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search,
     subCategories,
     totalItems,
     totalPages,
@@ -123,24 +103,13 @@ const useSubCategoryManagement = () => {
     columns,
     isLoadingSubCategories,
     isLoadingCategories,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
 
     // Handlers
-    handleChange,
     handleCategoryChange,
-    handleIsActiveChange,
     handleSubmit,
-    handleDialogClose: crud.handleDialogClose,
-    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete: crud.handleDelete,
-    handleConfirmDelete: crud.handleConfirmDelete,
-    handlePageChange: crud.handlePageChange,
-    handleLimitChange: crud.handleLimitChange,
-    handleSearchChange: crud.handleSearchChange,
-    setDeleteDialogOpen: crud.setDeleteDialogOpen,
   };
 };
 

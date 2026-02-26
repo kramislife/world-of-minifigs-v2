@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDate } from "@/utils/formatting";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,14 +25,17 @@ const ColorManagement = () => {
     colors,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     columns,
     isLoadingColors,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
     handleChange,
     handleColorPickerChange,
-    handleIsActiveChange,
+    handleSwitchChange,
     getColorPickerValue,
     handleSubmit,
     handleDialogClose,
@@ -71,6 +75,10 @@ const ColorManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={colors}
         isLoading={isLoadingColors}
@@ -96,14 +104,10 @@ const ColorManagement = () => {
               )}
             </TableCell>
             <TableCell>
-              {color.createdAt
-                ? new Date(color.createdAt).toLocaleString()
-                : "-"}
+              {color.createdAt ? formatDate(color.createdAt) : "-"}
             </TableCell>
             <TableCell>
-              {color.updatedAt
-                ? new Date(color.updatedAt).toLocaleString()
-                : "-"}
+              {color.updatedAt ? formatDate(color.updatedAt) : "-"}
             </TableCell>
             <ActionsColumn
               onEdit={() => handleEdit(color)}
@@ -125,7 +129,7 @@ const ColorManagement = () => {
             : "Create a new color for your products."
         }
         onSubmit={handleSubmit}
-        isLoading={dialogMode === "edit" ? isUpdating : isCreating}
+        isLoading={isSubmitting}
         submitButtonText={
           dialogMode === "edit" ? "Update Color" : "Create Color"
         }
@@ -140,7 +144,7 @@ const ColorManagement = () => {
             value={formData.colorName}
             onChange={handleChange}
             required
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            disabled={isSubmitting}
           />
         </div>
         <div className="space-y-2">
@@ -155,14 +159,14 @@ const ColorManagement = () => {
                 value={formData.hexCode}
                 onChange={handleChange}
                 required
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                disabled={isSubmitting}
               />
             </div>
             <Input
               type="color"
               value={getColorPickerValue()}
               onChange={handleColorPickerChange}
-              disabled={dialogMode === "edit" ? isUpdating : isCreating}
+              disabled={isSubmitting}
               className="w-12 p-1 cursor-pointer"
               title="Pick a color"
             />
@@ -181,8 +185,10 @@ const ColorManagement = () => {
           <Switch
             id="isActive"
             checked={formData.isActive}
-            onCheckedChange={handleIsActiveChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            onCheckedChange={(checked) =>
+              handleSwitchChange("isActive", checked)
+            }
+            disabled={isSubmitting}
           />
         </div>
       </AddUpdateItemDialog>

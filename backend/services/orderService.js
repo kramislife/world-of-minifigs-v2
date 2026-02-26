@@ -3,7 +3,7 @@ import {
   REFUND_STATUSES,
   VALID_STATUS_TRANSITIONS,
   CANCELLATION_REASONS,
-} from "../models/order.model.js";
+} from "../constants/orderConstants.js";
 import { getStripe } from "../utils/stripe.js";
 import { incrementProductStockForItems } from "../utils/paymentHelpers.js";
 

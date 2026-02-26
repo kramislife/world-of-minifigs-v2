@@ -1,5 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
-import { toast } from "sonner";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import {
   useGetOrdersQuery,
   useUpdateOrderStatusMutation,
@@ -11,12 +10,17 @@ import {
   handleApiSuccess,
 } from "@/utils/apiHelpers";
 import { buildAdminStatusOptions } from "@/constant/orderData";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
+import { sanitizeString, sanitizeOptional } from "@/utils/formatting";
+import { validateOrderStatusUpdate } from "@/utils/validation";
 
 const useOrderManagement = () => {
-  // Pagination and search state
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState("10");
-  const [search, setSearch] = useState("");
+  const crud = useAdminCrud({
+    initialFormData: {},
+    createFn: null,
+    updateFn: null,
+    deleteFn: null,
+  });
 
   // Status update modal state
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -44,9 +48,9 @@ const useOrderManagement = () => {
   // Fetch data
   const { data: ordersResponse, isLoading: isLoadingOrders } =
     useGetOrdersQuery({
-      page,
-      limit,
-      search: search || undefined,
+      page: crud.page,
+      limit: crud.limit,
+      search: crud.search || undefined,
     });
 
   const [updateOrderStatus, { isLoading: isUpdatingStatus }] =
@@ -66,6 +70,11 @@ const useOrderManagement = () => {
     totalPages,
   } = extractPaginatedData(ordersResponse, "orders");
 
+  // Sync totalItems back to crud hook for calculations
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems, crud]);
+
   const columns = [
     { key: "invoice", label: "Invoice Number" },
     { key: "customer", label: "Customer" },
@@ -78,17 +87,6 @@ const useOrderManagement = () => {
     { key: "createdAt", label: "Created At" },
     { key: "actions", label: "Actions" },
   ];
-
-  // Pagination Handlers
-  const handlePageChange = (newPage) => setPage(newPage);
-  const handleLimitChange = (newLimit) => {
-    setLimit(newLimit);
-    setPage(1);
-  };
-  const handleSearchChange = (value) => {
-    setSearch(value);
-    setPage(1);
-  };
 
   const orderReference = useMemo(() => {
     if (!selectedOrder) return "";
@@ -142,46 +140,37 @@ const useOrderManagement = () => {
   }, [handleViewModalChange]);
 
   const handleUpdateStatus = useCallback(async () => {
-    if (!selectedOrder) {
-      toast.error("Select an order", {
-        description: "Please pick an order before updating its status.",
-      });
-      return;
-    }
-
-    if (!newStatus) {
-      toast.error("Choose a status", {
-        description: "Select the next status before submitting.",
-      });
-      return;
-    }
-
     if (
-      newStatus === "shipped" &&
-      (!carrier.trim() || !trackingNumber.trim() || !trackingLink.trim())
-    ) {
-      toast.error("Shipping details required", {
-        description: "Carrier, tracking number, and link are mandatory.",
-      });
+      !validateOrderStatusUpdate({
+        selectedOrder,
+        newStatus,
+        carrier,
+        trackingNumber,
+        trackingLink,
+        cancelReason,
+      })
+    )
       return;
-    }
-
-    if (newStatus === "cancelled" && !cancelReason.trim()) {
-      toast.error("Cancellation reason required", {
-        description: "Provide a brief reason before cancelling the order.",
-      });
-      return;
-    }
 
     try {
       const result = await updateOrderStatus({
         id: selectedOrder._id,
         status: newStatus,
-        ...(carrier.trim() && { carrier: carrier.trim() }),
-        ...(trackingNumber.trim() && { trackingNumber: trackingNumber.trim() }),
-        ...(trackingLink.trim() && { trackingLink: trackingLink.trim() }),
-        ...(cancelReason.trim() && { reason: cancelReason.trim() }),
-        ...(cancelNotes.trim() && { notes: cancelNotes.trim() }),
+        ...(sanitizeOptional(carrier) && {
+          carrier: sanitizeString(carrier),
+        }),
+        ...(sanitizeOptional(trackingNumber) && {
+          trackingNumber: sanitizeString(trackingNumber),
+        }),
+        ...(sanitizeOptional(trackingLink) && {
+          trackingLink: sanitizeString(trackingLink),
+        }),
+        ...(sanitizeOptional(cancelReason) && {
+          reason: sanitizeString(cancelReason),
+        }),
+        ...(sanitizeOptional(cancelNotes) && {
+          notes: sanitizeString(cancelNotes),
+        }),
       }).unwrap();
 
       handleApiSuccess(result, "Order status updated");
@@ -218,10 +207,7 @@ const useOrderManagement = () => {
   );
 
   return {
-    // State
-    page,
-    limit,
-    search,
+    ...crud,
     orders,
     totalItems,
     totalPages,
@@ -241,9 +227,6 @@ const useOrderManagement = () => {
     orderReference,
 
     // Handlers
-    handlePageChange,
-    handleLimitChange,
-    handleSearchChange,
     setNewStatus,
     setCarrier,
     setTrackingNumber,

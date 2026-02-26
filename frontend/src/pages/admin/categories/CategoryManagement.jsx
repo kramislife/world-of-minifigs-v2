@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDate } from "@/utils/formatting";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,7 @@ const CategoryManagement = () => {
   const {
     dialogOpen,
     deleteDialogOpen,
-    selectedCategory,
+    selectedItem,
     dialogMode,
     formData,
     page,
@@ -25,13 +26,16 @@ const CategoryManagement = () => {
     categories,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     columns,
     isLoadingCategories,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
     handleChange,
-    handleIsActiveChange,
+    handleSwitchChange,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -70,6 +74,10 @@ const CategoryManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={categories}
         isLoading={isLoadingCategories}
@@ -87,14 +95,10 @@ const CategoryManagement = () => {
               )}
             </TableCell>
             <TableCell>
-              {category.createdAt
-                ? new Date(category.createdAt).toLocaleString()
-                : "-"}
+              {category.createdAt ? formatDate(category.createdAt) : "-"}
             </TableCell>
             <TableCell>
-              {category.updatedAt
-                ? new Date(category.updatedAt).toLocaleString()
-                : "-"}
+              {category.updatedAt ? formatDate(category.updatedAt) : "-"}
             </TableCell>
             <ActionsColumn
               onEdit={() => handleEdit(category)}
@@ -116,7 +120,7 @@ const CategoryManagement = () => {
             : "Create a new category for your products."
         }
         onSubmit={handleSubmit}
-        isLoading={dialogMode === "edit" ? isUpdating : isCreating}
+        isLoading={isSubmitting}
         submitButtonText={
           dialogMode === "edit" ? "Update Category" : "Create Category"
         }
@@ -131,7 +135,7 @@ const CategoryManagement = () => {
             value={formData.categoryName}
             onChange={handleChange}
             required
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            disabled={isSubmitting}
           />
         </div>
         <div className="space-y-2">
@@ -142,7 +146,7 @@ const CategoryManagement = () => {
             placeholder="Enter category description (optional)"
             value={formData.description}
             onChange={handleChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            disabled={isSubmitting}
             rows={4}
           />
         </div>
@@ -158,8 +162,10 @@ const CategoryManagement = () => {
           <Switch
             id="isActive"
             checked={formData.isActive}
-            onCheckedChange={handleIsActiveChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            onCheckedChange={(checked) =>
+              handleSwitchChange("isActive", checked)
+            }
+            disabled={isSubmitting}
           />
         </div>
       </AddUpdateItemDialog>
@@ -168,7 +174,7 @@ const CategoryManagement = () => {
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedCategory?.categoryName || ""}
+        itemName={selectedItem?.categoryName || ""}
         title="Delete Category"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

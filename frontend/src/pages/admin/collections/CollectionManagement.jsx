@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDate } from "@/utils/formatting";
 import { Plus, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,7 @@ const CollectionManagement = () => {
     selectedCollection,
     dialogMode,
     formData,
-    imagePreview,
+    filePreview,
     fileInputRef,
     page,
     limit,
@@ -27,16 +28,18 @@ const CollectionManagement = () => {
     collections,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     columns,
     isLoadingCollections,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
     handleChange,
     handleSwitchChange,
-    handleIsActiveChange,
-    handleImageChange,
-    handleRemoveImage,
+    handleFileChange,
+    handleRemoveFile,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -75,6 +78,10 @@ const CollectionManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={collections}
         isLoading={isLoadingCollections}
@@ -99,14 +106,10 @@ const CollectionManagement = () => {
               )}
             </TableCell>
             <TableCell>
-              {collection.createdAt
-                ? new Date(collection.createdAt).toLocaleString()
-                : "-"}
+              {collection.createdAt ? formatDate(collection.createdAt) : "-"}
             </TableCell>
             <TableCell>
-              {collection.updatedAt
-                ? new Date(collection.updatedAt).toLocaleString()
-                : "-"}
+              {collection.updatedAt ? formatDate(collection.updatedAt) : "-"}
             </TableCell>
             <ActionsColumn
               onEdit={() => handleEdit(collection)}
@@ -128,7 +131,7 @@ const CollectionManagement = () => {
             : "Create a new collection for your products."
         }
         onSubmit={handleSubmit}
-        isLoading={dialogMode === "edit" ? isUpdating : isCreating}
+        isLoading={isSubmitting}
         submitButtonText={
           dialogMode === "edit" ? "Update Collection" : "Create Collection"
         }
@@ -143,7 +146,7 @@ const CollectionManagement = () => {
             value={formData.collectionName}
             onChange={handleChange}
             required
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            disabled={isSubmitting}
           />
         </div>
 
@@ -155,17 +158,17 @@ const CollectionManagement = () => {
             placeholder="Enter collection description (optional)"
             value={formData.description}
             onChange={handleChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            disabled={isSubmitting}
             rows={4}
           />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="image">Image Attachment</Label>
-          {imagePreview ? (
+          {filePreview ? (
             <div className="relative w-full h-60 border rounded-lg overflow-hidden">
               <img
-                src={imagePreview}
+                src={filePreview}
                 alt="Preview"
                 className="w-full h-full object-contain"
               />
@@ -174,8 +177,8 @@ const CollectionManagement = () => {
                 variant="destructive"
                 size="icon"
                 className="absolute top-2 right-2"
-                onClick={handleRemoveImage}
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                onClick={handleRemoveFile}
+                disabled={isSubmitting}
               >
                 <X className="size-4" />
               </Button>
@@ -200,8 +203,8 @@ const CollectionManagement = () => {
                 name="image"
                 type="file"
                 accept="image/*"
-                onChange={handleImageChange}
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                onChange={handleFileChange}
+                disabled={isSubmitting}
                 className="hidden"
               />
             </Label>
@@ -219,8 +222,10 @@ const CollectionManagement = () => {
           <Switch
             id="isFeatured"
             checked={formData.isFeatured}
-            onCheckedChange={handleSwitchChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            onCheckedChange={(checked) =>
+              handleSwitchChange("isFeatured", checked)
+            }
+            disabled={isSubmitting}
           />
         </div>
 
@@ -236,8 +241,10 @@ const CollectionManagement = () => {
           <Switch
             id="isActive"
             checked={formData.isActive}
-            onCheckedChange={handleIsActiveChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            onCheckedChange={(checked) =>
+              handleSwitchChange("isActive", checked)
+            }
+            disabled={isSubmitting}
           />
         </div>
       </AddUpdateItemDialog>

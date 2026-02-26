@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { handleApiError, handleApiSuccess } from "@/utils/apiHelpers";
 
 const useAdminCrud = ({
@@ -8,18 +8,52 @@ const useAdminCrud = ({
   deleteFn,
   entityName = "item",
   onReset,
+  totalItems: externalTotalItems = 0,
 }) => {
-  // Dialog State
+  // ---------- Table State (Pagination & Search) ----------------------------------------
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState("10");
+  const [search, setSearch] = useState("");
+  const [totalItems, setTotalItems] = useState(externalTotalItems);
+
+  // Sync totalItems from outside
+  useEffect(() => {
+    setTotalItems(externalTotalItems);
+  }, [externalTotalItems]);
+
+  const entriesPerPage =
+    limit === "all" ? totalItems : parseInt(limit, 10) || 10;
+  const totalPages = Math.ceil(totalItems / entriesPerPage);
+  const startItem = totalItems === 0 ? 0 : (page - 1) * entriesPerPage + 1;
+  const endItem = Math.min(page * entriesPerPage, totalItems);
+
+  const handlePageChange = useCallback((newPage) => setPage(newPage), []);
+
+  const handleLimitChange = useCallback((value) => {
+    setLimit(value);
+    setPage(1);
+  }, []);
+
+  const handleSearchChange = useCallback((value) => {
+    const finalValue = value?.target ? value.target.value : value;
+    setSearch(finalValue || "");
+    setPage(1);
+  }, []);
+
+  const handlePrevious = useCallback(() => {
+    if (page > 1) setPage(page - 1);
+  }, [page]);
+
+  const handleNext = useCallback(() => {
+    if (page < totalPages) setPage(page + 1);
+  }, [page, totalPages]);
+
+  // ------------------------- Dialog & Form State ----------------------------------------
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState("add");
   const [selectedItem, setSelectedItem] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
-
-  // Pagination & Search State
-  const [search, setSearch] = useState("");
-  const [limit, setLimit] = useState("10");
-  const [page, setPage] = useState(1);
 
   // Reset form to initial state
   const resetForm = useCallback(() => {
@@ -61,7 +95,7 @@ const useAdminCrud = ({
     setDeleteDialogOpen(true);
   }, []);
 
-  // CRUD: Submit (create or update)
+  // ------------------------- Submit Functions ----------------------------------------
   const submitForm = useCallback(
     async (payload) => {
       try {
@@ -96,7 +130,7 @@ const useAdminCrud = ({
     ],
   );
 
-  // CRUD: Delete
+  // ------------------------- Delete Functions ----------------------------------------
   const handleConfirmDelete = useCallback(async () => {
     if (!selectedItem) return;
     try {
@@ -112,18 +146,38 @@ const useAdminCrud = ({
     }
   }, [selectedItem, deleteFn, entityName]);
 
-  // Pagination Handlers
-  const handlePageChange = useCallback((p) => setPage(p), []);
-  const handleLimitChange = useCallback((l) => {
-    setLimit(l);
-    setPage(1);
+  // Generic form change handler (for text inputs)
+  const handleChange = useCallback((e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   }, []);
-  const handleSearchChange = useCallback((s) => {
-    setSearch(s);
-    setPage(1);
+
+  // Switch/toggle handler for any boolean field (e.g. isActive, isFeatured)
+  const handleSwitchChange = useCallback((field, checked) => {
+    setFormData((prev) => ({ ...prev, [field]: checked }));
   }, []);
 
   return {
+    // Table State
+    page,
+    limit,
+    search,
+    totalItems,
+    totalPages,
+    startItem,
+    endItem,
+    setTotalItems,
+
+    // Table Handlers
+    handlePageChange,
+    handleLimitChange,
+    handleSearchChange,
+    handlePrevious,
+    handleNext,
+
     // Dialog State
     dialogOpen,
     deleteDialogOpen,
@@ -132,11 +186,6 @@ const useAdminCrud = ({
     formData,
     setFormData,
     setDeleteDialogOpen,
-
-    // Pagination State
-    search,
-    limit,
-    page,
 
     // Dialog Handlers
     handleDialogClose,
@@ -148,10 +197,9 @@ const useAdminCrud = ({
     submitForm,
     handleConfirmDelete,
 
-    // Pagination Handlers
-    handlePageChange,
-    handleLimitChange,
-    handleSearchChange,
+    // Form Handlers
+    handleChange,
+    handleSwitchChange,
   };
 };
 

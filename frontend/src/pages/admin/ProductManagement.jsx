@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDate } from "@/utils/formatting";
 import { Plus, Upload, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,7 @@ const ProductManagement = () => {
   const {
     dialogOpen,
     deleteDialogOpen,
-    selectedProduct,
+    selectedItem,
     dialogMode,
     productType,
     variants,
@@ -37,14 +38,17 @@ const ProductManagement = () => {
     products,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     colors,
     skillLevels,
     categoriesWithSubs,
     collectionsWithSubs,
     columns,
     isLoadingProducts,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
     handleChange,
     handleSelectChange,
@@ -96,6 +100,10 @@ const ProductManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={products}
         isLoading={isLoadingProducts}
@@ -142,14 +150,10 @@ const ProductManagement = () => {
               </Badge>
             </TableCell>
             <TableCell>
-              {product.createdAt
-                ? new Date(product.createdAt).toLocaleString()
-                : "-"}
+              {product.createdAt ? formatDate(product.createdAt) : "-"}
             </TableCell>
             <TableCell>
-              {product.updatedAt
-                ? new Date(product.updatedAt).toLocaleString()
-                : "-"}
+              {product.updatedAt ? formatDate(product.updatedAt) : "-"}
             </TableCell>
             <ActionsColumn
               onEdit={() => handleEdit(product)}
@@ -171,7 +175,7 @@ const ProductManagement = () => {
             : "Create a new product for your store."
         }
         onSubmit={handleSubmit}
-        isLoading={dialogMode === "edit" ? isUpdating : isCreating}
+        isLoading={isSubmitting}
         submitButtonText={
           dialogMode === "edit" ? "Update Product" : "Create Product"
         }
@@ -185,7 +189,7 @@ const ProductManagement = () => {
                 type="button"
                 variant={productType === "standalone" ? "default" : "outline"}
                 onClick={() => setProductType("standalone")}
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                disabled={isSubmitting}
                 className="flex-1"
               >
                 Standalone Product
@@ -194,7 +198,7 @@ const ProductManagement = () => {
                 type="button"
                 variant={productType === "variant" ? "default" : "outline"}
                 onClick={() => setProductType("variant")}
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                disabled={isSubmitting}
                 className="flex-1"
               >
                 Product with Variants
@@ -214,7 +218,7 @@ const ProductManagement = () => {
                 value={formData.productName}
                 onChange={handleChange}
                 required
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                disabled={isSubmitting}
               />
             </div>
 
@@ -230,7 +234,7 @@ const ProductManagement = () => {
                       placeholder="Enter part ID"
                       value={formData.partId}
                       onChange={handleChange}
-                      disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                      disabled={isSubmitting}
                     />
                   </div>
                   <div className="space-y-2">
@@ -242,7 +246,7 @@ const ProductManagement = () => {
                       value={formData.itemId}
                       onChange={handleChange}
                       required
-                      disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                      disabled={isSubmitting}
                     />
                   </div>
                 </div>
@@ -261,7 +265,7 @@ const ProductManagement = () => {
                       value={formData.price}
                       onChange={handleChange}
                       required
-                      disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                      disabled={isSubmitting}
                     />
                   </div>
                   <div className="space-y-2">
@@ -276,7 +280,7 @@ const ProductManagement = () => {
                       placeholder="0"
                       value={formData.discount}
                       onChange={handleChange}
-                      disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                      disabled={isSubmitting}
                     />
                   </div>
                   <div className="space-y-2">
@@ -289,7 +293,7 @@ const ProductManagement = () => {
                       placeholder="0"
                       value={formData.stock}
                       onChange={handleChange}
-                      disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                      disabled={isSubmitting}
                     />
                   </div>
                   <div className="space-y-2">
@@ -307,9 +311,7 @@ const ProductManagement = () => {
                               showSecondaryColor: true,
                             }))
                           }
-                          disabled={
-                            dialogMode === "edit" ? isUpdating : isCreating
-                          }
+                          disabled={isSubmitting}
                         >
                           Dual Tone
                         </Button>
@@ -320,7 +322,7 @@ const ProductManagement = () => {
                       onValueChange={(value) =>
                         handleSelectChange("colorId", value)
                       }
-                      disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                      disabled={isSubmitting}
                     >
                       <SelectTrigger id="colorId" className="w-full">
                         <SelectValue placeholder="Select color" />
@@ -365,9 +367,7 @@ const ProductManagement = () => {
                               showSecondaryColor: false,
                             }))
                           }
-                          disabled={
-                            dialogMode === "edit" ? isUpdating : isCreating
-                          }
+                          disabled={isSubmitting}
                         >
                           <Trash2 className="size-4" />
                         </Button>
@@ -377,9 +377,7 @@ const ProductManagement = () => {
                         onValueChange={(value) =>
                           handleSelectChange("secondaryColorId", value)
                         }
-                        disabled={
-                          dialogMode === "edit" ? isUpdating : isCreating
-                        }
+                        disabled={isSubmitting}
                       >
                         <SelectTrigger id="secondaryColorId" className="w-full">
                           <SelectValue placeholder="Select secondary color" />
@@ -424,7 +422,7 @@ const ProductManagement = () => {
                     value={formData.price}
                     onChange={handleChange}
                     required
-                    disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div className="space-y-2">
@@ -439,7 +437,7 @@ const ProductManagement = () => {
                     placeholder="0"
                     value={formData.discount}
                     onChange={handleChange}
-                    disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div className="space-y-2">
@@ -450,7 +448,7 @@ const ProductManagement = () => {
                     placeholder="Enter part ID"
                     value={formData.partId}
                     onChange={handleChange}
-                    disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
@@ -475,7 +473,7 @@ const ProductManagement = () => {
                       descriptions: [...prev.descriptions, ""],
                     }));
                   }}
-                  disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                  disabled={isSubmitting}
                 >
                   Add Description
                 </Button>
@@ -500,7 +498,7 @@ const ProductManagement = () => {
                       : `Additional description ${index + 1} (optional)`
                   }
                   rows={3}
-                  disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                  disabled={isSubmitting}
                   className="flex-1"
                 />
                 {index > 0 && (
@@ -516,7 +514,7 @@ const ProductManagement = () => {
                         ),
                       }));
                     }}
-                    disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                    disabled={isSubmitting}
                   >
                     <X className="size-5" />
                   </Button>
@@ -536,7 +534,7 @@ const ProductManagement = () => {
                   size="sm"
                   className="px-0 h-auto"
                   onClick={handleAddVariant}
-                  disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                  disabled={isSubmitting}
                 >
                   Add Variant
                 </Button>
@@ -555,10 +553,7 @@ const ProductManagement = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleRemoveVariant(variantIndex)}
-                        disabled={
-                          (dialogMode === "edit" ? isUpdating : isCreating) ||
-                          variants.length === 1
-                        }
+                        disabled={isSubmitting || variants.length === 1}
                         className="text-destructive hover:text-destructive"
                       >
                         <Trash2 className="size-4" />
@@ -584,9 +579,7 @@ const ProductManagement = () => {
                             )
                           }
                           required
-                          disabled={
-                            dialogMode === "edit" ? isUpdating : isCreating
-                          }
+                          disabled={isSubmitting}
                         />
                       </div>
                       <div className="space-y-2">
@@ -606,9 +599,7 @@ const ProductManagement = () => {
                               e.target.value,
                             )
                           }
-                          disabled={
-                            dialogMode === "edit" ? isUpdating : isCreating
-                          }
+                          disabled={isSubmitting}
                         />
                       </div>
                       <div className="space-y-2">
@@ -629,9 +620,7 @@ const ProductManagement = () => {
                                   true,
                                 )
                               }
-                              disabled={
-                                dialogMode === "edit" ? isUpdating : isCreating
-                              }
+                              disabled={isSubmitting}
                             >
                               Dual Tone
                             </Button>
@@ -642,9 +631,7 @@ const ProductManagement = () => {
                           onValueChange={(value) =>
                             handleVariantChange(variantIndex, "colorId", value)
                           }
-                          disabled={
-                            dialogMode === "edit" ? isUpdating : isCreating
-                          }
+                          disabled={isSubmitting}
                         >
                           <SelectTrigger
                             id={`variant-colorId-${variantIndex}`}
@@ -699,9 +686,7 @@ const ProductManagement = () => {
                                   false,
                                 );
                               }}
-                              disabled={
-                                dialogMode === "edit" ? isUpdating : isCreating
-                              }
+                              disabled={isSubmitting}
                             >
                               <Trash2 className="size-4" />
                             </Button>
@@ -715,9 +700,7 @@ const ProductManagement = () => {
                                 value,
                               )
                             }
-                            disabled={
-                              dialogMode === "edit" ? isUpdating : isCreating
-                            }
+                            disabled={isSubmitting}
                           >
                             <SelectTrigger
                               id={`variant-secondaryColorId-${variantIndex}`}
@@ -772,9 +755,7 @@ const ProductManagement = () => {
                               onClick={() =>
                                 handleRemoveVariantImage(variantIndex)
                               }
-                              disabled={
-                                dialogMode === "edit" ? isUpdating : isCreating
-                              }
+                              disabled={isSubmitting}
                             >
                               <X className="size-4" />
                             </Button>
@@ -799,9 +780,7 @@ const ProductManagement = () => {
                               onChange={(e) =>
                                 handleVariantImageChange(variantIndex, e)
                               }
-                              disabled={
-                                dialogMode === "edit" ? isUpdating : isCreating
-                              }
+                              disabled={isSubmitting}
                             />
                           </label>
                         )}
@@ -875,11 +854,7 @@ const ProductManagement = () => {
                                         };
                                       });
                                     }}
-                                    disabled={
-                                      dialogMode === "edit"
-                                        ? isUpdating
-                                        : isCreating
-                                    }
+                                    disabled={isSubmitting}
                                   />
                                   <Label
                                     htmlFor={`subcategory-${subId}`}
@@ -918,9 +893,7 @@ const ProductManagement = () => {
                             onCheckedChange={() =>
                               handleMultiSelectChange("categoryIds", categoryId)
                             }
-                            disabled={
-                              dialogMode === "edit" ? isUpdating : isCreating
-                            }
+                            disabled={isSubmitting}
                           />
                           <Label
                             htmlFor={`category-${categoryId}`}
@@ -1003,11 +976,7 @@ const ProductManagement = () => {
                                         };
                                       });
                                     }}
-                                    disabled={
-                                      dialogMode === "edit"
-                                        ? isUpdating
-                                        : isCreating
-                                    }
+                                    disabled={isSubmitting}
                                   />
                                   <Label
                                     htmlFor={`subcollection-${subId}`}
@@ -1053,9 +1022,7 @@ const ProductManagement = () => {
                                 collectionId,
                               )
                             }
-                            disabled={
-                              dialogMode === "edit" ? isUpdating : isCreating
-                            }
+                            disabled={isSubmitting}
                           />
                           <Label
                             htmlFor={`collection-${collectionId}`}
@@ -1084,7 +1051,7 @@ const ProductManagement = () => {
                   placeholder="0"
                   value={formData.pieceCount}
                   onChange={handleChange}
-                  disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                  disabled={isSubmitting}
                 />
               </div>
               <div className="space-y-2">
@@ -1098,7 +1065,7 @@ const ProductManagement = () => {
                   placeholder="0.00"
                   value={formData.length}
                   onChange={handleChange}
-                  disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                  disabled={isSubmitting}
                 />
               </div>
               <div className="space-y-2">
@@ -1112,7 +1079,7 @@ const ProductManagement = () => {
                   placeholder="0.00"
                   value={formData.width}
                   onChange={handleChange}
-                  disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                  disabled={isSubmitting}
                 />
               </div>
               <div className="space-y-2">
@@ -1126,7 +1093,7 @@ const ProductManagement = () => {
                   placeholder="0.00"
                   value={formData.height}
                   onChange={handleChange}
-                  disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
@@ -1148,7 +1115,7 @@ const ProductManagement = () => {
                     onClick={() =>
                       handleMultiSelectChange("skillLevelIds", skillId)
                     }
-                    disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                    disabled={isSubmitting}
                     className="w-full shadow-none"
                   >
                     {skillLevel.skillLevelName}
@@ -1169,7 +1136,7 @@ const ProductManagement = () => {
                 onClick={() =>
                   setFormData((prev) => ({ ...prev, isActive: true }))
                 }
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                disabled={isSubmitting}
                 className="w-full shadow-none"
               >
                 Active
@@ -1181,7 +1148,7 @@ const ProductManagement = () => {
                 onClick={() =>
                   setFormData((prev) => ({ ...prev, isActive: false }))
                 }
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                disabled={isSubmitting}
                 className="w-full shadow-none"
               >
                 Inactive
@@ -1219,7 +1186,7 @@ const ProductManagement = () => {
                       size="icon"
                       className="absolute top-2 right-2"
                       onClick={() => handleRemoveImage(index)}
-                      disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                      disabled={isSubmitting}
                     >
                       <X className="size-4" />
                     </Button>
@@ -1245,7 +1212,7 @@ const ProductManagement = () => {
                       accept="image/*"
                       multiple
                       onChange={handleImageChange}
-                      disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                      disabled={isSubmitting}
                       className="hidden"
                     />
                   </Label>
@@ -1260,7 +1227,7 @@ const ProductManagement = () => {
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedProduct?.productName || ""}
+        itemName={selectedItem?.productName || ""}
         title="Delete Product"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

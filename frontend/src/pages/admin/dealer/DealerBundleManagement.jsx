@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDate } from "@/utils/formatting";
 import { Plus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,11 +34,14 @@ const DealerBundleManagement = () => {
     bundles,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     calculatedTotal,
     columns,
     isLoadingBundles,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
     handleDialogClose,
     setDeleteDialogOpen,
@@ -77,6 +81,10 @@ const DealerBundleManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={bundles}
         isLoading={isLoadingBundles}
@@ -107,14 +115,10 @@ const DealerBundleManagement = () => {
               </Badge>
             </TableCell>
             <TableCell>
-              {bundle.createdAt
-                ? new Date(bundle.createdAt).toLocaleString()
-                : "-"}
+              {bundle.createdAt ? formatDate(bundle.createdAt) : "-"}
             </TableCell>
             <TableCell>
-              {bundle.updatedAt
-                ? new Date(bundle.updatedAt).toLocaleString()
-                : "-"}
+              {bundle.updatedAt ? formatDate(bundle.updatedAt) : "-"}
             </TableCell>
             <ActionsColumn
               onEdit={() => handleEdit(bundle)}
@@ -136,7 +140,7 @@ const DealerBundleManagement = () => {
             : "Create a new bundle for your products."
         }
         onSubmit={handleSubmit}
-        isLoading={isCreating || isUpdating}
+        isLoading={isSubmitting}
         submitButtonText={
           dialogMode === "edit" ? "Update Bundle" : "Create Bundle"
         }
@@ -201,7 +205,7 @@ const DealerBundleManagement = () => {
               </Select>
               <p className="text-xs text-muted-foreground">
                 {formData.torsoBagType === "regular"
-                  ? "Uses base bags with a quantity (e.g. 200 = 2× 100 bag)."
+                  ? "Uses base bags with a quantity (e.g. 200 = 2 x 100 bag)."
                   : "Uses a dedicated bag set for this bundle."}
               </p>
             </div>

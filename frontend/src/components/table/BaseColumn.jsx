@@ -7,38 +7,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getTextContent } from "@/utils/uiHelpers";
 
-// Helper function to extract text content from React children
-const getTextContent = (children) => {
-  if (typeof children === "string" || typeof children === "number") {
-    return String(children);
-  }
-  if (Array.isArray(children)) {
-    return children.map(getTextContent).join("").trim();
-  }
-  if (React.isValidElement(children)) {
-    if (children.props?.children) {
-      return getTextContent(children.props.children);
-    }
-    // If element has no children, try to get text from props (e.g., value, label)
-    return (
-      children.props?.value ||
-      children.props?.label ||
-      children.props?.title ||
-      ""
-    );
-  }
-  return "";
-};
-
-// Helper function to render table header
 export const TableHeader = ({ children }) => {
-  return (
-    <th className="px-4 py-3 text-center text-sm font-semibold">{children}</th>
-  );
+  return <th className="p-3 text-center text-sm font-semibold">{children}</th>;
 };
-
-// Helper function to render table cell with standard styling
 export const TableCell = ({
   children,
   className = "",
@@ -49,7 +22,7 @@ export const TableCell = ({
   const titleText = textContent || undefined;
 
   return (
-    <td className={`px-4 py-3 text-center text-sm ${className}`}>
+    <td className={`p-3 text-center text-sm ${className}`}>
       {truncate ? (
         <div
           className="truncate"
@@ -65,7 +38,7 @@ export const TableCell = ({
   );
 };
 
-// Actions Column Component
+// Actions for view, edit, and delete functions
 export const ActionsColumn = ({
   onView,
   onEdit,
@@ -75,7 +48,7 @@ export const ActionsColumn = ({
   deleteTitle = "Delete",
 }) => {
   return (
-    <td className="px-4 py-3 flex items-center justify-center gap-2">
+    <td className="p-3 flex items-center justify-center gap-2">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button

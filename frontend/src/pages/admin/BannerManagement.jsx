@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDate } from "@/utils/formatting";
 import { Plus, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +24,7 @@ const BannerManagement = () => {
   const {
     dialogOpen,
     deleteDialogOpen,
-    selectedBanner,
+    selectedItem,
     dialogMode,
     formData,
     mediaPreview,
@@ -34,17 +35,20 @@ const BannerManagement = () => {
     banners,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     columns,
 
     isLoadingBanners,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
 
     handleChange,
     handleSelectChange,
-    handleMediaChange,
-    handleRemoveMedia,
+    handleFileChange,
+    handleRemoveFile,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -84,6 +88,10 @@ const BannerManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={banners}
         isLoading={isLoadingBanners}
@@ -112,15 +120,11 @@ const BannerManagement = () => {
             </TableCell>
 
             <TableCell>
-              {banner.createdAt
-                ? new Date(banner.createdAt).toLocaleString()
-                : "-"}
+              {banner.createdAt ? formatDate(banner.createdAt) : "-"}
             </TableCell>
 
             <TableCell>
-              {banner.updatedAt
-                ? new Date(banner.updatedAt).toLocaleString()
-                : "-"}
+              {banner.updatedAt ? formatDate(banner.updatedAt) : "-"}
             </TableCell>
 
             <ActionsColumn
@@ -143,7 +147,7 @@ const BannerManagement = () => {
             : "Create a new banner for the homepage carousel."
         }
         onSubmit={handleSubmit}
-        isLoading={dialogMode === "edit" ? isUpdating : isCreating}
+        isLoading={isSubmitting}
         submitButtonText={
           dialogMode === "edit" ? "Update Banner" : "Create Banner"
         }
@@ -160,7 +164,7 @@ const BannerManagement = () => {
                 placeholder="e.g. New Arrival"
                 value={formData.badge}
                 onChange={handleChange}
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                disabled={isSubmitting}
               />
             </div>
             {/* Label */}
@@ -173,7 +177,7 @@ const BannerManagement = () => {
                 value={formData.label}
                 onChange={handleChange}
                 required
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                disabled={isSubmitting}
               />
             </div>
             {/* Order */}
@@ -188,7 +192,7 @@ const BannerManagement = () => {
                 value={formData.order}
                 onChange={handleChange}
                 required
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -203,7 +207,7 @@ const BannerManagement = () => {
               value={formData.description}
               onChange={handleChange}
               required
-              disabled={dialogMode === "edit" ? isUpdating : isCreating}
+              disabled={isSubmitting}
             />
           </div>
 
@@ -214,7 +218,7 @@ const BannerManagement = () => {
               <Select
                 value={formData.position}
                 onValueChange={(v) => handleSelectChange("position", v)}
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                disabled={isSubmitting}
               >
                 <SelectTrigger id="position" className="w-full">
                   <SelectValue placeholder="Select position" />
@@ -233,7 +237,7 @@ const BannerManagement = () => {
               <Select
                 value={formData.textTheme}
                 onValueChange={(v) => handleSelectChange("textTheme", v)}
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                disabled={isSubmitting}
               >
                 <SelectTrigger id="textTheme" className="w-full">
                   <SelectValue placeholder="Select text theme" />
@@ -253,7 +257,7 @@ const BannerManagement = () => {
                 onValueChange={(v) =>
                   handleSelectChange("isActive", v === "true")
                 }
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                disabled={isSubmitting}
               >
                 <SelectTrigger id="isActive" className="w-full">
                   <SelectValue />
@@ -366,8 +370,8 @@ const BannerManagement = () => {
                   size="icon"
                   variant="destructive"
                   className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={handleRemoveMedia}
-                  disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                  onClick={handleRemoveFile}
+                  disabled={isSubmitting}
                 >
                   <X className="size-4" />
                 </Button>
@@ -385,8 +389,8 @@ const BannerManagement = () => {
                   type="file"
                   className="hidden"
                   accept="image/*,video/*"
-                  onChange={handleMediaChange}
-                  disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                  onChange={handleFileChange}
+                  disabled={isSubmitting}
                 />
               </label>
             )}
@@ -401,7 +405,7 @@ const BannerManagement = () => {
                 onCheckedChange={(checked) =>
                   handleSelectChange("enableButtons", checked)
                 }
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                disabled={isSubmitting}
               />
               <Label
                 htmlFor="enableButtons"
@@ -441,9 +445,7 @@ const BannerManagement = () => {
                             value: e.target.value,
                           })
                         }
-                        disabled={
-                          dialogMode === "edit" ? isUpdating : isCreating
-                        }
+                        disabled={isSubmitting}
                       />
                     </div>
 
@@ -462,9 +464,7 @@ const BannerManagement = () => {
                             value: e.target.value,
                           })
                         }
-                        disabled={
-                          dialogMode === "edit" ? isUpdating : isCreating
-                        }
+                        disabled={isSubmitting}
                       />
                     </div>
 
@@ -481,9 +481,7 @@ const BannerManagement = () => {
                             value: v,
                           })
                         }
-                        disabled={
-                          dialogMode === "edit" ? isUpdating : isCreating
-                        }
+                        disabled={isSubmitting}
                       >
                         <SelectTrigger
                           id={`btn-variant-${i}`}
@@ -511,7 +509,7 @@ const BannerManagement = () => {
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedBanner?.label || ""}
+        itemName={selectedItem?.label || ""}
         title="Delete Banner"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

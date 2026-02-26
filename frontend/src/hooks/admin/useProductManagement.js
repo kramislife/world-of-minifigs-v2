@@ -1,5 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from "react";
-import { toast } from "sonner";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   useGetProductsQuery,
   useCreateProductMutation,
@@ -12,8 +11,16 @@ import {
   useGetColorsQuery,
   useGetSkillLevelsQuery,
 } from "@/redux/api/adminApi";
-import useAdminCrud from "@/hooks/admin/useAdminCrud";
 import { extractPaginatedData } from "@/utils/apiHelpers";
+import { sanitizeString } from "@/utils/formatting";
+import {
+  validateProduct,
+  validateMinItems,
+  handleFileReadError,
+} from "@/utils/validation";
+import useMediaPreview from "@/hooks/admin/useMediaPreview";
+import { validateFile, readFileAsDataURL } from "@/utils/fileHelpers";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const initialFormData = {
   productName: "",
@@ -49,20 +56,39 @@ const defaultVariant = {
   imagePreview: "",
 };
 
+const columns = [
+  { key: "productName", label: "Product Name" },
+  { key: "productType", label: "Type" },
+  { key: "price", label: "Price" },
+  { key: "discount", label: "Discount" },
+  { key: "discountPrice", label: "Discount Price" },
+  { key: "isActive", label: "Status" },
+  { key: "createdAt", label: "Created At" },
+  { key: "updatedAt", label: "Updated At" },
+  { key: "actions", label: "Actions" },
+];
+
 const useProductManagement = () => {
   const [productType, setProductType] = useState("standalone");
   const [variants, setVariants] = useState([{ ...defaultVariant }]);
-  const [imagePreviews, setImagePreviews] = useState([]);
   const [imagesChanged, setImagesChanged] = useState(false);
-  const fileInputRef = useRef(null);
+
+  // Gallery hook for standalone products
+  const {
+    filePreview: galleryPreviews,
+    setFilePreview: setGalleryPreviews,
+    fileInputRef,
+    resetFile,
+    handleFileChange: onGalleryChange,
+    handleRemoveFile: onGalleryRemove,
+  } = useMediaPreview({ multiple: true, maxFiles: 10 });
 
   const resetProductState = useCallback(() => {
     setProductType("standalone");
     setVariants([{ ...defaultVariant }]);
-    setImagePreviews([]);
+    resetFile();
     setImagesChanged(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }, []);
+  }, [resetFile]);
 
   const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
   const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
@@ -96,6 +122,11 @@ const useProductManagement = () => {
     totalItems,
     totalPages,
   } = extractPaginatedData(productsData, "products");
+
+  // Sync totalItems back to crud hook for calculations
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems, crud]);
 
   // Option lists
   const categories = categoriesData?.categories || [];
@@ -132,26 +163,7 @@ const useProductManagement = () => {
     });
   }, [collections, subCollections]);
 
-  const columns = [
-    { key: "productName", label: "Product Name" },
-    { key: "productType", label: "Type" },
-    { key: "price", label: "Price" },
-    { key: "discount", label: "Discount" },
-    { key: "discountPrice", label: "Discount Price" },
-    { key: "isActive", label: "Status" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-    { key: "actions", label: "Actions" },
-  ];
-
-  // Form handlers
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    crud.setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
+  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
 
   const handleSelectChange = (name, value) => {
     crud.setFormData((prev) => ({ ...prev, [name]: value || "" }));
@@ -170,49 +182,20 @@ const useProductManagement = () => {
     });
   };
 
-  // Image handlers
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    const currentImageCount = imagePreviews.length;
-    const maxImages = 10;
-
-    if (currentImageCount + files.length > maxImages) {
-      const allowedCount = maxImages - currentImageCount;
-      toast.error("Too many images", {
-        description: `You can only add ${allowedCount} more image${
-          allowedCount !== 1 ? "s" : ""
-        }. Maximum ${maxImages} images allowed.`,
-      });
-      e.target.value = "";
-      return;
+  // Image handlers for standalone gallery
+  const handleImageChange = async (e) => {
+    const dataUrls = await onGalleryChange(e);
+    if (dataUrls && dataUrls.length > 0) {
+      crud.setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, ...dataUrls],
+      }));
+      setImagesChanged(true);
     }
-
-    const newPreviews = [];
-    const newImages = [];
-
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        newPreviews.push(reader.result);
-        newImages.push(reader.result);
-
-        if (newPreviews.length === files.length) {
-          setImagePreviews((prev) => [...prev, ...newPreviews]);
-          crud.setFormData((prev) => ({
-            ...prev,
-            images: [...prev.images, ...newImages],
-          }));
-          setImagesChanged(true);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
   };
 
   const handleRemoveImage = (index) => {
-    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+    onGalleryRemove(index);
     crud.setFormData((prev) => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index),
@@ -226,10 +209,8 @@ const useProductManagement = () => {
   };
 
   const handleRemoveVariant = (index) => {
-    if (variants.length > 1) {
+    if (validateMinItems(variants, 1, "variant")) {
       setVariants((prev) => prev.filter((_, i) => i !== index));
-    } else {
-      toast.error("At least one variant is required");
     }
   };
 
@@ -241,23 +222,24 @@ const useProductManagement = () => {
     });
   };
 
-  const handleVariantImageChange = (variantIndex, e) => {
+  const handleVariantImageChange = async (variantIndex, e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !validateFile(file)) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
+    try {
+      const dataUrl = await readFileAsDataURL(file);
       setVariants((prev) => {
         const newVariants = [...prev];
         newVariants[variantIndex] = {
           ...newVariants[variantIndex],
-          imagePreview: reader.result,
-          image: reader.result,
+          imagePreview: dataUrl,
+          image: dataUrl,
         };
         return newVariants;
       });
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+      handleFileReadError();
+    }
   };
 
   const handleRemoveVariantImage = (variantIndex) => {
@@ -328,7 +310,7 @@ const useProductManagement = () => {
 
     // Set images
     const existingImages = product.images?.map((img) => img.url) || [];
-    setImagePreviews(existingImages);
+    setGalleryPreviews(existingImages);
     const existingImageObjects =
       product.images?.map((img) => ({
         publicId: img.publicId,
@@ -371,57 +353,25 @@ const useProductManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!crud.formData.productName.trim()) {
-      toast.error("Product name is required");
+    if (!validateProduct(crud.formData, productType, variants, galleryPreviews))
       return;
-    }
-    if (!crud.formData.price || crud.formData.price <= 0) {
-      toast.error("Valid price is required");
-      return;
-    }
-    if (!crud.formData.descriptions[0]?.trim()) {
-      toast.error("At least one description is required");
-      return;
-    }
 
-    // Image validation
-    if (productType === "standalone") {
-      if (!imagePreviews.length) {
-        toast.error("Image is required", {
-          description: "Please add at least one product image.",
-        });
-        return;
-      }
-    } else if (productType === "variant") {
-      const variantWithoutImageIndex = variants.findIndex(
-        (variant) => !variant.image && !variant.imagePreview,
-      );
-      if (variantWithoutImageIndex !== -1) {
-        toast.error("Variant image is required", {
-          description: `Please add an image for Variant ${
-            variantWithoutImageIndex + 1
-          }.`,
-        });
-        return;
-      }
-    }
-
-    const validDescriptions = crud.formData.descriptions.filter((d) =>
-      d.trim(),
-    );
+    const validDescriptions = crud.formData.descriptions
+      .map((d) => sanitizeString(d))
+      .filter(Boolean);
 
     const productData = {
-      productName: crud.formData.productName.trim(),
+      productName: sanitizeString(crud.formData.productName),
       price: parseFloat(crud.formData.price),
-      descriptions: validDescriptions.map((d) => d.trim()).slice(0, 3),
+      descriptions: validDescriptions.slice(0, 3),
       isActive: crud.formData.isActive,
     };
 
     // Product type specific fields
     if (productType === "standalone") {
       productData.productType = "standalone";
-      productData.partId = crud.formData.partId.trim();
-      productData.itemId = crud.formData.itemId.trim();
+      productData.partId = sanitizeString(crud.formData.partId);
+      productData.itemId = sanitizeString(crud.formData.itemId);
       productData.images = crud.formData.images;
       if (crud.formData.colorId) productData.colorId = crud.formData.colorId;
       if (crud.formData.secondaryColorId)
@@ -430,11 +380,11 @@ const useProductManagement = () => {
         productData.stock = parseInt(crud.formData.stock) || 0;
     } else if (productType === "variant") {
       productData.productType = "variant";
-      productData.partId = crud.formData.partId.trim();
+      productData.partId = sanitizeString(crud.formData.partId);
       productData.variants = variants.map((variant) => ({
         colorId: variant.colorId,
         secondaryColorId: variant.secondaryColorId || undefined,
-        itemId: variant.itemId.trim(),
+        itemId: sanitizeString(variant.itemId),
         stock: parseInt(variant.stock) || 0,
         image: variant.image || null,
       }));
@@ -466,20 +416,12 @@ const useProductManagement = () => {
   };
 
   return {
-    // State
-    dialogOpen: crud.dialogOpen,
-    deleteDialogOpen: crud.deleteDialogOpen,
-    selectedProduct: crud.selectedItem,
-    dialogMode: crud.dialogMode,
+    ...crud,
     productType,
     variants,
-    formData: crud.formData,
-    imagePreviews,
+    imagePreviews: galleryPreviews,
     imagesChanged,
     fileInputRef,
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search,
     products,
     totalItems,
     totalPages,
@@ -493,12 +435,10 @@ const useProductManagement = () => {
     collectionsWithSubs,
     columns,
     isLoadingProducts,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
 
     // Handlers
-    handleChange,
     handleSelectChange,
     handleMultiSelectChange,
     handleImageChange,
@@ -509,17 +449,9 @@ const useProductManagement = () => {
     handleVariantImageChange,
     handleRemoveVariantImage,
     handleSubmit,
-    handleDialogClose: crud.handleDialogClose,
-    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete: crud.handleDelete,
-    handleConfirmDelete: crud.handleConfirmDelete,
-    handlePageChange: crud.handlePageChange,
-    handleLimitChange: crud.handleLimitChange,
-    handleSearchChange: crud.handleSearchChange,
     setProductType,
-    setDeleteDialogOpen: crud.setDeleteDialogOpen,
-    setFormData: crud.setFormData,
+    setGalleryPreviews,
   };
 };
 

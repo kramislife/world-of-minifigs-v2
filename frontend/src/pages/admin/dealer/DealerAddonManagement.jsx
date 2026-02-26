@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDate } from "@/utils/formatting";
 import { Plus, Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,15 +30,18 @@ const DealerAddonManagement = () => {
     deleteDialogOpen,
     dialogMode,
     selectedAddon,
-    imagePreviews,
+    filePreviews,
     formData,
     addons,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     columns,
     isLoadingAddons,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
     fileInputRef,
     colors,
@@ -47,9 +51,9 @@ const DealerAddonManagement = () => {
     handleAdd,
     handleEdit,
     handleDelete,
-    handleImageChange,
-    handleUpdateImageMetadata,
-    handleRemoveImage,
+    handleFileChange,
+    handleUpdateFileMetadata,
+    handleRemoveFile,
     handleSubmit,
     handleConfirmDelete,
     handlePageChange,
@@ -82,6 +86,10 @@ const DealerAddonManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={addons}
         isLoading={isLoadingAddons}
@@ -100,14 +108,10 @@ const DealerAddonManagement = () => {
               </Badge>
             </TableCell>
             <TableCell>
-              {addon.createdAt
-                ? new Date(addon.createdAt).toLocaleString()
-                : "-"}
+              {addon.createdAt ? formatDate(addon.createdAt) : "-"}
             </TableCell>
             <TableCell>
-              {addon.updatedAt
-                ? new Date(addon.updatedAt).toLocaleString()
-                : "-"}
+              {addon.updatedAt ? formatDate(addon.updatedAt) : "-"}
             </TableCell>
             <ActionsColumn
               onEdit={() => handleEdit(addon)}
@@ -128,7 +132,7 @@ const DealerAddonManagement = () => {
             : "Add a new premium item for dealers."
         }
         onSubmit={handleSubmit}
-        isLoading={isCreating || isUpdating}
+        isLoading={isSubmitting}
         submitButtonText={
           dialogMode === "edit" ? "Update Add-on" : "Create Add-on"
         }
@@ -184,12 +188,12 @@ const DealerAddonManagement = () => {
             <Label>Image Attachment</Label>
             <div
               className={`grid gap-2 ${
-                imagePreviews.length > 0
+                filePreviews.length > 0
                   ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
                   : "grid-cols-1"
               }`}
             >
-              {imagePreviews.map((preview, index) => (
+              {filePreviews.map((preview, index) => (
                 <div
                   key={index}
                   className="relative group border rounded-lg overflow-hidden"
@@ -205,8 +209,8 @@ const DealerAddonManagement = () => {
                       variant="destructive"
                       size="icon"
                       className="absolute top-2 right-2"
-                      onClick={() => handleRemoveImage(index)}
-                      disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                      onClick={() => handleRemoveFile(index)}
+                      disabled={isSubmitting}
                     >
                       <X className="size-4" />
                     </Button>
@@ -221,7 +225,7 @@ const DealerAddonManagement = () => {
                         className="h-9 text-xs"
                         value={preview.itemName}
                         onChange={(e) =>
-                          handleUpdateImageMetadata(
+                          handleUpdateFileMetadata(
                             index,
                             "itemName",
                             e.target.value,
@@ -238,7 +242,7 @@ const DealerAddonManagement = () => {
                           className="h-9 text-xs w-full"
                           value={preview.itemPrice}
                           onChange={(e) =>
-                            handleUpdateImageMetadata(
+                            handleUpdateFileMetadata(
                               index,
                               "itemPrice",
                               e.target.value,
@@ -251,7 +255,7 @@ const DealerAddonManagement = () => {
                         <Select
                           value={preview.color || ""}
                           onValueChange={(value) =>
-                            handleUpdateImageMetadata(index, "color", value)
+                            handleUpdateFileMetadata(index, "color", value)
                           }
                         >
                           <SelectTrigger className="w-full text-xs">
@@ -299,8 +303,8 @@ const DealerAddonManagement = () => {
                   type="file"
                   accept="image/*"
                   multiple
-                  onChange={handleImageChange}
-                  disabled={isUpdating || isCreating}
+                  onChange={handleFileChange}
+                  disabled={isSubmitting}
                   className="hidden"
                 />
               </Label>

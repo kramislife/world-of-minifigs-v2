@@ -1,3 +1,23 @@
+// Safely trim a string value (returns "" for nullish input)
+export const sanitizeString = (value) => (value ?? "").toString().trim();
+
+// Bulk-trim specified string fields on a payload object
+export const sanitizePayload = (payload, fields) => {
+  const result = { ...payload };
+  for (const field of fields) {
+    if (field in result) {
+      result[field] = sanitizeString(result[field]);
+    }
+  }
+  return result;
+};
+
+// Trim a value and return undefined if empty (for optional fields)
+export const sanitizeOptional = (value) => {
+  const trimmed = sanitizeString(value);
+  return trimmed || undefined;
+};
+
 // Get user initials for avatar display
 export const getInitials = (user) => {
   if (!user?.firstName || !user?.lastName) {
@@ -47,3 +67,7 @@ export const formatDate = (date) => {
     minute: "2-digit",
   });
 };
+
+// Clean a features array: trim whitespace and remove empties
+export const cleanFeatures = (features) =>
+  (features || []).map((f) => String(f ?? "").trim()).filter((f) => f !== "");

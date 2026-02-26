@@ -1,25 +1,33 @@
-import { useState } from "react";
 import { useSelector } from "react-redux";
+import { useEffect } from "react";
 import {
   useGetUsersQuery,
   useUpdateUserRoleMutation,
 } from "@/redux/api/adminApi";
-import { extractPaginatedData } from "@/utils/apiHelpers";
-import { handleApiError, handleApiSuccess } from "@/utils/apiHelpers";
+import {
+  extractPaginatedData,
+  handleApiError,
+  handleApiSuccess,
+} from "@/utils/apiHelpers";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const useUserManagement = () => {
   const { user: currentUser } = useSelector((state) => state.auth);
 
-  // Pagination and search state
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState("10");
-  const [search, setSearch] = useState("");
+  const crud = useAdminCrud({
+    initialFormData: {},
+    // User management doesn't use standard CRUD functions for everything,
+    // but we use useAdminCrud for centralized table logic.
+    createFn: null,
+    updateFn: null,
+    deleteFn: null,
+  });
 
   // Fetch data
   const { data: usersResponse, isLoading: isLoadingUsers } = useGetUsersQuery({
-    page,
-    limit,
-    search: search || undefined,
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search || undefined,
   });
 
   const [updateUserRole, { isLoading: isUpdatingRole }] =
@@ -30,6 +38,11 @@ const useUserManagement = () => {
     totalItems,
     totalPages,
   } = extractPaginatedData(usersResponse, "users");
+
+  // Sync totalItems back to crud hook for calculations
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems, crud]);
 
   const columns = [
     { key: "user", label: "User" },
@@ -78,22 +91,8 @@ const useUserManagement = () => {
 
   const canUpdateRole = (user) => user.role !== "admin";
 
-  // Pagination Handlers
-  const handlePageChange = (newPage) => setPage(newPage);
-  const handleLimitChange = (newLimit) => {
-    setLimit(newLimit);
-    setPage(1);
-  };
-  const handleSearchChange = (value) => {
-    setSearch(value);
-    setPage(1);
-  };
-
   return {
-    // State
-    page,
-    limit,
-    search,
+    ...crud,
     users,
     totalItems,
     totalPages,
@@ -103,9 +102,6 @@ const useUserManagement = () => {
     currentUser,
 
     // Handlers
-    handlePageChange,
-    handleLimitChange,
-    handleSearchChange,
     handleUpdateRole,
     isCurrentUser,
     getRoleBadgeVariant,

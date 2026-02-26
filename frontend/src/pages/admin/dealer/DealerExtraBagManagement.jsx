@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDate } from "@/utils/formatting";
 import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,10 +34,13 @@ const DealerExtraBagManagement = () => {
     extraBags,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     columns,
     isLoadingExtraBags,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
     handleDialogClose,
     setDeleteDialogOpen,
@@ -76,6 +80,10 @@ const DealerExtraBagManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={extraBags}
         isLoading={isLoadingExtraBags}
@@ -93,10 +101,10 @@ const DealerExtraBagManagement = () => {
               </Badge>
             </TableCell>
             <TableCell>
-              {bag.createdAt ? new Date(bag.createdAt).toLocaleString() : "-"}
+              {bag.createdAt ? formatDate(bag.createdAt) : "-"}
             </TableCell>
             <TableCell>
-              {bag.updatedAt ? new Date(bag.updatedAt).toLocaleString() : "-"}
+              {bag.updatedAt ? formatDate(bag.updatedAt) : "-"}
             </TableCell>
             <ActionsColumn
               onEdit={() => handleEdit(bag)}
@@ -118,7 +126,7 @@ const DealerExtraBagManagement = () => {
             : "Create a new extra bag for your products."
         }
         onSubmit={handleSubmit}
-        isLoading={isCreating || isUpdating}
+        isLoading={isSubmitting}
         submitButtonText={
           dialogMode === "edit" ? "Update Extra Bag" : "Create Extra Bag"
         }

@@ -25,6 +25,10 @@ const OrderManagement = () => {
     orders,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     columns,
     isLoadingOrders,
     statusModalOpen,
@@ -78,6 +82,10 @@ const OrderManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={orders}
         isLoading={isLoadingOrders}
@@ -123,16 +131,12 @@ const OrderManagement = () => {
                   : "—"}
               </TableCell>
               <TableCell>
-                {order.createdAt
-                  ? new Date(order.createdAt).toLocaleString()
-                  : "-"}
+                {order.createdAt ? formatDate(order.createdAt) : "-"}
               </TableCell>
               <ActionsColumn
                 onView={() => handleView(order)}
                 onEdit={
-                  transitions.length > 0
-                    ? () => handleEdit(order)
-                    : undefined
+                  transitions.length > 0 ? () => handleEdit(order) : undefined
                 }
               />
             </>
@@ -319,9 +323,7 @@ const OrderManagement = () => {
             </Label>
             <div className="rounded-lg border divide-y text-sm">
               <div className="grid grid-cols-[140px_1fr] p-3">
-                <span className="font-semibold text-xs">
-                  Cardholder Name
-                </span>
+                <span className="font-semibold text-xs">Cardholder Name</span>
                 <span className="text-xs">
                   {viewOrder.billing.cardHolderName || "—"}
                 </span>
@@ -402,9 +404,7 @@ const OrderManagement = () => {
                 </span>
               </div>
               <div className="grid grid-cols-[140px_1fr] p-3">
-                <span className="font-semibold text-xs">
-                  Tracking Number
-                </span>
+                <span className="font-semibold text-xs">Tracking Number</span>
                 <span className="text-xs">
                   {viewOrder.shipping.trackingNumber || "—"}
                 </span>
@@ -482,38 +482,33 @@ const OrderManagement = () => {
             )}
             <div className="grid grid-cols-[140px_1fr] p-3 font-semibold">
               <span>Total</span>
-              <span>
-                ${formatCurrency(viewOrder?.payment?.totalAmount)}
-              </span>
+              <span>${formatCurrency(viewOrder?.payment?.totalAmount)}</span>
             </div>
           </div>
         </section>
 
         {/* ── Refund ── */}
-        {viewOrder?.refund?.status &&
-          viewOrder.refund.status !== "none" && (
-            <section className="space-y-2">
-              <Label className="font-semibold text-xs uppercase">
-                Refund
-              </Label>
-              <div className="rounded-lg border divide-y text-sm">
+        {viewOrder?.refund?.status && viewOrder.refund.status !== "none" && (
+          <section className="space-y-2">
+            <Label className="font-semibold text-xs uppercase">Refund</Label>
+            <div className="rounded-lg border divide-y text-sm">
+              <div className="grid grid-cols-[140px_1fr] p-3">
+                <span className="font-semibold text-xs">Status</span>
+                <span className="text-xs capitalize">
+                  {viewOrder.refund.status || "—"}
+                </span>
+              </div>
+              {viewOrder.refund.amount != null && (
                 <div className="grid grid-cols-[140px_1fr] p-3">
-                  <span className="font-semibold text-xs">Status</span>
-                  <span className="text-xs capitalize">
-                    {viewOrder.refund.status || "—"}
+                  <span className="font-semibold text-xs">Amount</span>
+                  <span className="text-xs">
+                    ${formatCurrency(viewOrder.refund.amount) || "-"}
                   </span>
                 </div>
-                {viewOrder.refund.amount != null && (
-                  <div className="grid grid-cols-[140px_1fr] p-3">
-                    <span className="font-semibold text-xs">Amount</span>
-                    <span className="text-xs">
-                      ${formatCurrency(viewOrder.refund.amount) || "-"}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
+              )}
+            </div>
+          </section>
+        )}
 
         {/* ── Cancellation ── */}
         {viewOrder?.cancellation?.reason && (

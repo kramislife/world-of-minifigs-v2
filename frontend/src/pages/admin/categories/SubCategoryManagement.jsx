@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDate } from "@/utils/formatting";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,16 +33,19 @@ const SubCategoryManagement = () => {
     subCategories,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     categories,
     columns,
     isLoadingSubCategories,
     isLoadingCategories,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
     handleChange,
     handleCategoryChange,
-    handleIsActiveChange,
+    handleSwitchChange,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -80,6 +84,10 @@ const SubCategoryManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={subCategories}
         isLoading={isLoadingSubCategories}
@@ -102,14 +110,10 @@ const SubCategoryManagement = () => {
               )}
             </TableCell>
             <TableCell>
-              {subCategory.createdAt
-                ? new Date(subCategory.createdAt).toLocaleString()
-                : "-"}
+              {subCategory.createdAt ? formatDate(subCategory.createdAt) : "-"}
             </TableCell>
             <TableCell>
-              {subCategory.updatedAt
-                ? new Date(subCategory.updatedAt).toLocaleString()
-                : "-"}
+              {subCategory.updatedAt ? formatDate(subCategory.updatedAt) : "-"}
             </TableCell>
             <ActionsColumn
               onEdit={() => handleEdit(subCategory)}
@@ -133,7 +137,7 @@ const SubCategoryManagement = () => {
             : "Create a new sub-category for your products."
         }
         onSubmit={handleSubmit}
-        isLoading={dialogMode === "edit" ? isUpdating : isCreating}
+        isLoading={isSubmitting}
         submitButtonText={
           dialogMode === "edit" ? "Update Sub-category" : "Create Sub-category"
         }
@@ -143,7 +147,7 @@ const SubCategoryManagement = () => {
           <Select
             value={formData.category}
             onValueChange={handleCategoryChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            disabled={isSubmitting}
           >
             <SelectTrigger id="category" className="w-full">
               <SelectValue placeholder="Select a category" />
@@ -181,7 +185,7 @@ const SubCategoryManagement = () => {
             value={formData.subCategoryName}
             onChange={handleChange}
             required
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            disabled={isSubmitting}
           />
         </div>
 
@@ -193,7 +197,7 @@ const SubCategoryManagement = () => {
             placeholder="Enter sub-category description (optional)"
             value={formData.description}
             onChange={handleChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            disabled={isSubmitting}
             rows={4}
           />
         </div>
@@ -210,8 +214,10 @@ const SubCategoryManagement = () => {
           <Switch
             id="isActive"
             checked={formData.isActive}
-            onCheckedChange={handleIsActiveChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            onCheckedChange={(checked) =>
+              handleSwitchChange("isActive", checked)
+            }
+            disabled={isSubmitting}
           />
         </div>
       </AddUpdateItemDialog>
