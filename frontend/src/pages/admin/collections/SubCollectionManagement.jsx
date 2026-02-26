@@ -1,6 +1,6 @@
 import React from "react";
 import { formatDate } from "@/utils/formatting";
-import { Plus, Upload, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,7 @@ import {
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
+import MediaUpload from "@/components/shared/MediaUpload";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import useSubCollectionManagement from "@/hooks/admin/useSubCollectionManagement";
 
@@ -28,7 +29,6 @@ const SubCollectionManagement = () => {
     dialogMode,
     formData,
     filePreview,
-    fileInputRef,
     page,
     limit,
     search,
@@ -158,38 +158,40 @@ const SubCollectionManagement = () => {
             : "Create Sub-collection"
         }
       >
-        <div className="space-y-2">
-          <Label htmlFor="subCollectionName">Sub-collection Name</Label>
-          <Input
-            id="subCollectionName"
-            name="subCollectionName"
-            type="text"
-            placeholder="e.g., Star Wars, Harry Potter, Marvel"
-            value={formData.subCollectionName}
-            onChange={handleChange}
-            required
-            disabled={isSubmitting}
-          />
-        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="space-y-2 col-span-2">
+            <Label htmlFor="subCollectionName">Sub-collection Name</Label>
+            <Input
+              id="subCollectionName"
+              name="subCollectionName"
+              type="text"
+              placeholder="e.g., Star Wars, Harry Potter, Marvel"
+              value={formData.subCollectionName}
+              onChange={handleChange}
+              required
+              disabled={isSubmitting}
+            />
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="collection">Parent Collection</Label>
-          <Select
-            value={formData.collection}
-            onValueChange={handleCollectionChange}
-            disabled={isSubmitting || isLoadingCollections}
-          >
-            <SelectTrigger id="collection">
-              <SelectValue placeholder="Select parent collection" />
-            </SelectTrigger>
-            <SelectContent>
-              {collections.map((collection) => (
-                <SelectItem key={collection._id} value={collection._id}>
-                  {collection.collectionName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="space-y-2 col-span-1">
+            <Label htmlFor="collection">Parent Collection</Label>
+            <Select
+              value={formData.collection}
+              onValueChange={handleCollectionChange}
+              disabled={isSubmitting || isLoadingCollections}
+            >
+              <SelectTrigger id="collection" className="w-full">
+                <SelectValue placeholder="Select collection" />
+              </SelectTrigger>
+              <SelectContent>
+                {collections.map((collection) => (
+                  <SelectItem key={collection._id} value={collection._id}>
+                    {collection.collectionName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -205,53 +207,15 @@ const SubCollectionManagement = () => {
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="image">Image Attachment</Label>
-          {filePreview ? (
-            <div className="relative w-full h-60 border rounded-lg overflow-hidden">
-              <img
-                src={filePreview}
-                alt="Preview"
-                className="w-full h-full object-contain"
-              />
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                className="absolute top-2 right-2"
-                onClick={handleRemoveFile}
-                disabled={isSubmitting}
-              >
-                <X className="size-4" />
-              </Button>
-            </div>
-          ) : (
-            <Label
-              htmlFor="image"
-              className="border-2 border-dashed rounded-md p-7 text-center cursor-pointer hover:border-accent/50 transition-colors block"
-            >
-              <Upload className="mx-auto h-12 w-12 text-popover-foreground/80" />
-              <p className="mt-2 text-sm text-popover-foreground/80">
-                {dialogMode === "edit"
-                  ? "Upload a new image to replace the current one"
-                  : "Click to upload an image"}
-              </p>
-              <p className="text-xs text-popover-foreground/80 mt-1">
-                PNG, JPG, WEBP
-              </p>
-              <Input
-                ref={fileInputRef}
-                id="image"
-                name="image"
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                disabled={isSubmitting}
-                className="hidden"
-              />
-            </Label>
-          )}
-        </div>
+        <MediaUpload
+          label="Image Attachment"
+          preview={filePreview}
+          mediaType="image"
+          onChange={handleFileChange}
+          onRemove={handleRemoveFile}
+          accept="image/*"
+          description="PNG, JPG, WEBP"
+        />
 
         <div className="flex items-start justify-between">
           <div className="space-y-1">

@@ -1,6 +1,6 @@
 import React from "react";
 import { formatDate } from "@/utils/formatting";
-import { Plus, Upload, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
+import MediaUpload from "@/components/shared/MediaUpload";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import useBannerManagement from "@/hooks/admin/useBannerManagement";
 
@@ -60,6 +61,43 @@ const BannerManagement = () => {
     handleSearchChange,
     setDeleteDialogOpen,
   } = useBannerManagement();
+
+  const isDarkTheme = formData.textTheme === "dark";
+  const isLightTheme = formData.textTheme === "light";
+
+  const getPositionClasses = (position) => {
+    switch (position) {
+      case "center":
+        return {
+          container: "items-center justify-center text-center",
+          buttons: "justify-center",
+        };
+      case "bottom-left":
+        return {
+          container: "items-end justify-start text-left",
+          buttons: "justify-start",
+        };
+      case "bottom-right":
+        return {
+          container: "items-end justify-end text-right",
+          buttons: "justify-end",
+        };
+      default:
+        return {
+          container: "items-center justify-center text-center",
+          buttons: "justify-center",
+        };
+    }
+  };
+
+  const { container, buttons } = getPositionClasses(formData.position);
+
+  const getButtonStyle = (btn) => {
+    if (btn.variant === "outline") return "border";
+    return isDarkTheme
+      ? "bg-black border-black text-white"
+      : "bg-white border-white text-black";
+  };
 
   return (
     <div className="space-y-5">
@@ -270,21 +308,23 @@ const BannerManagement = () => {
             </div>
           </div>
 
-          {/* Media */}
-          <div className="space-y-3">
-            <Label>Media</Label>
-
-            {mediaPreview ? (
-              <div className="relative aspect-video rounded-lg overflow-hidden group">
+          {/* Media Section */}
+          <MediaUpload
+            label="Banner Attachment"
+            preview={mediaPreview}
+            mediaType={formData.mediaType}
+            onChange={handleFileChange}
+            onRemove={handleRemoveFile}
+            accept="image/*,video/*"
+            description="Image, GIF, or Video (max 10s)"
+            containerClassName="aspect-16/7"
+          >
+            {mediaPreview && (
+              <>
+                {/* Overlay Content */}
                 <div
-                  className={`absolute inset-0 z-10 flex h-full w-full p-5 transition-all duration-300  ${
-                    formData.position === "center"
-                      ? "items-center justify-center text-center"
-                      : formData.position === "bottom-left"
-                        ? "items-end justify-start text-left"
-                        : "items-end justify-end text-right"
-                  } ${
-                    formData.textTheme === "dark"
+                  className={`absolute inset-0 z-10 flex h-full w-full p-5 transition-all duration-300 ${container} ${
+                    isDarkTheme
                       ? "text-foreground dark:text-secondary-foreground"
                       : "text-background dark:text-foreground"
                   }`}
@@ -297,7 +337,7 @@ const BannerManagement = () => {
                     )}
 
                     {formData.label && (
-                      <h3 className="text-xl sm:text-2xl font-extrabold uppercase leading-tight">
+                      <h3 className="text-xl sm:text-2xl font-extrabold uppercase">
                         {formData.label}
                       </h3>
                     )}
@@ -310,29 +350,15 @@ const BannerManagement = () => {
 
                     {formData.enableButtons &&
                       formData.buttons?.some((b) => b.label) && (
-                        <div
-                          className={`flex gap-2 pt-2 ${
-                            formData.position === "center"
-                              ? "justify-center"
-                              : formData.position === "bottom-right"
-                                ? "justify-end"
-                                : "justify-start"
-                          }`}
-                        >
+                        <div className={`flex gap-2 pt-2 ${buttons}`}>
                           {formData.buttons
                             .filter((b) => b.label)
                             .map((btn, i) => (
                               <div
                                 key={i}
-                                className={`px-4 py-2 text-[8px] font-bold uppercase tracking-wider border pointer-events-none transition-all ${
-                                  btn.variant === "outline"
-                                    ? formData.textTheme === "dark"
-                                      ? ""
-                                      : ""
-                                    : formData.textTheme === "dark"
-                                      ? "bg-black border-black text-white"
-                                      : "bg-white border-white text-black"
-                                }`}
+                                className={`px-4 py-2 text-[8px] font-bold uppercase border pointer-events-none ${getButtonStyle(
+                                  btn,
+                                )}`}
                               >
                                 {btn.label}
                               </div>
@@ -342,59 +368,13 @@ const BannerManagement = () => {
                   </div>
                 </div>
 
-                {/* Dark Overlay (only for light text) */}
-                {formData.textTheme === "light" && (
+                {/* Dark Overlay */}
+                {isLightTheme && (
                   <div className="absolute inset-0 bg-black/20 z-0" />
                 )}
-
-                {/* Media Content */}
-                {formData.mediaType === "video" ? (
-                  <video
-                    src={mediaPreview}
-                    className="w-full h-full object-cover"
-                    muted
-                    playsInline
-                    autoPlay
-                    loop
-                  />
-                ) : (
-                  <img
-                    src={mediaPreview}
-                    className="w-full h-full object-cover"
-                    alt="preview"
-                  />
-                )}
-
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="destructive"
-                  className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={handleRemoveFile}
-                  disabled={isSubmitting}
-                >
-                  <X className="size-4" />
-                </Button>
-              </div>
-            ) : (
-              <label className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors flex flex-col items-center justify-center min-h-32">
-                <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground mb-1">
-                  Click to upload
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Image, GIF, or Video (max 10s)
-                </p>
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*,video/*"
-                  onChange={handleFileChange}
-                  disabled={isSubmitting}
-                />
-              </label>
+              </>
             )}
-          </div>
+          </MediaUpload>
 
           {/* Buttons Section */}
           <div>
