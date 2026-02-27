@@ -1,12 +1,9 @@
 import React from "react";
-import { formatDate } from "@/utils/formatting";
 import { Upload, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -17,22 +14,25 @@ import {
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
-import DeleteDialog from "@/components/table/DeleteDialog";
+import AdminSwitchField from "@/components/shared/AdminSwitchField";
+import StatusBadge from "@/components/shared/StatusBadge";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
-import { formatCurrency } from "@/utils/formatting";
+import DeleteDialog from "@/components/table/DeleteDialog";
+import { formatDate, formatCurrency, display } from "@/utils/formatting";
 import useDealerAddonManagement from "@/hooks/admin/useDealerAddonManagement";
 
 const DealerAddonManagement = () => {
   const {
-    search,
-    limit,
-    page,
     dialogOpen,
     deleteDialogOpen,
+    selectedItem,
     dialogMode,
-    selectedAddon,
-    filePreviews,
     formData,
+    filePreviews,
+    fileInputRef,
+    page,
+    limit,
+    search,
     addons,
     totalItems,
     totalPages,
@@ -44,33 +44,35 @@ const DealerAddonManagement = () => {
     isLoadingAddons,
     isSubmitting,
     isDeleting,
-    fileInputRef,
     colors,
-    handleDialogClose,
-    setDeleteDialogOpen,
-    setFormData,
-    handleAdd,
-    handleEdit,
-    handleDelete,
+    handleChange,
+    handleValueChange,
     handleFileChange,
     handleUpdateFileMetadata,
     handleRemoveFile,
     handleSubmit,
+    handleDialogClose,
+    handleAdd,
+    handleEdit,
+    handleDelete,
     handleConfirmDelete,
     handlePageChange,
     handleLimitChange,
     handleSearchChange,
+    setDeleteDialogOpen,
   } = useDealerAddonManagement();
 
   return (
     <div className="space-y-5">
+      {/* Admin Page Header */}
       <AdminManagementHeader
-        title="Dealer Add-ons"
-        description="Manage optional premium items for bulk orders"
+        title="Dealer Add-on Management"
+        description="Manage dealer add-ons and premium bundle items"
         actionLabel="Add Add-on"
         onAction={handleAdd}
       />
 
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search add-ons..."
         searchValue={search}
@@ -90,24 +92,31 @@ const DealerAddonManagement = () => {
         isLoading={isLoadingAddons}
         renderRow={(addon) => (
           <>
-            <TableCell maxWidth="200px">{addon.addonName}</TableCell>
-            <TableCell maxWidth="300px">{addon.description || "-"}</TableCell>
+            {/* Add-on Name */}
+            <TableCell maxWidth="200px">{display(addon.addonName)}</TableCell>
+
+            {/* Description */}
+            <TableCell maxWidth="300px">{display(addon.description)}</TableCell>
+
+            {/* Price */}
             <TableCell className="text-success dark:text-accent font-bold">
-              {!addon.price || Number(addon.price) === 0
-                ? "Free"
-                : `$${formatCurrency(addon.price)}`}
+              {Number(addon.price) > 0
+                ? `$${formatCurrency(addon.price)}`
+                : "Free"}
             </TableCell>
+
+            {/* Status */}
             <TableCell>
-              <Badge variant={addon.isActive ? "success" : "destructive"}>
-                {addon.isActive ? "Active" : "Inactive"}
-              </Badge>
+              <StatusBadge isActive={addon.isActive} />
             </TableCell>
-            <TableCell>
-              {addon.createdAt ? formatDate(addon.createdAt) : "-"}
-            </TableCell>
-            <TableCell>
-              {addon.updatedAt ? formatDate(addon.updatedAt) : "-"}
-            </TableCell>
+
+            {/* Created At */}
+            <TableCell>{formatDate(addon.createdAt)}</TableCell>
+
+            {/* Updated At */}
+            <TableCell>{formatDate(addon.updatedAt)}</TableCell>
+
+            {/* Actions */}
             <ActionsColumn
               onEdit={() => handleEdit(addon)}
               onDelete={() => handleDelete(addon)}
@@ -116,15 +125,16 @@ const DealerAddonManagement = () => {
         )}
       />
 
+      {/* Add/Update Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Add-on" : "Add New Add-on"}
+        title={dialogMode === "edit" ? "Edit Add-on" : "Add Add-on"}
         description={
           dialogMode === "edit"
             ? "Update the add-on details."
-            : "Add a new premium item for dealers."
+            : "Create a new add-on for dealer bundles."
         }
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
@@ -134,33 +144,33 @@ const DealerAddonManagement = () => {
         className="sm:max-w-5xl"
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {/* Add-on Name */}
             <div className="space-y-2">
-              <Label htmlFor="addonName">Add-on</Label>
+              <Label htmlFor="addonName">Add-on Name</Label>
               <Input
                 id="addonName"
-                placeholder="e.g., Premium Chrome Pack"
+                name="addonName"
+                placeholder="e.g. Premium Chrome Pack"
                 value={formData.addonName}
-                onChange={(e) =>
-                  setFormData({ ...formData, addonName: e.target.value })
-                }
+                onChange={handleChange}
                 required
+                disabled={isSubmitting}
               />
             </div>
 
             {/* Price */}
             <div className="space-y-2">
-              <Label htmlFor="price">Price</Label>
+              <Label htmlFor="price">Base Price</Label>
               <Input
                 id="price"
+                name="price"
                 type="number"
                 step="0.01"
                 placeholder="20.00"
                 value={formData.price}
-                onChange={(e) =>
-                  setFormData({ ...formData, price: e.target.value })
-                }
+                onChange={handleChange}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -170,17 +180,19 @@ const DealerAddonManagement = () => {
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
-              placeholder="Describe what's included in this addon..."
+              name="description"
+              placeholder="Enter add-on description..."
               value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
+              onChange={handleChange}
+              disabled={isSubmitting}
+              rows={4}
             />
           </div>
 
-          {/* Image Attachment */}
+          {/* Image Attachments */}
           <div className="space-y-3">
-            <Label>Image Attachment</Label>
+            <Label>Image Attachments</Label>
+
             <div
               className={`grid gap-2 ${
                 filePreviews.length > 0
@@ -191,19 +203,20 @@ const DealerAddonManagement = () => {
               {filePreviews.map((preview, index) => (
                 <div
                   key={index}
-                  className="relative group border rounded-lg overflow-hidden"
+                  className="relative border rounded-md overflow-hidden"
                 >
-                  <div className="aspect-square relative border-b">
+                  <div className="aspect-square border-b">
                     <img
                       src={preview.url}
                       alt={`Preview ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
+
                     <Button
                       type="button"
                       variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2"
+                      size="icon-sm"
+                      className="absolute top-2 right-2 z-10"
                       onClick={() => handleRemoveFile(index)}
                       disabled={isSubmitting}
                     >
@@ -211,60 +224,50 @@ const DealerAddonManagement = () => {
                     </Button>
                   </div>
 
-                  {/* Metadata Overlay/Inputs */}
-                  <div className="p-2 space-y-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs font-semibold">Item Name</Label>
+                  <div className="p-2 space-y-3 flex-1 overflow-visible">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Item Details
+                      </Label>
                       <Input
-                        placeholder="e.g. Chrome Wings"
-                        className="h-9 text-xs"
+                        placeholder="Item Name"
                         value={preview.itemName}
-                        onChange={(e) =>
-                          handleUpdateFileMetadata(
-                            index,
-                            "itemName",
-                            e.target.value,
-                          )
-                        }
+                        onChange={handleUpdateFileMetadata(index, "itemName")}
+                        className="h-8 text-xs"
                       />
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="space-y-1 col-span-1">
-                        <Label className="text-xs font-semibold">Price</Label>
+
+                    <div className="grid grid-cols-2 gap-1 overflow-visible">
+                      <div className="space-2">
                         <Input
                           type="number"
-                          placeholder="0.00"
-                          className="h-9 text-xs w-full"
+                          placeholder="Price"
                           value={preview.itemPrice}
-                          onChange={(e) =>
-                            handleUpdateFileMetadata(
-                              index,
-                              "itemPrice",
-                              e.target.value,
-                            )
-                          }
+                          onChange={handleUpdateFileMetadata(
+                            index,
+                            "itemPrice",
+                          )}
+                          className="h-9 text-xs"
                         />
                       </div>
-                      <div className="space-y-1 col-span-2">
-                        <Label className="text-xs font-semibold">Color</Label>
+
+                      <div className="space-y-2 overflow-visible">
                         <Select
                           value={preview.color || ""}
-                          onValueChange={(value) =>
-                            handleUpdateFileMetadata(index, "color", value)
-                          }
+                          onValueChange={handleUpdateFileMetadata(
+                            index,
+                            "color",
+                          )}
                         >
-                          <SelectTrigger className="w-full text-xs">
-                            <SelectValue placeholder="Select color" />
+                          <SelectTrigger className="h-8 text-[11px] px-2 w-full">
+                            <SelectValue placeholder="Color" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="z-100">
                             {colors.map((color) => (
-                              <SelectItem
-                                key={color._id || color.id}
-                                value={color._id || color.id}
-                              >
+                              <SelectItem key={color._id} value={color._id}>
                                 <div className="flex items-center gap-2">
                                   <div
-                                    className="size-3 rounded-md shrink-0"
+                                    className="size-3 rounded-full shrink-0 border"
                                     style={{
                                       backgroundColor: color.hexCode || "#000",
                                     }}
@@ -281,17 +284,19 @@ const DealerAddonManagement = () => {
                 </div>
               ))}
 
+              {/* Upload Button */}
               <Label
                 htmlFor="addon-images"
-                className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors flex flex-col items-center justify-center min-h-[150px]"
+                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors flex flex-col items-center justify-center min-h-32`}
               >
-                <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground mb-1">
+                <Upload className="size-8 text-muted-foreground mb-2" />
+                <p className="text-sm font-bold text-muted-foreground">
                   Click to upload
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  PNG, JPG, WEBP (5MB max)
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  PNG, JPG, WEBP (Multiple)
                 </p>
+
                 <Input
                   ref={fileInputRef}
                   id="addon-images"
@@ -306,24 +311,23 @@ const DealerAddonManagement = () => {
             </div>
           </div>
 
-          {/* Status Checkbox */}
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="addonActive"
-              checked={formData.isActive}
-              onCheckedChange={(checked) =>
-                setFormData({ ...formData, isActive: !!checked })
-              }
-            />
-            <Label htmlFor="addonActive">Available to Dealers</Label>
-          </div>
+          {/* Visibility */}
+          <AdminSwitchField
+            id="isActive"
+            label="Visibility"
+            description="When disabled, this add-on will not appear in dealer bundles"
+            checked={formData.isActive}
+            onChange={handleValueChange("isActive")}
+            disabled={isSubmitting}
+          />
         </div>
       </AddUpdateItemDialog>
 
+      {/* Delete Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedAddon?.addonName || ""}
+        itemName={display(selectedItem?.addonName)}
         title="Delete Add-on"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
+import StatusBadge from "@/components/shared/StatusBadge";
 import TableLayout from "@/components/table/TableLayout";
 import { TableCell } from "@/components/table/BaseColumn";
 import useUserManagement from "@/hooks/admin/useUserManagement";
@@ -84,7 +85,7 @@ const UserManagement = () => {
             <TableCell maxWidth="200px">{user.email}</TableCell>
 
             {/* Contact Number */}
-            <TableCell maxWidth="150px">{user.contactNumber || "-"}</TableCell>
+            <TableCell maxWidth="150px">{user.contactNumber}</TableCell>
 
             {/* Role */}
             <TableCell className="text-center">
@@ -116,22 +117,20 @@ const UserManagement = () => {
 
             {/* Status */}
             <TableCell>
-              <Badge variant={user.isActive ? "accent" : "default"}>
-                {user.isActive ? "Active" : "Inactive"}
-              </Badge>
+              <StatusBadge isActive={user.isActive} />
             </TableCell>
 
             {/* Verified */}
             <TableCell>
-              <Badge variant={user.isVerified ? "accent" : "default"}>
-                {user.isVerified ? "Verified" : "Unverified"}
-              </Badge>
+              <StatusBadge
+                isActive={user.isVerified}
+                activeLabel="Verified"
+                inactiveLabel="Unverified"
+              />
             </TableCell>
 
             {/* Joined Date */}
-            <TableCell>
-              {user.createdAt ? formatDate(user.createdAt) : "-"}
-            </TableCell>
+            <TableCell>{formatDate(user.createdAt)}</TableCell>
           </>
         )}
       />

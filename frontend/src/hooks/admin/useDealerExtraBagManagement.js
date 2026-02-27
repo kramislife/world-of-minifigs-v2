@@ -27,6 +27,7 @@ const columns = [
 ];
 
 const useDealerExtraBagManagement = () => {
+  // ------------------------------- Mutations ------------------------------------
   const [createExtraBag, { isLoading: isCreating }] =
     useCreateDealerExtraBagMutation();
   const [updateExtraBag, { isLoading: isUpdating }] =
@@ -34,6 +35,7 @@ const useDealerExtraBagManagement = () => {
   const [deleteExtraBag, { isLoading: isDeleting }] =
     useDeleteDealerExtraBagMutation();
 
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createExtraBag,
@@ -42,7 +44,7 @@ const useDealerExtraBagManagement = () => {
     entityName: "bag pricing",
   });
 
-  // Fetch data
+  // ------------------------------- Fetch ------------------------------------
   const { data: extraBagsResponse, isLoading: isLoadingExtraBags } =
     useGetDealerExtraBagsQuery({
       page: crud.page,
@@ -53,6 +55,7 @@ const useDealerExtraBagManagement = () => {
   const { data: subCollectionsData } = useGetSubCollectionsQuery({
     limit: 1000,
   });
+
   const subCollections = subCollectionsData?.subCollections || [];
 
   const {
@@ -61,38 +64,51 @@ const useDealerExtraBagManagement = () => {
     totalPages,
   } = extractPaginatedData(extraBagsResponse, "extraBags");
 
-  // Sync totalItems back to crud hook for calculations
   useEffect(() => {
     crud.setTotalItems(totalItems);
-  }, [totalItems, crud]);
+  }, [totalItems]);
 
-  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
+  // ------------------------------- Derived State ------------------------------------
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
+  // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (bag) => {
     crud.openEdit(bag, {
       subCollectionId: bag.subCollectionId?._id || "",
-      price: bag.price,
-      isActive: bag.isActive,
+      price: bag.price || "",
+      isActive: bag.isActive !== false,
     });
   };
 
+  // ------------------------------- Submit Handler ------------------------------------
   const handleSubmit = async () => {
     if (!validateDealerExtraBag(crud.formData)) return;
 
     const payload = {
       subCollectionId: sanitizeString(crud.formData.subCollectionId),
-      ...(crud.formData.price && {
-        price: Number(crud.formData.price),
-      }),
+      price: Number(crud.formData.price || 0),
       isActive: crud.formData.isActive,
     };
 
     await crud.submitForm(payload);
   };
 
+  // ------------------------------- Handlers ------------------------------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // ------------------------------- Return ------------------------------------
   return {
     ...crud,
-    selectedBag: crud.selectedItem,
     subCollections,
     extraBags,
     totalItems,
@@ -101,10 +117,10 @@ const useDealerExtraBagManagement = () => {
     isLoadingExtraBags,
     isSubmitting,
     isDeleting,
-
-    // Handlers
     handleEdit,
     handleSubmit,
+    handleChange,
+    handleValueChange,
   };
 };
 

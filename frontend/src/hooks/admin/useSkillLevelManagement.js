@@ -6,7 +6,7 @@ import {
   useDeleteSkillLevelMutation,
 } from "@/redux/api/adminApi";
 import { extractPaginatedData } from "@/utils/apiHelpers";
-import { sanitizePayload } from "@/utils/formatting";
+import { sanitizeString } from "@/utils/formatting";
 import { validateSkillLevel } from "@/utils/validation";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
@@ -26,6 +26,7 @@ const columns = [
 ];
 
 const useSkillLevelManagement = () => {
+  // ------------------------------- Mutations ------------------------------------
   const [createSkillLevel, { isLoading: isCreating }] =
     useCreateSkillLevelMutation();
   const [updateSkillLevel, { isLoading: isUpdating }] =
@@ -33,6 +34,7 @@ const useSkillLevelManagement = () => {
   const [deleteSkillLevel, { isLoading: isDeleting }] =
     useDeleteSkillLevelMutation();
 
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createSkillLevel,
@@ -41,7 +43,7 @@ const useSkillLevelManagement = () => {
     entityName: "skill level",
   });
 
-  // Fetch data
+  // ------------------------------- Fetch ------------------------------------
   const { data: skillLevelsResponse, isLoading: isLoadingSkillLevels } =
     useGetSkillLevelsQuery({
       page: crud.page,
@@ -55,13 +57,14 @@ const useSkillLevelManagement = () => {
     totalPages,
   } = extractPaginatedData(skillLevelsResponse, "skillLevels");
 
-  // Sync totalItems back to crud hook for calculations
   useEffect(() => {
     crud.setTotalItems(totalItems);
-  }, [totalItems, crud]);
+  }, [totalItems]);
 
-  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
+  // ------------------------------- Submit Mode ------------------------------------
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
+  // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (skillLevel) => {
     crud.openEdit(skillLevel, {
       skillLevelName: skillLevel.skillLevelName || "",
@@ -70,21 +73,35 @@ const useSkillLevelManagement = () => {
     });
   };
 
+  // ------------------------------- Submit Handler ------------------------------------
   const handleSubmit = async () => {
     if (!validateSkillLevel(crud.formData)) return;
 
     const payload = {
-      skillLevelName: crud.formData.skillLevelName,
-      description: crud.formData.description,
+      skillLevelName: sanitizeString(crud.formData.skillLevelName),
+      description: sanitizeString(crud.formData.description),
       isActive: crud.formData.isActive,
     };
 
     await crud.submitForm(payload);
   };
 
+  // ------------------------------- Handlers ------------------------------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // ------------------------------- Return ------------------------------------
   return {
     ...crud,
-    selectedSkillLevel: crud.selectedItem,
     skillLevels,
     totalItems,
     totalPages,
@@ -92,10 +109,10 @@ const useSkillLevelManagement = () => {
     isLoadingSkillLevels,
     isSubmitting,
     isDeleting,
-
-    // Handlers
-    handleSubmit,
     handleEdit,
+    handleSubmit,
+    handleChange,
+    handleValueChange,
   };
 };
 

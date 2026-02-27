@@ -6,7 +6,7 @@ import {
   useDeleteCollectionMutation,
 } from "@/redux/api/adminApi";
 import { extractPaginatedData } from "@/utils/apiHelpers";
-import { sanitizePayload } from "@/utils/formatting";
+import { sanitizeString } from "@/utils/formatting";
 import { validateCollection } from "@/utils/validation";
 import useMediaPreview from "@/hooks/admin/useMediaPreview";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
@@ -30,6 +30,7 @@ const columns = [
 ];
 
 const useCollectionManagement = () => {
+  // ------------------------------- Media ------------------------------------
   const {
     filePreview,
     setFilePreview,
@@ -39,6 +40,7 @@ const useCollectionManagement = () => {
     handleRemoveFile: onRemoveFile,
   } = useMediaPreview();
 
+  // ------------------------------- Mutations ------------------------------------
   const [createCollection, { isLoading: isCreating }] =
     useCreateCollectionMutation();
   const [updateCollection, { isLoading: isUpdating }] =
@@ -46,6 +48,7 @@ const useCollectionManagement = () => {
   const [deleteCollection, { isLoading: isDeleting }] =
     useDeleteCollectionMutation();
 
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createCollection,
@@ -55,8 +58,8 @@ const useCollectionManagement = () => {
     onReset: resetFile,
   });
 
-  // Fetch data
-  const { data: collectionsResponse, isLoading: isLoadingCollections } =
+  // ------------------------------- Fetch ------------------------------------
+  const { data: collectionsData, isLoading: isLoadingCollections } =
     useGetCollectionsQuery({
       page: crud.page,
       limit: crud.limit,
@@ -67,25 +70,35 @@ const useCollectionManagement = () => {
     items: collections,
     totalItems,
     totalPages,
-  } = extractPaginatedData(collectionsResponse, "collections");
+  } = extractPaginatedData(collectionsData, "collections");
 
-  // Sync totalItems back to crud hook for calculations
   useEffect(() => {
     crud.setTotalItems(totalItems);
-  }, [totalItems, crud]);
+  }, [totalItems]);
 
-  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
+  // ------------------------------- Submit Mode ------------------------------------
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
+  // ------------------------------- Media Handlers ------------------------------------
   const handleFileChange = async (e) => {
     const dataUrl = await onFileChange(e);
-    if (dataUrl) crud.setFormData((prev) => ({ ...prev, image: dataUrl }));
+    if (dataUrl) {
+      crud.setFormData((prev) => ({
+        ...prev,
+        image: dataUrl,
+      }));
+    }
   };
 
   const handleRemoveFile = () => {
     onRemoveFile();
-    crud.setFormData((prev) => ({ ...prev, image: null }));
+    crud.setFormData((prev) => ({
+      ...prev,
+      image: null,
+    }));
   };
 
+  // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (collection) => {
     crud.openEdit(collection, {
       collectionName: collection.collectionName || "",
@@ -94,15 +107,17 @@ const useCollectionManagement = () => {
       isActive: collection.isActive !== false,
       image: null,
     });
+
     setFilePreview(collection.image?.url || null);
   };
 
+  // ------------------------------- Submit Handler ------------------------------------
   const handleSubmit = async () => {
-    if (!validateCollection(crud.formData, crud.dialogMode)) return;
+    if (!validateCollection(crud.formData)) return;
 
     const payload = {
-      collectionName: crud.formData.collectionName,
-      description: crud.formData.description,
+      collectionName: sanitizeString(crud.formData.collectionName),
+      description: sanitizeString(crud.formData.description),
       isFeatured: crud.formData.isFeatured,
       isActive: crud.formData.isActive,
       ...(crud.formData.image && { image: crud.formData.image }),
@@ -111,9 +126,22 @@ const useCollectionManagement = () => {
     await crud.submitForm(payload);
   };
 
+  // ------------------------------- Handlers ------------------------------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // ------------------------------- Return ------------------------------------
   return {
     ...crud,
-    selectedCollection: crud.selectedItem,
     filePreview,
     fileInputRef,
     collections,
@@ -123,12 +151,12 @@ const useCollectionManagement = () => {
     isLoadingCollections,
     isSubmitting,
     isDeleting,
-
-    // Handlers
     handleFileChange,
     handleRemoveFile,
-    handleSubmit,
     handleEdit,
+    handleSubmit,
+    handleChange,
+    handleValueChange,
   };
 };
 

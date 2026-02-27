@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { handleApiError, handleApiSuccess } from "@/utils/apiHelpers";
 
 const useAdminCrud = ({
@@ -10,30 +10,28 @@ const useAdminCrud = ({
   onReset,
   totalItems: externalTotalItems = 0,
 }) => {
-  // ---------- Table State (Pagination & Search) ----------------------------------------
+  // ------------------------------- Table State ------------------------------------
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState("10");
   const [search, setSearch] = useState("");
   const [totalItems, setTotalItems] = useState(externalTotalItems);
 
-  // Sync totalItems from outside
   useEffect(() => {
     setTotalItems(externalTotalItems);
   }, [externalTotalItems]);
 
   const entriesPerPage =
     limit === "all" ? totalItems : parseInt(limit, 10) || 10;
+
   const totalPages = Math.ceil(totalItems / entriesPerPage);
   const startItem = totalItems === 0 ? 0 : (page - 1) * entriesPerPage + 1;
   const endItem = Math.min(page * entriesPerPage, totalItems);
 
   const handlePageChange = useCallback((newPage) => setPage(newPage), []);
-
   const handleLimitChange = useCallback((value) => {
     setLimit(value);
     setPage(1);
   }, []);
-
   const handleSearchChange = useCallback((value) => {
     const finalValue = value?.target ? value.target.value : value;
     setSearch(finalValue || "");
@@ -48,14 +46,17 @@ const useAdminCrud = ({
     if (page < totalPages) setPage(page + 1);
   }, [page, totalPages]);
 
-  // ------------------------- Dialog & Form State ----------------------------------------
+  // ------------------------------- Dialog & Form State ------------------------------------
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState("add");
   const [selectedItem, setSelectedItem] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
 
-  // Reset form to initial state
+  // Centralized Mode Flags
+  const isEditMode = useMemo(() => dialogMode === "edit", [dialogMode]);
+  const isAddMode = useMemo(() => dialogMode === "add", [dialogMode]);
+
   const resetForm = useCallback(() => {
     setFormData(initialFormData);
     setSelectedItem(null);
@@ -63,7 +64,6 @@ const useAdminCrud = ({
     onReset?.();
   }, [initialFormData, onReset]);
 
-  // Dialog Handlers
   const handleDialogClose = useCallback(
     (open) => {
       setDialogOpen(open);
@@ -95,11 +95,11 @@ const useAdminCrud = ({
     setDeleteDialogOpen(true);
   }, []);
 
-  // ------------------------- Submit Functions ----------------------------------------
+  // ------------------------------- Submit Logic ------------------------------------
   const submitForm = useCallback(
     async (payload) => {
       try {
-        if (dialogMode === "add") {
+        if (isAddMode) {
           const response = await createFn(payload).unwrap();
           if (response.success) {
             handleApiSuccess(response, `${entityName} created successfully`);
@@ -121,7 +121,7 @@ const useAdminCrud = ({
       }
     },
     [
-      dialogMode,
+      isAddMode,
       selectedItem,
       createFn,
       updateFn,
@@ -130,12 +130,14 @@ const useAdminCrud = ({
     ],
   );
 
-  // ------------------------- Delete Functions ----------------------------------------
+  // ------------------------------- Delete Logic ------------------------------------
   const handleConfirmDelete = useCallback(async () => {
     if (!selectedItem) return;
+
     try {
       const id = selectedItem._id || selectedItem.id;
       const response = await deleteFn(id).unwrap();
+
       if (response.success) {
         handleApiSuccess(response, `${entityName} deleted successfully`);
         setDeleteDialogOpen(false);
@@ -145,23 +147,6 @@ const useAdminCrud = ({
       handleApiError(error, `Failed to delete ${entityName}`);
     }
   }, [selectedItem, deleteFn, entityName]);
-
-  // Generic form change handler (for text inputs)
-  const handleChange = useCallback((e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  }, []);
-
-  // Switch/toggle handler for any boolean field (e.g. isActive, isFeatured)
-  const handleSwitchChange = useCallback(
-    (field) => (checked) => {
-      setFormData((prev) => ({ ...prev, [field]: checked }));
-    },
-    [],
-  );
 
   return {
     // Table State
@@ -185,6 +170,8 @@ const useAdminCrud = ({
     dialogOpen,
     deleteDialogOpen,
     dialogMode,
+    isEditMode,
+    isAddMode,
     selectedItem,
     formData,
     setFormData,
@@ -196,13 +183,9 @@ const useAdminCrud = ({
     openEdit,
     handleDelete,
 
-    // CRUD Handlers
+    // CRUD
     submitForm,
     handleConfirmDelete,
-
-    // Form Handlers
-    handleChange,
-    handleSwitchChange,
   };
 };
 

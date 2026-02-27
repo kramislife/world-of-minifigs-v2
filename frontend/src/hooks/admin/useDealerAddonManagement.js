@@ -8,7 +8,7 @@ import {
 } from "@/redux/api/adminApi";
 import useMediaPreview from "@/hooks/admin/useMediaPreview";
 import { extractPaginatedData } from "@/utils/apiHelpers";
-import { sanitizeString, sanitizePayload } from "@/utils/formatting";
+import { sanitizeString } from "@/utils/formatting";
 import { validateDealerAddon } from "@/utils/validation";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
@@ -29,7 +29,7 @@ const columns = [
   { key: "actions", label: "Actions" },
 ];
 
-// Factory to build a rich metadata preview object from a new dataUrl
+// Factory for new preview metadata
 const makeNewPreview = (url) => ({
   url,
   itemName: "",
@@ -39,17 +39,17 @@ const makeNewPreview = (url) => ({
 });
 
 const useDealerAddonManagement = () => {
+  // ------------------------------- Media ------------------------------------
   const {
     filePreview: filePreviews,
     setFilePreview: setFilePreviews,
     fileInputRef,
     resetFile,
     handleFileChange: onFileChange,
-    handleRemoveFile: handleRemoveFile,
-  } = useMediaPreview({
-    multiple: true,
-  });
+    handleRemoveFile,
+  } = useMediaPreview({ multiple: true });
 
+  // ------------------------------- Mutations ------------------------------------
   const [createAddon, { isLoading: isCreating }] =
     useCreateDealerAddonMutation();
   const [updateAddon, { isLoading: isUpdating }] =
@@ -57,6 +57,7 @@ const useDealerAddonManagement = () => {
   const [deleteAddon, { isLoading: isDeleting }] =
     useDeleteDealerAddonMutation();
 
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createAddon,
@@ -66,7 +67,7 @@ const useDealerAddonManagement = () => {
     onReset: resetFile,
   });
 
-  // Fetch data
+  // ------------------------------- Fetch ------------------------------------
   const { data: addonsResponse, isLoading: isLoadingAddons } =
     useGetDealerAddonsQuery({
       page: crud.page,
@@ -75,11 +76,6 @@ const useDealerAddonManagement = () => {
     });
 
   const { data: colorData } = useGetColorsQuery();
-  const colors = colorData?.colors
-    ? [...colorData.colors].sort((a, b) =>
-        (a.colorName || "").localeCompare(b.colorName || ""),
-      )
-    : [];
 
   const {
     items: addons,
@@ -87,13 +83,21 @@ const useDealerAddonManagement = () => {
     totalPages,
   } = extractPaginatedData(addonsResponse, "addons");
 
-  // Sync totalItems back to crud hook for calculations
+  const colors = colorData?.colors
+    ? [...colorData.colors].sort((a, b) =>
+        (a.colorName || "").localeCompare(b.colorName || ""),
+      )
+    : [];
+
+  // ------------------------------- Effects ------------------------------------
   useEffect(() => {
     crud.setTotalItems(totalItems);
-  }, [totalItems, crud]);
+  }, [totalItems]);
 
-  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
+  // ------------------------------- Submit Mode ------------------------------------
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
+  // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (addon) => {
     const existingItems =
       addon.items?.map((item) => ({
@@ -105,22 +109,24 @@ const useDealerAddonManagement = () => {
       })) || [];
 
     setFilePreviews(existingItems);
+
     crud.openEdit(addon, {
-      addonName: addon.addonName,
+      addonName: addon.addonName || "",
       price: addon.price || "",
       description: addon.description || "",
-      isActive: addon.isActive,
+      isActive: addon.isActive !== false,
     });
   };
 
-  // Delegate to useMediaPreview with mapFile to produce rich metadata objects
+  // ------------------------------- File Handlers ------------------------------------
   const handleFileChange = useCallback(
     (e) => onFileChange(e, { mapFile: makeNewPreview }),
     [onFileChange],
   );
 
   const handleUpdateFileMetadata = useCallback(
-    (index, field, value) => {
+    (index, field) => (e) => {
+      const value = e?.target ? e.target.value : e;
       setFilePreviews((prev) =>
         prev.map((item, i) =>
           i === index ? { ...item, [field]: value } : item,
@@ -130,6 +136,7 @@ const useDealerAddonManagement = () => {
     [setFilePreviews],
   );
 
+  // ------------------------------- Submit Handler ------------------------------------
   const handleSubmit = async () => {
     if (!validateDealerAddon(crud.formData)) return;
 
@@ -154,9 +161,22 @@ const useDealerAddonManagement = () => {
     await crud.submitForm(payload);
   };
 
+  // ------------------------------- Handlers ------------------------------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // ------------------------------- Return ------------------------------------
   return {
     ...crud,
-    selectedAddon: crud.selectedItem,
     filePreviews: Array.isArray(filePreviews) ? filePreviews : [],
     addons,
     totalItems,
@@ -167,13 +187,13 @@ const useDealerAddonManagement = () => {
     isDeleting,
     fileInputRef,
     colors,
-
-    // Handlers
     handleEdit,
     handleFileChange,
     handleUpdateFileMetadata,
     handleRemoveFile,
     handleSubmit,
+    handleChange,
+    handleValueChange,
   };
 };
 

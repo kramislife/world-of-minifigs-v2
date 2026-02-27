@@ -14,7 +14,21 @@ import useAdminCrud from "@/hooks/admin/useAdminCrud";
 import { sanitizeString, sanitizeOptional } from "@/utils/formatting";
 import { validateOrderStatusUpdate } from "@/utils/validation";
 
+const columns = [
+  { key: "invoice", label: "Invoice Number" },
+  { key: "customer", label: "Customer" },
+  { key: "email", label: "Email" },
+  { key: "recipient", label: "Recipient" },
+  { key: "orderType", label: "Type" },
+  { key: "totalAmount", label: "Total" },
+  { key: "status", label: "Status" },
+  { key: "arn", label: "ARN" },
+  { key: "createdAt", label: "Created At" },
+  { key: "actions", label: "Actions" },
+];
+
 const useOrderManagement = () => {
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData: {},
     createFn: null,
@@ -22,15 +36,19 @@ const useOrderManagement = () => {
     deleteFn: null,
   });
 
-  // Status update modal state
+  // ------------------------------- Modal States ------------------------------------
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+
   const [newStatus, setNewStatus] = useState("");
   const [carrier, setCarrier] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
   const [trackingLink, setTrackingLink] = useState("");
   const [cancelReason, setCancelReason] = useState("");
   const [cancelNotes, setCancelNotes] = useState("");
+
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [viewOrder, setViewOrder] = useState(null);
 
   const resetStatusFields = useCallback(() => {
     setNewStatus("");
@@ -41,11 +59,11 @@ const useOrderManagement = () => {
     setCancelNotes("");
   }, []);
 
-  // View modal state
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [viewOrder, setViewOrder] = useState(null);
+  // ------------------------------- Mutations ------------------------------------
+  const [updateOrderStatus, { isLoading: isUpdatingStatus }] =
+    useUpdateOrderStatusMutation();
 
-  // Fetch data
+  // ------------------------------- Fetch ------------------------------------
   const { data: ordersResponse, isLoading: isLoadingOrders } =
     useGetOrdersQuery({
       page: crud.page,
@@ -53,12 +71,8 @@ const useOrderManagement = () => {
       search: crud.search || undefined,
     });
 
-  const [updateOrderStatus, { isLoading: isUpdatingStatus }] =
-    useUpdateOrderStatusMutation();
-
   const { data: configData } = useGetOrderConfigQuery();
 
-  // Derive from backend config (single source of truth)
   const adminStatusOptions = useMemo(
     () => buildAdminStatusOptions(configData?.validTransitions),
     [configData?.validTransitions],
@@ -70,24 +84,11 @@ const useOrderManagement = () => {
     totalPages,
   } = extractPaginatedData(ordersResponse, "orders");
 
-  // Sync totalItems back to crud hook for calculations
   useEffect(() => {
     crud.setTotalItems(totalItems);
-  }, [totalItems, crud]);
+  }, [totalItems]);
 
-  const columns = [
-    { key: "invoice", label: "Invoice Number" },
-    { key: "customer", label: "Customer" },
-    { key: "email", label: "Email" },
-    { key: "recipient", label: "Recipient" },
-    { key: "orderType", label: "Type" },
-    { key: "totalAmount", label: "Total" },
-    { key: "status", label: "Status" },
-    { key: "arn", label: "ARN" },
-    { key: "createdAt", label: "Created At" },
-    { key: "actions", label: "Actions" },
-  ];
-
+  // ------------------------------- Derived ------------------------------------
   const orderReference = useMemo(() => {
     if (!selectedOrder) return "";
     return (
@@ -97,7 +98,7 @@ const useOrderManagement = () => {
     );
   }, [selectedOrder]);
 
-  // Status update modal
+  // ------------------------------- Modal Handlers ------------------------------------
   const handleStatusModalChange = useCallback(
     (open) => {
       setStatusModalOpen(open);
@@ -122,12 +123,9 @@ const useOrderManagement = () => {
     handleStatusModalChange(false);
   }, [handleStatusModalChange]);
 
-  // View modal
   const handleViewModalChange = useCallback((open) => {
     setViewModalOpen(open);
-    if (!open) {
-      setViewOrder(null);
-    }
+    if (!open) setViewOrder(null);
   }, []);
 
   const handleView = useCallback((order) => {
@@ -135,6 +133,7 @@ const useOrderManagement = () => {
     setViewModalOpen(true);
   }, []);
 
+  // ------------------------------- Status Update ------------------------------------
   const handleUpdateStatus = useCallback(async () => {
     if (
       !validateOrderStatusUpdate({
@@ -194,14 +193,12 @@ const useOrderManagement = () => {
     [handleUpdateStatus],
   );
 
-  // Get available transitions (includes cancel)
   const getAvailableTransitions = useCallback(
-    (orderStatus) => {
-      return adminStatusOptions[orderStatus] || [];
-    },
+    (orderStatus) => adminStatusOptions[orderStatus] || [],
     [adminStatusOptions],
   );
 
+  // ------------------------------- Return ------------------------------------
   return {
     ...crud,
     orders,
@@ -221,8 +218,6 @@ const useOrderManagement = () => {
     viewModalOpen,
     viewOrder,
     orderReference,
-
-    // Handlers
     setNewStatus,
     setCarrier,
     setTrackingNumber,

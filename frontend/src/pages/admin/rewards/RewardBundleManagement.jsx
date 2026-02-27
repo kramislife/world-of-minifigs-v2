@@ -1,30 +1,29 @@
 import React from "react";
-import { formatDate } from "@/utils/formatting";
+import { formatDate, formatCurrency, display } from "@/utils/formatting";
 import { X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
+import AdminSwitchField from "@/components/shared/AdminSwitchField";
+import StatusBadge from "@/components/shared/StatusBadge";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
-import { formatCurrency } from "@/utils/formatting";
 import useRewardBundleManagement from "@/hooks/admin/useRewardBundleManagement";
 
 const RewardBundleManagement = () => {
   const {
-    search,
-    limit,
-    page,
     dialogOpen,
     deleteDialogOpen,
+    selectedItem,
     dialogMode,
-    selectedBundle,
     formData,
+    page,
+    limit,
+    search,
     bundles,
     totalItems,
     totalPages,
@@ -38,7 +37,6 @@ const RewardBundleManagement = () => {
     isDeleting,
     handleDialogClose,
     setDeleteDialogOpen,
-    setFormData,
     handleAdd,
     handleEdit,
     handleDelete,
@@ -47,10 +45,16 @@ const RewardBundleManagement = () => {
     handlePageChange,
     handleLimitChange,
     handleSearchChange,
+    handleChange,
+    handleValueChange,
+    handleArrayChange,
+    addArrayItem,
+    removeArrayItem,
   } = useRewardBundleManagement();
 
   return (
     <div className="space-y-5">
+      {/* Admin Page Header */}
       <AdminManagementHeader
         title="Reward Bundles"
         description="Manage packs for the Reward Program"
@@ -58,6 +62,7 @@ const RewardBundleManagement = () => {
         onAction={handleAdd}
       />
 
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search bundles..."
         searchValue={search}
@@ -77,24 +82,31 @@ const RewardBundleManagement = () => {
         isLoading={isLoadingBundles}
         renderRow={(bundle) => (
           <>
-            <TableCell maxWidth="200px">{bundle.bundleName}</TableCell>
+            {/* Bundle Name */}
+            <TableCell maxWidth="200px">{display(bundle.bundleName)}</TableCell>
+
+            {/* Quantity */}
             <TableCell className="font-semibold">
               {bundle.minifigQuantity}
             </TableCell>
+
+            {/* Total Price */}
             <TableCell className="font-semibold text-success">
               ${formatCurrency(bundle.totalPrice)}
             </TableCell>
+
+            {/* Status */}
             <TableCell>
-              <Badge variant={bundle.isActive ? "success" : "destructive"}>
-                {bundle.isActive ? "Active" : "Inactive"}
-              </Badge>
+              <StatusBadge isActive={bundle.isActive} />
             </TableCell>
-            <TableCell>
-              {bundle.createdAt ? formatDate(bundle.createdAt) : "-"}
-            </TableCell>
-            <TableCell>
-              {bundle.updatedAt ? formatDate(bundle.updatedAt) : "-"}
-            </TableCell>
+
+            {/* Created At */}
+            <TableCell>{formatDate(bundle.createdAt)}</TableCell>
+
+            {/* Updated At */}
+            <TableCell>{formatDate(bundle.updatedAt)}</TableCell>
+
+            {/* Actions */}
             <ActionsColumn
               onEdit={() => handleEdit(bundle)}
               onDelete={() => handleDelete(bundle)}
@@ -103,6 +115,7 @@ const RewardBundleManagement = () => {
         )}
       />
 
+      {/* Add/Update Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
@@ -122,96 +135,91 @@ const RewardBundleManagement = () => {
         }
       >
         <div className="space-y-4">
+          {/* Bundle Name */}
           <div className="space-y-2">
             <Label htmlFor="bundleName">Bundle Name</Label>
             <Input
               id="bundleName"
+              name="bundleName"
               placeholder="e.g., Starter Pack"
               value={formData.bundleName}
-              onChange={(e) =>
-                setFormData({ ...formData, bundleName: e.target.value })
-              }
+              onChange={handleChange}
               required
+              disabled={isSubmitting}
             />
           </div>
+
+          {/* Quantity & Price */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity (minifig sets)</Label>
+              <Label htmlFor="minifigQuantity">Quantity</Label>
               <Input
-                id="quantity"
+                id="minifigQuantity"
+                name="minifigQuantity"
                 type="number"
-                min={1}
-                placeholder="30"
+                placeholder="e.g., 20"
                 value={formData.minifigQuantity}
-                onChange={(e) =>
-                  setFormData({ ...formData, minifigQuantity: e.target.value })
-                }
+                onChange={handleChange}
                 required
+                disabled={isSubmitting}
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="totalPrice">Total Price</Label>
+              <Label htmlFor="totalPrice">Price</Label>
               <Input
                 id="totalPrice"
+                name="totalPrice"
                 type="number"
                 step="0.01"
-                min={0}
-                placeholder="100.00"
+                placeholder="e.g., 50.00"
                 value={formData.totalPrice}
-                onChange={(e) =>
-                  setFormData({ ...formData, totalPrice: e.target.value })
-                }
+                onChange={handleChange}
                 required
+                disabled={isSubmitting}
               />
             </div>
           </div>
 
+          {/* Features */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>Features</Label>
+
               {formData.features.length < 5 && (
                 <Button
                   type="button"
                   variant="link"
                   size="sm"
                   className="px-0 h-auto"
-                  onClick={() => {
-                    setFormData({
-                      ...formData,
-                      features: [...formData.features, ""],
-                    });
-                  }}
+                  onClick={addArrayItem("features")}
+                  disabled={isSubmitting}
                 >
                   Add Feature
                 </Button>
               )}
             </div>
+
             <div className="space-y-3">
               {formData.features.map((feature, index) => (
                 <div key={index} className="flex gap-2 items-start">
                   <Textarea
                     placeholder={`Feature ${index + 1}`}
                     value={feature}
-                    onChange={(e) => {
-                      const newFeatures = [...formData.features];
-                      newFeatures[index] = e.target.value;
-                      setFormData({ ...formData, features: newFeatures });
-                    }}
+                    onChange={handleArrayChange("features", index)}
                     rows={2}
                     className="flex-1"
+                    disabled={isSubmitting}
                   />
+
                   {formData.features.length > 1 && (
                     <Button
                       type="button"
                       variant="ghost"
-                      size="icon"
-                      className="shrink-0 text-destructive hover:text-destructive h-10 w-10"
-                      onClick={() => {
-                        const newFeatures = formData.features.filter(
-                          (_, i) => i !== index,
-                        );
-                        setFormData({ ...formData, features: newFeatures });
-                      }}
+                      size="icon-sm"
+                      className="shrink-0 text-destructive hover:bg-destructive/10 h-8 w-8"
+                      onClick={removeArrayItem("features", index)}
+                      disabled={isSubmitting}
                     >
                       <X className="size-4" />
                     </Button>
@@ -221,23 +229,23 @@ const RewardBundleManagement = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="bundleActive"
-              checked={formData.isActive}
-              onCheckedChange={(checked) =>
-                setFormData({ ...formData, isActive: checked })
-              }
-            />
-            <Label htmlFor="bundleActive">Active</Label>
-          </div>
+          {/* Visibility */}
+          <AdminSwitchField
+            id="isActive"
+            label="Visibility"
+            description="When disabled, this reward bundle will be hidden from public listings"
+            checked={formData.isActive}
+            onChange={handleValueChange("isActive")}
+            disabled={isSubmitting}
+          />
         </div>
       </AddUpdateItemDialog>
 
+      {/* Delete Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedBundle?.bundleName || ""}
+        itemName={display(selectedItem?.bundleName)}
         title="Delete Reward Bundle"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

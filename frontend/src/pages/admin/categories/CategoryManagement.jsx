@@ -1,15 +1,15 @@
 import React from "react";
-import { formatDate } from "@/utils/formatting";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
+import StatusBadge from "@/components/shared/StatusBadge";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
+import { formatDate, display } from "@/utils/formatting";
 import useCategoryManagement from "@/hooks/admin/useCategoryManagement";
 
 const CategoryManagement = () => {
@@ -34,7 +34,7 @@ const CategoryManagement = () => {
     isSubmitting,
     isDeleting,
     handleChange,
-    handleSwitchChange,
+    handleValueChange,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -49,6 +49,7 @@ const CategoryManagement = () => {
 
   return (
     <div className="space-y-5">
+      {/* Admin Page Header */}
       <AdminManagementHeader
         title="Category Management"
         description="Manage product categories in your store"
@@ -56,6 +57,7 @@ const CategoryManagement = () => {
         onAction={handleAdd}
       />
 
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search categories..."
         searchValue={search}
@@ -75,23 +77,28 @@ const CategoryManagement = () => {
         isLoading={isLoadingCategories}
         renderRow={(category) => (
           <>
-            <TableCell maxWidth="200px">{category.categoryName}</TableCell>
+            {/* Category Name */}
+            <TableCell maxWidth="200px">
+              {display(category.categoryName)}
+            </TableCell>
+
+            {/* Description */}
             <TableCell maxWidth="300px">
-              {category.description || "-"}
+              {display(category.description)}
             </TableCell>
+
+            {/* Status */}
             <TableCell>
-              {category.isActive ? (
-                <Badge variant="accent">Active</Badge>
-              ) : (
-                <Badge variant="destructive">Inactive</Badge>
-              )}
+              <StatusBadge isActive={category.isActive} />
             </TableCell>
-            <TableCell>
-              {category.createdAt ? formatDate(category.createdAt) : "-"}
-            </TableCell>
-            <TableCell>
-              {category.updatedAt ? formatDate(category.updatedAt) : "-"}
-            </TableCell>
+
+            {/* Created At */}
+            <TableCell>{formatDate(category.createdAt)}</TableCell>
+
+            {/* Updated At */}
+            <TableCell>{formatDate(category.updatedAt)}</TableCell>
+
+            {/* Actions */}
             <ActionsColumn
               onEdit={() => handleEdit(category)}
               onDelete={() => handleDelete(category)}
@@ -100,12 +107,12 @@ const CategoryManagement = () => {
         )}
       />
 
-      {/* Add/Edit Category Dialog */}
+      {/* Add/Update Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Category" : "Add New Category"}
+        title={dialogMode === "edit" ? "Edit Category" : "Add Category"}
         description={
           dialogMode === "edit"
             ? "Update the category details."
@@ -117,47 +124,52 @@ const CategoryManagement = () => {
           dialogMode === "edit" ? "Update Category" : "Create Category"
         }
       >
-        <div className="space-y-2">
-          <Label htmlFor="categoryName">Category Name</Label>
-          <Input
-            id="categoryName"
-            name="categoryName"
-            type="text"
-            placeholder="e.g., Vehicles, Buildings, Minifigures"
-            value={formData.categoryName}
-            onChange={handleChange}
-            required
-            disabled={isSubmitting}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            id="description"
-            name="description"
-            placeholder="Enter category description (optional)"
-            value={formData.description}
-            onChange={handleChange}
-            disabled={isSubmitting}
-            rows={4}
-          />
-        </div>
+        <div className="space-y-4">
+          {/* Category Name */}
+          <div className="space-y-2">
+            <Label htmlFor="categoryName">Category Name</Label>
+            <Input
+              id="categoryName"
+              name="categoryName"
+              placeholder="e.g., Vehicles, Buildings, Minifigures"
+              value={formData.categoryName}
+              onChange={handleChange}
+              required
+              disabled={isSubmitting}
+            />
+          </div>
 
-        <AdminSwitchField
-          id="isActive"
-          label="Visibility"
-          description="When disabled, this category and its sub-categories will be hidden from product filters and public listings"
-          checked={formData.isActive}
-          onChange={handleSwitchChange("isActive")}
-          disabled={isSubmitting}
-        />
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              name="description"
+              placeholder="Enter category description (optional)"
+              value={formData.description}
+              onChange={handleChange}
+              disabled={isSubmitting}
+              rows={4}
+            />
+          </div>
+
+          {/* Visibility */}
+          <AdminSwitchField
+            id="isActive"
+            label="Visibility"
+            description="When disabled, this category and its sub-categories will be hidden from public listings"
+            checked={formData.isActive}
+            onChange={handleValueChange("isActive")}
+            disabled={isSubmitting}
+          />
+        </div>
       </AddUpdateItemDialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedItem?.categoryName || ""}
+        itemName={display(selectedItem?.categoryName)}
         title="Delete Category"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

@@ -18,7 +18,7 @@ import Settings from "@/pages/Settings";
 import Purchase from "@/pages/Purchase";
 import AdminPanel from "@/pages/AdminPanel";
 import Dashboard from "@/pages/admin/Dashboard";
-import BannerManagement from "@/pages/admin/BannerManagement";
+import BannerManagement from "@/pages/admin/banner/BannerManagement";
 import ProductManagement from "@/pages/admin/ProductManagement";
 import ColorManagement from "@/pages/admin/ColorManagement";
 import CategoryManagement from "@/pages/admin/categories/CategoryManagement";

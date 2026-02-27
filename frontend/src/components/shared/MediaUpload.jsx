@@ -22,7 +22,7 @@ const MediaUpload = ({
 
       {preview ? (
         <div
-          className={`relative rounded-lg overflow-hidden group ${containerClassName}`}
+          className={`relative rounded-md overflow-hidden group ${containerClassName}`}
         >
           {mediaType === "video" ? (
             <video
@@ -47,7 +47,7 @@ const MediaUpload = ({
             type="button"
             size="icon-sm"
             variant="destructive"
-            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-50"
             onClick={onRemove}
           >
             <X className="size-4" />

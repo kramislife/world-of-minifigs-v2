@@ -6,7 +6,7 @@ import {
   useDeleteColorMutation,
 } from "@/redux/api/adminApi";
 import { extractPaginatedData } from "@/utils/apiHelpers";
-import { sanitizePayload, sanitizeString } from "@/utils/formatting";
+import { sanitizeString } from "@/utils/formatting";
 import { validateColor } from "@/utils/validation";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
@@ -26,10 +26,12 @@ const columns = [
 ];
 
 const useColorManagement = () => {
+  // ------------------------------- Mutations ------------------------------------
   const [createColor, { isLoading: isCreating }] = useCreateColorMutation();
   const [updateColor, { isLoading: isUpdating }] = useUpdateColorMutation();
   const [deleteColor, { isLoading: isDeleting }] = useDeleteColorMutation();
 
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createColor,
@@ -38,27 +40,27 @@ const useColorManagement = () => {
     entityName: "color",
   });
 
-  // Fetch data
-  const { data: colorsResponse, isLoading: isLoadingColors } =
-    useGetColorsQuery({
-      page: crud.page,
-      limit: crud.limit,
-      search: crud.search || undefined,
-    });
+  // ------------------------------- Fetch ------------------------------------
+  const { data: colorsData, isLoading: isLoadingColors } = useGetColorsQuery({
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search || undefined,
+  });
 
   const {
     items: colors,
     totalItems,
     totalPages,
-  } = extractPaginatedData(colorsResponse, "colors");
+  } = extractPaginatedData(colorsData, "colors");
 
-  // Sync totalItems back to crud hook for calculations
   useEffect(() => {
     crud.setTotalItems(totalItems);
-  }, [totalItems, crud]);
+  }, [totalItems]);
 
-  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
+  // ------------------------------- Submit Mode ------------------------------------
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
+  // ------------------------------- Helpers ------------------------------------
   const handleColorPickerChange = (e) => {
     crud.setFormData((prev) => ({
       ...prev,
@@ -72,6 +74,7 @@ const useColorManagement = () => {
     return hex.startsWith("#") ? hex : `#${hex}`;
   };
 
+  // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (color) => {
     crud.openEdit(color, {
       colorName: color.colorName || "",
@@ -80,21 +83,35 @@ const useColorManagement = () => {
     });
   };
 
+  // ------------------------------- Submit Handler ------------------------------------
   const handleSubmit = async () => {
     if (!validateColor(crud.formData)) return;
 
     const payload = {
-      colorName: crud.formData.colorName,
-      hexCode: crud.formData.hexCode,
+      colorName: sanitizeString(crud.formData.colorName),
+      hexCode: sanitizeString(crud.formData.hexCode),
       isActive: crud.formData.isActive,
     };
 
     await crud.submitForm(payload);
   };
 
+  // ------------------------------- Handlers ------------------------------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // ------------------------------- Return ------------------------------------
   return {
     ...crud,
-    selectedColor: crud.selectedItem,
     colors,
     totalItems,
     totalPages,
@@ -102,12 +119,12 @@ const useColorManagement = () => {
     isLoadingColors,
     isSubmitting,
     isDeleting,
-
-    // Handlers
     handleColorPickerChange,
     getColorPickerValue,
-    handleSubmit,
     handleEdit,
+    handleSubmit,
+    handleChange,
+    handleValueChange,
   };
 };
 

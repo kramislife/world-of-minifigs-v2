@@ -1,13 +1,13 @@
 import React from "react";
-import { formatDate } from "@/utils/formatting";
+import { formatDate, display } from "@/utils/formatting";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
+import StatusBadge from "@/components/shared/StatusBadge";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import useSkillLevelManagement from "@/hooks/admin/useSkillLevelManagement";
@@ -16,7 +16,7 @@ const SkillLevelManagement = () => {
   const {
     dialogOpen,
     deleteDialogOpen,
-    selectedSkillLevel,
+    selectedItem,
     dialogMode,
     formData,
     page,
@@ -34,7 +34,7 @@ const SkillLevelManagement = () => {
     isSubmitting,
     isDeleting,
     handleChange,
-    handleSwitchChange,
+    handleValueChange,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -49,6 +49,7 @@ const SkillLevelManagement = () => {
 
   return (
     <div className="space-y-5">
+      {/* Admin Page Header */}
       <AdminManagementHeader
         title="Skill Level Management"
         description="Manage product skill levels in your store"
@@ -56,6 +57,7 @@ const SkillLevelManagement = () => {
         onAction={handleAdd}
       />
 
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search skill levels..."
         searchValue={search}
@@ -75,23 +77,28 @@ const SkillLevelManagement = () => {
         isLoading={isLoadingSkillLevels}
         renderRow={(skillLevel) => (
           <>
-            <TableCell maxWidth="200px">{skillLevel.skillLevelName}</TableCell>
+            {/* Skill Level Name */}
+            <TableCell maxWidth="200px">
+              {display(skillLevel.skillLevelName)}
+            </TableCell>
+
+            {/* Description */}
             <TableCell maxWidth="300px">
-              {skillLevel.description || "-"}
+              {display(skillLevel.description)}
             </TableCell>
+
+            {/* Status */}
             <TableCell>
-              {skillLevel.isActive ? (
-                <Badge variant="accent">Active</Badge>
-              ) : (
-                <Badge variant="destructive">Inactive</Badge>
-              )}
+              <StatusBadge isActive={skillLevel.isActive} />
             </TableCell>
-            <TableCell>
-              {skillLevel.createdAt ? formatDate(skillLevel.createdAt) : "-"}
-            </TableCell>
-            <TableCell>
-              {skillLevel.updatedAt ? formatDate(skillLevel.updatedAt) : "-"}
-            </TableCell>
+
+            {/* Created At */}
+            <TableCell>{formatDate(skillLevel.createdAt)}</TableCell>
+
+            {/* Updated At */}
+            <TableCell>{formatDate(skillLevel.updatedAt)}</TableCell>
+
+            {/* Actions */}
             <ActionsColumn
               onEdit={() => handleEdit(skillLevel)}
               onDelete={() => handleDelete(skillLevel)}
@@ -100,14 +107,12 @@ const SkillLevelManagement = () => {
         )}
       />
 
-      {/* Add/Edit Skill Level Dialog */}
+      {/* Add/Update Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={
-          dialogMode === "edit" ? "Edit Skill Level" : "Add New Skill Level"
-        }
+        title={dialogMode === "edit" ? "Edit Skill Level" : "Add Skill Level"}
         description={
           dialogMode === "edit"
             ? "Update the skill level details."
@@ -119,47 +124,52 @@ const SkillLevelManagement = () => {
           dialogMode === "edit" ? "Update Skill Level" : "Create Skill Level"
         }
       >
-        <div className="space-y-2">
-          <Label htmlFor="skillLevelName">Skill Level</Label>
-          <Input
-            id="skillLevelName"
-            name="skillLevelName"
-            type="text"
-            placeholder="e.g., Beginner, Intermediate, Advanced"
-            value={formData.skillLevelName}
-            onChange={handleChange}
-            required
-            disabled={isSubmitting}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            id="description"
-            name="description"
-            placeholder="Enter skill level description (optional)"
-            value={formData.description}
-            onChange={handleChange}
-            disabled={isSubmitting}
-            rows={4}
-          />
-        </div>
+        <div className="space-y-4">
+          {/* Skill Level Name */}
+          <div className="space-y-2">
+            <Label htmlFor="skillLevelName">Skill Level</Label>
+            <Input
+              id="skillLevelName"
+              name="skillLevelName"
+              placeholder="e.g., Beginner, Intermediate, Advanced"
+              value={formData.skillLevelName}
+              onChange={handleChange}
+              required
+              disabled={isSubmitting}
+            />
+          </div>
 
-        <AdminSwitchField
-          id="isActive"
-          label="Visibility"
-          description="When disabled, this skill level will not appear in product filters or public listings"
-          checked={formData.isActive}
-          onChange={handleSwitchChange("isActive")}
-          disabled={isSubmitting}
-        />
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              name="description"
+              placeholder="Enter skill level description (optional)"
+              value={formData.description}
+              onChange={handleChange}
+              disabled={isSubmitting}
+              rows={4}
+            />
+          </div>
+
+          {/* Visibility */}
+          <AdminSwitchField
+            id="isActive"
+            label="Visibility"
+            description="When disabled, this skill level will not appear in product filters or public listings"
+            checked={formData.isActive}
+            onChange={handleValueChange("isActive")}
+            disabled={isSubmitting}
+          />
+        </div>
       </AddUpdateItemDialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedSkillLevel?.skillLevelName || ""}
+        itemName={display(selectedItem?.skillLevelName)}
         title="Delete Skill Level"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

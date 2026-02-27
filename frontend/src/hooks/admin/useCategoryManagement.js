@@ -6,7 +6,7 @@ import {
   useDeleteCategoryMutation,
 } from "@/redux/api/adminApi";
 import { extractPaginatedData } from "@/utils/apiHelpers";
-import { sanitizePayload } from "@/utils/formatting";
+import { sanitizeString } from "@/utils/formatting";
 import { validateCategory } from "@/utils/validation";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
@@ -26,6 +26,7 @@ const columns = [
 ];
 
 const useCategoryManagement = () => {
+  // ------------------------------- Mutations ------------------------------------
   const [createCategory, { isLoading: isCreating }] =
     useCreateCategoryMutation();
   const [updateCategory, { isLoading: isUpdating }] =
@@ -33,6 +34,7 @@ const useCategoryManagement = () => {
   const [deleteCategory, { isLoading: isDeleting }] =
     useDeleteCategoryMutation();
 
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createCategory,
@@ -41,8 +43,8 @@ const useCategoryManagement = () => {
     entityName: "category",
   });
 
-  // Fetch data
-  const { data: categoriesResponse, isLoading: isLoadingCategories } =
+  // ------------------------------- Fetch ------------------------------------
+  const { data: categoriesData, isLoading: isLoadingCategories } =
     useGetCategoriesQuery({
       page: crud.page,
       limit: crud.limit,
@@ -53,15 +55,16 @@ const useCategoryManagement = () => {
     items: categories,
     totalItems,
     totalPages,
-  } = extractPaginatedData(categoriesResponse, "categories");
+  } = extractPaginatedData(categoriesData, "categories");
 
-  // Sync totalItems back to crud hook for calculations
   useEffect(() => {
     crud.setTotalItems(totalItems);
-  }, [totalItems, crud]);
+  }, [totalItems]);
 
-  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
+  // ------------------------------- Submit Mode ------------------------------------
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
+  // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (category) => {
     crud.openEdit(category, {
       categoryName: category.categoryName || "",
@@ -70,18 +73,33 @@ const useCategoryManagement = () => {
     });
   };
 
-const handleSubmit = async () => {
-  if (!validateCategory(crud.formData)) return;
+  // ------------------------------- Submit Handler ------------------------------------
+  const handleSubmit = async () => {
+    if (!validateCategory(crud.formData)) return;
 
-  const payload = {
-    categoryName: crud.formData.categoryName,
-    description: crud.formData.description,
-    isActive: crud.formData.isActive,
+    const payload = {
+      categoryName: sanitizeString(crud.formData.categoryName),
+      description: sanitizeString(crud.formData.description),
+      isActive: crud.formData.isActive,
+    };
+
+    await crud.submitForm(payload);
   };
 
-  await crud.submitForm(payload);
-};
+  // ------------------------------- Handlers ------------------------------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
 
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // ------------------------------- Return ------------------------------------
   return {
     ...crud,
     categories,
@@ -93,6 +111,8 @@ const handleSubmit = async () => {
     isDeleting,
     handleEdit,
     handleSubmit,
+    handleChange,
+    handleValueChange,
   };
 };
 

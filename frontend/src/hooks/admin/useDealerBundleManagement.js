@@ -36,6 +36,7 @@ const columns = [
 ];
 
 const useDealerBundleManagement = () => {
+  // ------------------------------- Mutations ------------------------------------
   const [createBundle, { isLoading: isCreating }] =
     useCreateDealerBundleMutation();
   const [updateBundle, { isLoading: isUpdating }] =
@@ -43,6 +44,7 @@ const useDealerBundleManagement = () => {
   const [deleteBundle, { isLoading: isDeleting }] =
     useDeleteDealerBundleMutation();
 
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createBundle,
@@ -51,7 +53,7 @@ const useDealerBundleManagement = () => {
     entityName: "bundle",
   });
 
-  // Fetch data
+  // ------------------------------- Fetch ------------------------------------
   const { data: bundlesResponse, isLoading: isLoadingBundles } =
     useGetDealerBundlesQuery({
       page: crud.page,
@@ -65,36 +67,39 @@ const useDealerBundleManagement = () => {
     totalPages,
   } = extractPaginatedData(bundlesResponse, "bundles");
 
-  // Sync totalItems back to crud hook for calculations
   useEffect(() => {
     crud.setTotalItems(totalItems);
-  }, [totalItems, crud]);
+  }, [totalItems]);
 
-  // Derived State
+  // ------------------------------- Derived State ------------------------------------
   const calculatedTotal = formatCurrency(
     Number(crud.formData.minifigQuantity || 0) *
       Number(crud.formData.unitPrice || 0),
   );
 
-  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
+  // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (bundle) => {
     crud.openEdit(bundle, {
-      bundleName: bundle.bundleName,
-      minifigQuantity: bundle.minifigQuantity,
-      unitPrice: bundle.unitPrice,
+      bundleName: bundle.bundleName || "",
+      minifigQuantity: bundle.minifigQuantity || "",
+      unitPrice: bundle.unitPrice || "",
       torsoBagType: bundle.torsoBagType || "regular",
-      isActive: bundle.isActive,
-      features: bundle.features?.length > 0 ? bundle.features : [""],
+      isActive: bundle.isActive !== false,
+      features:
+        bundle.features && bundle.features.length > 0 ? bundle.features : [""],
     });
   };
 
+  // ------------------------------- Submit Handler ------------------------------------
   const handleSubmit = async () => {
     if (!validateDealerBundle(crud.formData)) return;
 
     const payload = {
       bundleName: sanitizeString(crud.formData.bundleName),
       minifigQuantity: Number(crud.formData.minifigQuantity),
+      unitPrice: Number(crud.formData.unitPrice),
       totalPrice: Number(calculatedTotal),
       torsoBagType: crud.formData.torsoBagType || "regular",
       isActive: crud.formData.isActive,
@@ -104,9 +109,47 @@ const useDealerBundleManagement = () => {
     await crud.submitForm(payload);
   };
 
+  // ------------------------------- Handlers ------------------------------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleArrayChange = (arrayName, index) => (e) => {
+    const value = e?.target ? e.target.value : e;
+    crud.setFormData((prev) => {
+      const newArray = [...(prev[arrayName] || [])];
+      newArray[index] = value;
+      return { ...prev, [arrayName]: newArray };
+    });
+  };
+
+  const addArrayItem =
+    (arrayName, defaultValue = "") =>
+    () => {
+      crud.setFormData((prev) => ({
+        ...prev,
+        [arrayName]: [...(prev[arrayName] || []), defaultValue],
+      }));
+    };
+
+  const removeArrayItem = (arrayName, index) => () => {
+    crud.setFormData((prev) => ({
+      ...prev,
+      [arrayName]: (prev[arrayName] || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  // ------------------------------- Return ------------------------------------
   return {
     ...crud,
-    selectedBundle: crud.selectedItem,
     bundles,
     totalItems,
     totalPages,
@@ -115,10 +158,13 @@ const useDealerBundleManagement = () => {
     isLoadingBundles,
     isSubmitting,
     isDeleting,
-
-    // Handlers
     handleEdit,
     handleSubmit,
+    handleChange,
+    handleValueChange,
+    handleArrayChange,
+    addArrayItem,
+    removeArrayItem,
   };
 };
 

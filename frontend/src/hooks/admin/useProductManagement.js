@@ -22,6 +22,10 @@ import useMediaPreview from "@/hooks/admin/useMediaPreview";
 import { validateFile, readFileAsDataURL } from "@/utils/fileHelpers";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
+/* -------------------------------------------------------------------------- */
+/*                                Initial Data                                */
+/* -------------------------------------------------------------------------- */
+
 const initialFormData = {
   productName: "",
   partId: "",
@@ -68,12 +72,19 @@ const columns = [
   { key: "actions", label: "Actions" },
 ];
 
+/* -------------------------------------------------------------------------- */
+/*                             useProductManagement                           */
+/* -------------------------------------------------------------------------- */
+
 const useProductManagement = () => {
+  /* ------------------------------- Local State ------------------------------- */
+
   const [productType, setProductType] = useState("standalone");
   const [variants, setVariants] = useState([{ ...defaultVariant }]);
   const [imagesChanged, setImagesChanged] = useState(false);
 
-  // Gallery hook for standalone products
+  /* ------------------------------- Media Preview ----------------------------- */
+
   const {
     filePreview: galleryPreviews,
     setFilePreview: setGalleryPreviews,
@@ -90,9 +101,13 @@ const useProductManagement = () => {
     setImagesChanged(false);
   }, [resetFile]);
 
+  /* ------------------------------- Mutations -------------------------------- */
+
   const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
   const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
   const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation();
+
+  /* ------------------------------- Core CRUD -------------------------------- */
 
   const crud = useAdminCrud({
     initialFormData,
@@ -103,13 +118,15 @@ const useProductManagement = () => {
     onReset: resetProductState,
   });
 
-  // Fetch data
+  /* --------------------------------- Fetch ---------------------------------- */
+
   const { data: productsData, isLoading: isLoadingProducts } =
     useGetProductsQuery({
       page: crud.page,
       limit: crud.limit,
       search: crud.search || undefined,
     });
+
   const { data: categoriesData } = useGetCategoriesQuery();
   const { data: subCategoriesData } = useGetSubCategoriesQuery();
   const { data: collectionsData } = useGetCollectionsQuery();
@@ -123,25 +140,25 @@ const useProductManagement = () => {
     totalPages,
   } = extractPaginatedData(productsData, "products");
 
-  // Sync totalItems back to crud hook for calculations
   useEffect(() => {
     crud.setTotalItems(totalItems);
-  }, [totalItems, crud]);
+  }, [totalItems]);
 
-  // Option lists
+  /* ------------------------------- Derived ---------------------------------- */
+
   const categories = categoriesData?.categories || [];
   const subCategories = subCategoriesData?.subCategories || [];
   const collections = collectionsData?.collections || [];
   const subCollections = subCollectionsData?.subCollections || [];
+  const skillLevels = skillLevelsData?.skillLevels || [];
+
   const colors = useMemo(() => {
-    const colorsList = colorsData?.colors || [];
-    return [...colorsList].sort((a, b) =>
+    const list = colorsData?.colors || [];
+    return [...list].sort((a, b) =>
       (a.colorName || "").localeCompare(b.colorName || ""),
     );
   }, [colorsData]);
-  const skillLevels = skillLevelsData?.skillLevels || [];
 
-  // Group sub-categories by category
   const categoriesWithSubs = useMemo(() => {
     return categories.map((category) => {
       const categoryId = category._id || category.id;
@@ -152,7 +169,6 @@ const useProductManagement = () => {
     });
   }, [categories, subCategories]);
 
-  // Group sub-collections by collection
   const collectionsWithSubs = useMemo(() => {
     return collections.map((collection) => {
       const collectionId = collection._id || collection.id;
@@ -163,29 +179,30 @@ const useProductManagement = () => {
     });
   }, [collections, subCollections]);
 
-  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
-  const handleSelectChange = (name, value) => {
+  /* ------------------------------- Handlers --------------------------------- */
+
+  const handleSelectChange = (name) => (value) => {
     crud.setFormData((prev) => ({ ...prev, [name]: value || "" }));
   };
 
-  const handleMultiSelectChange = (name, value) => {
+  const handleMultiSelectChange = (name) => (value) => {
     crud.setFormData((prev) => {
-      const currentValues = prev[name] || [];
-      const isSelected = currentValues.includes(value);
+      const current = prev[name] || [];
+      const exists = current.includes(value);
       return {
         ...prev,
-        [name]: isSelected
-          ? currentValues.filter((id) => id !== value)
-          : [...currentValues, value],
+        [name]: exists
+          ? current.filter((id) => id !== value)
+          : [...current, value],
       };
     });
   };
 
-  // Image handlers for standalone gallery
   const handleImageChange = async (e) => {
     const dataUrls = await onGalleryChange(e);
-    if (dataUrls && dataUrls.length > 0) {
+    if (dataUrls?.length) {
       crud.setFormData((prev) => ({
         ...prev,
         images: [...prev.images, ...dataUrls],
@@ -194,7 +211,7 @@ const useProductManagement = () => {
     }
   };
 
-  const handleRemoveImage = (index) => {
+  const handleRemoveImage = (index) => () => {
     onGalleryRemove(index);
     crud.setFormData((prev) => ({
       ...prev,
@@ -203,93 +220,78 @@ const useProductManagement = () => {
     setImagesChanged(true);
   };
 
-  // Variant handlers
   const handleAddVariant = () => {
     setVariants((prev) => [...prev, { ...defaultVariant }]);
   };
 
-  const handleRemoveVariant = (index) => {
+  const handleRemoveVariant = (index) => () => {
     if (validateMinItems(variants, 1, "variant")) {
       setVariants((prev) => prev.filter((_, i) => i !== index));
     }
   };
 
-  const handleVariantChange = (index, field, value) => {
+  const handleVariantChange = (index, field) => (e) => {
+    const value = e?.target ? e.target.value : e;
     setVariants((prev) => {
-      const newVariants = [...prev];
-      newVariants[index] = { ...newVariants[index], [field]: value };
-      return newVariants;
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
     });
   };
 
-  const handleVariantImageChange = async (variantIndex, e) => {
+  const handleVariantImageChange = (variantIndex) => async (e) => {
     const file = e.target.files?.[0];
     if (!file || !validateFile(file)) return;
 
     try {
       const dataUrl = await readFileAsDataURL(file);
       setVariants((prev) => {
-        const newVariants = [...prev];
-        newVariants[variantIndex] = {
-          ...newVariants[variantIndex],
+        const copy = [...prev];
+        copy[variantIndex] = {
+          ...copy[variantIndex],
           imagePreview: dataUrl,
           image: dataUrl,
         };
-        return newVariants;
+        return copy;
       });
-    } catch (error) {
+    } catch {
       handleFileReadError();
     }
   };
 
-  const handleRemoveVariantImage = (variantIndex) => {
+  const handleRemoveVariantImage = (variantIndex) => () => {
     setVariants((prev) => {
-      const newVariants = [...prev];
-      newVariants[variantIndex] = {
-        ...newVariants[variantIndex],
+      const copy = [...prev];
+      copy[variantIndex] = {
+        ...copy[variantIndex],
         imagePreview: "",
         image: "",
       };
-      return newVariants;
+      return copy;
     });
   };
 
-  // Edit handler (complex — sets product type, variants, images)
+  /* ------------------------------- Edit Handler ------------------------------ */
+
   const handleEdit = (product) => {
-    const existingDescriptions =
-      product.descriptions && product.descriptions.length > 0
-        ? product.descriptions.filter((d) => d)
-        : [""];
+    const existingDescriptions = product.descriptions?.filter(Boolean) || [""];
 
     const hasSecondaryColor = !!(
       product.secondaryColorId?._id || product.secondaryColorId
     );
 
     const mappedForm = {
+      ...initialFormData,
       productName: product.productName || "",
       partId: product.partId || "",
       itemId: product.itemId || "",
       price: product.price || "",
       discount: product.discount || "",
-      descriptions:
-        existingDescriptions.length > 0 ? existingDescriptions : [""],
-      images: [],
-      categoryIds:
-        product.categoryIds?.map((c) => c._id || c) ||
-        product.categoryIds ||
-        [],
-      subCategoryIds:
-        product.subCategoryIds?.map((sc) => sc._id || sc) ||
-        product.subCategoryIds ||
-        [],
-      collectionIds:
-        product.collectionIds?.map((c) => c._id || c) ||
-        product.collectionIds ||
-        [],
-      subCollectionIds:
-        product.subCollectionIds?.map((sc) => sc._id || sc) ||
-        product.subCollectionIds ||
-        [],
+      descriptions: existingDescriptions,
+      categoryIds: product.categoryIds?.map((c) => c._id || c) || [],
+      subCategoryIds: product.subCategoryIds?.map((c) => c._id || c) || [],
+      collectionIds: product.collectionIds?.map((c) => c._id || c) || [],
+      subCollectionIds: product.subCollectionIds?.map((c) => c._id || c) || [],
       pieceCount: product.pieceCount || "",
       length: product.length || "",
       width: product.width || "",
@@ -298,50 +300,46 @@ const useProductManagement = () => {
       secondaryColorId:
         product.secondaryColorId?._id || product.secondaryColorId || "",
       showSecondaryColor: hasSecondaryColor,
-      skillLevelIds:
-        product.skillLevelIds?.map((sl) => sl._id || sl) ||
-        product.skillLevelIds ||
-        [],
+      skillLevelIds: product.skillLevelIds?.map((sl) => sl._id || sl) || [],
       stock: product.stock || "",
       isActive: product.isActive !== undefined ? product.isActive : true,
     };
 
     crud.openEdit(product, mappedForm);
 
-    // Set images
     const existingImages = product.images?.map((img) => img.url) || [];
     setGalleryPreviews(existingImages);
+
     const existingImageObjects =
       product.images?.map((img) => ({
         publicId: img.publicId,
         url: img.url,
       })) || [];
-    crud.setFormData((prev) => ({ ...prev, images: existingImageObjects }));
+
+    crud.setFormData((prev) => ({
+      ...prev,
+      images: existingImageObjects,
+    }));
+
     setImagesChanged(false);
 
-    // Set variants / product type
-    if (product.variants && product.variants.length > 0) {
+    if (product.variants?.length) {
       setProductType("variant");
-      crud.setFormData((prev) => ({ ...prev, partId: product.partId || "" }));
-      const variantData = product.variants.map((variant) => {
-        const variantHasSecondary = !!(
-          variant.secondaryColorId?._id || variant.secondaryColorId
-        );
-        return {
+      setVariants(
+        product.variants.map((variant) => ({
           colorId: variant.colorId?._id || variant.colorId || "",
           secondaryColorId:
             variant.secondaryColorId?._id || variant.secondaryColorId || "",
-          showSecondaryColor: variantHasSecondary,
+          showSecondaryColor: !!(
+            variant.secondaryColorId?._id || variant.secondaryColorId
+          ),
           itemId: variant.itemId || "",
           stock: variant.stock || "",
           image: variant.image
             ? { publicId: variant.image.publicId, url: variant.image.url }
             : "",
           imagePreview: variant.image?.url || "",
-        };
-      });
-      setVariants(
-        variantData.length > 0 ? variantData : [{ ...defaultVariant }],
+        })),
       );
     } else {
       setProductType("standalone");
@@ -349,7 +347,8 @@ const useProductManagement = () => {
     }
   };
 
-  // Submit handler (complex — builds product-specific payload)
+  /* ------------------------------- Submit Handler ---------------------------- */
+
   const handleSubmit = async () => {
     if (!validateProduct(crud.formData, productType, variants, galleryPreviews))
       return;
@@ -365,7 +364,6 @@ const useProductManagement = () => {
       isActive: crud.formData.isActive,
     };
 
-    // Product type specific fields
     if (productType === "standalone") {
       productData.productType = "standalone";
       productData.partId = sanitizeString(crud.formData.partId);
@@ -384,7 +382,6 @@ const useProductManagement = () => {
     if (productType === "variant") {
       productData.productType = "variant";
       productData.partId = sanitizeString(crud.formData.partId);
-
       productData.variants = variants.map((variant) => ({
         colorId: variant.colorId,
         ...(variant.secondaryColorId && {
@@ -396,7 +393,6 @@ const useProductManagement = () => {
       }));
     }
 
-    // Optional numeric & relational fields
     if (crud.formData.discount !== "")
       productData.discount = Number(crud.formData.discount);
 
@@ -430,6 +426,46 @@ const useProductManagement = () => {
     await crud.submitForm(productData);
   };
 
+  /* ------------------------------- Handlers --------------------------------- */
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleArrayChange = (arrayName, index) => (e) => {
+    const value = e?.target ? e.target.value : e;
+    crud.setFormData((prev) => {
+      const newArray = [...(prev[arrayName] || [])];
+      newArray[index] = value;
+      return { ...prev, [arrayName]: newArray };
+    });
+  };
+
+  const addArrayItem =
+    (arrayName, defaultValue = "") =>
+    () => {
+      crud.setFormData((prev) => ({
+        ...prev,
+        [arrayName]: [...(prev[arrayName] || []), defaultValue],
+      }));
+    };
+
+  const removeArrayItem = (arrayName, index) => () => {
+    crud.setFormData((prev) => ({
+      ...prev,
+      [arrayName]: (prev[arrayName] || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  /* --------------------------------- Return --------------------------------- */
+
   return {
     ...crud,
     productType,
@@ -452,8 +488,6 @@ const useProductManagement = () => {
     isLoadingProducts,
     isSubmitting,
     isDeleting,
-
-    // Handlers
     handleSelectChange,
     handleMultiSelectChange,
     handleImageChange,
@@ -467,6 +501,11 @@ const useProductManagement = () => {
     handleEdit,
     setProductType,
     setGalleryPreviews,
+    handleChange,
+    handleValueChange,
+    handleArrayChange,
+    addArrayItem,
+    removeArrayItem,
   };
 };
 

@@ -29,8 +29,8 @@ const initialFormData = {
 };
 
 const columns = [
-  { key: "label", label: "Label" },
   { key: "badge", label: "Badge" },
+  { key: "label", label: "Label" },
   { key: "order", label: "Order" },
   { key: "position", label: "Position" },
   { key: "isActive", label: "Status" },
@@ -40,6 +40,7 @@ const columns = [
 ];
 
 const useBannerManagement = () => {
+  // ---------------------------- Media Hook ----------------------------
   const {
     filePreview: mediaPreview,
     setFilePreview: setMediaPreview,
@@ -48,10 +49,12 @@ const useBannerManagement = () => {
     handleRemoveFile: onRemoveMedia,
   } = useMediaPreview({ allowVideo: true, maxSizeMB: 10 });
 
+  // ---------------------------- Mutations ----------------------------
   const [createBanner, { isLoading: isCreating }] = useCreateBannerMutation();
   const [updateBanner, { isLoading: isUpdating }] = useUpdateBannerMutation();
   const [deleteBanner, { isLoading: isDeleting }] = useDeleteBannerMutation();
 
+  // ---------------------------- Core CRUD ----------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createBanner,
@@ -61,7 +64,7 @@ const useBannerManagement = () => {
     onReset: resetMedia,
   });
 
-  // Fetch data
+  // ---------------------------- Fetch ----------------------------
   const { data: bannersData, isLoading: isLoadingBanners } = useGetBannersQuery(
     {
       page: crud.page,
@@ -76,36 +79,27 @@ const useBannerManagement = () => {
     totalPages,
   } = extractPaginatedData(bannersData, "banners");
 
-  // Sync totalItems back to crud hook for calculations
   useEffect(() => {
     crud.setTotalItems(totalItems);
-  }, [totalItems, crud]);
+  }, [totalItems]);
 
-  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
+  // ---------------------------- Submit Mode ----------------------------
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
-  const handleSelectChange = (name, value) => {
-    // Handle nested button fields
-    if (name === "buttons") {
-      const { index, field, value: v } = value;
-      crud.setFormData((prev) => {
-        const nextButtons = [...prev.buttons];
-        nextButtons[index] = { ...nextButtons[index], [field]: v };
-        return { ...prev, buttons: nextButtons };
-      });
-      return;
-    }
-
-    crud.setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
+  // ---------------------------- Media Handlers ----------------------------
   const handleFileChange = async (e) => {
-    // Detect mediaType before delegating to useMediaPreview
     const file = e.target.files?.[0];
     if (!file) return;
+
     const mediaType = file.type.startsWith("video") ? "video" : "image";
     const dataUrl = await onMediaChange(e);
+
     if (dataUrl) {
-      crud.setFormData((prev) => ({ ...prev, media: dataUrl, mediaType }));
+      crud.setFormData((prev) => ({
+        ...prev,
+        media: dataUrl,
+        mediaType,
+      }));
     }
   };
 
@@ -114,12 +108,15 @@ const useBannerManagement = () => {
     crud.setFormData((prev) => ({ ...prev, media: null }));
   };
 
+  // ---------------------------- Add Handler ----------------------------
   const handleAdd = () => {
     const maxOrder =
       banners.length > 0 ? Math.max(...banners.map((b) => b.order || 0)) : 0;
+
     crud.handleAdd({ order: maxOrder + 1 });
   };
 
+  // ---------------------------- Edit Handler ----------------------------
   const handleEdit = (banner) => {
     crud.openEdit(banner, {
       badge: banner.badge || "",
@@ -132,22 +129,11 @@ const useBannerManagement = () => {
       enableButtons: banner.enableButtons || false,
       buttons:
         banner.buttons?.length > 0
-          ? [
-              banner.buttons[0]
-                ? {
-                    label: banner.buttons[0].label,
-                    href: banner.buttons[0].href,
-                    variant: banner.buttons[0].variant || "default",
-                  }
-                : { label: "", href: "", variant: "default" },
-              banner.buttons[1]
-                ? {
-                    label: banner.buttons[1].label,
-                    href: banner.buttons[1].href,
-                    variant: banner.buttons[1].variant || "default",
-                  }
-                : { label: "", href: "", variant: "default" },
-            ]
+          ? banner.buttons.slice(0, 2).map((btn) => ({
+              label: btn.label || "",
+              href: btn.href || "",
+              variant: btn.variant || "default",
+            }))
           : [
               { label: "", href: "", variant: "default" },
               { label: "", href: "", variant: "default" },
@@ -155,9 +141,11 @@ const useBannerManagement = () => {
       isActive: banner.isActive !== false,
       order: banner.order || 1,
     });
+
     setMediaPreview(banner.media?.url || "");
   };
 
+  // ---------------------------- Submit Handler ----------------------------
   const handleSubmit = async () => {
     if (!validateBanner(crud.formData, crud.dialogMode)) return;
 
@@ -188,6 +176,66 @@ const useBannerManagement = () => {
     await crud.submitForm(payload);
   };
 
+  // ------------------------------- Handlers ------------------------------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleNestedChange = (arrayName, index, field) => (e) => {
+    const value = e?.target
+      ? e.target.type === "checkbox"
+        ? e.target.checked
+        : e.target.value
+      : e;
+    crud.setFormData((prev) => {
+      const newArray = [...(prev[arrayName] || [])];
+      newArray[index] = { ...newArray[index], [field]: value };
+      return { ...prev, [arrayName]: newArray };
+    });
+  };
+
+  // ---------------------------- Layout Helpers ----------------------------
+  const isDarkTheme = crud.formData.textTheme === "dark";
+  const isLightTheme = crud.formData.textTheme === "light";
+
+  const getPositionClasses = (position) => {
+    switch (position) {
+      case "bottom-left":
+        return {
+          container: "items-end justify-start text-left",
+          buttons: "justify-start",
+        };
+      case "bottom-right":
+        return {
+          container: "items-end justify-end text-right",
+          buttons: "justify-end",
+        };
+      default:
+        return {
+          container: "items-center justify-center text-center",
+          buttons: "justify-center",
+        };
+    }
+  };
+
+  const layoutClasses = getPositionClasses(crud.formData.position);
+
+  const getButtonStyle = (btn) => {
+    if (btn.variant === "outline") return "border";
+    return isDarkTheme
+      ? "bg-black border-black text-white"
+      : "bg-white border-white text-black";
+  };
+
+  // ------------------------------- Return ------------------------------------
   return {
     ...crud,
     mediaPreview,
@@ -198,14 +246,18 @@ const useBannerManagement = () => {
     isLoadingBanners,
     isSubmitting,
     isDeleting,
-
-    // Handlers
-    handleSelectChange,
     handleFileChange,
     handleRemoveFile,
     handleSubmit,
     handleAdd,
     handleEdit,
+    handleChange,
+    handleValueChange,
+    handleNestedChange,
+    isDarkTheme,
+    isLightTheme,
+    layoutClasses,
+    getButtonStyle,
   };
 };
 

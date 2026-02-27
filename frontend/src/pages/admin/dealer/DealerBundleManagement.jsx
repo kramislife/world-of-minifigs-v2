@@ -1,9 +1,6 @@
 import React from "react";
-import { formatDate } from "@/utils/formatting";
 import { X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,26 +12,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
+import AdminSwitchField from "@/components/shared/AdminSwitchField";
+import StatusBadge from "@/components/shared/StatusBadge";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
-import { formatCurrency } from "@/utils/formatting";
+import { formatDate, formatCurrency, display } from "@/utils/formatting";
 import useDealerBundleManagement from "@/hooks/admin/useDealerBundleManagement";
 
 const DealerBundleManagement = () => {
   const {
-    search,
-    limit,
-    page,
     dialogOpen,
     deleteDialogOpen,
+    selectedItem,
     dialogMode,
-    selectedBundle,
     formData,
     bundles,
     totalItems,
     totalPages,
+    page,
+    limit,
+    search,
     startItem,
     endItem,
     handlePrevious,
@@ -44,21 +43,26 @@ const DealerBundleManagement = () => {
     isLoadingBundles,
     isSubmitting,
     isDeleting,
+    handleChange,
+    handleValueChange,
+    handleArrayChange,
+    addArrayItem,
+    removeArrayItem,
+    handleSubmit,
     handleDialogClose,
-    setDeleteDialogOpen,
-    setFormData,
     handleAdd,
     handleEdit,
     handleDelete,
-    handleSubmit,
     handleConfirmDelete,
     handlePageChange,
     handleLimitChange,
     handleSearchChange,
+    setDeleteDialogOpen,
   } = useDealerBundleManagement();
 
   return (
     <div className="space-y-5">
+      {/* Admin Page Header */}
       <AdminManagementHeader
         title="Dealer Bundles"
         description="Manage bulk packs and pricing steps"
@@ -66,6 +70,7 @@ const DealerBundleManagement = () => {
         onAction={handleAdd}
       />
 
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search bundles..."
         searchValue={search}
@@ -85,36 +90,37 @@ const DealerBundleManagement = () => {
         isLoading={isLoadingBundles}
         renderRow={(bundle) => (
           <>
-            <TableCell maxWidth="200px">{bundle.bundleName}</TableCell>
-            <TableCell className="font-semibold">
-              {bundle.minifigQuantity}
-            </TableCell>
-            <TableCell>
-              <Badge
-                variant={
-                  bundle.torsoBagType === "custom" ? "accent" : "outline"
-                }
-              >
-                {bundle.torsoBagType === "custom" ? "Custom" : "Regular"}
-              </Badge>
-            </TableCell>
+            {/* Bundle Name */}
+            <TableCell maxWidth="200px">{display(bundle.bundleName)}</TableCell>
+
+            {/* Quantity */}
+            <TableCell>{bundle.minifigQuantity}</TableCell>
+
+            {/* Torso Type */}
+            <TableCell className="capitalize">{bundle.torsoBagType}</TableCell>
+
+            {/* Unit Price */}
             <TableCell className="font-semibold">
               ${formatCurrency(bundle.unitPrice)}
             </TableCell>
-            <TableCell className="font-semibold text-success">
+
+            {/* Total Price */}
+            <TableCell className="font-semibold text-success dark:text-accent">
               ${formatCurrency(bundle.totalPrice)}
             </TableCell>
+
+            {/* Status */}
             <TableCell>
-              <Badge variant={bundle.isActive ? "success" : "destructive"}>
-                {bundle.isActive ? "Active" : "Inactive"}
-              </Badge>
+              <StatusBadge isActive={bundle.isActive} />
             </TableCell>
-            <TableCell>
-              {bundle.createdAt ? formatDate(bundle.createdAt) : "-"}
-            </TableCell>
-            <TableCell>
-              {bundle.updatedAt ? formatDate(bundle.updatedAt) : "-"}
-            </TableCell>
+
+            {/* Created At */}
+            <TableCell>{formatDate(bundle.createdAt)}</TableCell>
+
+            {/* Updated At */}
+            <TableCell>{formatDate(bundle.updatedAt)}</TableCell>
+
+            {/* Actions */}
             <ActionsColumn
               onEdit={() => handleEdit(bundle)}
               onDelete={() => handleDelete(bundle)}
@@ -123,12 +129,12 @@ const DealerBundleManagement = () => {
         )}
       />
 
-      {/* Add/Update Bundle Dialog */}
+      {/* Add/Update Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Bundle" : "Add New Bundle"}
+        title={dialogMode === "edit" ? "Edit Bundle" : "Add Bundle"}
         description={
           dialogMode === "edit"
             ? "Update the bundle details."
@@ -142,53 +148,56 @@ const DealerBundleManagement = () => {
         className="sm:max-w-3xl"
       >
         <div className="space-y-4">
+          {/* Bundle Name */}
           <div className="space-y-2">
             <Label htmlFor="bundleName">Bundle Name</Label>
             <Input
               id="bundleName"
+              name="bundleName"
               placeholder="100 Minifigs"
               value={formData.bundleName}
-              onChange={(e) =>
-                setFormData({ ...formData, bundleName: e.target.value })
-              }
+              onChange={handleChange}
               required
+              disabled={isSubmitting}
             />
           </div>
+
+          {/* Quantity / Price / Type */}
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity</Label>
+              <Label htmlFor="minifigQuantity">Quantity</Label>
               <Input
-                id="quantity"
+                id="minifigQuantity"
+                name="minifigQuantity"
                 type="number"
                 placeholder="100"
                 value={formData.minifigQuantity}
-                onChange={(e) =>
-                  setFormData({ ...formData, minifigQuantity: e.target.value })
-                }
+                onChange={handleChange}
                 required
+                disabled={isSubmitting}
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="unitPrice">Unit Price</Label>
               <Input
                 id="unitPrice"
+                name="unitPrice"
                 type="number"
                 step="0.01"
-                placeholder="2.10"
+                placeholder="0.50"
                 value={formData.unitPrice}
-                onChange={(e) =>
-                  setFormData({ ...formData, unitPrice: e.target.value })
-                }
+                onChange={handleChange}
                 required
+                disabled={isSubmitting}
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="torsoBagType">Torso Bag Type</Label>
               <Select
                 value={formData.torsoBagType}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, torsoBagType: value })
-                }
+                onValueChange={handleValueChange("torsoBagType")}
               >
                 <SelectTrigger id="torsoBagType" className="w-full">
                   <SelectValue placeholder="Select type" />
@@ -198,15 +207,11 @@ const DealerBundleManagement = () => {
                   <SelectItem value="custom">Custom Bundle</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                {formData.torsoBagType === "regular"
-                  ? "Uses base bags with a quantity (e.g. 200 = 2 x 100 bag)."
-                  : "Uses a dedicated bag set for this bundle."}
-              </p>
             </div>
           </div>
 
-          <div className="space-y-3">
+          {/* Features */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Features</Label>
               {formData.features.length < 5 && (
@@ -215,77 +220,62 @@ const DealerBundleManagement = () => {
                   variant="link"
                   size="sm"
                   className="px-0 h-auto"
-                  onClick={() => {
-                    setFormData({
-                      ...formData,
-                      features: [...formData.features, ""],
-                    });
-                  }}
+                  onClick={addArrayItem("features")}
                 >
                   Add Feature
                 </Button>
               )}
             </div>
-            <div className="space-y-3">
-              {formData.features.map((feature, index) => (
-                <div key={index} className="flex gap-2 items-start">
-                  <Textarea
-                    placeholder={`Feature ${index + 1}`}
-                    value={feature}
-                    onChange={(e) => {
-                      const newFeatures = [...formData.features];
-                      newFeatures[index] = e.target.value;
-                      setFormData({ ...formData, features: newFeatures });
-                    }}
-                    rows={2}
-                    className="flex-1"
-                  />
-                  {formData.features.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 text-destructive hover:text-destructive h-10 w-10"
-                      onClick={() => {
-                        const newFeatures = formData.features.filter(
-                          (_, i) => i !== index,
-                        );
-                        setFormData({ ...formData, features: newFeatures });
-                      }}
-                    >
-                      <X className="size-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
+
+            {formData.features.map((feature, index) => (
+              <div key={index} className="flex gap-2 items-start">
+                <Textarea
+                  value={feature}
+                  onChange={handleArrayChange("features", index)}
+                  placeholder="e.g. 100 minifigures"
+                  rows={4}
+                />
+
+                {formData.features.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0 text-destructive hover:text-destructive"
+                    onClick={removeArrayItem("features", index)}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
           </div>
 
-          <div className="flex justify-between items-center text-sm font-semibold">
-            <span className="text-sm">Calculated Total Cost:</span>
+          {/* Calculated Total */}
+          <div className="flex justify-between items-center text-sm font-semibold pt-3">
+            <span>Calculated Total Cost:</span>
             <span className="text-lg text-success dark:text-accent">
               ${calculatedTotal}
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="bundleActive"
-              checked={formData.isActive}
-              onCheckedChange={(checked) =>
-                setFormData({ ...formData, isActive: checked })
-              }
-            />
-            <Label htmlFor="bundleActive">Available to Dealers</Label>
-          </div>
+          {/* Visibility */}
+          <AdminSwitchField
+            id="isActive"
+            label="Visibility"
+            description="When disabled, this bundle will be hidden from dealer pages"
+            checked={formData.isActive}
+            onChange={handleValueChange("isActive")}
+            disabled={isSubmitting}
+          />
         </div>
       </AddUpdateItemDialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedBundle?.bundleName || ""}
+        itemName={display(selectedItem?.bundleName)}
         title="Delete Bundle"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

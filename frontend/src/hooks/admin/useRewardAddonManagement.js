@@ -29,6 +29,7 @@ const columns = [
 ];
 
 const useRewardAddonManagement = () => {
+  // ------------------------------- Mutations ------------------------------------
   const [createAddon, { isLoading: isCreating }] =
     useCreateRewardAddonMutation();
   const [updateAddon, { isLoading: isUpdating }] =
@@ -36,6 +37,7 @@ const useRewardAddonManagement = () => {
   const [deleteAddon, { isLoading: isDeleting }] =
     useDeleteRewardAddonMutation();
 
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createAddon,
@@ -44,7 +46,7 @@ const useRewardAddonManagement = () => {
     entityName: "reward add-on",
   });
 
-  // Fetch data
+  // ------------------------------- Fetch ------------------------------------
   const { data: addonsResponse, isLoading: isLoadingAddons } =
     useGetRewardAddonsQuery({
       page: crud.page,
@@ -58,23 +60,25 @@ const useRewardAddonManagement = () => {
     totalPages,
   } = extractPaginatedData(addonsResponse, "addons");
 
-  // Sync totalItems back to crud hook for calculations
   useEffect(() => {
     crud.setTotalItems(totalItems);
-  }, [totalItems, crud]);
+  }, [totalItems]);
 
-  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
+  // ------------------------------- Submit Mode ------------------------------------
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
+  // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (addon) => {
     crud.openEdit(addon, {
-      price: addon.price,
+      price: addon.price || "",
       quantity: addon.quantity || "",
       duration: addon.duration || "",
-      isActive: addon.isActive,
-      features: addon.features?.length > 0 ? addon.features : [""],
+      isActive: addon.isActive !== false,
+      features: addon.features?.length ? addon.features : [""],
     });
   };
 
+  // ------------------------------- Submit Handler ------------------------------------
   const handleSubmit = async () => {
     if (!validateRewardAddon(crud.formData)) return;
 
@@ -95,9 +99,47 @@ const useRewardAddonManagement = () => {
     await crud.submitForm(payload);
   };
 
+  // ------------------------------- Handlers ------------------------------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleArrayChange = (arrayName, index) => (e) => {
+    const value = e?.target ? e.target.value : e;
+    crud.setFormData((prev) => {
+      const newArray = [...(prev[arrayName] || [])];
+      newArray[index] = value;
+      return { ...prev, [arrayName]: newArray };
+    });
+  };
+
+  const addArrayItem =
+    (arrayName, defaultValue = "") =>
+    () => {
+      crud.setFormData((prev) => ({
+        ...prev,
+        [arrayName]: [...(prev[arrayName] || []), defaultValue],
+      }));
+    };
+
+  const removeArrayItem = (arrayName, index) => () => {
+    crud.setFormData((prev) => ({
+      ...prev,
+      [arrayName]: (prev[arrayName] || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  // ------------------------------- Return ------------------------------------
   return {
     ...crud,
-    selectedAddon: crud.selectedItem,
     addons,
     totalItems,
     totalPages,
@@ -105,10 +147,13 @@ const useRewardAddonManagement = () => {
     isLoadingAddons,
     isSubmitting,
     isDeleting,
-
-    // Handlers
     handleEdit,
     handleSubmit,
+    handleChange,
+    handleValueChange,
+    handleArrayChange,
+    addArrayItem,
+    removeArrayItem,
   };
 };
 

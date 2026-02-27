@@ -1,21 +1,21 @@
 import React from "react";
-import { formatDate } from "@/utils/formatting";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
+import StatusBadge from "@/components/shared/StatusBadge";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
+import { formatDate, display } from "@/utils/formatting";
 import useColorManagement from "@/hooks/admin/useColorManagement";
 
 const ColorManagement = () => {
   const {
     dialogOpen,
     deleteDialogOpen,
-    selectedColor,
+    selectedItem,
     dialogMode,
     formData,
     page,
@@ -34,7 +34,7 @@ const ColorManagement = () => {
     isDeleting,
     handleChange,
     handleColorPickerChange,
-    handleSwitchChange,
+    handleValueChange,
     getColorPickerValue,
     handleSubmit,
     handleDialogClose,
@@ -50,6 +50,7 @@ const ColorManagement = () => {
 
   return (
     <div className="space-y-5">
+      {/* Admin Page Header */}
       <AdminManagementHeader
         title="Color Management"
         description="Manage product colors in your store"
@@ -57,6 +58,7 @@ const ColorManagement = () => {
         onAction={handleAdd}
       />
 
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search colors..."
         searchValue={search}
@@ -76,31 +78,34 @@ const ColorManagement = () => {
         isLoading={isLoadingColors}
         renderRow={(color) => (
           <>
-            <TableCell maxWidth="200px">{color.colorName}</TableCell>
+            {/* Color Name */}
+            <TableCell maxWidth="200px">{display(color.colorName)}</TableCell>
+
+            {/* Hex Code */}
             <TableCell>
               <div className="flex items-center justify-center gap-2">
                 {color.hexCode && (
                   <div
-                    className="size-5 rounded-md shrink-0"
+                    className="size-5 rounded-md shrink-0 border"
                     style={{ backgroundColor: color.hexCode }}
                   />
                 )}
-                <span>{color.hexCode || "-"}</span>
+                <span>{display(color.hexCode)}</span>
               </div>
             </TableCell>
+
+            {/* Status */}
             <TableCell>
-              {color.isActive ? (
-                <Badge variant="accent">Active</Badge>
-              ) : (
-                <Badge variant="destructive">Inactive</Badge>
-              )}
+              <StatusBadge isActive={color.isActive} />
             </TableCell>
-            <TableCell>
-              {color.createdAt ? formatDate(color.createdAt) : "-"}
-            </TableCell>
-            <TableCell>
-              {color.updatedAt ? formatDate(color.updatedAt) : "-"}
-            </TableCell>
+
+            {/* Created At */}
+            <TableCell>{formatDate(color.createdAt)}</TableCell>
+
+            {/* Updated At */}
+            <TableCell>{formatDate(color.updatedAt)}</TableCell>
+
+            {/* Actions */}
             <ActionsColumn
               onEdit={() => handleEdit(color)}
               onDelete={() => handleDelete(color)}
@@ -109,7 +114,7 @@ const ColorManagement = () => {
         )}
       />
 
-      {/* Add/Edit Color Dialog */}
+      {/* Add / Edit Color Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
@@ -126,60 +131,66 @@ const ColorManagement = () => {
           dialogMode === "edit" ? "Update Color" : "Create Color"
         }
       >
-        <div className="space-y-2">
-          <Label htmlFor="colorName">Color Name</Label>
-          <Input
-            id="colorName"
-            name="colorName"
-            type="text"
-            placeholder="e.g., Red, Blue, Forest Green"
-            value={formData.colorName}
-            onChange={handleChange}
-            required
+        <div className="space-y-4">
+          {/* Color Name */}
+          <div className="space-y-2">
+            <Label htmlFor="colorName">Color Name</Label>
+            <Input
+              id="colorName"
+              name="colorName"
+              type="text"
+              placeholder="e.g., Red, Blue, Forest Green"
+              value={formData.colorName}
+              onChange={handleChange}
+              required
+              disabled={isSubmitting}
+            />
+          </div>
+
+          {/* Hex Code */}
+          <div className="space-y-2">
+            <Label htmlFor="hexCode">Hex Code</Label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <Input
+                  id="hexCode"
+                  name="hexCode"
+                  type="text"
+                  placeholder="#000000"
+                  value={formData.hexCode}
+                  onChange={handleChange}
+                  required
+                  disabled={isSubmitting}
+                />
+              </div>
+              <Input
+                type="color"
+                value={getColorPickerValue()}
+                onChange={handleColorPickerChange}
+                disabled={isSubmitting}
+                className="w-12 p-1 cursor-pointer"
+                title="Pick a color"
+              />
+            </div>
+          </div>
+
+          {/* Visibility */}
+          <AdminSwitchField
+            id="isActive"
+            label="Visibility"
+            description="When disabled, this color will not appear in product filters or public listings"
+            checked={formData.isActive}
+            onChange={handleValueChange("isActive")}
             disabled={isSubmitting}
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="hexCode">Hex Code</Label>
-          <div className="flex items-center gap-2">
-            <div className="flex-1">
-              <Input
-                id="hexCode"
-                name="hexCode"
-                type="text"
-                placeholder="#000000"
-                value={formData.hexCode}
-                onChange={handleChange}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            <Input
-              type="color"
-              value={getColorPickerValue()}
-              onChange={handleColorPickerChange}
-              disabled={isSubmitting}
-              className="w-12 p-1 cursor-pointer"
-              title="Pick a color"
-            />
-          </div>
-        </div>
-
-        <AdminSwitchField
-          id="isActive"
-          label="Visibility"
-          description="When disabled, this color will not appear in product filters or public listings"
-          checked={formData.isActive}
-          onChange={handleSwitchChange("isActive")}
-          disabled={isSubmitting}
-        />
       </AddUpdateItemDialog>
 
       {/* Delete Confirmation Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedColor?.colorName || ""}
+        itemName={display(selectedItem?.colorName)}
         title="Delete Color"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

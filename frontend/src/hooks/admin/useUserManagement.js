@@ -11,27 +11,38 @@ import {
 } from "@/utils/apiHelpers";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
+const columns = [
+  { key: "user", label: "User" },
+  { key: "username", label: "Username" },
+  { key: "email", label: "Email" },
+  { key: "contactNumber", label: "Contact" },
+  { key: "role", label: "Role" },
+  { key: "status", label: "Status" },
+  { key: "verified", label: "Verified" },
+  { key: "createdAt", label: "Joined" },
+];
+
 const useUserManagement = () => {
   const { user: currentUser } = useSelector((state) => state.auth);
 
+  // ------------------------------- Mutations ------------------------------------
+  const [updateUserRole, { isLoading: isUpdatingRole }] =
+    useUpdateUserRoleMutation();
+
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData: {},
-    // User management doesn't use standard CRUD functions for everything,
-    // but we use useAdminCrud for centralized table logic.
     createFn: null,
     updateFn: null,
     deleteFn: null,
   });
 
-  // Fetch data
+  // ------------------------------- Fetch ------------------------------------
   const { data: usersResponse, isLoading: isLoadingUsers } = useGetUsersQuery({
     page: crud.page,
     limit: crud.limit,
     search: crud.search || undefined,
   });
-
-  const [updateUserRole, { isLoading: isUpdatingRole }] =
-    useUpdateUserRoleMutation();
 
   const {
     items: users,
@@ -39,22 +50,11 @@ const useUserManagement = () => {
     totalPages,
   } = extractPaginatedData(usersResponse, "users");
 
-  // Sync totalItems back to crud hook for calculations
   useEffect(() => {
     crud.setTotalItems(totalItems);
-  }, [totalItems, crud]);
+  }, [totalItems]);
 
-  const columns = [
-    { key: "user", label: "User" },
-    { key: "username", label: "Username" },
-    { key: "email", label: "Email" },
-    { key: "contactNumber", label: "Contact" },
-    { key: "role", label: "Role" },
-    { key: "status", label: "Status" },
-    { key: "verified", label: "Verified" },
-    { key: "createdAt", label: "Joined" },
-  ];
-
+  // ------------------------------- Helpers ------------------------------------
   const isCurrentUser = (user) => {
     const currentUserId = currentUser?._id || currentUser?.id;
     const userId = user._id || user.id;
@@ -74,6 +74,9 @@ const useUserManagement = () => {
     }
   };
 
+  const canUpdateRole = (user) => user.role !== "admin";
+
+  // ------------------------------- Handlers ------------------------------------
   const handleUpdateRole = async (userId, newRole) => {
     try {
       const response = await updateUserRole({
@@ -89,8 +92,7 @@ const useUserManagement = () => {
     }
   };
 
-  const canUpdateRole = (user) => user.role !== "admin";
-
+  // ------------------------------- Return ------------------------------------
   return {
     ...crud,
     users,
@@ -100,8 +102,6 @@ const useUserManagement = () => {
     isLoadingUsers,
     isUpdatingRole,
     currentUser,
-
-    // Handlers
     handleUpdateRole,
     isCurrentUser,
     getRoleBadgeVariant,

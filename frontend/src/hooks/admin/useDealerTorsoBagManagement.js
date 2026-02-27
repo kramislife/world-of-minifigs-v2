@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useEffect } from "react";
+import { useEffect, useMemo, useCallback } from "react";
 import {
   useGetDealerTorsoBagsQuery,
   useCreateDealerTorsoBagMutation,
@@ -39,14 +39,11 @@ const columns = [
 ];
 
 const useDealerTorsoBagManagement = () => {
-  const {
-    filePreview: itemPreviews,
-    setFilePreview: setItemPreviews,
-    fileInputRef,
-    resetFile,
-    handleFileChange: onFileChange,
-  } = useMediaPreview({ multiple: true });
+  // ------------------------------- Media ------------------------------------
+  const { filePreview, setFilePreview, fileInputRef, resetFile } =
+    useMediaPreview({ multiple: true });
 
+  // ------------------------------- Mutations ------------------------------------
   const [createBag, { isLoading: isCreating }] =
     useCreateDealerTorsoBagMutation();
   const [updateBag, { isLoading: isUpdating }] =
@@ -54,6 +51,7 @@ const useDealerTorsoBagManagement = () => {
   const [deleteBag, { isLoading: isDeleting }] =
     useDeleteDealerTorsoBagMutation();
 
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createBag,
@@ -63,7 +61,7 @@ const useDealerTorsoBagManagement = () => {
     onReset: resetFile,
   });
 
-  // Fetch data
+  // ------------------------------- Fetch ------------------------------------
   const { data: bagsResponse, isLoading: isLoadingBags } =
     useGetDealerTorsoBagsQuery({
       page: crud.page,
@@ -71,9 +69,7 @@ const useDealerTorsoBagManagement = () => {
       search: crud.search || undefined,
     });
 
-  // Fetch bundles to build targetBundleSize options
   const { data: bundlesData } = useGetDealerBundlesQuery({ limit: 100 });
-  const bundles = bundlesData?.bundles || [];
 
   const {
     items: bags,
@@ -81,12 +77,16 @@ const useDealerTorsoBagManagement = () => {
     totalPages,
   } = extractPaginatedData(bagsResponse, "bags");
 
-  // Sync totalItems back to crud hook for calculations
   useEffect(() => {
     crud.setTotalItems(totalItems);
-  }, [totalItems, crud]);
+  }, [totalItems]);
 
-  // Build target options from active bundles
+  // ------------------------------- Submit Mode ------------------------------------
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
+
+  // ------------------------------- Derived Values ------------------------------------
+  const bundles = bundlesData?.bundles || [];
+
   const targetBundleSizeOptions = useMemo(() => {
     if (!bundles.length) return [{ value: 100, label: "100 Minifigs (Base)" }];
 
@@ -96,6 +96,7 @@ const useDealerTorsoBagManagement = () => {
     const regularBundles = activeBundles.filter(
       (b) => (b.torsoBagType || "regular") === "regular",
     );
+
     if (regularBundles.length > 0) {
       const base = Math.min(...regularBundles.map((b) => b.minifigQuantity));
       sizes.add(base);
@@ -115,7 +116,6 @@ const useDealerTorsoBagManagement = () => {
       }));
   }, [bundles]);
 
-  // Derived validation values
   const targetSize = Number(crud.formData.targetBundleSize) || 100;
   const miscQuantity = getMiscQuantity(targetSize);
   const adminTarget = getAdminTarget(targetSize);
@@ -127,8 +127,7 @@ const useDealerTorsoBagManagement = () => {
     );
   }, [crud.formData.items]);
 
-  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
-
+  // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (bag) => {
     const existingItems =
       bag.items?.map((item) => ({
@@ -137,32 +136,34 @@ const useDealerTorsoBagManagement = () => {
         image: item.image,
       })) || [];
 
-    setItemPreviews(existingItems.map((item) => item.url));
+    setFilePreview(existingItems.map((item) => item.url));
+
     crud.openEdit(bag, {
-      bagName: bag.bagName,
+      bagName: bag.bagName || "",
       targetBundleSize: bag.targetBundleSize || 100,
-      isActive: bag.isActive,
+      isActive: bag.isActive !== false,
       items: existingItems,
     });
   };
 
-  // Custom file handler — uses shared validation but has domain-specific quantity limits
+  // ------------------------------- Media Handlers ------------------------------------
   const handleFileChange = useCallback(
     async (e) => {
       const files = Array.from(e.target.files || []);
-      if (files.length === 0) return;
+      if (!files.length) return;
 
       let tempTotal = currentTotal;
       let skippedCount = 0;
-
-      // Validate and read files, respecting quantity allocation limits
       const validFiles = [];
+
       for (const file of files) {
         if (tempTotal + 1 > adminTarget) {
           skippedCount++;
           continue;
         }
+
         if (!validateFile(file, { maxSizeMB: 5 })) continue;
+
         validFiles.push(file);
         tempTotal += 1;
       }
@@ -174,11 +175,11 @@ const useDealerTorsoBagManagement = () => {
         miscQuantity,
       );
 
-      if (validFiles.length === 0) return;
+      if (!validFiles.length) return;
 
       const dataUrls = await Promise.all(validFiles.map(readFileAsDataURL));
 
-      setItemPreviews((prev) => [...prev, ...dataUrls]);
+      setFilePreview((prev) => [...prev, ...dataUrls]);
 
       const newItems = dataUrls.map((url) => ({
         url,
@@ -191,63 +192,18 @@ const useDealerTorsoBagManagement = () => {
         items: [...prev.items, ...newItems],
       }));
     },
-    [
-      currentTotal,
-      adminTarget,
-      targetSize,
-      miscQuantity,
-      crud,
-      setItemPreviews,
-    ],
+    [currentTotal, adminTarget, targetSize, miscQuantity],
   );
-
-  const handleUpdateItemQuantity = (index, value) => {
-    const cleaned = value.toString().replace(/[^0-9]/g, "");
-
-    // Empty input — allow temporarily, will default to 1 on submit
-    if (cleaned === "") {
-      const updateMap = (items) =>
-        items.map((item, i) =>
-          i === index ? { ...item, quantity: "" } : item,
-        );
-      setItemPreviews((prev) => updateMap(prev));
-      crud.setFormData((prev) => ({ ...prev, items: updateMap(prev.items) }));
-      return;
-    }
-
-    const newValue = parseInt(cleaned, 10);
-    if (newValue < 1) return;
-
-    // Total allocation check
-    const otherItemsTotal = crud.formData.items.reduce(
-      (acc, item, i) =>
-        i === index ? acc : acc + (Number(item.quantity) || 1),
-      0,
-    );
-
-    if (!validateTorsoAllocation(otherItemsTotal, newValue, adminTarget))
-      return;
-
-    const updateMap = (items) =>
-      items.map((item, i) =>
-        i === index ? { ...item, quantity: newValue } : item,
-      );
-
-    setItemPreviews((prev) => updateMap(prev));
-    crud.setFormData((prev) => ({ ...prev, items: updateMap(prev.items) }));
-  };
 
   const handleRemoveFile = useCallback(
-    (index) => {
-      setItemPreviews((prev) => prev.filter((_, i) => i !== index));
-      crud.setFormData((prev) => ({
-        ...prev,
-        items: prev.items.filter((_, i) => i !== index),
-      }));
+    (index) => () => {
+      setFilePreview((prev) => prev.filter((_, i) => i !== index));
+      removeArrayItem("items", index)();
     },
-    [crud, setItemPreviews],
+    [setFilePreview],
   );
 
+  // ------------------------------- Submit Handler ------------------------------------
   const handleSubmit = async () => {
     if (
       !validateDealerTorsoBag(
@@ -280,9 +236,65 @@ const useDealerTorsoBagManagement = () => {
     await crud.submitForm(payload);
   };
 
+  // ------------------------------- Handlers ------------------------------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleArrayChange = (arrayName, index) => (e) => {
+    const value = e?.target ? e.target.value : e;
+    crud.setFormData((prev) => {
+      const newArray = [...(prev[arrayName] || [])];
+      newArray[index] = value;
+      return { ...prev, [arrayName]: newArray };
+    });
+  };
+
+  const removeArrayItem = (arrayName, index) => () => {
+    crud.setFormData((prev) => ({
+      ...prev,
+      [arrayName]: (prev[arrayName] || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleUpdateItemQuantity = (index) => (e) => {
+    const value = e?.target ? e.target.value : e;
+    const cleaned = value.toString().replace(/[^0-9]/g, "");
+    if (!cleaned) return;
+
+    const newValue = parseInt(cleaned, 10);
+    if (newValue < 1) return;
+
+    const otherItemsTotal = crud.formData.items.reduce(
+      (acc, item, i) =>
+        i === index ? acc : acc + (Number(item.quantity) || 1),
+      0,
+    );
+
+    if (!validateTorsoAllocation(otherItemsTotal, newValue, adminTarget))
+      return;
+
+    handleArrayChange(
+      "items",
+      index,
+    )({
+      ...crud.formData.items[index],
+      quantity: newValue,
+    });
+  };
+
+  // ------------------------------- Return ------------------------------------
   return {
     ...crud,
-    filePreviews: itemPreviews,
+    filePreview,
     fileInputRef,
     bags,
     totalItems,
@@ -295,13 +307,15 @@ const useDealerTorsoBagManagement = () => {
     isLoadingBags,
     isSubmitting,
     isDeleting,
-
-    // Handlers
     handleEdit,
     handleFileChange,
-    handleUpdateItemQuantity,
     handleRemoveFile,
+    handleUpdateItemQuantity,
     handleSubmit,
+    handleChange,
+    handleValueChange,
+    handleArrayChange,
+    removeArrayItem,
   };
 };
 

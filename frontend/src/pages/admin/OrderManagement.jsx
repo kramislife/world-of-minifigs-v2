@@ -15,7 +15,7 @@ import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import ViewAdminDialog from "@/components/table/ViewAdminDialog";
-import { formatCurrency, formatDate } from "@/utils/formatting";
+import { formatCurrency, formatDate, display } from "@/utils/formatting";
 import useOrderManagement from "@/hooks/admin/useOrderManagement";
 
 const OrderManagement = () => {
@@ -38,9 +38,9 @@ const OrderManagement = () => {
     carrier,
     trackingNumber,
     trackingLink,
-    isUpdatingStatus,
     cancelReason,
     cancelNotes,
+    isUpdatingStatus,
     viewModalOpen,
     viewOrder,
     orderReference,
@@ -63,11 +63,13 @@ const OrderManagement = () => {
 
   return (
     <div className="space-y-5">
+      {/* Admin Page Header */}
       <AdminManagementHeader
         title="Order Management"
         description="View and manage all orders placed by users"
       />
 
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search orders..."
         searchValue={search}
@@ -87,26 +89,41 @@ const OrderManagement = () => {
         isLoading={isLoadingOrders}
         renderRow={(order) => {
           const transitions = getAvailableTransitions(order.status);
+          const invoice =
+            order.payment?.stripeInvoiceNumber ||
+            order._id?.substring(0, 7) ||
+            "-";
 
           return (
             <>
+              {/* Invoice */}
               <TableCell maxWidth="140px" className="font-mono text-xs">
-                {order.payment?.stripeInvoiceNumber ||
-                  order._id?.substring(0, 7) ||
-                  "-"}
+                {invoice}
               </TableCell>
+
+              {/* Customer */}
               <TableCell maxWidth="180px">
                 {order.userId
-                  ? `${order.userId.firstName} ${order.userId.lastName}`
+                  ? `${display(order.userId.firstName)} ${display(
+                      order.userId.lastName,
+                    )}`
                   : "-"}
               </TableCell>
-              <TableCell maxWidth="220px">{order.email}</TableCell>
+
+              {/* Email */}
+              <TableCell maxWidth="220px">{display(order.email)}</TableCell>
+
+              {/* Recipient */}
               <TableCell maxWidth="180px">
-                {order.shipping?.address?.name || "-"}
+                {display(order.shipping?.address?.name)}
               </TableCell>
+
+              {/* Order Type */}
               <TableCell className="capitalize">
-                {order.orderType || "-"}
+                {display(order.orderType)}
               </TableCell>
+
+              {/* Total */}
               <TableCell>
                 {order.payment?.totalAmount ? (
                   <span className="font-semibold">
@@ -116,19 +133,27 @@ const OrderManagement = () => {
                   "-"
                 )}
               </TableCell>
+
+              {/* Status */}
               <TableCell>
                 <Badge variant="outline" className="capitalize">
-                  {order.status || "unknown"}
+                  {display(order.status) || "unknown"}
                 </Badge>
               </TableCell>
+
+              {/* ARN */}
               <TableCell maxWidth="200px" className="font-mono text-xs">
                 {order.refund?.status === "completed" && order.refund?.arn
                   ? order.refund.arn
                   : "—"}
               </TableCell>
+
+              {/* Created At */}
               <TableCell>
                 {order.createdAt ? formatDate(order.createdAt) : "-"}
               </TableCell>
+
+              {/* Actions */}
               <ActionsColumn
                 onView={() => handleView(order)}
                 onEdit={
@@ -155,7 +180,7 @@ const OrderManagement = () => {
         className="sm:max-w-lg"
       >
         <div className="space-y-4">
-          {/* Status select */}
+          {/* Status Select */}
           <div className="space-y-2">
             <Label>Update Status</Label>
             <Select value={newStatus} onValueChange={setNewStatus}>
@@ -172,7 +197,7 @@ const OrderManagement = () => {
             </Select>
           </div>
 
-          {/* Shipping fields (required for shipped) */}
+          {/* Shipping Fields */}
           {newStatus === "shipped" && (
             <>
               <div className="space-y-2">
@@ -183,6 +208,7 @@ const OrderManagement = () => {
                   placeholder="USPS, UPS, FedEx..."
                 />
               </div>
+
               <div className="space-y-2">
                 <Label>Tracking Number</Label>
                 <Input
@@ -191,6 +217,7 @@ const OrderManagement = () => {
                   placeholder="1Z999AA10123456784"
                 />
               </div>
+
               <div className="space-y-2">
                 <Label>Tracking Link</Label>
                 <Input
@@ -202,7 +229,7 @@ const OrderManagement = () => {
             </>
           )}
 
-          {/* Cancellation fields (required for cancelled) */}
+          {/* Cancellation Fields */}
           {newStatus === "cancelled" && (
             <>
               <div className="space-y-2">
@@ -214,6 +241,7 @@ const OrderManagement = () => {
                   disabled={isUpdatingStatus}
                 />
               </div>
+
               <div className="space-y-2">
                 <Label>Additional notes</Label>
                 <Textarea
@@ -224,6 +252,7 @@ const OrderManagement = () => {
                   rows={3}
                 />
               </div>
+
               <p className="text-xs text-muted-foreground">
                 A reason is required. This will initiate a refund.
               </p>

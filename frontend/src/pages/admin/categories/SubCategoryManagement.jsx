@@ -1,9 +1,7 @@
 import React from "react";
-import { formatDate } from "@/utils/formatting";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -15,15 +13,17 @@ import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
+import StatusBadge from "@/components/shared/StatusBadge";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
+import { formatDate, display } from "@/utils/formatting";
 import useSubCategoryManagement from "@/hooks/admin/useSubCategoryManagement";
 
 const SubCategoryManagement = () => {
   const {
     dialogOpen,
     deleteDialogOpen,
-    selectedSubCategory,
+    selectedItem,
     dialogMode,
     formData,
     page,
@@ -43,8 +43,7 @@ const SubCategoryManagement = () => {
     isSubmitting,
     isDeleting,
     handleChange,
-    handleCategoryChange,
-    handleSwitchChange,
+    handleValueChange,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -59,6 +58,7 @@ const SubCategoryManagement = () => {
 
   return (
     <div className="space-y-5">
+      {/* Admin Page Header */}
       <AdminManagementHeader
         title="Sub-category Management"
         description="Manage product sub-categories in your store"
@@ -66,6 +66,7 @@ const SubCategoryManagement = () => {
         onAction={handleAdd}
       />
 
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search subcategories..."
         searchValue={search}
@@ -85,28 +86,33 @@ const SubCategoryManagement = () => {
         isLoading={isLoadingSubCategories}
         renderRow={(subCategory) => (
           <>
+            {/* Sub-category Name */}
             <TableCell maxWidth="200px">
-              {subCategory.subCategoryName}
+              {display(subCategory.subCategoryName)}
             </TableCell>
+
+            {/* Parent Category */}
             <TableCell maxWidth="200px">
-              {subCategory.categoryId?.categoryName || "-"}
+              {display(subCategory.categoryId?.categoryName)}
             </TableCell>
+
+            {/* Description */}
             <TableCell maxWidth="300px">
-              {subCategory.description || "-"}
+              {display(subCategory.description)}
             </TableCell>
+
+            {/* Status */}
             <TableCell>
-              {subCategory.isActive ? (
-                <Badge variant="accent">Active</Badge>
-              ) : (
-                <Badge variant="destructive">Inactive</Badge>
-              )}
+              <StatusBadge isActive={subCategory.isActive} />
             </TableCell>
-            <TableCell>
-              {subCategory.createdAt ? formatDate(subCategory.createdAt) : "-"}
-            </TableCell>
-            <TableCell>
-              {subCategory.updatedAt ? formatDate(subCategory.updatedAt) : "-"}
-            </TableCell>
+
+            {/* Created At */}
+            <TableCell>{formatDate(subCategory.createdAt)}</TableCell>
+
+            {/* Updated At */}
+            <TableCell>{formatDate(subCategory.updatedAt)}</TableCell>
+
+            {/* Actions */}
             <ActionsColumn
               onEdit={() => handleEdit(subCategory)}
               onDelete={() => handleDelete(subCategory)}
@@ -115,14 +121,12 @@ const SubCategoryManagement = () => {
         )}
       />
 
-      {/* Add/Edit Sub-category Dialog */}
+      {/* Add/Update Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={
-          dialogMode === "edit" ? "Edit Sub-category" : "Add New Sub-category"
-        }
+        title={dialogMode === "edit" ? "Edit Sub-category" : "Add Sub-category"}
         description={
           dialogMode === "edit"
             ? "Update the sub-category details."
@@ -134,81 +138,83 @@ const SubCategoryManagement = () => {
           dialogMode === "edit" ? "Update Sub-category" : "Create Sub-category"
         }
       >
-        <div className="space-y-2">
-          <Label htmlFor="category">Category</Label>
-          <Select
-            value={formData.category}
-            onValueChange={handleCategoryChange}
-            disabled={isSubmitting}
-          >
-            <SelectTrigger id="category" className="w-full">
-              <SelectValue placeholder="Select a category" />
-            </SelectTrigger>
-            <SelectContent>
-              {isLoadingCategories ? (
-                <SelectItem value="loading" disabled>
-                  Loading categories...
-                </SelectItem>
-              ) : categories.length === 0 ? (
-                <SelectItem value="empty" disabled>
-                  No categories available
-                </SelectItem>
-              ) : (
-                categories.map((category) => (
-                  <SelectItem
-                    key={category._id || category.id}
-                    value={category._id || category.id}
-                  >
-                    {category.categoryName}
+        <div className="space-y-4">
+          {/* Category Select */}
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <Select
+              value={formData.category}
+              onValueChange={handleValueChange("category")}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger id="category" className="w-full">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingCategories ? (
+                  <SelectItem value="loading" disabled>
+                    Loading categories...
                   </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-        </div>
+                ) : categories.length === 0 ? (
+                  <SelectItem value="empty" disabled>
+                    No categories available
+                  </SelectItem>
+                ) : (
+                  categories.map((category) => (
+                    <SelectItem key={category._id} value={category._id}>
+                      {category.categoryName}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="subCategoryName">Sub-category Name</Label>
-          <Input
-            id="subCategoryName"
-            name="subCategoryName"
-            type="text"
-            placeholder="e.g., Cars, Trucks, Houses"
-            value={formData.subCategoryName}
-            onChange={handleChange}
-            required
+          {/* Sub-category Name */}
+          <div className="space-y-2">
+            <Label htmlFor="subCategoryName">Sub-category Name</Label>
+            <Input
+              id="subCategoryName"
+              name="subCategoryName"
+              placeholder="e.g., Cars, Trucks, Houses"
+              value={formData.subCategoryName}
+              onChange={handleChange}
+              required
+              disabled={isSubmitting}
+            />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              name="description"
+              placeholder="Enter sub-category description (optional)"
+              value={formData.description}
+              onChange={handleChange}
+              disabled={isSubmitting}
+              rows={4}
+            />
+          </div>
+
+          {/* Visibility */}
+          <AdminSwitchField
+            id="isActive"
+            label="Visibility"
+            description="When disabled, this sub-category will not appear in public listings"
+            checked={formData.isActive}
+            onChange={handleValueChange("isActive")}
             disabled={isSubmitting}
           />
         </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            id="description"
-            name="description"
-            placeholder="Enter sub-category description (optional)"
-            value={formData.description}
-            onChange={handleChange}
-            disabled={isSubmitting}
-            rows={4}
-          />
-        </div>
-
-        <AdminSwitchField
-          id="isActive"
-          label="Visibility"
-          description="When disabled, this sub-category will not appear in product filters or public listings"
-          checked={formData.isActive}
-          onChange={handleSwitchChange("isActive")}
-          disabled={isSubmitting}
-        />
       </AddUpdateItemDialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedSubCategory?.subCategoryName || ""}
+        itemName={display(selectedItem?.subCategoryName)}
         title="Delete Sub-category"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

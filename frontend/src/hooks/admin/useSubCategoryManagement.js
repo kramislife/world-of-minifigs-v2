@@ -6,9 +6,9 @@ import {
   useDeleteSubCategoryMutation,
   useGetCategoriesQuery,
 } from "@/redux/api/adminApi";
-import { sanitizePayload } from "@/utils/formatting";
-import { validateSubCategory } from "@/utils/validation";
 import { extractPaginatedData } from "@/utils/apiHelpers";
+import { sanitizeString } from "@/utils/formatting";
+import { validateSubCategory } from "@/utils/validation";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const initialFormData = {
@@ -29,6 +29,7 @@ const columns = [
 ];
 
 const useSubCategoryManagement = () => {
+  // ------------------------------- Mutations ------------------------------------
   const [createSubCategory, { isLoading: isCreating }] =
     useCreateSubCategoryMutation();
   const [updateSubCategory, { isLoading: isUpdating }] =
@@ -36,6 +37,7 @@ const useSubCategoryManagement = () => {
   const [deleteSubCategory, { isLoading: isDeleting }] =
     useDeleteSubCategoryMutation();
 
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createSubCategory,
@@ -44,59 +46,72 @@ const useSubCategoryManagement = () => {
     entityName: "sub-category",
   });
 
-  // Fetch data
+  // ------------------------------- Fetch ------------------------------------
+  const { data: categoriesData, isLoading: isLoadingCategories } =
+    useGetCategoriesQuery();
+
   const { data: subCategoriesData, isLoading: isLoadingSubCategories } =
     useGetSubCategoriesQuery({
       page: crud.page,
       limit: crud.limit,
       search: crud.search || undefined,
     });
-  const { data: categoriesData, isLoading: isLoadingCategories } =
-    useGetCategoriesQuery();
 
   const {
     items: subCategories,
     totalItems,
     totalPages,
   } = extractPaginatedData(subCategoriesData, "subCategories");
+
   const categories = categoriesData?.categories || [];
 
-  // Sync totalItems back to crud hook for calculations
   useEffect(() => {
     crud.setTotalItems(totalItems);
-  }, [totalItems, crud]);
+  }, [totalItems]);
 
-  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
+  // ------------------------------- Submit Mode ------------------------------------
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
-  const handleCategoryChange = (value) => {
-    crud.setFormData((prev) => ({ ...prev, category: value }));
-  };
-
+  // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (subCategory) => {
     crud.openEdit(subCategory, {
+      category: subCategory.categoryId?._id || "",
       subCategoryName: subCategory.subCategoryName || "",
       description: subCategory.description || "",
-      category: subCategory.categoryId?._id || subCategory.categoryId || "",
       isActive: subCategory.isActive !== false,
     });
   };
 
+  // ------------------------------- Submit Handler ------------------------------------
   const handleSubmit = async () => {
     if (!validateSubCategory(crud.formData)) return;
 
     const payload = {
-      subCategoryName: crud.formData.subCategoryName,
-      description: crud.formData.description,
       category: crud.formData.category,
+      subCategoryName: sanitizeString(crud.formData.subCategoryName),
+      description: sanitizeString(crud.formData.description),
       isActive: crud.formData.isActive,
     };
 
     await crud.submitForm(payload);
   };
 
+  // ------------------------------- Handlers ------------------------------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // ------------------------------- Return ------------------------------------
   return {
     ...crud,
-    selectedSubCategory: crud.selectedItem,
     subCategories,
     totalItems,
     totalPages,
@@ -106,11 +121,10 @@ const useSubCategoryManagement = () => {
     isLoadingCategories,
     isSubmitting,
     isDeleting,
-
-    // Handlers
-    handleCategoryChange,
-    handleSubmit,
     handleEdit,
+    handleSubmit,
+    handleChange,
+    handleValueChange,
   };
 };
 
