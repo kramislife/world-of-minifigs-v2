@@ -1,5 +1,4 @@
 import React from "react";
-import { formatDate } from "@/utils/formatting";
 import { Upload, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,11 +14,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
+import StatusBadge from "@/components/shared/StatusBadge";
 import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
-import { formatCurrency } from "@/utils/formatting";
+import { formatDate, formatCurrency, display } from "@/utils/formatting";
 import useProductManagement from "@/hooks/admin/useProductManagement";
 
 const ProductManagement = () => {
@@ -73,10 +73,14 @@ const ProductManagement = () => {
     setProductType,
     setDeleteDialogOpen,
     setFormData,
+    handleArrayChange,
+    addArrayItem,
+    removeArrayItem,
   } = useProductManagement();
 
   return (
     <div className="space-y-5">
+      {/* Admin Page Header */}
       <AdminManagementHeader
         title="Product Management"
         description="Manage products in your store"
@@ -84,6 +88,7 @@ const ProductManagement = () => {
         onAction={handleAdd}
       />
 
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search products..."
         searchValue={search}
@@ -103,52 +108,43 @@ const ProductManagement = () => {
         isLoading={isLoadingProducts}
         renderRow={(product) => (
           <>
-            <TableCell maxWidth="200px" className="font-medium">
-              {product.productName}
+            {/* Product Name */}
+            <TableCell maxWidth="220px" className="font-medium">
+              {display(product.productName)}
             </TableCell>
-            <TableCell>
-              <Badge
-                variant={
-                  product.productType === "variant" ? "secondary" : "accent"
-                }
-              >
-                {product.productType === "variant"
-                  ? `Variant (${product.variants?.length || 0})`
-                  : "Standalone"}
-              </Badge>
+
+            {/* Product Type */}
+            <TableCell className="capitalize">{product.productType}</TableCell>
+
+            {/* Price */}
+            <TableCell className="text-success dark:text-accent font-bold">
+              ${formatCurrency(product.price)}
             </TableCell>
-            <TableCell>
-              {product.price ? (
-                <span className="font-semibold">
-                  ${formatCurrency(product.price)}
-                </span>
-              ) : (
-                "-"
-              )}
-            </TableCell>
+
+            {/* Discount */}
             <TableCell>
               {product.discount > 0 ? `${product.discount}%` : "-"}
             </TableCell>
+
+            {/* Discount Price */}
             <TableCell>
-              {product.discountPrice ? (
-                <Badge variant="success">
-                  ${formatCurrency(product.discountPrice)}
-                </Badge>
-              ) : (
-                "-"
-              )}
+              {product.discountPrice > 0
+                ? `$${formatCurrency(product.discountPrice)}`
+                : "-"}
             </TableCell>
+
+            {/* Status */}
             <TableCell>
-              <Badge variant={product.isActive ? "success" : "destructive"}>
-                {product.isActive ? "Active" : "Inactive"}
-              </Badge>
+              <StatusBadge isActive={product.isActive} />
             </TableCell>
-            <TableCell>
-              {product.createdAt ? formatDate(product.createdAt) : "-"}
-            </TableCell>
-            <TableCell>
-              {product.updatedAt ? formatDate(product.updatedAt) : "-"}
-            </TableCell>
+
+            {/* Created At */}
+            <TableCell>{formatDate(product.createdAt)}</TableCell>
+
+            {/* Updated At */}
+            <TableCell>{formatDate(product.updatedAt)}</TableCell>
+
+            {/* Actions */}
             <ActionsColumn
               onEdit={() => handleEdit(product)}
               onDelete={() => handleDelete(product)}
@@ -157,12 +153,12 @@ const ProductManagement = () => {
         )}
       />
 
-      {/* Add/Edit Product Dialog */}
+      {/* Add/Update Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Product" : "Add New Product"}
+        title={dialogMode === "edit" ? "Edit Product" : "Add Product"}
         description={
           dialogMode === "edit"
             ? "Update the product details."
@@ -225,7 +221,7 @@ const ProductManagement = () => {
                     <Input
                       id="partId"
                       name="partId"
-                      placeholder="Enter part ID"
+                      placeholder="e.g. 12345"
                       value={formData.partId}
                       onChange={handleChange}
                       disabled={isSubmitting}
@@ -236,7 +232,7 @@ const ProductManagement = () => {
                     <Input
                       id="itemId"
                       name="itemId"
-                      placeholder="Enter item ID"
+                      placeholder="e.g. ITEM-001"
                       value={formData.itemId}
                       onChange={handleChange}
                       required
@@ -244,8 +240,9 @@ const ProductManagement = () => {
                     />
                   </div>
                 </div>
+
                 <div
-                  className={`grid gap-2 ${formData.showSecondaryColor ? "grid-cols-5" : "grid-cols-4"}`}
+                  className={`grid gap-3 ${formData.showSecondaryColor ? "grid-cols-1 sm:grid-cols-5" : "grid-cols-1 sm:grid-cols-4"}`}
                 >
                   <div className="space-y-2">
                     <Label htmlFor="price">Price</Label>
@@ -268,7 +265,7 @@ const ProductManagement = () => {
                       id="discount"
                       name="discount"
                       type="number"
-                      step="0.01"
+                      step="0.1"
                       min="0"
                       max="100"
                       placeholder="0"
@@ -313,13 +310,11 @@ const ProductManagement = () => {
                     </div>
                     <Select
                       value={formData.colorId || ""}
-                      onValueChange={(value) =>
-                        handleSelectChange("colorId", value)
-                      }
+                      onValueChange={handleSelectChange("colorId")}
                       disabled={isSubmitting}
                     >
                       <SelectTrigger id="colorId" className="w-full">
-                        <SelectValue placeholder="Select color" />
+                        <SelectValue placeholder="Select Color" />
                       </SelectTrigger>
                       <SelectContent>
                         {colors.map((color) => (
@@ -329,7 +324,7 @@ const ProductManagement = () => {
                           >
                             <div className="flex items-center gap-2">
                               <div
-                                className="size-4 rounded-md shrink-0"
+                                className="size-3.5 rounded-full ring-1 ring-border shrink-0"
                                 style={{
                                   backgroundColor: color.hexCode || "#000",
                                 }}
@@ -342,13 +337,11 @@ const ProductManagement = () => {
                     </Select>
                   </div>
 
-                  {/* Secondary Color (shown when toggle is active) */}
+                  {/* Secondary Color */}
                   {formData.showSecondaryColor && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <Label htmlFor="secondaryColorId">
-                          Secondary Color
-                        </Label>
+                        <Label htmlFor="secondaryColorId">Secondary</Label>
                         <Button
                           type="button"
                           variant="link"
@@ -363,18 +356,16 @@ const ProductManagement = () => {
                           }
                           disabled={isSubmitting}
                         >
-                          <Trash2 className="size-4" />
+                          Remove
                         </Button>
                       </div>
                       <Select
                         value={formData.secondaryColorId || ""}
-                        onValueChange={(value) =>
-                          handleSelectChange("secondaryColorId", value)
-                        }
+                        onValueChange={handleSelectChange("secondaryColorId")}
                         disabled={isSubmitting}
                       >
                         <SelectTrigger id="secondaryColorId" className="w-full">
-                          <SelectValue placeholder="Select secondary color" />
+                          <SelectValue placeholder="Secondary" />
                         </SelectTrigger>
                         <SelectContent>
                           {colors.map((color) => (
@@ -384,7 +375,7 @@ const ProductManagement = () => {
                             >
                               <div className="flex items-center gap-2">
                                 <div
-                                  className="size-4 rounded-md shrink-0"
+                                  className="size-3.5 rounded-full ring-1 ring-border shrink-0"
                                   style={{
                                     backgroundColor: color.hexCode || "#000",
                                   }}
@@ -461,12 +452,7 @@ const ProductManagement = () => {
                   variant="link"
                   size="sm"
                   className="px-0 h-auto"
-                  onClick={() => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      descriptions: [...prev.descriptions, ""],
-                    }));
-                  }}
+                  onClick={addArrayItem("descriptions")}
                   disabled={isSubmitting}
                 >
                   Add Description
@@ -478,14 +464,7 @@ const ProductManagement = () => {
                 <Textarea
                   id={`description-${index}`}
                   value={desc}
-                  onChange={(e) => {
-                    const newDescriptions = [...formData.descriptions];
-                    newDescriptions[index] = e.target.value;
-                    setFormData((prev) => ({
-                      ...prev,
-                      descriptions: newDescriptions,
-                    }));
-                  }}
+                  onChange={handleArrayChange("descriptions", index)}
                   placeholder={
                     index === 0
                       ? "Main description (required)"
@@ -498,19 +477,12 @@ const ProductManagement = () => {
                 {index > 0 && (
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="shrink-0 text-destructive hover:text-destructive"
-                    onClick={() => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        descriptions: prev.descriptions.filter(
-                          (_, i) => i !== index,
-                        ),
-                      }));
-                    }}
+                    size="icon-sm"
+                    className="shrink-0 text-destructive hover:bg-destructive/10"
+                    onClick={removeArrayItem("descriptions", index)}
                     disabled={isSubmitting}
                   >
-                    <X className="size-5" />
+                    <X className="size-4" />
                   </Button>
                 )}
               </div>
@@ -545,8 +517,8 @@ const ProductManagement = () => {
                       <Button
                         type="button"
                         variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemoveVariant(variantIndex)}
+                        size="icon-sm"
+                        onClick={handleRemoveVariant(variantIndex)}
                         disabled={isSubmitting || variants.length === 1}
                         className="text-destructive hover:text-destructive"
                       >
@@ -555,7 +527,7 @@ const ProductManagement = () => {
                     </div>
 
                     <div
-                      className={`grid gap-2 ${variant.showSecondaryColor ? "grid-cols-4" : "grid-cols-3"}`}
+                      className={`grid gap-3 ${variant.showSecondaryColor ? "grid-cols-1 sm:grid-cols-4" : "grid-cols-1 sm:grid-cols-3"}`}
                     >
                       <div className="space-y-2">
                         <Label htmlFor={`variant-itemId-${variantIndex}`}>
@@ -563,15 +535,9 @@ const ProductManagement = () => {
                         </Label>
                         <Input
                           id={`variant-itemId-${variantIndex}`}
-                          placeholder="Enter item ID"
+                          placeholder="ITEM-001"
                           value={variant.itemId}
-                          onChange={(e) =>
-                            handleVariantChange(
-                              variantIndex,
-                              "itemId",
-                              e.target.value,
-                            )
-                          }
+                          onChange={handleVariantChange(variantIndex, "itemId")}
                           required
                           disabled={isSubmitting}
                         />
@@ -586,13 +552,7 @@ const ProductManagement = () => {
                           min="0"
                           placeholder="0"
                           value={variant.stock}
-                          onChange={(e) =>
-                            handleVariantChange(
-                              variantIndex,
-                              "stock",
-                              e.target.value,
-                            )
-                          }
+                          onChange={handleVariantChange(variantIndex, "stock")}
                           disabled={isSubmitting}
                         />
                       </div>
@@ -611,8 +571,7 @@ const ProductManagement = () => {
                                 handleVariantChange(
                                   variantIndex,
                                   "showSecondaryColor",
-                                  true,
-                                )
+                                )(true)
                               }
                               disabled={isSubmitting}
                             >
@@ -622,16 +581,17 @@ const ProductManagement = () => {
                         </div>
                         <Select
                           value={variant.colorId || ""}
-                          onValueChange={(value) =>
-                            handleVariantChange(variantIndex, "colorId", value)
-                          }
+                          onValueChange={handleVariantChange(
+                            variantIndex,
+                            "colorId",
+                          )}
                           disabled={isSubmitting}
                         >
                           <SelectTrigger
                             id={`variant-colorId-${variantIndex}`}
                             className="w-full"
                           >
-                            <SelectValue placeholder="Select color" />
+                            <SelectValue placeholder="Select" />
                           </SelectTrigger>
                           <SelectContent>
                             {colors.map((color) => (
@@ -641,7 +601,7 @@ const ProductManagement = () => {
                               >
                                 <div className="flex items-center gap-2">
                                   <div
-                                    className="size-4 rounded-md shrink-0"
+                                    className="size-3 rounded-full ring-1 ring-border shrink-0"
                                     style={{
                                       backgroundColor: color.hexCode || "#000",
                                     }}
@@ -654,14 +614,13 @@ const ProductManagement = () => {
                         </Select>
                       </div>
 
-                      {/* Variant Secondary Color (shown when toggle is active) */}
                       {variant.showSecondaryColor && (
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <Label
                               htmlFor={`variant-secondaryColorId-${variantIndex}`}
                             >
-                              Secondary Color
+                              Secondary
                             </Label>
                             <Button
                               type="button"
@@ -672,13 +631,11 @@ const ProductManagement = () => {
                                 handleVariantChange(
                                   variantIndex,
                                   "secondaryColorId",
-                                  "",
-                                );
+                                )("");
                                 handleVariantChange(
                                   variantIndex,
                                   "showSecondaryColor",
-                                  false,
-                                );
+                                )(false);
                               }}
                               disabled={isSubmitting}
                             >
@@ -687,13 +644,10 @@ const ProductManagement = () => {
                           </div>
                           <Select
                             value={variant.secondaryColorId || ""}
-                            onValueChange={(value) =>
-                              handleVariantChange(
-                                variantIndex,
-                                "secondaryColorId",
-                                value,
-                              )
-                            }
+                            onValueChange={handleVariantChange(
+                              variantIndex,
+                              "secondaryColorId",
+                            )}
                             disabled={isSubmitting}
                           >
                             <SelectTrigger
@@ -727,13 +681,11 @@ const ProductManagement = () => {
                     </div>
 
                     {/* Variant Image */}
-                    <div className="space-y-3">
-                      <Label>Image</Label>
-                      <div
-                        className={`grid gap-3 ${
-                          variant.imagePreview ? "grid-cols-1" : "grid-cols-1"
-                        }`}
-                      >
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
+                        Variant Image
+                      </Label>
+                      <div className="grid grid-cols-1">
                         {variant.imagePreview ? (
                           <div className="relative border rounded-lg overflow-hidden">
                             <img
@@ -744,11 +696,9 @@ const ProductManagement = () => {
                             <Button
                               type="button"
                               variant="destructive"
-                              size="icon"
+                              size="icon-sm"
                               className="absolute top-1 right-1"
-                              onClick={() =>
-                                handleRemoveVariantImage(variantIndex)
-                              }
+                              onClick={handleRemoveVariantImage(variantIndex)}
                               disabled={isSubmitting}
                             >
                               <X className="size-4" />
@@ -771,9 +721,7 @@ const ProductManagement = () => {
                               accept="image/*"
                               className="hidden"
                               id={`variant-image-${variantIndex}`}
-                              onChange={(e) =>
-                                handleVariantImageChange(variantIndex, e)
-                              }
+                              onChange={handleVariantImageChange(variantIndex)}
                               disabled={isSubmitting}
                             />
                           </label>
@@ -793,77 +741,75 @@ const ProductManagement = () => {
             {/* Categories with Sub-categories */}
             {categoriesWithSubs.filter((c) => c.subCategories.length > 0)
               .length > 0 && (
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  {categoriesWithSubs
-                    .filter((category) => category.subCategories.length > 0)
-                    .map((category) => {
-                      const categoryId = category._id || category.id;
-                      return (
-                        <div
-                          key={categoryId}
-                          className="space-y-2 border rounded-md p-3"
-                        >
-                          <Label className="pb-2 text-primary dark:text-accent">
-                            {category.categoryName}
-                          </Label>
-                          <div className="grid grid-cols-4 gap-3 pl-2">
-                            {category.subCategories.map((sub) => {
-                              const subId = sub._id || sub.id;
-                              const isChecked =
-                                formData.subCategoryIds.includes(subId);
-                              return (
-                                <div
-                                  key={subId}
-                                  className="flex items-center space-x-2"
-                                >
-                                  <Checkbox
-                                    id={`subcategory-${subId}`}
-                                    checked={isChecked}
-                                    onCheckedChange={() => {
-                                      setFormData((prev) => {
-                                        const newSubIds = isChecked
-                                          ? prev.subCategoryIds.filter(
-                                              (id) => id !== subId,
-                                            )
-                                          : [...prev.subCategoryIds, subId];
-                                        // Auto-manage parent categoryId
-                                        const hasAnySub =
-                                          category.subCategories.some((s) =>
-                                            newSubIds.includes(s._id || s.id),
+              <div className="space-y-3">
+                {categoriesWithSubs
+                  .filter((category) => category.subCategories.length > 0)
+                  .map((category) => {
+                    const categoryId = category._id || category.id;
+                    return (
+                      <div
+                        key={categoryId}
+                        className="space-y-2 border rounded-md p-3"
+                      >
+                        <Label className="pb-2 text-primary dark:text-accent">
+                          {category.categoryName}
+                        </Label>
+                        <div className="grid grid-cols-4 gap-3 pl-2">
+                          {category.subCategories.map((sub) => {
+                            const subId = sub._id || sub.id;
+                            const isChecked =
+                              formData.subCategoryIds.includes(subId);
+                            return (
+                              <div
+                                key={subId}
+                                className="flex items-center space-x-2"
+                              >
+                                <Checkbox
+                                  id={`subcategory-${subId}`}
+                                  checked={isChecked}
+                                  onCheckedChange={() => {
+                                    setFormData((prev) => {
+                                      const newSubIds = isChecked
+                                        ? prev.subCategoryIds.filter(
+                                            (id) => id !== subId,
+                                          )
+                                        : [...prev.subCategoryIds, subId];
+
+                                      const hasAnySub =
+                                        category.subCategories.some((s) =>
+                                          newSubIds.includes(s._id || s.id),
+                                        );
+
+                                      const newCategoryIds = hasAnySub
+                                        ? prev.categoryIds.includes(categoryId)
+                                          ? prev.categoryIds
+                                          : [...prev.categoryIds, categoryId]
+                                        : prev.categoryIds.filter(
+                                            (id) => id !== categoryId,
                                           );
-                                        const newCategoryIds = hasAnySub
-                                          ? prev.categoryIds.includes(
-                                              categoryId,
-                                            )
-                                            ? prev.categoryIds
-                                            : [...prev.categoryIds, categoryId]
-                                          : prev.categoryIds.filter(
-                                              (id) => id !== categoryId,
-                                            );
-                                        return {
-                                          ...prev,
-                                          subCategoryIds: newSubIds,
-                                          categoryIds: newCategoryIds,
-                                        };
-                                      });
-                                    }}
-                                    disabled={isSubmitting}
-                                  />
-                                  <Label
-                                    htmlFor={`subcategory-${subId}`}
-                                    className="cursor-pointer text-sm"
-                                  >
-                                    {sub.subCategoryName}
-                                  </Label>
-                                </div>
-                              );
-                            })}
-                          </div>
+
+                                      return {
+                                        ...prev,
+                                        subCategoryIds: newSubIds,
+                                        categoryIds: newCategoryIds,
+                                      };
+                                    });
+                                  }}
+                                  disabled={isSubmitting}
+                                />
+                                <Label
+                                  htmlFor={`subcategory-${subId}`}
+                                  className="cursor-pointer text-sm"
+                                >
+                                  {sub.subCategoryName}
+                                </Label>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
-                </div>
+                      </div>
+                    );
+                  })}
               </div>
             )}
 
@@ -885,7 +831,7 @@ const ProductManagement = () => {
                             id={`category-${categoryId}`}
                             checked={formData.categoryIds.includes(categoryId)}
                             onCheckedChange={() =>
-                              handleMultiSelectChange("categoryIds", categoryId)
+                              handleMultiSelectChange("categoryIds")(categoryId)
                             }
                             disabled={isSubmitting}
                           />
@@ -910,82 +856,80 @@ const ProductManagement = () => {
             {/* Collections with Sub-collections */}
             {collectionsWithSubs.filter((c) => c.subCollections.length > 0)
               .length > 0 && (
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  {collectionsWithSubs
-                    .filter(
-                      (collection) => collection.subCollections.length > 0,
-                    )
-                    .map((collection) => {
-                      const collectionId = collection._id || collection.id;
-                      return (
-                        <div
-                          key={collectionId}
-                          className="space-y-2 border rounded-md p-3"
-                        >
-                          <Label className="pb-2 text-primary dark:text-accent">
-                            {collection.collectionName}
-                          </Label>
-                          <div className="grid grid-cols-4 gap-3 pl-2">
-                            {collection.subCollections.map((sub) => {
-                              const subId = sub._id || sub.id;
-                              const isChecked =
-                                formData.subCollectionIds.includes(subId);
-                              return (
-                                <div
-                                  key={subId}
-                                  className="flex items-center space-x-2"
-                                >
-                                  <Checkbox
-                                    id={`subcollection-${subId}`}
-                                    checked={isChecked}
-                                    onCheckedChange={() => {
-                                      setFormData((prev) => {
-                                        const newSubIds = isChecked
-                                          ? prev.subCollectionIds.filter(
-                                              (id) => id !== subId,
-                                            )
-                                          : [...prev.subCollectionIds, subId];
-                                        // Auto-manage parent collectionId
-                                        const hasAnySub =
-                                          collection.subCollections.some((s) =>
-                                            newSubIds.includes(s._id || s.id),
-                                          );
-                                        const newCollectionIds = hasAnySub
-                                          ? prev.collectionIds.includes(
+              <div className="space-y-3">
+                {collectionsWithSubs
+                  .filter((collection) => collection.subCollections.length > 0)
+                  .map((collection) => {
+                    const collectionId = collection._id || collection.id;
+                    return (
+                      <div
+                        key={collectionId}
+                        className="space-y-2 border rounded-md p-3"
+                      >
+                        <Label className="pb-2 text-primary dark:text-accent">
+                          {collection.collectionName}
+                        </Label>
+                        <div className="grid grid-cols-4 gap-3 pl-2">
+                          {collection.subCollections.map((sub) => {
+                            const subId = sub._id || sub.id;
+                            const isChecked =
+                              formData.subCollectionIds.includes(subId);
+                            return (
+                              <div
+                                key={subId}
+                                className="flex items-center space-x-2"
+                              >
+                                <Checkbox
+                                  id={`subcollection-${subId}`}
+                                  checked={isChecked}
+                                  onCheckedChange={() => {
+                                    setFormData((prev) => {
+                                      const newSubIds = isChecked
+                                        ? prev.subCollectionIds.filter(
+                                            (id) => id !== subId,
+                                          )
+                                        : [...prev.subCollectionIds, subId];
+
+                                      const hasAnySub =
+                                        collection.subCollections.some((s) =>
+                                          newSubIds.includes(s._id || s.id),
+                                        );
+
+                                      const newCollectionIds = hasAnySub
+                                        ? prev.collectionIds.includes(
+                                            collectionId,
+                                          )
+                                          ? prev.collectionIds
+                                          : [
+                                              ...prev.collectionIds,
                                               collectionId,
-                                            )
-                                            ? prev.collectionIds
-                                            : [
-                                                ...prev.collectionIds,
-                                                collectionId,
-                                              ]
-                                          : prev.collectionIds.filter(
-                                              (id) => id !== collectionId,
-                                            );
-                                        return {
-                                          ...prev,
-                                          subCollectionIds: newSubIds,
-                                          collectionIds: newCollectionIds,
-                                        };
-                                      });
-                                    }}
-                                    disabled={isSubmitting}
-                                  />
-                                  <Label
-                                    htmlFor={`subcollection-${subId}`}
-                                    className="cursor-pointer text-sm"
-                                  >
-                                    {sub.subCollectionName}
-                                  </Label>
-                                </div>
-                              );
-                            })}
-                          </div>
+                                            ]
+                                        : prev.collectionIds.filter(
+                                            (id) => id !== collectionId,
+                                          );
+
+                                      return {
+                                        ...prev,
+                                        subCollectionIds: newSubIds,
+                                        collectionIds: newCollectionIds,
+                                      };
+                                    });
+                                  }}
+                                  disabled={isSubmitting}
+                                />
+                                <Label
+                                  htmlFor={`subcollection-${subId}`}
+                                  className="cursor-pointer text-sm"
+                                >
+                                  {sub.subCollectionName}
+                                </Label>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
-                </div>
+                      </div>
+                    );
+                  })}
               </div>
             )}
 
@@ -1011,8 +955,7 @@ const ProductManagement = () => {
                               collectionId,
                             )}
                             onCheckedChange={() =>
-                              handleMultiSelectChange(
-                                "collectionIds",
+                              handleMultiSelectChange("collectionIds")(
                                 collectionId,
                               )
                             }
@@ -1107,7 +1050,7 @@ const ProductManagement = () => {
                     variant={isSelected ? "default" : "outline"}
                     size="sm"
                     onClick={() =>
-                      handleMultiSelectChange("skillLevelIds", skillId)
+                      handleMultiSelectChange("skillLevelIds")(skillId)
                     }
                     disabled={isSubmitting}
                     className="w-full shadow-none"
@@ -1161,7 +1104,7 @@ const ProductManagement = () => {
               </div>
               <div
                 className={`grid gap-3 ${
-                  imagePreviews.length > 0 ? "grid-cols-3" : "grid-cols-1"
+                  imagePreviews.length > 0 ? "grid-cols-4" : "grid-cols-1"
                 }`}
               >
                 {imagePreviews.map((preview, index) => (
@@ -1217,11 +1160,11 @@ const ProductManagement = () => {
         </div>
       </AddUpdateItemDialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedItem?.productName || ""}
+        itemName={display(selectedItem?.productName)}
         title="Delete Product"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}
