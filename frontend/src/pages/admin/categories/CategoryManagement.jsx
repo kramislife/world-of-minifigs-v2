@@ -4,12 +4,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+} from "@/components/table/BaseColumn";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
 import StatusBadge from "@/components/shared/StatusBadge";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
-import { formatDate, display } from "@/utils/formatting";
+import { display } from "@/utils/formatting";
 import useCategoryManagement from "@/hooks/admin/useCategoryManagement";
 
 const CategoryManagement = () => {
@@ -92,11 +96,11 @@ const CategoryManagement = () => {
               <StatusBadge isActive={category.isActive} />
             </TableCell>
 
-            {/* Created At */}
-            <TableCell>{formatDate(category.createdAt)}</TableCell>
-
-            {/* Updated At */}
-            <TableCell>{formatDate(category.updatedAt)}</TableCell>
+            {/* Timestamps */}
+            <TimestampCells
+              createdAt={category.createdAt}
+              updatedAt={category.updatedAt}
+            />
 
             {/* Actions */}
             <ActionsColumn

@@ -13,13 +13,17 @@ import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import StatusBadge from "@/components/shared/StatusBadge";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+} from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import MediaUpload from "@/components/shared/MediaUpload";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import BannerPreview from "@/pages/admin/banner/BannerPreview";
 import BannerButtonFields from "@/pages/admin/banner/BannerButtonFields";
-import { formatDate, display } from "@/utils/formatting";
+import { display } from "@/utils/formatting";
 import useBannerManagement from "@/hooks/admin/useBannerManagement";
 
 const BannerManagement = () => {
@@ -110,11 +114,11 @@ const BannerManagement = () => {
               <StatusBadge isActive={banner.isActive} />
             </TableCell>
 
-            {/*  Created At */}
-            <TableCell>{formatDate(banner.createdAt)}</TableCell>
-
-            {/*  Updated At */}
-            <TableCell>{formatDate(banner.updatedAt)}</TableCell>
+            {/*  Timestamps */}
+            <TimestampCells
+              createdAt={banner.createdAt}
+              updatedAt={banner.updatedAt}
+            />
 
             {/*  Actions */}
             <ActionsColumn

@@ -8,10 +8,14 @@ import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
 import StatusBadge from "@/components/shared/StatusBadge";
 import TableLayout from "@/components/table/TableLayout";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+} from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
-import { formatDate, formatCurrency, display } from "@/utils/formatting";
+import { formatCurrency, display } from "@/utils/formatting";
 import useRewardBundleManagement from "@/hooks/admin/useRewardBundleManagement";
 
 const RewardBundleManagement = () => {
@@ -100,11 +104,11 @@ const RewardBundleManagement = () => {
               <StatusBadge isActive={bundle.isActive} />
             </TableCell>
 
-            {/* Created At */}
-            <TableCell>{formatDate(bundle.createdAt)}</TableCell>
-
-            {/* Updated At */}
-            <TableCell>{formatDate(bundle.updatedAt)}</TableCell>
+            {/* Timestamps */}
+            <TimestampCells
+              createdAt={bundle.createdAt}
+              updatedAt={bundle.updatedAt}
+            />
 
             {/* Actions */}
             <ActionsColumn

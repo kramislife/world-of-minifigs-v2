@@ -11,13 +11,17 @@ import {
 } from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+} from "@/components/table/BaseColumn";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
 import StatusBadge from "@/components/shared/StatusBadge";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import MediaUpload from "@/components/shared/MediaUpload";
 import DeleteDialog from "@/components/table/DeleteDialog";
-import { formatDate, display } from "@/utils/formatting";
+import { display } from "@/utils/formatting";
 import useSubCollectionManagement from "@/hooks/admin/useSubCollectionManagement";
 
 const SubCollectionManagement = () => {
@@ -109,12 +113,11 @@ const SubCollectionManagement = () => {
             <TableCell>
               <StatusBadge isActive={subCollection.isActive} />
             </TableCell>
-
-            {/* Created At */}
-            <TableCell>{formatDate(subCollection.createdAt)}</TableCell>
-
-            {/* Updated At */}
-            <TableCell>{formatDate(subCollection.updatedAt)}</TableCell>
+            {/* Timestamps */}
+            <TimestampCells
+              createdAt={subCollection.createdAt}
+              updatedAt={subCollection.updatedAt}
+            />
 
             {/* Actions */}
             <ActionsColumn

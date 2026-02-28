@@ -15,10 +15,14 @@ import {
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import StatusBadge from "@/components/shared/StatusBadge";
 import TableLayout from "@/components/table/TableLayout";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+} from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
-import { formatDate, formatCurrency, display } from "@/utils/formatting";
+import { formatCurrency, display } from "@/utils/formatting";
 import MediaUpload from "@/components/shared/MediaUpload";
 import useProductManagement from "@/hooks/admin/useProductManagement";
 
@@ -137,12 +141,11 @@ const ProductManagement = () => {
             <TableCell>
               <StatusBadge isActive={product.isActive} />
             </TableCell>
-
-            {/* Created At */}
-            <TableCell>{formatDate(product.createdAt)}</TableCell>
-
-            {/* Updated At */}
-            <TableCell>{formatDate(product.updatedAt)}</TableCell>
+            {/* Timestamps */}
+            <TimestampCells
+              createdAt={product.createdAt}
+              updatedAt={product.updatedAt}
+            />
 
             {/* Actions */}
             <ActionsColumn

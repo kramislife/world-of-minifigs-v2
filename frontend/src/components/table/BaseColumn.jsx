@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { formatDate } from "@/utils/formatting";
 import { getTextContent } from "@/utils/uiHelpers";
 
 export const TableHeader = ({ children }) => {
@@ -35,6 +36,16 @@ export const TableCell = ({
         children
       )}
     </td>
+  );
+};
+
+// Standard Table Timestamp Cells
+export const TimestampCells = ({ createdAt, updatedAt }) => {
+  return (
+    <>
+      {createdAt && <TableCell>{formatDate(createdAt)}</TableCell>}
+      {updatedAt && <TableCell>{formatDate(updatedAt)}</TableCell>}
+    </>
   );
 };
 

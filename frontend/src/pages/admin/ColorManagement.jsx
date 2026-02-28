@@ -3,12 +3,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+} from "@/components/table/BaseColumn";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
 import StatusBadge from "@/components/shared/StatusBadge";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
-import { formatDate, display } from "@/utils/formatting";
+import { display } from "@/utils/formatting";
 import useColorManagement from "@/hooks/admin/useColorManagement";
 
 const ColorManagement = () => {
@@ -99,11 +103,11 @@ const ColorManagement = () => {
               <StatusBadge isActive={color.isActive} />
             </TableCell>
 
-            {/* Created At */}
-            <TableCell>{formatDate(color.createdAt)}</TableCell>
-
-            {/* Updated At */}
-            <TableCell>{formatDate(color.updatedAt)}</TableCell>
+            {/* Timestamps */}
+            <TimestampCells
+              createdAt={color.createdAt}
+              updatedAt={color.updatedAt}
+            />
 
             {/* Actions */}
             <ActionsColumn

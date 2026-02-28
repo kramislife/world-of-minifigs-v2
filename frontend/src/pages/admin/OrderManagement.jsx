@@ -11,7 +11,11 @@ import {
 } from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+} from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import ViewAdminDialog from "@/components/table/ViewAdminDialog";
 import {
@@ -146,7 +150,7 @@ const OrderManagement = () => {
               </TableCell>
 
               {/* Created At */}
-              <TableCell>{formatDate(order.createdAt)}</TableCell>
+              <TimestampCells createdAt={order.createdAt} />
 
               {/* Actions */}
               <ActionsColumn

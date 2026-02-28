@@ -10,8 +10,8 @@ import {
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import StatusBadge from "@/components/shared/StatusBadge";
 import TableLayout from "@/components/table/TableLayout";
-import { TableCell } from "@/components/table/BaseColumn";
-import { formatDate, formatFullName } from "@/utils/formatting";
+import { TableCell, TimestampCells } from "@/components/table/BaseColumn";
+import { formatFullName } from "@/utils/formatting";
 import useUserManagement from "@/hooks/admin/useUserManagement";
 
 const UserManagement = () => {
@@ -133,7 +133,7 @@ const UserManagement = () => {
             </TableCell>
 
             {/* Joined Date */}
-            <TableCell>{formatDate(user.createdAt)}</TableCell>
+            <TimestampCells createdAt={user.createdAt} />
           </>
         )}
       />

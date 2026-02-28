@@ -11,13 +11,17 @@ import {
 } from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+} from "@/components/table/BaseColumn";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
 import StatusBadge from "@/components/shared/StatusBadge";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import MediaUpload from "@/components/shared/MediaUpload";
 import DeleteDialog from "@/components/table/DeleteDialog";
-import { formatDate, formatCurrency, display } from "@/utils/formatting";
+import { formatCurrency, display } from "@/utils/formatting";
 import useDealerAddonManagement from "@/hooks/admin/useDealerAddonManagement";
 
 const DealerAddonManagement = () => {
@@ -109,11 +113,11 @@ const DealerAddonManagement = () => {
               <StatusBadge isActive={addon.isActive} />
             </TableCell>
 
-            {/* Created At */}
-            <TableCell>{formatDate(addon.createdAt)}</TableCell>
-
-            {/* Updated At */}
-            <TableCell>{formatDate(addon.updatedAt)}</TableCell>
+            {/* Timestamps */}
+            <TimestampCells
+              createdAt={addon.createdAt}
+              updatedAt={addon.updatedAt}
+            />
 
             {/* Actions */}
             <ActionsColumn
@@ -220,7 +224,10 @@ const DealerAddonManagement = () => {
                     onValueChange={handleUpdateFileMetadata(index, "color")}
                     disabled={isSubmitting || isLoadingColors}
                   >
-                    <SelectTrigger id="color" className="h-8 text-[11px] w-full">
+                    <SelectTrigger
+                      id="color"
+                      className="h-8 text-[11px] w-full"
+                    >
                       <SelectValue placeholder="Select Color" />
                     </SelectTrigger>
                     <SelectContent>

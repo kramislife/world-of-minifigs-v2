@@ -4,13 +4,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+} from "@/components/table/BaseColumn";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
 import StatusBadge from "@/components/shared/StatusBadge";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import MediaUpload from "@/components/shared/MediaUpload";
 import DeleteDialog from "@/components/table/DeleteDialog";
-import { formatDate, display } from "@/utils/formatting";
+import { display } from "@/utils/formatting";
 import useCollectionManagement from "@/hooks/admin/useCollectionManagement";
 
 const CollectionManagement = () => {
@@ -105,11 +109,11 @@ const CollectionManagement = () => {
               <StatusBadge isActive={collection.isActive} />
             </TableCell>
 
-            {/* Created At */}
-            <TableCell>{formatDate(collection.createdAt)}</TableCell>
-
-            {/* Updated At */}
-            <TableCell>{formatDate(collection.updatedAt)}</TableCell>
+            {/* Timestamps */}
+            <TimestampCells
+              createdAt={collection.createdAt}
+              updatedAt={collection.updatedAt}
+            />
 
             {/* Actions */}
             <ActionsColumn

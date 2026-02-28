@@ -13,11 +13,15 @@ import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
 import StatusBadge from "@/components/shared/StatusBadge";
 import TableLayout from "@/components/table/TableLayout";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+} from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import MediaUpload from "@/components/shared/MediaUpload";
-import { formatDate, display } from "@/utils/formatting";
+import { display } from "@/utils/formatting";
 import useDealerTorsoBagManagement from "@/hooks/admin/useDealerTorsoBagManagement";
 
 const DealerTorsoBagManagement = () => {
@@ -110,11 +114,11 @@ const DealerTorsoBagManagement = () => {
               <StatusBadge isActive={bag.isActive} />
             </TableCell>
 
-            {/* Created At */}
-            <TableCell>{formatDate(bag.createdAt)}</TableCell>
-
-            {/* Updated At */}
-            <TableCell>{formatDate(bag.updatedAt)}</TableCell>
+            {/* Timestamps */}
+            <TimestampCells
+              createdAt={bag.createdAt}
+              updatedAt={bag.updatedAt}
+            />
 
             {/* Actions */}
             <ActionsColumn
