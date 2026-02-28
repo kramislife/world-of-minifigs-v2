@@ -10,12 +10,12 @@ import {
 } from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
-import StatusBadge from "@/components/shared/StatusBadge";
 import TableLayout from "@/components/table/TableLayout";
 import {
   ActionsColumn,
   TableCell,
   TimestampCells,
+  StatusCell,
 } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
@@ -100,9 +100,7 @@ const DealerExtraBagManagement = () => {
             </TableCell>
 
             {/* Status */}
-            <TableCell>
-              <StatusBadge isActive={bag.isActive} />
-            </TableCell>
+            <StatusCell isActive={bag.isActive} />
 
             {/* Timestamps */}
             <TimestampCells

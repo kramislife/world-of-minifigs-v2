@@ -7,9 +7,9 @@ import {
   ActionsColumn,
   TableCell,
   TimestampCells,
+  StatusCell,
 } from "@/components/table/BaseColumn";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
-import StatusBadge from "@/components/shared/StatusBadge";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import { display } from "@/utils/formatting";
@@ -99,9 +99,7 @@ const ColorManagement = () => {
             </TableCell>
 
             {/* Status */}
-            <TableCell>
-              <StatusBadge isActive={color.isActive} />
-            </TableCell>
+            <StatusCell isActive={color.isActive} />
 
             {/* Timestamps */}
             <TimestampCells

@@ -11,12 +11,12 @@ import {
 } from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
-import StatusBadge from "@/components/shared/StatusBadge";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
 import {
   ActionsColumn,
   TableCell,
   TimestampCells,
+  StatusCell,
 } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import MediaUpload from "@/components/shared/MediaUpload";
@@ -109,10 +109,8 @@ const BannerManagement = () => {
               <span className="capitalize">{display(banner.position)}</span>
             </TableCell>
 
-            {/*  Status */}
-            <TableCell>
-              <StatusBadge isActive={banner.isActive} />
-            </TableCell>
+            {/* Status */}
+            <StatusCell isActive={banner.isActive} />
 
             {/*  Timestamps */}
             <TimestampCells

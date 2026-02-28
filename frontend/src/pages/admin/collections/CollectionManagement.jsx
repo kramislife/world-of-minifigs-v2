@@ -8,9 +8,9 @@ import {
   ActionsColumn,
   TableCell,
   TimestampCells,
+  StatusCell,
 } from "@/components/table/BaseColumn";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
-import StatusBadge from "@/components/shared/StatusBadge";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import MediaUpload from "@/components/shared/MediaUpload";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -96,18 +96,14 @@ const CollectionManagement = () => {
             </TableCell>
 
             {/* Featured */}
-            <TableCell>
-              <StatusBadge
-                isActive={collection.isFeatured}
-                activeLabel="Featured"
-                inactiveLabel="Not Featured"
-              />
-            </TableCell>
+            <StatusCell
+              isActive={collection.isFeatured}
+              activeLabel="Featured"
+              inactiveLabel="Not Featured"
+            />
 
-            {/* Visibility */}
-            <TableCell>
-              <StatusBadge isActive={collection.isActive} />
-            </TableCell>
+            {/* Status */}
+            <StatusCell isActive={collection.isActive} />
 
             {/* Timestamps */}
             <TimestampCells

@@ -15,9 +15,9 @@ import {
   ActionsColumn,
   TableCell,
   TimestampCells,
+  StatusCell,
 } from "@/components/table/BaseColumn";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
-import StatusBadge from "@/components/shared/StatusBadge";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import MediaUpload from "@/components/shared/MediaUpload";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -109,10 +109,9 @@ const SubCollectionManagement = () => {
               {display(subCollection.description)}
             </TableCell>
 
-            {/* Visibility */}
-            <TableCell>
-              <StatusBadge isActive={subCollection.isActive} />
-            </TableCell>
+            {/* Status */}
+            <StatusCell isActive={subCollection.isActive} />
+
             {/* Timestamps */}
             <TimestampCells
               createdAt={subCollection.createdAt}

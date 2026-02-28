@@ -7,7 +7,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { formatDate } from "@/utils/formatting";
+
 import { getTextContent } from "@/utils/uiHelpers";
 
 export const TableHeader = ({ children }) => {
@@ -46,6 +48,15 @@ export const TimestampCells = ({ createdAt, updatedAt }) => {
       {createdAt && <TableCell>{formatDate(createdAt)}</TableCell>}
       {updatedAt && <TableCell>{formatDate(updatedAt)}</TableCell>}
     </>
+  );
+};
+
+// Standard Table Status Cell
+export const StatusCell = (props) => {
+  return (
+    <TableCell>
+      <StatusBadge {...props} />
+    </TableCell>
   );
 };
 

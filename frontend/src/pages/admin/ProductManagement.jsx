@@ -13,12 +13,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
-import StatusBadge from "@/components/shared/StatusBadge";
 import TableLayout from "@/components/table/TableLayout";
 import {
   ActionsColumn,
   TableCell,
   TimestampCells,
+  StatusCell,
 } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -138,9 +138,8 @@ const ProductManagement = () => {
             </TableCell>
 
             {/* Status */}
-            <TableCell>
-              <StatusBadge isActive={product.isActive} />
-            </TableCell>
+            <StatusCell isActive={product.isActive} />
+
             {/* Timestamps */}
             <TimestampCells
               createdAt={product.createdAt}

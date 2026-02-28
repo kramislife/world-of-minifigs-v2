@@ -8,9 +8,9 @@ import {
   ActionsColumn,
   TableCell,
   TimestampCells,
+  StatusCell,
 } from "@/components/table/BaseColumn";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
-import StatusBadge from "@/components/shared/StatusBadge";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import { display } from "@/utils/formatting";
@@ -92,9 +92,7 @@ const SkillLevelManagement = () => {
             </TableCell>
 
             {/* Status */}
-            <TableCell>
-              <StatusBadge isActive={skillLevel.isActive} />
-            </TableCell>
+            <StatusCell isActive={skillLevel.isActive} />
 
             {/* Timestamps */}
             <TimestampCells

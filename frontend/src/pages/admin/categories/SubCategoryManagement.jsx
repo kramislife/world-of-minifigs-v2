@@ -15,9 +15,9 @@ import {
   ActionsColumn,
   TableCell,
   TimestampCells,
+  StatusCell,
 } from "@/components/table/BaseColumn";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
-import StatusBadge from "@/components/shared/StatusBadge";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import { display } from "@/utils/formatting";
@@ -106,9 +106,7 @@ const SubCategoryManagement = () => {
             </TableCell>
 
             {/* Status */}
-            <TableCell>
-              <StatusBadge isActive={subCategory.isActive} />
-            </TableCell>
+            <StatusCell isActive={subCategory.isActive} />
 
             {/* Timestamps */}
             <TimestampCells

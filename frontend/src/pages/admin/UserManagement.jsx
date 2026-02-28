@@ -8,9 +8,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
-import StatusBadge from "@/components/shared/StatusBadge";
 import TableLayout from "@/components/table/TableLayout";
-import { TableCell, TimestampCells } from "@/components/table/BaseColumn";
+import {
+  TableCell,
+  TimestampCells,
+  StatusCell,
+} from "@/components/table/BaseColumn";
 import { formatFullName } from "@/utils/formatting";
 import useUserManagement from "@/hooks/admin/useUserManagement";
 
@@ -119,18 +122,14 @@ const UserManagement = () => {
             </TableCell>
 
             {/* Status */}
-            <TableCell>
-              <StatusBadge isActive={user.isActive} />
-            </TableCell>
+            <StatusCell isActive={user.isActive} />
 
             {/* Verified */}
-            <TableCell>
-              <StatusBadge
-                isActive={user.isVerified}
-                activeLabel="Verified"
-                inactiveLabel="Unverified"
-              />
-            </TableCell>
+            <StatusCell
+              isActive={user.isVerified}
+              activeLabel="Verified"
+              inactiveLabel="Unverified"
+            />
 
             {/* Joined Date */}
             <TimestampCells createdAt={user.createdAt} />

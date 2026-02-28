@@ -15,6 +15,7 @@ import {
   ActionsColumn,
   TableCell,
   TimestampCells,
+  StatusCell,
 } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import ViewAdminDialog from "@/components/table/ViewAdminDialog";
@@ -24,7 +25,6 @@ import {
   display,
   formatFullName,
 } from "@/utils/formatting";
-import StatusBadge from "@/components/shared/StatusBadge";
 import { getOrderStatusConfig } from "@/constant/orderData";
 import useOrderManagement from "@/hooks/admin/useOrderManagement";
 
@@ -136,11 +136,9 @@ const OrderManagement = () => {
               </TableCell>
 
               {/* Status */}
-              <TableCell>
-                <StatusBadge variant={statusConfig.variant}>
-                  {statusConfig.label}
-                </StatusBadge>
-              </TableCell>
+              <StatusCell variant={statusConfig.variant}>
+                {statusConfig.label}
+              </StatusCell>
 
               {/* ARN */}
               <TableCell maxWidth="200px" className="font-mono text-xs">
