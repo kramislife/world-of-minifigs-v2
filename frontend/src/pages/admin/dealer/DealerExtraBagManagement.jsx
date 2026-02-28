@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
-import AdminSwitchField from "@/components/shared/AdminSwitchField";
+import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import TableLayout from "@/components/table/TableLayout";
 import {
   ActionsColumn,
@@ -173,10 +173,7 @@ const DealerExtraBagManagement = () => {
           </div>
 
           {/* Visibility */}
-          <AdminSwitchField
-            id="isActive"
-            label="Visibility"
-            description="When disabled, this pricing will not be available in the dealer portal"
+          <VisibilitySwitch
             checked={formData.isActive}
             onChange={handleValueChange("isActive")}
             disabled={isSubmitting}

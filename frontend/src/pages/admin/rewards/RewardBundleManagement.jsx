@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
-import AdminSwitchField from "@/components/shared/AdminSwitchField";
+import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import TableLayout from "@/components/table/TableLayout";
 import {
   ActionsColumn,
@@ -232,10 +232,7 @@ const RewardBundleManagement = () => {
           </div>
 
           {/* Visibility */}
-          <AdminSwitchField
-            id="isActive"
-            label="Visibility"
-            description="When disabled, this reward bundle will be hidden from public listings"
+          <VisibilitySwitch
             checked={formData.isActive}
             onChange={handleValueChange("isActive")}
             disabled={isSubmitting}

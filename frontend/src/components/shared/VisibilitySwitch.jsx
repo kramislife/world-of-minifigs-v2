@@ -2,10 +2,10 @@ import React from "react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
-const AdminSwitchField = ({
-  id,
-  label,
-  description,
+const VisibilitySwitch = ({
+  id = "isActive",
+  label = "Visibility",
+  description = "When disabled, this item will be hidden from public listings",
   checked,
   onChange,
   disabled = false,
@@ -34,4 +34,4 @@ const AdminSwitchField = ({
   );
 };
 
-export default AdminSwitchField;
+export default VisibilitySwitch;

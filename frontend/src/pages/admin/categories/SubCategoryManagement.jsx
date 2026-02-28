@@ -17,7 +17,7 @@ import {
   TimestampCells,
   StatusCell,
 } from "@/components/table/BaseColumn";
-import AdminSwitchField from "@/components/shared/AdminSwitchField";
+import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import { display } from "@/utils/formatting";
@@ -191,10 +191,7 @@ const SubCategoryManagement = () => {
           </div>
 
           {/* Visibility */}
-          <AdminSwitchField
-            id="isActive"
-            label="Visibility"
-            description="When disabled, this sub-category will not appear in public listings"
+          <VisibilitySwitch
             checked={formData.isActive}
             onChange={handleValueChange("isActive")}
             disabled={isSubmitting}

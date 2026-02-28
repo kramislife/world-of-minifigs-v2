@@ -10,7 +10,7 @@ import {
   TimestampCells,
   StatusCell,
 } from "@/components/table/BaseColumn";
-import AdminSwitchField from "@/components/shared/AdminSwitchField";
+import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import MediaUpload from "@/components/shared/MediaUpload";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -177,10 +177,10 @@ const CollectionManagement = () => {
             disabled={isSubmitting}
           />
 
-          {/* Featured Switch */}
-          <AdminSwitchField
+          {/* Featured */}
+          <VisibilitySwitch
             id="isFeatured"
-            label="Featured Collection"
+            label="Featured Status"
             description="You can feature up to 2 collections"
             checked={formData.isFeatured}
             onChange={handleValueChange("isFeatured")}
@@ -188,10 +188,7 @@ const CollectionManagement = () => {
           />
 
           {/* Visibility */}
-          <AdminSwitchField
-            id="isActive"
-            label="Visibility"
-            description="When disabled, this collection and its related items will be hidden"
+          <VisibilitySwitch
             checked={formData.isActive}
             onChange={handleValueChange("isActive")}
             disabled={isSubmitting}

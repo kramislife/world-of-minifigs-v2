@@ -17,7 +17,7 @@ import {
   TimestampCells,
   StatusCell,
 } from "@/components/table/BaseColumn";
-import AdminSwitchField from "@/components/shared/AdminSwitchField";
+import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import MediaUpload from "@/components/shared/MediaUpload";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -212,11 +212,8 @@ const SubCollectionManagement = () => {
             disabled={isSubmitting}
           />
 
-          {/* Visibility Switch */}
-          <AdminSwitchField
-            id="isActive"
-            label="Visibility"
-            description="When disabled, this sub-collection and related products will be hidden"
+          {/* Visibility */}
+          <VisibilitySwitch
             checked={formData.isActive}
             onChange={handleValueChange("isActive")}
             disabled={isSubmitting}

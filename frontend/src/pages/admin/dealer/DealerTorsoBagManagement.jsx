@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
-import AdminSwitchField from "@/components/shared/AdminSwitchField";
+import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import TableLayout from "@/components/table/TableLayout";
 import {
   ActionsColumn,
@@ -244,10 +244,7 @@ const DealerTorsoBagManagement = () => {
           </div>
 
           {/* Visibility */}
-          <AdminSwitchField
-            id="isActive"
-            label="Visibility"
-            description="When disabled, this bag will be hidden from dealer bundles"
+          <VisibilitySwitch
             checked={formData.isActive}
             onChange={handleValueChange("isActive")}
             disabled={isSubmitting}
