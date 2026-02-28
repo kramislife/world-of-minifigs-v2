@@ -1,9 +1,7 @@
 import React from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -19,10 +17,15 @@ import {
   TableCell,
   TimestampCells,
   StatusCell,
+  PriceCell,
 } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
-import { formatCurrency, display } from "@/utils/formatting";
+import { display } from "@/utils/formatting";
+import {
+  AdminFormInput,
+  AdminFormTextarea,
+} from "@/components/shared/AdminFormInput";
 import useRewardAddonManagement from "@/hooks/admin/useRewardAddonManagement";
 
 const RewardAddonManagement = () => {
@@ -100,9 +103,7 @@ const RewardAddonManagement = () => {
             <TableCell>{display(addon.quantity)} Minifigs</TableCell>
 
             {/* Price */}
-            <TableCell className="text-success dark:text-accent font-bold">
-              {formatCurrency(addon.price)}
-            </TableCell>
+            <PriceCell amount={addon.price} />
 
             {/* Status */}
             <StatusCell isActive={addon.isActive} />
@@ -143,7 +144,7 @@ const RewardAddonManagement = () => {
       >
         <div className="space-y-4">
           {/* Duration, Quantity, Price */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             <div className="space-y-2">
               <Label htmlFor="duration">Duration</Label>
               <Select
@@ -162,35 +163,42 @@ const RewardAddonManagement = () => {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity</Label>
-              <Input
-                id="quantity"
-                name="quantity"
-                type="number"
-                placeholder="e.g., 20"
-                value={formData.quantity}
-                onChange={handleChange}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
+            {/* Quantity */}
+            <AdminFormInput
+              label="Quantity"
+              name="quantity"
+              type="number"
+              placeholder="100"
+              value={formData.quantity}
+              onChange={handleChange}
+              required
+              disabled={isSubmitting}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="price">Price monthly</Label>
-              <Input
-                id="price"
-                name="price"
-                type="number"
-                step="0.01"
-                placeholder="e.g., 50.00"
-                value={formData.price}
-                onChange={handleChange}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
+            {/* Price monthly */}
+            <AdminFormInput
+              label="Price monthly"
+              name="price"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={formData.price}
+              onChange={handleChange}
+              required
+              disabled={isSubmitting}
+            />
           </div>
+
+          {/* Description */}
+          <AdminFormTextarea
+            label="Description"
+            name="description"
+            placeholder="Enter addon description..."
+            value={formData.description}
+            onChange={handleChange}
+            required
+            disabled={isSubmitting}
+          />
 
           {/* Features */}
           <div className="space-y-3">
@@ -214,15 +222,14 @@ const RewardAddonManagement = () => {
             <div className="space-y-3">
               {(formData.features || [""]).map((feature, index) => (
                 <div key={index} className="flex gap-2 items-start">
-                  <Textarea
-                    placeholder={`Feature ${index + 1}`}
+                  <AdminFormTextarea
+                    name={`feature-${index}`}
+                    placeholder="Enter addon features..."
                     value={feature}
                     onChange={handleArrayChange("features", index)}
-                    rows={2}
-                    className="flex-1"
                     disabled={isSubmitting}
+                    className="flex-1"
                   />
-
                   {(formData.features?.length || 1) > 1 && (
                     <Button
                       type="button"

@@ -1,7 +1,5 @@
 import React from "react";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectTrigger,
@@ -16,8 +14,14 @@ import {
   TableCell,
   TimestampCells,
   StatusCell,
+  PriceCell,
 } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
+import {
+  AdminFormInput,
+  AdminFormTextarea,
+} from "@/components/shared/AdminFormInput";
+import StatusBadge from "@/components/shared/StatusBadge";
 import ViewAdminDialog from "@/components/table/ViewAdminDialog";
 import {
   formatCurrency,
@@ -129,11 +133,7 @@ const OrderManagement = () => {
               </TableCell>
 
               {/* Total */}
-              <TableCell>
-                <span className="font-semibold">
-                  {formatCurrency(order.payment?.totalAmount)}
-                </span>
-              </TableCell>
+              <PriceCell amount={order.payment?.totalAmount} />
 
               {/* Status */}
               <StatusCell variant={statusConfig.variant}>
@@ -197,58 +197,52 @@ const OrderManagement = () => {
           {/* Shipping Fields */}
           {newStatus === "shipped" && (
             <>
-              <div className="space-y-2">
-                <Label>Carrier</Label>
-                <Input
-                  value={carrier}
-                  onChange={(e) => setCarrier(e.target.value)}
-                  placeholder="USPS, UPS, FedEx..."
-                />
-              </div>
+              <AdminFormInput
+                label="Carrier"
+                name="carrier"
+                value={carrier}
+                onChange={(e) => setCarrier(e.target.value)}
+                placeholder="USPS, UPS, FedEx..."
+              />
 
-              <div className="space-y-2">
-                <Label>Tracking Number</Label>
-                <Input
-                  value={trackingNumber}
-                  onChange={(e) => setTrackingNumber(e.target.value)}
-                  placeholder="1Z999AA10123456784"
-                />
-              </div>
+              <AdminFormInput
+                label="Tracking Number"
+                name="trackingNumber"
+                value={trackingNumber}
+                onChange={(e) => setTrackingNumber(e.target.value)}
+                placeholder="1Z999AA10123456784"
+              />
 
-              <div className="space-y-2">
-                <Label>Tracking Link</Label>
-                <Input
-                  value={trackingLink}
-                  onChange={(e) => setTrackingLink(e.target.value)}
-                  placeholder="https://tracking.example.com/..."
-                />
-              </div>
+              <AdminFormInput
+                label="Tracking Link"
+                name="trackingLink"
+                value={trackingLink}
+                onChange={(e) => setTrackingLink(e.target.value)}
+                placeholder="https://tracking.example.com/..."
+              />
             </>
           )}
 
           {/* Cancellation Fields */}
           {newStatus === "cancelled" && (
             <>
-              <div className="space-y-2">
-                <Label>Reason for cancellation</Label>
-                <Input
-                  value={cancelReason}
-                  onChange={(e) => setCancelReason(e.target.value)}
-                  placeholder="e.g., Out of stock, customer request..."
-                  disabled={isUpdatingStatus}
-                />
-              </div>
+              <AdminFormInput
+                label="Reason for cancellation"
+                name="cancelReason"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="e.g., Out of stock, customer request..."
+                disabled={isUpdatingStatus}
+              />
 
-              <div className="space-y-2">
-                <Label>Additional notes</Label>
-                <Textarea
-                  value={cancelNotes}
-                  onChange={(e) => setCancelNotes(e.target.value)}
-                  placeholder="Optional internal notes..."
-                  disabled={isUpdatingStatus}
-                  rows={3}
-                />
-              </div>
+              <AdminFormTextarea
+                label="Additional notes"
+                name="cancelNotes"
+                value={cancelNotes}
+                onChange={(e) => setCancelNotes(e.target.value)}
+                placeholder="Optional internal notes..."
+                disabled={isUpdatingStatus}
+              />
 
               <p className="text-xs text-muted-foreground">
                 A reason is required. This will initiate a refund.

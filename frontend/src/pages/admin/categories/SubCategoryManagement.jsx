@@ -1,7 +1,5 @@
 import React from "react";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -17,6 +15,11 @@ import {
   TimestampCells,
   StatusCell,
 } from "@/components/table/BaseColumn";
+import {
+  AdminFormInput,
+  AdminFormTextarea,
+} from "@/components/shared/AdminFormInput";
+
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -163,32 +166,25 @@ const SubCategoryManagement = () => {
           </div>
 
           {/* Sub-category Name */}
-          <div className="space-y-2">
-            <Label htmlFor="subCategoryName">Sub-category Name</Label>
-            <Input
-              id="subCategoryName"
-              name="subCategoryName"
-              placeholder="e.g., Cars, Trucks, Houses"
-              value={formData.subCategoryName}
-              onChange={handleChange}
-              required
-              disabled={isSubmitting}
-            />
-          </div>
+          <AdminFormInput
+            label="Sub-category Name"
+            name="subCategoryName"
+            placeholder="Printed, Male, Casual"
+            value={formData.subCategoryName}
+            onChange={handleChange}
+            required
+            disabled={isSubmitting}
+          />
 
           {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              name="description"
-              placeholder="Enter sub-category description (optional)"
-              value={formData.description}
-              onChange={handleChange}
-              disabled={isSubmitting}
-              rows={4}
-            />
-          </div>
+          <AdminFormTextarea
+            label="Description"
+            name="description"
+            placeholder="Enter sub-category description..."
+            value={formData.description}
+            onChange={handleChange}
+            disabled={isSubmitting}
+          />
 
           {/* Visibility */}
           <VisibilitySwitch

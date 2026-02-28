@@ -1,7 +1,5 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -17,6 +15,10 @@ import {
   TimestampCells,
   StatusCell,
 } from "@/components/table/BaseColumn";
+import {
+  AdminFormInput,
+  AdminFormTextarea,
+} from "@/components/shared/AdminFormInput";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import MediaUpload from "@/components/shared/MediaUpload";
@@ -102,10 +104,8 @@ const DealerAddonManagement = () => {
             <TableCell maxWidth="300px">{display(addon.description)}</TableCell>
 
             {/* Price */}
-            <TableCell className="text-success dark:text-accent font-bold">
-              {Number(addon.price) > 0
-                ? `$${formatCurrency(addon.price)}`
-                : "Free"}
+            <TableCell>
+              {addon.price === 0 ? "Free" : formatCurrency(addon.price)}
             </TableCell>
 
             {/* Status */}
@@ -147,48 +147,39 @@ const DealerAddonManagement = () => {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             {/* Add-on Name */}
-            <div className="space-y-2">
-              <Label htmlFor="addonName">Add-on Name</Label>
-              <Input
-                id="addonName"
-                name="addonName"
-                placeholder="e.g. Premium Chrome Pack"
-                value={formData.addonName}
-                onChange={handleChange}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
+            <AdminFormInput
+              label="Add-on Name"
+              name="addonName"
+              placeholder="Accessories, Animal Pieces"
+              value={formData.addonName}
+              onChange={handleChange}
+              required
+              disabled={isSubmitting}
+            />
 
             {/* Price */}
-            <div className="space-y-2">
-              <Label htmlFor="price">Base Price</Label>
-              <Input
-                id="price"
-                name="price"
-                type="number"
-                step="0.01"
-                placeholder="20.00"
-                value={formData.price}
-                onChange={handleChange}
-                disabled={isSubmitting}
-              />
-            </div>
+            <AdminFormInput
+              label="Base Price"
+              name="price"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={formData.price}
+              onChange={handleChange}
+              disabled={isSubmitting}
+            />
           </div>
 
           {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              name="description"
-              placeholder="Enter add-on description..."
-              value={formData.description}
-              onChange={handleChange}
-              disabled={isSubmitting}
-              rows={4}
-            />
-          </div>
+          <AdminFormTextarea
+            label="Description"
+            name="description"
+            placeholder="Enter add-on description..."
+            value={formData.description}
+            onChange={handleChange}
+            required
+            disabled={isSubmitting}
+          />
 
           {/* Image Attachments */}
           <MediaUpload

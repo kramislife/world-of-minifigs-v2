@@ -9,6 +9,7 @@ import {
   TimestampCells,
   StatusCell,
 } from "@/components/table/BaseColumn";
+import { AdminFormInput } from "@/components/shared/AdminFormInput";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -135,19 +136,16 @@ const ColorManagement = () => {
       >
         <div className="space-y-4">
           {/* Color Name */}
-          <div className="space-y-2">
-            <Label htmlFor="colorName">Color Name</Label>
-            <Input
-              id="colorName"
-              name="colorName"
-              type="text"
-              placeholder="e.g., Red, Blue, Forest Green"
-              value={formData.colorName}
-              onChange={handleChange}
-              required
-              disabled={isSubmitting}
-            />
-          </div>
+          <AdminFormInput
+            label="Color Name"
+            name="colorName"
+            type="text"
+            placeholder="Red, Blue, Forest Green"
+            value={formData.colorName}
+            onChange={handleChange}
+            required
+            disabled={isSubmitting}
+          />
 
           {/* Hex Code */}
           <div className="space-y-2">

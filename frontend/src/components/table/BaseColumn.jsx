@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import StatusBadge from "@/components/shared/StatusBadge";
-import { formatDate } from "@/utils/formatting";
+import { formatDate, formatCurrency } from "@/utils/formatting";
 
 import { getTextContent } from "@/utils/uiHelpers";
 
@@ -56,6 +56,15 @@ export const StatusCell = (props) => {
   return (
     <TableCell>
       <StatusBadge {...props} />
+    </TableCell>
+  );
+};
+
+// Standard Table Price Cell
+export const PriceCell = ({ amount }) => {
+  return (
+    <TableCell className="text-success dark:text-accent font-bold">
+      {formatCurrency(amount)}
     </TableCell>
   );
 };

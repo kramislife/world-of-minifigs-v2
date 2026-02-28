@@ -1,5 +1,4 @@
 import React from "react";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -9,6 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
+import { AdminFormInput } from "@/components/shared/AdminFormInput";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import TableLayout from "@/components/table/TableLayout";
 import {
@@ -157,20 +157,17 @@ const DealerExtraBagManagement = () => {
           </div>
 
           {/* Price */}
-          <div className="space-y-2">
-            <Label htmlFor="price">Price Per Bag</Label>
-            <Input
-              id="price"
-              name="price"
-              type="number"
-              step="0.01"
-              placeholder="50.00"
-              value={formData.price}
-              onChange={handleChange}
-              required
-              disabled={isSubmitting}
-            />
-          </div>
+          <AdminFormInput
+            label="Price Per Bag"
+            name="price"
+            type="number"
+            step="0.01"
+            placeholder="0.00"
+            value={formData.price}
+            onChange={handleChange}
+            required
+            disabled={isSubmitting}
+          />
 
           {/* Visibility */}
           <VisibilitySwitch

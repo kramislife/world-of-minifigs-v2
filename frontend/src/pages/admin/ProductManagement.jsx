@@ -1,9 +1,7 @@
 import React from "react";
 import { X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -19,11 +17,17 @@ import {
   TableCell,
   TimestampCells,
   StatusCell,
+  PriceCell,
 } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
-import { formatCurrency, display } from "@/utils/formatting";
 import MediaUpload from "@/components/shared/MediaUpload";
+import {
+  AdminFormInput,
+  AdminFormTextarea,
+} from "@/components/shared/AdminFormInput";
+import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
+import { display } from "@/utils/formatting";
 import useProductManagement from "@/hooks/admin/useProductManagement";
 
 const ProductManagement = () => {
@@ -121,9 +125,7 @@ const ProductManagement = () => {
             <TableCell className="capitalize">{product.productType}</TableCell>
 
             {/* Price */}
-            <TableCell className="text-success dark:text-accent font-bold">
-              {formatCurrency(product.price)}
-            </TableCell>
+            <PriceCell amount={product.price} />
 
             {/* Discount */}
             <TableCell>
@@ -131,11 +133,7 @@ const ProductManagement = () => {
             </TableCell>
 
             {/* Discount Price */}
-            <TableCell>
-              {product.discountPrice > 0
-                ? `${formatCurrency(product.discountPrice)}`
-                : "-"}
-            </TableCell>
+            <PriceCell amount={product.discountPrice} />
 
             {/* Status */}
             <StatusCell isActive={product.isActive} />
@@ -201,94 +199,76 @@ const ProductManagement = () => {
           {/* Basic Information */}
           <div className="space-y-4">
             {/* Product Name */}
-            <div className="space-y-2">
-              <Label htmlFor="productName">Product Name</Label>
-              <Input
-                id="productName"
-                name="productName"
-                placeholder="Enter product name"
-                value={formData.productName}
-                onChange={handleChange}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
+            <AdminFormInput
+              label="Product Name"
+              name="productName"
+              placeholder="Enter product name"
+              value={formData.productName}
+              onChange={handleChange}
+              required
+              disabled={isSubmitting}
+            />
 
             {/* Standalone Product Fields */}
             {productType === "standalone" && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="partId">Part ID (Optional)</Label>
-                    <Input
-                      id="partId"
-                      name="partId"
-                      placeholder="e.g. 12345"
-                      value={formData.partId}
-                      onChange={handleChange}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="itemId">Item ID</Label>
-                    <Input
-                      id="itemId"
-                      name="itemId"
-                      placeholder="e.g. ITEM-001"
-                      value={formData.itemId}
-                      onChange={handleChange}
-                      required
-                      disabled={isSubmitting}
-                    />
-                  </div>
+                  <AdminFormInput
+                    label="Part ID (Optional)"
+                    name="partId"
+                    placeholder="123456"
+                    value={formData.partId}
+                    onChange={handleChange}
+                    disabled={isSubmitting}
+                  />
+                  <AdminFormInput
+                    label="Item ID"
+                    name="itemId"
+                    placeholder="1234567"
+                    value={formData.itemId}
+                    onChange={handleChange}
+                    required
+                    disabled={isSubmitting}
+                  />
                 </div>
 
                 <div
                   className={`grid gap-3 ${formData.showSecondaryColor ? "grid-cols-1 sm:grid-cols-5" : "grid-cols-1 sm:grid-cols-4"}`}
                 >
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Price</Label>
-                    <Input
-                      id="price"
-                      name="price"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={formData.price}
-                      onChange={handleChange}
-                      required
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="discount">Discount (%)</Label>
-                    <Input
-                      id="discount"
-                      name="discount"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="100"
-                      placeholder="0"
-                      value={formData.discount}
-                      onChange={handleChange}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="stock">Stock</Label>
-                    <Input
-                      id="stock"
-                      name="stock"
-                      type="number"
-                      min="0"
-                      placeholder="0"
-                      value={formData.stock}
-                      onChange={handleChange}
-                      disabled={isSubmitting}
-                    />
-                  </div>
+                  <AdminFormInput
+                    label="Price"
+                    name="price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={formData.price}
+                    onChange={handleChange}
+                    required
+                    disabled={isSubmitting}
+                  />
+                  <AdminFormInput
+                    label="Discount (%)"
+                    name="discount"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    placeholder="0"
+                    value={formData.discount}
+                    onChange={handleChange}
+                    disabled={isSubmitting}
+                  />
+                  <AdminFormInput
+                    label="Stock"
+                    name="stock"
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={formData.stock}
+                    onChange={handleChange}
+                    disabled={isSubmitting}
+                  />
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="colorId">Color</Label>
@@ -317,13 +297,10 @@ const ProductManagement = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {colors.map((color) => (
-                          <SelectItem
-                            key={color._id || color.id}
-                            value={color._id || color.id}
-                          >
+                          <SelectItem key={color._id} value={color._id}>
                             <div className="flex items-center gap-2">
                               <div
-                                className="size-3.5 rounded-full ring-1 ring-border shrink-0"
+                                className="size-3 rounded-full shrink-0 border"
                                 style={{
                                   backgroundColor: color.hexCode || "#000",
                                 }}
@@ -365,13 +342,10 @@ const ProductManagement = () => {
                         </SelectTrigger>
                         <SelectContent>
                           {colors.map((color) => (
-                            <SelectItem
-                              key={color._id || color.id}
-                              value={color._id || color.id}
-                            >
+                            <SelectItem key={color._id} value={color._id}>
                               <div className="flex items-center gap-2">
                                 <div
-                                  className="size-3.5 rounded-full ring-1 ring-border shrink-0"
+                                  className="size-3 rounded-full shrink-0 border"
                                   style={{
                                     backgroundColor: color.hexCode || "#000",
                                   }}
@@ -391,47 +365,38 @@ const ProductManagement = () => {
             {/* Product with Variants - Shared Fields */}
             {productType === "variant" && (
               <div className="grid grid-cols-3 gap-2">
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price</Label>
-                  <Input
-                    id="price"
-                    name="price"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    value={formData.price}
-                    onChange={handleChange}
-                    required
-                    disabled={isSubmitting}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="discount">Discount (%)</Label>
-                  <Input
-                    id="discount"
-                    name="discount"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    placeholder="0"
-                    value={formData.discount}
-                    onChange={handleChange}
-                    disabled={isSubmitting}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="partId">Part ID (Optional)</Label>
-                  <Input
-                    id="partId"
-                    name="partId"
-                    placeholder="Enter part ID"
-                    value={formData.partId}
-                    onChange={handleChange}
-                    disabled={isSubmitting}
-                  />
-                </div>
+                <AdminFormInput
+                  label="Price"
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={formData.price}
+                  onChange={handleChange}
+                  required
+                  disabled={isSubmitting}
+                />
+                <AdminFormInput
+                  label="Discount (%)"
+                  name="discount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  placeholder="0"
+                  value={formData.discount}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                />
+                <AdminFormInput
+                  label="Part ID (Optional)"
+                  name="partId"
+                  placeholder="123456"
+                  value={formData.partId}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                />
               </div>
             )}
           </div>
@@ -457,19 +422,15 @@ const ProductManagement = () => {
             </div>
             {formData.descriptions.map((desc, index) => (
               <div key={index} className="flex gap-3 items-center">
-                <Textarea
-                  id={`description-${index}`}
+                <AdminFormTextarea
+                  name={`description-${index}`}
                   value={desc}
                   onChange={handleArrayChange("descriptions", index)}
-                  placeholder={
-                    index === 0
-                      ? "Main description (required)"
-                      : `Additional description ${index + 1} (optional)`
-                  }
-                  rows={3}
+                  placeholder="Enter product description..."
                   disabled={isSubmitting}
                   className="flex-1"
                 />
+
                 {index > 0 && (
                   <Button
                     type="button"
@@ -526,33 +487,30 @@ const ProductManagement = () => {
                     <div
                       className={`grid gap-3 ${variant.showSecondaryColor ? "grid-cols-1 sm:grid-cols-4" : "grid-cols-1 sm:grid-cols-3"}`}
                     >
-                      <div className="space-y-2">
-                        <Label htmlFor={`variant-itemId-${variantIndex}`}>
-                          Item ID
-                        </Label>
-                        <Input
-                          id={`variant-itemId-${variantIndex}`}
-                          placeholder="ITEM-001"
-                          value={variant.itemId}
-                          onChange={handleVariantChange(variantIndex, "itemId")}
-                          required
-                          disabled={isSubmitting}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor={`variant-stock-${variantIndex}`}>
-                          Stock
-                        </Label>
-                        <Input
-                          id={`variant-stock-${variantIndex}`}
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          value={variant.stock}
-                          onChange={handleVariantChange(variantIndex, "stock")}
-                          disabled={isSubmitting}
-                        />
-                      </div>
+                      {/* Item ID */}
+                      <AdminFormInput
+                        label="Item ID"
+                        name={`variant-itemId-${variantIndex}`}
+                        placeholder="1234567"
+                        value={variant.itemId}
+                        onChange={handleVariantChange(variantIndex, "itemId")}
+                        required
+                        disabled={isSubmitting}
+                      />
+
+                      {/* Stock */}
+                      <AdminFormInput
+                        label="Stock"
+                        name={`variant-stock-${variantIndex}`}
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={variant.stock}
+                        onChange={handleVariantChange(variantIndex, "stock")}
+                        disabled={isSubmitting}
+                      />
+
+                      {/* Color */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <Label htmlFor={`variant-colorId-${variantIndex}`}>
@@ -588,17 +546,14 @@ const ProductManagement = () => {
                             id={`variant-colorId-${variantIndex}`}
                             className="w-full"
                           >
-                            <SelectValue placeholder="Select" />
+                            <SelectValue placeholder="Select Color" />
                           </SelectTrigger>
                           <SelectContent>
                             {colors.map((color) => (
-                              <SelectItem
-                                key={color._id || color.id}
-                                value={color._id || color.id}
-                              >
+                              <SelectItem key={color._id} value={color._id}>
                                 <div className="flex items-center gap-2">
                                   <div
-                                    className="size-3 rounded-full ring-1 ring-border shrink-0"
+                                    className="size-3 rounded-full shrink-0 border"
                                     style={{
                                       backgroundColor: color.hexCode || "#000",
                                     }}
@@ -655,13 +610,10 @@ const ProductManagement = () => {
                             </SelectTrigger>
                             <SelectContent>
                               {colors.map((color) => (
-                                <SelectItem
-                                  key={color._id || color.id}
-                                  value={color._id || color.id}
-                                >
+                                <SelectItem key={color._id} value={color._id}>
                                   <div className="flex items-center gap-2">
                                     <div
-                                      className="size-4 rounded-md shrink-0"
+                                      className="size-3 rounded-full shrink-0 border"
                                       style={{
                                         backgroundColor:
                                           color.hexCode || "#000",
@@ -935,64 +887,58 @@ const ProductManagement = () => {
             )}
           </div>
 
-          {/* Physical Attributes */}
           <div className="space-y-3">
             <div className="grid grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="pieceCount">Piece Count</Label>
-                <Input
-                  id="pieceCount"
-                  name="pieceCount"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.pieceCount}
-                  onChange={handleChange}
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="length">Length (cm)</Label>
-                <Input
-                  id="length"
-                  name="length"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  value={formData.length}
-                  onChange={handleChange}
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="width">Width (cm)</Label>
-                <Input
-                  id="width"
-                  name="width"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  value={formData.width}
-                  onChange={handleChange}
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="height">Height (cm)</Label>
-                <Input
-                  id="height"
-                  name="height"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  value={formData.height}
-                  onChange={handleChange}
-                  disabled={isSubmitting}
-                />
-              </div>
+              {/* Piece Count */}
+              <AdminFormInput
+                label="Piece Count"
+                name="pieceCount"
+                type="number"
+                min="0"
+                placeholder="0"
+                value={formData.pieceCount}
+                onChange={handleChange}
+                disabled={isSubmitting}
+              />
+
+              {/* Length */}
+              <AdminFormInput
+                label="Length (cm)"
+                name="length"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={formData.length}
+                onChange={handleChange}
+                disabled={isSubmitting}
+              />
+
+              {/* Width */}
+              <AdminFormInput
+                label="Width (cm)"
+                name="width"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={formData.width}
+                onChange={handleChange}
+                disabled={isSubmitting}
+              />
+
+              {/* Height */}
+              <AdminFormInput
+                label="Height (cm)"
+                name="height"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={formData.height}
+                onChange={handleChange}
+                disabled={isSubmitting}
+              />
             </div>
           </div>
 
@@ -1022,33 +968,6 @@ const ProductManagement = () => {
             </div>
           </div>
 
-          {/* Status */}
-          <div className="space-y-3">
-            <Label>Status</Label>
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                type="button"
-                variant={formData.isActive ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleValueChange("isActive")(true)}
-                disabled={isSubmitting}
-                className="w-full shadow-none"
-              >
-                Active
-              </Button>
-              <Button
-                type="button"
-                variant={!formData.isActive ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleValueChange("isActive")(false)}
-                disabled={isSubmitting}
-                className="w-full shadow-none"
-              >
-                Inactive
-              </Button>
-            </div>
-          </div>
-
           {/* Product Images - Only for Standalone Products */}
           {productType === "standalone" && (
             <MediaUpload
@@ -1063,6 +982,13 @@ const ProductManagement = () => {
               disabled={isSubmitting}
             />
           )}
+
+          {/* Status */}
+          <VisibilitySwitch
+            checked={formData.isActive}
+            onChange={handleValueChange("isActive")}
+            disabled={isSubmitting}
+          />
         </div>
       </AddUpdateItemDialog>
 

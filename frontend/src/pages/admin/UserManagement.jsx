@@ -14,7 +14,7 @@ import {
   TimestampCells,
   StatusCell,
 } from "@/components/table/BaseColumn";
-import { formatFullName } from "@/utils/formatting";
+import { formatFullName, display } from "@/utils/formatting";
 import useUserManagement from "@/hooks/admin/useUserManagement";
 
 const UserManagement = () => {
@@ -82,13 +82,13 @@ const UserManagement = () => {
             </TableCell>
 
             {/* Username */}
-            <TableCell maxWidth="150px">{user.username}</TableCell>
+            <TableCell maxWidth="150px">{display(user.username)}</TableCell>
 
             {/* Email */}
-            <TableCell maxWidth="200px">{user.email}</TableCell>
+            <TableCell maxWidth="200px">{display(user.email)}</TableCell>
 
             {/* Contact Number */}
-            <TableCell maxWidth="150px">{user.contactNumber}</TableCell>
+            <TableCell maxWidth="150px">{display(user.contactNumber)}</TableCell>
 
             {/* Role */}
             <TableCell className="text-center">

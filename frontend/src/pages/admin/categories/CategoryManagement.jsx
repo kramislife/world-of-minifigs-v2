@@ -1,7 +1,4 @@
 import React from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import {
@@ -10,6 +7,10 @@ import {
   TimestampCells,
   StatusCell,
 } from "@/components/table/BaseColumn";
+import {
+  AdminFormInput,
+  AdminFormTextarea,
+} from "@/components/shared/AdminFormInput";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -128,32 +129,25 @@ const CategoryManagement = () => {
       >
         <div className="space-y-4">
           {/* Category Name */}
-          <div className="space-y-2">
-            <Label htmlFor="categoryName">Category Name</Label>
-            <Input
-              id="categoryName"
-              name="categoryName"
-              placeholder="e.g., Vehicles, Buildings, Minifigures"
-              value={formData.categoryName}
-              onChange={handleChange}
-              required
-              disabled={isSubmitting}
-            />
-          </div>
+          <AdminFormInput
+            label="Category Name"
+            name="categoryName"
+            placeholder="Gender, Character, Design"
+            value={formData.categoryName}
+            onChange={handleChange}
+            required
+            disabled={isSubmitting}
+          />
 
           {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              name="description"
-              placeholder="Enter category description (optional)"
-              value={formData.description}
-              onChange={handleChange}
-              disabled={isSubmitting}
-              rows={4}
-            />
-          </div>
+          <AdminFormTextarea
+            label="Description"
+            name="description"
+            placeholder="Enter category description..."
+            value={formData.description}
+            onChange={handleChange}
+            disabled={isSubmitting}
+          />
 
           {/* Visibility */}
           <VisibilitySwitch

@@ -1,10 +1,12 @@
 import React from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
+import {
+  AdminFormInput,
+  AdminFormTextarea,
+} from "@/components/shared/AdminFormInput";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import TableLayout from "@/components/table/TableLayout";
 import {
@@ -12,10 +14,11 @@ import {
   TableCell,
   TimestampCells,
   StatusCell,
+  PriceCell,
 } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
-import { formatCurrency, display } from "@/utils/formatting";
+import { display } from "@/utils/formatting";
 import useRewardBundleManagement from "@/hooks/admin/useRewardBundleManagement";
 
 const RewardBundleManagement = () => {
@@ -95,9 +98,7 @@ const RewardBundleManagement = () => {
             </TableCell>
 
             {/* Total Price */}
-            <TableCell className="font-semibold text-success">
-              {formatCurrency(bundle.totalPrice)}
-            </TableCell>
+            <PriceCell amount={bundle.totalPrice} />
 
             {/* Status */}
             <StatusCell isActive={bundle.isActive} />
@@ -138,49 +139,41 @@ const RewardBundleManagement = () => {
       >
         <div className="space-y-4">
           {/* Bundle Name */}
-          <div className="space-y-2">
-            <Label htmlFor="bundleName">Bundle Name</Label>
-            <Input
-              id="bundleName"
-              name="bundleName"
-              placeholder="e.g., Starter Pack"
-              value={formData.bundleName}
+          <AdminFormInput
+            label="Bundle Name"
+            name="bundleName"
+            placeholder="Starter Pack"
+            value={formData.bundleName}
+            onChange={handleChange}
+            required
+            disabled={isSubmitting}
+          />
+
+          <div className="grid grid-cols-2 gap-2">
+            {/* Quantity */}
+            <AdminFormInput
+              label="Quantity"
+              name="minifigQuantity"
+              type="number"
+              placeholder="100"
+              value={formData.minifigQuantity}
               onChange={handleChange}
               required
               disabled={isSubmitting}
             />
-          </div>
 
-          {/* Quantity & Price */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="minifigQuantity">Quantity</Label>
-              <Input
-                id="minifigQuantity"
-                name="minifigQuantity"
-                type="number"
-                placeholder="e.g., 20"
-                value={formData.minifigQuantity}
-                onChange={handleChange}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="totalPrice">Price</Label>
-              <Input
-                id="totalPrice"
-                name="totalPrice"
-                type="number"
-                step="0.01"
-                placeholder="e.g., 50.00"
-                value={formData.totalPrice}
-                onChange={handleChange}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
+            {/* Price */}
+            <AdminFormInput
+              label="Price"
+              name="totalPrice"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={formData.totalPrice}
+              onChange={handleChange}
+              required
+              disabled={isSubmitting}
+            />
           </div>
 
           {/* Features */}
@@ -205,13 +198,13 @@ const RewardBundleManagement = () => {
             <div className="space-y-3">
               {formData.features.map((feature, index) => (
                 <div key={index} className="flex gap-2 items-start">
-                  <Textarea
-                    placeholder={`Feature ${index + 1}`}
+                  <AdminFormTextarea
+                    name={`feature-${index}`}
+                    placeholder="Enter bundle features..."
                     value={feature}
                     onChange={handleArrayChange("features", index)}
-                    rows={2}
-                    className="flex-1"
                     disabled={isSubmitting}
+                    className="flex-1"
                   />
 
                   {formData.features.length > 1 && (

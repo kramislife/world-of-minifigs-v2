@@ -1,9 +1,7 @@
 import React from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -12,6 +10,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
+import {
+  AdminFormInput,
+  AdminFormTextarea,
+} from "@/components/shared/AdminFormInput";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import TableLayout from "@/components/table/TableLayout";
 import {
@@ -19,6 +21,7 @@ import {
   TableCell,
   TimestampCells,
   StatusCell,
+  PriceCell,
 } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
@@ -98,7 +101,9 @@ const DealerBundleManagement = () => {
             <TableCell maxWidth="200px">{display(bundle.bundleName)}</TableCell>
 
             {/* Torso Type */}
-            <TableCell className="capitalize">{bundle.torsoBagType}</TableCell>
+            <TableCell className="capitalize">
+              {display(bundle.torsoBagType)}
+            </TableCell>
 
             {/* Quantity */}
             <TableCell>{bundle.minifigQuantity}</TableCell>
@@ -107,9 +112,7 @@ const DealerBundleManagement = () => {
             <TableCell>{formatCurrency(bundle.unitPrice)}</TableCell>
 
             {/* Total Price */}
-            <TableCell className="font-bold text-success dark:text-accent">
-              {formatCurrency(bundle.totalPrice)}
-            </TableCell>
+            <PriceCell amount={bundle.totalPrice} />
 
             {/* Status */}
             <StatusCell isActive={bundle.isActive} />
@@ -149,50 +152,54 @@ const DealerBundleManagement = () => {
       >
         <div className="space-y-4">
           {/* Bundle Name */}
-          <div className="space-y-2">
-            <Label htmlFor="bundleName">Bundle Name</Label>
-            <Input
-              id="bundleName"
-              name="bundleName"
-              placeholder="100 Minifigs"
-              value={formData.bundleName}
+          <AdminFormInput
+            label="Bundle Name"
+            name="bundleName"
+            placeholder="100 Minifigs"
+            value={formData.bundleName}
+            onChange={handleChange}
+            required
+            disabled={isSubmitting}
+          />
+
+          {/* Description */}
+          <AdminFormTextarea
+            label="Description"
+            name="description"
+            placeholder="Enter bundle description..."
+            value={formData.description}
+            onChange={handleChange}
+            required
+            disabled={isSubmitting}
+          />
+
+          <div className="grid grid-cols-3 gap-2">
+            {/* Quantity */}
+            <AdminFormInput
+              label="Quantity"
+              name="minifigQuantity"
+              type="number"
+              placeholder="100"
+              value={formData.minifigQuantity}
               onChange={handleChange}
               required
               disabled={isSubmitting}
             />
-          </div>
 
-          {/* Quantity / Price / Type */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="minifigQuantity">Quantity</Label>
-              <Input
-                id="minifigQuantity"
-                name="minifigQuantity"
-                type="number"
-                placeholder="100"
-                value={formData.minifigQuantity}
-                onChange={handleChange}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
+            {/* Unit Price */}
+            <AdminFormInput
+              label="Unit Price"
+              name="unitPrice"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={formData.unitPrice}
+              onChange={handleChange}
+              required
+              disabled={isSubmitting}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="unitPrice">Unit Price</Label>
-              <Input
-                id="unitPrice"
-                name="unitPrice"
-                type="number"
-                step="0.01"
-                placeholder="0.50"
-                value={formData.unitPrice}
-                onChange={handleChange}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-
+            {/* Torso Bag Type */}
             <div className="space-y-2">
               <Label htmlFor="torsoBagType">Torso Bag Type</Label>
               <Select
@@ -229,13 +236,13 @@ const DealerBundleManagement = () => {
 
             {formData.features.map((feature, index) => (
               <div key={index} className="flex gap-2 items-start">
-                <Textarea
+                <AdminFormTextarea
+                  name={`feature-${index}`}
+                  placeholder="Enter bundle features..."
                   value={feature}
                   onChange={handleArrayChange("features", index)}
-                  placeholder="e.g. 100 minifigures"
-                  rows={4}
+                  className="flex-1"
                 />
-
                 {formData.features.length > 1 && (
                   <Button
                     type="button"

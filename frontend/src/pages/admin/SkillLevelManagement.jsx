@@ -1,7 +1,4 @@
 import React from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import {
@@ -11,6 +8,10 @@ import {
   StatusCell,
 } from "@/components/table/BaseColumn";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
+import {
+  AdminFormInput,
+  AdminFormTextarea,
+} from "@/components/shared/AdminFormInput";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import { display } from "@/utils/formatting";
@@ -128,32 +129,25 @@ const SkillLevelManagement = () => {
       >
         <div className="space-y-4">
           {/* Skill Level Name */}
-          <div className="space-y-2">
-            <Label htmlFor="skillLevelName">Skill Level</Label>
-            <Input
-              id="skillLevelName"
-              name="skillLevelName"
-              placeholder="e.g., Beginner, Intermediate, Advanced"
-              value={formData.skillLevelName}
-              onChange={handleChange}
-              required
-              disabled={isSubmitting}
-            />
-          </div>
+          <AdminFormInput
+            label="Skill Level"
+            name="skillLevelName"
+            placeholder="Beginner, Intermediate, Advanced"
+            value={formData.skillLevelName}
+            onChange={handleChange}
+            required
+            disabled={isSubmitting}
+          />
 
           {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              name="description"
-              placeholder="Enter skill level description (optional)"
-              value={formData.description}
-              onChange={handleChange}
-              disabled={isSubmitting}
-              rows={4}
-            />
-          </div>
+          <AdminFormTextarea
+            label="Description"
+            name="description"
+            placeholder="Enter skill level description..."
+            value={formData.description}
+            onChange={handleChange}
+            disabled={isSubmitting}
+          />
 
           {/* Visibility */}
           <VisibilitySwitch

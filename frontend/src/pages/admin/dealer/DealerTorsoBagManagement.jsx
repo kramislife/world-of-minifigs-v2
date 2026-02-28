@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
+import { AdminFormInput } from "@/components/shared/AdminFormInput";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import TableLayout from "@/components/table/TableLayout";
 import {
@@ -146,18 +147,16 @@ const DealerTorsoBagManagement = () => {
         <div className="space-y-5">
           {/* Bag Name & Target Size */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="bagName">Bag Name</Label>
-              <Input
-                id="bagName"
-                name="bagName"
-                placeholder="Bag 1001"
-                value={formData.bagName}
-                onChange={handleChange}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
+            <AdminFormInput
+              label="Bag Name"
+              name="bagName"
+              placeholder="Bag 1001"
+              value={formData.bagName}
+              onChange={handleChange}
+              required
+              disabled={isSubmitting}
+              className="col-span-2"
+            />
 
             <div className="space-y-2 col-span-1">
               <Label htmlFor="targetBundleSize">Target Size</Label>

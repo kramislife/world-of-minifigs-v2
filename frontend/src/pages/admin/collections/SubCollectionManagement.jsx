@@ -1,7 +1,5 @@
 import React from "react";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -18,6 +16,10 @@ import {
   StatusCell,
 } from "@/components/table/BaseColumn";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
+import {
+  AdminFormInput,
+  AdminFormTextarea,
+} from "@/components/shared/AdminFormInput";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import MediaUpload from "@/components/shared/MediaUpload";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -149,56 +151,48 @@ const SubCollectionManagement = () => {
         }
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-3">
-            {/* Sub-collection Name */}
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="subCollectionName">Sub-collection Name</Label>
-              <Input
-                id="subCollectionName"
-                name="subCollectionName"
-                placeholder="e.g., Star Wars, Marvel"
-                value={formData.subCollectionName}
-                onChange={handleChange}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {/* Parent Collection */}
-            <div className="space-y-2 col-span-1">
-              <Label htmlFor="collection">Parent Collection</Label>
-              <Select
-                value={formData.collection}
-                onValueChange={handleValueChange("collection")}
-                disabled={isSubmitting || isLoadingCollections}
-              >
-                <SelectTrigger id="collection" className="w-full">
-                  <SelectValue placeholder="Select collection" />
-                </SelectTrigger>
-                <SelectContent>
-                  {collections.map((collection) => (
-                    <SelectItem key={collection._id} value={collection._id}>
-                      {collection.collectionName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Collection */}
+          <div className="space-y-2 col-span-1">
+            <Label htmlFor="collection">Collection</Label>
+            <Select
+              value={formData.collection}
+              onValueChange={handleValueChange("collection")}
+              disabled={isSubmitting || isLoadingCollections}
+            >
+              <SelectTrigger id="collection" className="w-full">
+                <SelectValue placeholder="Select collection" />
+              </SelectTrigger>
+              <SelectContent>
+                {collections.map((collection) => (
+                  <SelectItem key={collection._id} value={collection._id}>
+                    {collection.collectionName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+
+          {/* Sub-collection Name */}
+          <AdminFormInput
+            label="Sub-collection Name"
+            name="subCollectionName"
+            placeholder="Headgear, Legs, Torso"
+            value={formData.subCollectionName}
+            onChange={handleChange}
+            required
+            disabled={isSubmitting}
+            className="col-span-2"
+          />
 
           {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              name="description"
-              placeholder="Enter sub-collection description (optional)"
-              value={formData.description}
-              onChange={handleChange}
-              disabled={isSubmitting}
-              rows={4}
-            />
-          </div>
+          <AdminFormTextarea
+            label="Description"
+            name="description"
+            placeholder="Enter sub-collection description..."
+            value={formData.description}
+            onChange={handleChange}
+            disabled={isSubmitting}
+          />
 
           {/* Image Upload */}
           <MediaUpload

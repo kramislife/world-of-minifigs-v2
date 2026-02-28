@@ -1,7 +1,5 @@
 import React from "react";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -11,6 +9,10 @@ import {
 } from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
+import {
+  AdminFormInput,
+  AdminFormTextarea,
+} from "@/components/shared/AdminFormInput";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import {
   ActionsColumn,
@@ -148,60 +150,53 @@ const BannerManagement = () => {
         <div className="space-y-4">
           <div className="grid grid-cols-5 gap-3">
             {/* Badge */}
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="badge">Badge</Label>
-              <Input
-                id="badge"
-                name="badge"
-                placeholder="e.g. New Arrival"
-                value={formData.badge}
-                onChange={handleChange}
-                disabled={isSubmitting}
-              />
-            </div>
-            {/* Label */}
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="label">Label</Label>
-              <Input
-                id="label"
-                name="label"
-                placeholder="Banner Title"
-                value={formData.label}
-                onChange={handleChange}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            {/* Order */}
-            <div className="space-y-2 col-span-1">
-              <Label htmlFor="order">Order</Label>
-              <Input
-                id="order"
-                name="order"
-                type="number"
-                min="1"
-                placeholder="1"
-                value={formData.order}
-                onChange={handleChange}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-          </div>
+            <AdminFormInput
+              label="Badge"
+              name="badge"
+              placeholder="New Arrival"
+              value={formData.badge}
+              onChange={handleChange}
+              disabled={isSubmitting}
+              className="col-span-2"
+            />
 
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              name="description"
-              placeholder="Enter banner description..."
-              value={formData.description}
+            {/* Label */}
+            <AdminFormInput
+              label="Label"
+              name="label"
+              placeholder="Banner Label"
+              value={formData.label}
               onChange={handleChange}
               required
               disabled={isSubmitting}
+              className="col-span-2"
+            />
+
+            {/* Order */}
+            <AdminFormInput
+              label="Order"
+              name="order"
+              type="number"
+              min="1"
+              placeholder="1"
+              value={formData.order}
+              onChange={handleChange}
+              required
+              disabled={isSubmitting}
+              className="col-span-1"
             />
           </div>
+
+          {/* Description */}
+          <AdminFormTextarea
+            label="Description"
+            name="description"
+            placeholder="Enter banner description..."
+            value={formData.description}
+            onChange={handleChange}
+            required
+            disabled={isSubmitting}
+          />
 
           <div className="grid grid-cols-2 gap-3">
             {/* Position */}
