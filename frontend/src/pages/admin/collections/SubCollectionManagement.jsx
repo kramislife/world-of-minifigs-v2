@@ -46,8 +46,8 @@ const SubCollectionManagement = () => {
     isDeleting,
     handleChange,
     handleValueChange,
-    handleFileChange,
-    handleRemoveFile,
+    handleSubCollectionFileChange,
+    handleSubCollectionFileRemove,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -202,11 +202,12 @@ const SubCollectionManagement = () => {
           <MediaUpload
             label="Image Attachment"
             preview={filePreview}
-            mediaType="image"
-            onChange={handleFileChange}
-            onRemove={handleRemoveFile}
+            onChange={handleSubCollectionFileChange}
+            onRemove={handleSubCollectionFileRemove}
             accept="image/*"
             description="PNG, JPG, WEBP"
+            previewClassName="aspect-square"
+            disabled={isSubmitting}
           />
 
           {/* Visibility Switch */}

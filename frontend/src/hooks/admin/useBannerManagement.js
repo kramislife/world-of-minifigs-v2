@@ -40,13 +40,14 @@ const columns = [
 ];
 
 const useBannerManagement = () => {
-  // ---------------------------- Media Hook ----------------------------
+  // ---------------------------- Media ----------------------------
   const {
-    filePreview: mediaPreview,
-    setFilePreview: setMediaPreview,
-    resetFile: resetMedia,
-    handleFileChange: onMediaChange,
-    handleRemoveFile: onRemoveMedia,
+    filePreview,
+    setFilePreview,
+    fileInputRef,
+    resetFile,
+    handleFileChange,
+    handleRemoveFile,
   } = useMediaPreview({ allowVideo: true, maxSizeMB: 10 });
 
   // ---------------------------- Mutations ----------------------------
@@ -61,7 +62,7 @@ const useBannerManagement = () => {
     updateFn: updateBanner,
     deleteFn: deleteBanner,
     entityName: "banner",
-    onReset: resetMedia,
+    onReset: resetFile,
   });
 
   // ---------------------------- Fetch ----------------------------
@@ -83,16 +84,15 @@ const useBannerManagement = () => {
     crud.setTotalItems(totalItems);
   }, [totalItems]);
 
-  // ---------------------------- Submit Mode ----------------------------
   const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
   // ---------------------------- Media Handlers ----------------------------
-  const handleFileChange = async (e) => {
+  const handleBannerFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const mediaType = file.type.startsWith("video") ? "video" : "image";
-    const dataUrl = await onMediaChange(e);
+    const dataUrl = await handleFileChange(e);
 
     if (dataUrl) {
       crud.setFormData((prev) => ({
@@ -103,9 +103,12 @@ const useBannerManagement = () => {
     }
   };
 
-  const handleRemoveFile = () => {
-    onRemoveMedia();
-    crud.setFormData((prev) => ({ ...prev, media: null }));
+  const handleBannerFileRemove = () => {
+    handleRemoveFile();
+    crud.setFormData((prev) => ({
+      ...prev,
+      media: null,
+    }));
   };
 
   // ---------------------------- Add Handler ----------------------------
@@ -142,7 +145,7 @@ const useBannerManagement = () => {
       order: banner.order || 1,
     });
 
-    setMediaPreview(banner.media?.url || "");
+    setFilePreview(banner.media?.url || null);
   };
 
   // ---------------------------- Submit Handler ----------------------------
@@ -186,7 +189,10 @@ const useBannerManagement = () => {
   };
 
   const handleValueChange = (field) => (value) => {
-    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+    crud.setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   const handleNestedChange = (arrayName, index, field) => (e) => {
@@ -195,50 +201,22 @@ const useBannerManagement = () => {
         ? e.target.checked
         : e.target.value
       : e;
+
     crud.setFormData((prev) => {
       const newArray = [...(prev[arrayName] || [])];
-      newArray[index] = { ...newArray[index], [field]: value };
+      newArray[index] = {
+        ...newArray[index],
+        [field]: value,
+      };
       return { ...prev, [arrayName]: newArray };
     });
   };
 
-  // ---------------------------- Layout Helpers ----------------------------
-  const isDarkTheme = crud.formData.textTheme === "dark";
-  const isLightTheme = crud.formData.textTheme === "light";
-
-  const getPositionClasses = (position) => {
-    switch (position) {
-      case "bottom-left":
-        return {
-          container: "items-end justify-start text-left",
-          buttons: "justify-start",
-        };
-      case "bottom-right":
-        return {
-          container: "items-end justify-end text-right",
-          buttons: "justify-end",
-        };
-      default:
-        return {
-          container: "items-center justify-center text-center",
-          buttons: "justify-center",
-        };
-    }
-  };
-
-  const layoutClasses = getPositionClasses(crud.formData.position);
-
-  const getButtonStyle = (btn) => {
-    if (btn.variant === "outline") return "border";
-    return isDarkTheme
-      ? "bg-black border-black text-white"
-      : "bg-white border-white text-black";
-  };
-
-  // ------------------------------- Return ------------------------------------
+  // ---------------------------- Return ----------------------------
   return {
     ...crud,
-    mediaPreview,
+    filePreview,
+    fileInputRef,
     banners,
     totalItems,
     totalPages,
@@ -246,18 +224,14 @@ const useBannerManagement = () => {
     isLoadingBanners,
     isSubmitting,
     isDeleting,
-    handleFileChange,
-    handleRemoveFile,
+    handleBannerFileChange,
+    handleBannerFileRemove,
     handleSubmit,
     handleAdd,
     handleEdit,
     handleChange,
     handleValueChange,
     handleNestedChange,
-    isDarkTheme,
-    isLightTheme,
-    layoutClasses,
-    getButtonStyle,
   };
 };
 

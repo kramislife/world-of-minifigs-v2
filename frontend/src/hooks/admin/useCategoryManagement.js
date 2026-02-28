@@ -61,7 +61,6 @@ const useCategoryManagement = () => {
     crud.setTotalItems(totalItems);
   }, [totalItems]);
 
-  // ------------------------------- Submit Mode ------------------------------------
   const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
   // ------------------------------- Edit Handler ------------------------------------

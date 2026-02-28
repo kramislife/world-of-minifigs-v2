@@ -47,7 +47,7 @@ const useRewardAddonManagement = () => {
   });
 
   // ------------------------------- Fetch ------------------------------------
-  const { data: addonsResponse, isLoading: isLoadingAddons } =
+  const { data: addonsData, isLoading: isLoadingAddons } =
     useGetRewardAddonsQuery({
       page: crud.page,
       limit: crud.limit,
@@ -58,13 +58,12 @@ const useRewardAddonManagement = () => {
     items: addons,
     totalItems,
     totalPages,
-  } = extractPaginatedData(addonsResponse, "addons");
+  } = extractPaginatedData(addonsData, "addons");
 
   useEffect(() => {
     crud.setTotalItems(totalItems);
   }, [totalItems]);
 
-  // ------------------------------- Submit Mode ------------------------------------
   const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
   // ------------------------------- Edit Handler ------------------------------------

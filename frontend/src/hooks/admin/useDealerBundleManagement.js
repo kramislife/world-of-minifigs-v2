@@ -6,11 +6,7 @@ import {
   useDeleteDealerBundleMutation,
 } from "@/redux/api/adminApi";
 import { extractPaginatedData } from "@/utils/apiHelpers";
-import {
-  formatCurrency,
-  cleanFeatures,
-  sanitizeString,
-} from "@/utils/formatting";
+import { cleanFeatures, sanitizeString } from "@/utils/formatting";
 import { validateDealerBundle } from "@/utils/validation";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
@@ -25,8 +21,8 @@ const initialFormData = {
 
 const columns = [
   { key: "bundleName", label: "Bundle" },
-  { key: "minifigQuantity", label: "Quantity" },
   { key: "torsoBagType", label: "Torso Type" },
+  { key: "minifigQuantity", label: "Quantity" },
   { key: "unitPrice", label: "Unit Price" },
   { key: "totalPrice", label: "Total Price" },
   { key: "isActive", label: "Status" },
@@ -54,7 +50,7 @@ const useDealerBundleManagement = () => {
   });
 
   // ------------------------------- Fetch ------------------------------------
-  const { data: bundlesResponse, isLoading: isLoadingBundles } =
+  const { data: bundlesData, isLoading: isLoadingBundles } =
     useGetDealerBundlesQuery({
       page: crud.page,
       limit: crud.limit,
@@ -65,19 +61,17 @@ const useDealerBundleManagement = () => {
     items: bundles,
     totalItems,
     totalPages,
-  } = extractPaginatedData(bundlesResponse, "bundles");
+  } = extractPaginatedData(bundlesData, "bundles");
 
   useEffect(() => {
     crud.setTotalItems(totalItems);
   }, [totalItems]);
 
-  // ------------------------------- Derived State ------------------------------------
-  const calculatedTotal = formatCurrency(
-    Number(crud.formData.minifigQuantity || 0) *
-      Number(crud.formData.unitPrice || 0),
-  );
-
   const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
+
+  const calculatedTotal =
+    Number(crud.formData.minifigQuantity || 0) *
+    Number(crud.formData.unitPrice || 0);
 
   // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (bundle) => {
@@ -100,7 +94,7 @@ const useDealerBundleManagement = () => {
       bundleName: sanitizeString(crud.formData.bundleName),
       minifigQuantity: Number(crud.formData.minifigQuantity),
       unitPrice: Number(crud.formData.unitPrice),
-      totalPrice: Number(calculatedTotal),
+      totalPrice: calculatedTotal,
       torsoBagType: crud.formData.torsoBagType || "regular",
       isActive: crud.formData.isActive,
       features: cleanFeatures(crud.formData.features),

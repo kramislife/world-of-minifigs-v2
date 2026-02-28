@@ -1,8 +1,5 @@
 import React from "react";
-import { formatDate, display } from "@/utils/formatting";
-import { Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -19,6 +16,8 @@ import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
+import MediaUpload from "@/components/shared/MediaUpload";
+import { formatDate, display } from "@/utils/formatting";
 import useDealerTorsoBagManagement from "@/hooks/admin/useDealerTorsoBagManagement";
 
 const DealerTorsoBagManagement = () => {
@@ -28,7 +27,7 @@ const DealerTorsoBagManagement = () => {
     selectedItem,
     dialogMode,
     formData,
-    fileInputRef,
+    filePreview,
     page,
     limit,
     search,
@@ -37,31 +36,32 @@ const DealerTorsoBagManagement = () => {
     totalPages,
     startItem,
     endItem,
-    handlePrevious,
-    handleNext,
     columns,
     targetBundleSizeOptions,
     adminTarget,
     miscQuantity,
     currentTotal,
     isLoadingBags,
+    isLoadingBundles,
     isSubmitting,
     isDeleting,
+    handleChange,
+    handleValueChange,
     handleDialogClose,
-    setDeleteDialogOpen,
     handleAdd,
     handleEdit,
     handleDelete,
-    handleFileChange,
+    handleDealerTorsoBagFileChange,
+    handleDealerTorsoBagFileRemove,
     handleUpdateItemQuantity,
-    handleRemoveFile,
     handleSubmit,
     handleConfirmDelete,
     handlePageChange,
     handleLimitChange,
     handleSearchChange,
-    handleChange,
-    handleValueChange,
+    handlePrevious,
+    handleNext,
+    setDeleteDialogOpen,
   } = useDealerTorsoBagManagement();
 
   return (
@@ -162,15 +162,18 @@ const DealerTorsoBagManagement = () => {
               <Select
                 value={formData.targetBundleSize.toString()}
                 onValueChange={handleValueChange("targetBundleSize")}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isLoadingBundles}
               >
                 <SelectTrigger id="targetBundleSize" className="w-full">
                   <SelectValue placeholder="Size" />
                 </SelectTrigger>
                 <SelectContent>
-                  {targetBundleSizeOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value.toString()}>
-                      {opt.label}
+                  {targetBundleSizeOptions.map((targetBundleSize) => (
+                    <SelectItem
+                      key={targetBundleSize.value}
+                      value={targetBundleSize.value.toString()}
+                    >
+                      {targetBundleSize.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -179,81 +182,33 @@ const DealerTorsoBagManagement = () => {
           </div>
 
           {/* Torso Designs Upload */}
-          <div className="space-y-3">
-            <Label>Torso Designs Attachment</Label>
-
-            <div
-              className={`grid gap-2 ${
-                formData.items.length > 0
-                  ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-                  : "grid-cols-1"
-              }`}
-            >
-              {formData.items.map((item, index) => (
-                <div
-                  key={index}
-                  className="relative border rounded-md overflow-hidden flex flex-col group transition-all hover:border-primary/50"
-                >
-                  <div className="aspect-square relative border-b">
-                    <img
-                      src={item.url}
-                      alt="Torso design"
-                      className="w-full h-full object-cover"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon-sm"
-                      className="absolute top-2 right-2 z-10"
-                      onClick={handleRemoveFile(index)}
-                      disabled={isSubmitting}
-                    >
-                      <X className="size-4" />
-                    </Button>
-                  </div>
-
-                  <div className="p-2 space-y-2">
-                    <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Quantity
-                    </Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      placeholder="1"
-                      value={item.quantity}
-                      onChange={handleUpdateItemQuantity(index)}
-                      className="h-9 text-xs"
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                </div>
-              ))}
-
-              {/* Upload Trigger */}
-              <Label
-                htmlFor="multi-upload"
-                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors flex flex-col items-center justify-center min-h-32`}
-              >
-                <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                <p className="text-sm font-bold text-muted-foreground">
-                  Click to upload
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  PNG, JPG, WEBP (Multiple)
-                </p>
-                <input
-                  id="multi-upload"
-                  type="file"
-                  multiple
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleFileChange}
+          <MediaUpload
+            label="Torso Designs Attachment"
+            multiple
+            previews={filePreview}
+            onChange={handleDealerTorsoBagFileChange}
+            onRemove={handleDealerTorsoBagFileRemove}
+            accept="image/*"
+            description="PNG, JPG, WEBP (Multiple)"
+            previewClassName="aspect-square"
+            disabled={isSubmitting}
+            renderItem={(item, index) => (
+              <div className="p-2 space-y-2">
+                <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Quantity
+                </Label>
+                <Input
+                  type="number"
+                  min="1"
+                  placeholder="1"
+                  value={item.quantity}
+                  onChange={handleUpdateItemQuantity(index)}
+                  className="h-9 text-xs"
                   disabled={isSubmitting}
-                  ref={fileInputRef}
                 />
-              </Label>
-            </div>
-          </div>
+              </div>
+            )}
+          />
 
           {/* Quantity Summary */}
           <div className="p-4 rounded-lg border flex">

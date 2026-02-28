@@ -20,7 +20,7 @@ const RewardOrderSummary = ({
               <div className="flex justify-between items-start">
                 <p className="text-sm font-bold">{selectedBundle.bundleName}</p>
                 <p className="text-sm font-bold text-primary dark:text-accent">
-                  ${formatCurrency(selectedBundle.totalPrice)}
+                  {formatCurrency(selectedBundle.totalPrice)}
                 </p>
               </div>
             </div>
@@ -39,7 +39,7 @@ const RewardOrderSummary = ({
                   </p>
                 </div>
                 <p className="text-sm font-bold text-primary dark:text-accent">
-                  ${formatCurrency(selectedAddon.price)}
+                  {formatCurrency(selectedAddon.price)}
                 </p>
               </div>
             </div>
@@ -53,7 +53,7 @@ const RewardOrderSummary = ({
                 </span>
                 <div className="text-right">
                   <p className="text-3xl font-bold text-success dark:text-accent">
-                    ${formatCurrency(totalOrderPrice)}
+                    {formatCurrency(totalOrderPrice)}
                   </p>
                 </div>
               </div>
@@ -65,7 +65,7 @@ const RewardOrderSummary = ({
                       &nbsp;This first payment covers your bundle. After that,
                       you'll only be billed&nbsp;
                       <span className="font-bold text-primary">
-                        ${formatCurrency(selectedAddon.price)}
+                        {formatCurrency(selectedAddon.price)}
                       </span>
                       &nbsp;for the next {selectedAddon.duration - 1} month
                       {selectedAddon.duration - 1 !== 1 ? "s" : ""}.

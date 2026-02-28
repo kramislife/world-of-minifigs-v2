@@ -1,6 +1,4 @@
 import React from "react";
-import { Upload, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +15,7 @@ import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AdminSwitchField from "@/components/shared/AdminSwitchField";
 import StatusBadge from "@/components/shared/StatusBadge";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
+import MediaUpload from "@/components/shared/MediaUpload";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import { formatDate, formatCurrency, display } from "@/utils/formatting";
 import useDealerAddonManagement from "@/hooks/admin/useDealerAddonManagement";
@@ -28,8 +27,7 @@ const DealerAddonManagement = () => {
     selectedItem,
     dialogMode,
     formData,
-    filePreviews,
-    fileInputRef,
+    filePreview,
     page,
     limit,
     search,
@@ -42,14 +40,15 @@ const DealerAddonManagement = () => {
     handleNext,
     columns,
     isLoadingAddons,
+    isLoadingColors,
     isSubmitting,
     isDeleting,
     colors,
     handleChange,
     handleValueChange,
-    handleFileChange,
+    handleDealerAddonFileChange,
+    handleDealerAddonFileRemove,
     handleUpdateFileMetadata,
-    handleRemoveFile,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -190,126 +189,60 @@ const DealerAddonManagement = () => {
           </div>
 
           {/* Image Attachments */}
-          <div className="space-y-3">
-            <Label>Image Attachments</Label>
-
-            <div
-              className={`grid gap-2 ${
-                filePreviews.length > 0
-                  ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-                  : "grid-cols-1"
-              }`}
-            >
-              {filePreviews.map((preview, index) => (
-                <div
-                  key={index}
-                  className="relative border rounded-md overflow-hidden"
-                >
-                  <div className="aspect-square border-b">
-                    <img
-                      src={preview.url}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon-sm"
-                      className="absolute top-2 right-2 z-10"
-                      onClick={() => handleRemoveFile(index)}
-                      disabled={isSubmitting}
-                    >
-                      <X className="size-4" />
-                    </Button>
-                  </div>
-
-                  <div className="p-2 space-y-3 flex-1 overflow-visible">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        Item Details
-                      </Label>
-                      <Input
-                        placeholder="Item Name"
-                        value={preview.itemName}
-                        onChange={handleUpdateFileMetadata(index, "itemName")}
-                        className="h-8 text-xs"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-1 overflow-visible">
-                      <div className="space-2">
-                        <Input
-                          type="number"
-                          placeholder="Price"
-                          value={preview.itemPrice}
-                          onChange={handleUpdateFileMetadata(
-                            index,
-                            "itemPrice",
-                          )}
-                          className="h-9 text-xs"
-                        />
-                      </div>
-
-                      <div className="space-y-2 overflow-visible">
-                        <Select
-                          value={preview.color || ""}
-                          onValueChange={handleUpdateFileMetadata(
-                            index,
-                            "color",
-                          )}
-                        >
-                          <SelectTrigger className="h-8 text-[11px] px-2 w-full">
-                            <SelectValue placeholder="Color" />
-                          </SelectTrigger>
-                          <SelectContent className="z-100">
-                            {colors.map((color) => (
-                              <SelectItem key={color._id} value={color._id}>
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="size-3 rounded-full shrink-0 border"
-                                    style={{
-                                      backgroundColor: color.hexCode || "#000",
-                                    }}
-                                  />
-                                  <span>{color.colorName}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {/* Upload Button */}
-              <Label
-                htmlFor="addon-images"
-                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors flex flex-col items-center justify-center min-h-32`}
-              >
-                <Upload className="size-8 text-muted-foreground mb-2" />
-                <p className="text-sm font-bold text-muted-foreground">
-                  Click to upload
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  PNG, JPG, WEBP (Multiple)
-                </p>
-
+          <MediaUpload
+            label="Image Attachments"
+            multiple
+            previews={filePreview}
+            onChange={handleDealerAddonFileChange}
+            onRemove={handleDealerAddonFileRemove}
+            accept="image/*"
+            description="PNG, JPG, WEBP (Multiple)"
+            previewClassName="aspect-square"
+            disabled={isSubmitting}
+            renderItem={(item, index) => (
+              <div className="p-2 space-y-2">
                 <Input
-                  ref={fileInputRef}
-                  id="addon-images"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileChange}
-                  disabled={isSubmitting}
-                  className="hidden"
+                  placeholder="Item Name"
+                  value={item.itemName}
+                  onChange={handleUpdateFileMetadata(index, "itemName")}
+                  className="h-8 text-xs"
                 />
-              </Label>
-            </div>
-          </div>
+                <div className="grid grid-cols-2 gap-1">
+                  <Input
+                    type="number"
+                    placeholder="Price"
+                    value={item.itemPrice}
+                    onChange={handleUpdateFileMetadata(index, "itemPrice")}
+                    className="h-9 text-xs"
+                  />
+                  <Select
+                    value={item.color}
+                    onValueChange={handleUpdateFileMetadata(index, "color")}
+                    disabled={isSubmitting || isLoadingColors}
+                  >
+                    <SelectTrigger id="color" className="h-8 text-[11px] w-full">
+                      <SelectValue placeholder="Select Color" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {colors.map((color) => (
+                        <SelectItem key={color._id} value={color._id}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="size-3 rounded-full shrink-0 border"
+                              style={{
+                                backgroundColor: color.hexCode || "#000",
+                              }}
+                            />
+                            <span>{color.colorName}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          />
 
           {/* Visibility */}
           <AdminSwitchField

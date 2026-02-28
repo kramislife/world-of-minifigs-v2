@@ -28,16 +28,14 @@ const DealerBundleManagement = () => {
     selectedItem,
     dialogMode,
     formData,
-    bundles,
-    totalItems,
-    totalPages,
     page,
     limit,
     search,
+    bundles,
+    totalItems,
+    totalPages,
     startItem,
     endItem,
-    handlePrevious,
-    handleNext,
     calculatedTotal,
     columns,
     isLoadingBundles,
@@ -45,19 +43,21 @@ const DealerBundleManagement = () => {
     isDeleting,
     handleChange,
     handleValueChange,
-    handleArrayChange,
-    addArrayItem,
-    removeArrayItem,
-    handleSubmit,
     handleDialogClose,
     handleAdd,
     handleEdit,
     handleDelete,
+    handleSubmit,
     handleConfirmDelete,
     handlePageChange,
     handleLimitChange,
     handleSearchChange,
+    handlePrevious,
+    handleNext,
     setDeleteDialogOpen,
+    handleArrayChange,
+    addArrayItem,
+    removeArrayItem,
   } = useDealerBundleManagement();
 
   return (
@@ -93,20 +93,18 @@ const DealerBundleManagement = () => {
             {/* Bundle Name */}
             <TableCell maxWidth="200px">{display(bundle.bundleName)}</TableCell>
 
-            {/* Quantity */}
-            <TableCell>{bundle.minifigQuantity}</TableCell>
-
             {/* Torso Type */}
             <TableCell className="capitalize">{bundle.torsoBagType}</TableCell>
 
+            {/* Quantity */}
+            <TableCell>{bundle.minifigQuantity}</TableCell>
+
             {/* Unit Price */}
-            <TableCell className="font-semibold">
-              ${formatCurrency(bundle.unitPrice)}
-            </TableCell>
+            <TableCell>{formatCurrency(bundle.unitPrice)}</TableCell>
 
             {/* Total Price */}
-            <TableCell className="font-semibold text-success dark:text-accent">
-              ${formatCurrency(bundle.totalPrice)}
+            <TableCell className="font-bold text-success dark:text-accent">
+              {formatCurrency(bundle.totalPrice)}
             </TableCell>
 
             {/* Status */}
@@ -137,15 +135,15 @@ const DealerBundleManagement = () => {
         title={dialogMode === "edit" ? "Edit Bundle" : "Add Bundle"}
         description={
           dialogMode === "edit"
-            ? "Update the bundle details."
-            : "Create a new bundle for your products."
+            ? "Update the dealer bundle details and pricing."
+            : "Create a new bundle package for dealers."
         }
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
         submitButtonText={
           dialogMode === "edit" ? "Update Bundle" : "Create Bundle"
         }
-        className="sm:max-w-3xl"
+        className="sm:max-w-2xl"
       >
         <div className="space-y-4">
           {/* Bundle Name */}
@@ -255,7 +253,7 @@ const DealerBundleManagement = () => {
           <div className="flex justify-between items-center text-sm font-semibold pt-3">
             <span>Calculated Total Cost:</span>
             <span className="text-lg text-success dark:text-accent">
-              ${calculatedTotal}
+              {formatCurrency(calculatedTotal)}
             </span>
           </div>
 

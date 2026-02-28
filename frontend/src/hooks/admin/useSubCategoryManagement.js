@@ -63,13 +63,14 @@ const useSubCategoryManagement = () => {
     totalPages,
   } = extractPaginatedData(subCategoriesData, "subCategories");
 
-  const categories = categoriesData?.categories || [];
+  const categories = [...(categoriesData?.categories || [])].sort((a, b) =>
+    (a.categoryName || "").localeCompare(b.categoryName || ""),
+  );
 
   useEffect(() => {
     crud.setTotalItems(totalItems);
   }, [totalItems]);
 
-  // ------------------------------- Submit Mode ------------------------------------
   const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
   // ------------------------------- Edit Handler ------------------------------------

@@ -69,7 +69,7 @@ const AddonPreviewModal = ({ addon, onClose, onSelect }) => {
                         <div className="flex items-center gap-1 text-lg">
                           <span className="font-semibold">Total Value:</span>
                           <span className="text-success dark:text-accent font-bold">
-                            ${formatCurrency(item.itemPrice)}
+                            {formatCurrency(item.itemPrice)}
                           </span>
                         </div>
                       )}
@@ -144,7 +144,7 @@ export default AddonPreviewModal;
             )}
             {item.itemPrice > 0 && (
               <p className="text-sm font-bold text-success dark:text-accent mt-1">
-                ${formatCurrency(item.itemPrice)}
+                {formatCurrency(item.itemPrice)}
               </p>
             )}
           </div>

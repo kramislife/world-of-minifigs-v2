@@ -37,8 +37,8 @@ const CollectionManagement = () => {
     isDeleting,
     handleChange,
     handleValueChange,
-    handleFileChange,
-    handleRemoveFile,
+    handleCollectionFileChange,
+    handleCollectionFileRemove,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -170,11 +170,11 @@ const CollectionManagement = () => {
           <MediaUpload
             label="Image Attachment"
             preview={filePreview}
-            mediaType="image"
-            onChange={handleFileChange}
-            onRemove={handleRemoveFile}
+            onChange={handleCollectionFileChange}
+            onRemove={handleCollectionFileRemove}
             accept="image/*"
             description="PNG, JPG, WEBP"
+            disabled={isSubmitting}
           />
 
           {/* Featured Switch */}

@@ -29,7 +29,7 @@ const BannerManagement = () => {
     selectedItem,
     dialogMode,
     formData,
-    mediaPreview,
+    filePreview,
     page,
     limit,
     search,
@@ -50,8 +50,8 @@ const BannerManagement = () => {
     handleChange,
     handleValueChange,
     handleNestedChange,
-    handleFileChange,
-    handleRemoveFile,
+    handleBannerFileChange,
+    handleBannerFileRemove,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -59,10 +59,6 @@ const BannerManagement = () => {
     handleDelete,
     handleConfirmDelete,
     setDeleteDialogOpen,
-    isDarkTheme,
-    isLightTheme,
-    layoutClasses,
-    getButtonStyle,
   } = useBannerManagement();
 
   return (
@@ -75,7 +71,7 @@ const BannerManagement = () => {
         onAction={handleAdd}
       />
 
-      {/* Table Layout*/}
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search banners..."
         searchValue={search}
@@ -167,7 +163,7 @@ const BannerManagement = () => {
               <Input
                 id="label"
                 name="label"
-                placeholder="Main banner title"
+                placeholder="Banner Title"
                 value={formData.label}
                 onChange={handleChange}
                 required
@@ -257,26 +253,20 @@ const BannerManagement = () => {
           {/* Media Section */}
           <MediaUpload
             label="Banner Attachment"
-            preview={mediaPreview}
+            preview={filePreview}
             mediaType={formData.mediaType}
-            onChange={handleFileChange}
-            onRemove={handleRemoveFile}
+            onChange={handleBannerFileChange}
+            onRemove={handleBannerFileRemove}
             accept="image/*,video/*"
             description="Image, GIF, or Video (max 10s)"
-            containerClassName="aspect-16/7"
+            previewClassName="aspect-[16/7]"
+            disabled={isSubmitting}
           >
-            {mediaPreview && (
-              <BannerPreview
-                formData={formData}
-                isDarkTheme={isDarkTheme}
-                isLightTheme={isLightTheme}
-                layoutClasses={layoutClasses}
-                getButtonStyle={getButtonStyle}
-              />
-            )}
+            {/* Banner Preview */}
+            {filePreview && <BannerPreview formData={formData} />}
           </MediaUpload>
 
-          {/* Buttons Section */}
+          {/* Buttons */}
           <BannerButtonFields
             formData={formData}
             isSubmitting={isSubmitting}

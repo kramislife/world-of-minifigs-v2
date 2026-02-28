@@ -1,11 +1,10 @@
 import React from "react";
-import { Upload, X, Trash2 } from "lucide-react";
+import { X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -20,6 +19,7 @@ import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import { formatDate, formatCurrency, display } from "@/utils/formatting";
+import MediaUpload from "@/components/shared/MediaUpload";
 import useProductManagement from "@/hooks/admin/useProductManagement";
 
 const ProductManagement = () => {
@@ -28,32 +28,45 @@ const ProductManagement = () => {
     deleteDialogOpen,
     selectedItem,
     dialogMode,
-    productType,
-    variants,
     formData,
-    imagePreviews,
-    fileInputRef,
     page,
     limit,
     search,
+    productType,
+    variants,
+    filePreview,
     products,
     totalItems,
     totalPages,
     startItem,
     endItem,
-    handlePrevious,
-    handleNext,
+    columns,
     colors,
     skillLevels,
     categoriesWithSubs,
     collectionsWithSubs,
-    columns,
     isLoadingProducts,
     isSubmitting,
     isDeleting,
+    handleEdit,
+    handleSubmit,
     handleChange,
-    handleSelectChange,
+    handleValueChange,
     handleMultiSelectChange,
+    handleDialogClose,
+    handleAdd,
+    handleDelete,
+    handleConfirmDelete,
+    handlePageChange,
+    handleLimitChange,
+    handleSearchChange,
+    handlePrevious,
+    handleNext,
+    setProductType,
+    setDeleteDialogOpen,
+    handleArrayChange,
+    addArrayItem,
+    removeArrayItem,
     handleImageChange,
     handleRemoveImage,
     handleAddVariant,
@@ -61,21 +74,8 @@ const ProductManagement = () => {
     handleVariantChange,
     handleVariantImageChange,
     handleRemoveVariantImage,
-    handleSubmit,
-    handleDialogClose,
-    handleAdd,
-    handleEdit,
-    handleDelete,
-    handleConfirmDelete,
-    handlePageChange,
-    handleLimitChange,
-    handleSearchChange,
-    setProductType,
-    setDeleteDialogOpen,
+    fileInputRef,
     setFormData,
-    handleArrayChange,
-    addArrayItem,
-    removeArrayItem,
   } = useProductManagement();
 
   return (
@@ -118,7 +118,7 @@ const ProductManagement = () => {
 
             {/* Price */}
             <TableCell className="text-success dark:text-accent font-bold">
-              ${formatCurrency(product.price)}
+              {formatCurrency(product.price)}
             </TableCell>
 
             {/* Discount */}
@@ -129,7 +129,7 @@ const ProductManagement = () => {
             {/* Discount Price */}
             <TableCell>
               {product.discountPrice > 0
-                ? `$${formatCurrency(product.discountPrice)}`
+                ? `${formatCurrency(product.discountPrice)}`
                 : "-"}
             </TableCell>
 
@@ -161,8 +161,8 @@ const ProductManagement = () => {
         title={dialogMode === "edit" ? "Edit Product" : "Add Product"}
         description={
           dialogMode === "edit"
-            ? "Update the product details."
-            : "Create a new product for your store."
+            ? "Update the product details and management settings."
+            : "Create a new product entry for your catalog."
         }
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
@@ -297,10 +297,7 @@ const ProductManagement = () => {
                           size="sm"
                           className="h-auto p-0 text-xs"
                           onClick={() =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              showSecondaryColor: true,
-                            }))
+                            handleValueChange("showSecondaryColor")(true)
                           }
                           disabled={isSubmitting}
                         >
@@ -309,8 +306,8 @@ const ProductManagement = () => {
                       )}
                     </div>
                     <Select
-                      value={formData.colorId || ""}
-                      onValueChange={handleSelectChange("colorId")}
+                      value={formData.colorId}
+                      onValueChange={handleValueChange("colorId")}
                       disabled={isSubmitting}
                     >
                       <SelectTrigger id="colorId" className="w-full">
@@ -347,21 +344,18 @@ const ProductManagement = () => {
                           variant="link"
                           size="sm"
                           className="h-auto p-0 text-xs text-destructive"
-                          onClick={() =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              secondaryColorId: "",
-                              showSecondaryColor: false,
-                            }))
-                          }
+                          onClick={() => {
+                            handleValueChange("secondaryColorId")("");
+                            handleValueChange("showSecondaryColor")(false);
+                          }}
                           disabled={isSubmitting}
                         >
                           Remove
                         </Button>
                       </div>
                       <Select
-                        value={formData.secondaryColorId || ""}
-                        onValueChange={handleSelectChange("secondaryColorId")}
+                        value={formData.secondaryColorId}
+                        onValueChange={handleValueChange("secondaryColorId")}
                         disabled={isSubmitting}
                       >
                         <SelectTrigger id="secondaryColorId" className="w-full">
@@ -476,9 +470,10 @@ const ProductManagement = () => {
                 />
                 {index > 0 && (
                   <Button
+                    type="button"
                     variant="ghost"
-                    size="icon-sm"
-                    className="shrink-0 text-destructive hover:bg-destructive/10"
+                    size="icon"
+                    className="shrink-0 text-destructive hover:text-destructive h-10 w-10"
                     onClick={removeArrayItem("descriptions", index)}
                     disabled={isSubmitting}
                   >
@@ -518,7 +513,7 @@ const ProductManagement = () => {
                         type="button"
                         variant="ghost"
                         size="icon-sm"
-                        onClick={handleRemoveVariant(variantIndex)}
+                        onClick={() => handleRemoveVariant(variantIndex)}
                         disabled={isSubmitting || variants.length === 1}
                         className="text-destructive hover:text-destructive"
                       >
@@ -580,7 +575,7 @@ const ProductManagement = () => {
                           )}
                         </div>
                         <Select
-                          value={variant.colorId || ""}
+                          value={variant.colorId}
                           onValueChange={handleVariantChange(
                             variantIndex,
                             "colorId",
@@ -643,7 +638,7 @@ const ProductManagement = () => {
                             </Button>
                           </div>
                           <Select
-                            value={variant.secondaryColorId || ""}
+                            value={variant.secondaryColorId}
                             onValueChange={handleVariantChange(
                               variantIndex,
                               "secondaryColorId",
@@ -681,53 +676,16 @@ const ProductManagement = () => {
                     </div>
 
                     {/* Variant Image */}
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
-                        Variant Image
-                      </Label>
-                      <div className="grid grid-cols-1">
-                        {variant.imagePreview ? (
-                          <div className="relative border rounded-lg overflow-hidden">
-                            <img
-                              src={variant.imagePreview}
-                              alt={`Variant ${variantIndex + 1} image`}
-                              className="w-full h-32 object-contain"
-                            />
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="icon-sm"
-                              className="absolute top-1 right-1"
-                              onClick={handleRemoveVariantImage(variantIndex)}
-                              disabled={isSubmitting}
-                            >
-                              <X className="size-4" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <label
-                            htmlFor={`variant-image-${variantIndex}`}
-                            className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors flex flex-col items-center justify-center min-h-32"
-                          >
-                            <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground mb-1">
-                              Click to upload
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              PNG, JPG, WEBP (5MB max)
-                            </p>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              id={`variant-image-${variantIndex}`}
-                              onChange={handleVariantImageChange(variantIndex)}
-                              disabled={isSubmitting}
-                            />
-                          </label>
-                        )}
-                      </div>
-                    </div>
+                    <MediaUpload
+                      label="Variant Image"
+                      preview={variant.imagePreview}
+                      onChange={handleVariantImageChange(variantIndex)}
+                      onRemove={() => handleRemoveVariantImage(variantIndex)}
+                      accept="image/*"
+                      description="PNG, JPG, WEBP"
+                      imageClassName="h-48 object-contain"
+                      disabled={isSubmitting}
+                    />
                   </div>
                 ))}
               </div>
@@ -1070,9 +1028,7 @@ const ProductManagement = () => {
                 type="button"
                 variant={formData.isActive ? "default" : "outline"}
                 size="sm"
-                onClick={() =>
-                  setFormData((prev) => ({ ...prev, isActive: true }))
-                }
+                onClick={() => handleValueChange("isActive")(true)}
                 disabled={isSubmitting}
                 className="w-full shadow-none"
               >
@@ -1082,9 +1038,7 @@ const ProductManagement = () => {
                 type="button"
                 variant={!formData.isActive ? "default" : "outline"}
                 size="sm"
-                onClick={() =>
-                  setFormData((prev) => ({ ...prev, isActive: false }))
-                }
+                onClick={() => handleValueChange("isActive")(false)}
                 disabled={isSubmitting}
                 className="w-full shadow-none"
               >
@@ -1095,67 +1049,17 @@ const ProductManagement = () => {
 
           {/* Product Images - Only for Standalone Products */}
           {productType === "standalone" && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Images</Label>
-                <p className="text-xs text-muted-foreground">
-                  {imagePreviews.length}/10 images
-                </p>
-              </div>
-              <div
-                className={`grid gap-3 ${
-                  imagePreviews.length > 0 ? "grid-cols-4" : "grid-cols-1"
-                }`}
-              >
-                {imagePreviews.map((preview, index) => (
-                  <div
-                    key={index}
-                    className="relative border rounded-lg overflow-hidden aspect-square"
-                  >
-                    <img
-                      src={preview}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2"
-                      onClick={() => handleRemoveImage(index)}
-                      disabled={isSubmitting}
-                    >
-                      <X className="size-4" />
-                    </Button>
-                  </div>
-                ))}
-                {imagePreviews.length < 10 && (
-                  <Label
-                    htmlFor="images"
-                    className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors flex flex-col items-center justify-center min-h-32"
-                  >
-                    <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground mb-1">
-                      Click to upload
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      PNG, JPG, WEBP (5MB max, max 10 images)
-                    </p>
-                    <Input
-                      ref={fileInputRef}
-                      id="images"
-                      name="images"
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageChange}
-                      disabled={isSubmitting}
-                      className="hidden"
-                    />
-                  </Label>
-                )}
-              </div>
-            </div>
+            <MediaUpload
+              label="Image Attachments"
+              multiple
+              previews={filePreview}
+              onChange={handleImageChange}
+              onRemove={handleRemoveImage}
+              accept="image/*"
+              description="PNG, JPG, WEBP (10 images)"
+              previewClassName="aspect-square"
+              disabled={isSubmitting}
+            />
           )}
         </div>
       </AddUpdateItemDialog>

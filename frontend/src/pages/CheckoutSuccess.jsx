@@ -141,7 +141,7 @@ const CheckoutSuccess = () => {
                           {item.productName}
                         </Link>
                         <span className="font-bold text-lg text-success dark:text-accent whitespace-nowrap">
-                          ${formatCurrency(item.totalPrice)}
+                          {formatCurrency(item.totalPrice)}
                         </span>
                       </div>
                       <div className="space-y-2">
@@ -150,11 +150,11 @@ const CheckoutSuccess = () => {
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-md font-bold text-success dark:text-accent">
-                            ${formatCurrency(item.unitPrice)}
+                            {formatCurrency(item.unitPrice)}
                           </span>
                           {item.unitPrice < item.basePrice && (
                             <span className="text-xs text-muted-foreground line-through">
-                              ${formatCurrency(item.basePrice)}
+                              {formatCurrency(item.basePrice)}
                             </span>
                           )}
                         </div>
@@ -335,19 +335,19 @@ const CheckoutSuccess = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Subtotal</span>
                   <span className="font-bold">
-                    ${formatCurrency(order?.payment?.subtotal)}
+                    {formatCurrency(order?.payment?.subtotal)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Shipping Fee</span>
                   <span className="font-bold">
-                    ${formatCurrency(order?.payment?.shippingFee)}
+                    {formatCurrency(order?.payment?.shippingFee)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Sales Tax (Included)</span>
                   <span className="font-bold">
-                    ${formatCurrency(order?.payment?.taxAmount)}
+                    {formatCurrency(order?.payment?.taxAmount)}
                   </span>
                 </div>
               </div>

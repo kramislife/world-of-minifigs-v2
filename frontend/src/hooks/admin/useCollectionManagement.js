@@ -36,8 +36,8 @@ const useCollectionManagement = () => {
     setFilePreview,
     fileInputRef,
     resetFile,
-    handleFileChange: onFileChange,
-    handleRemoveFile: onRemoveFile,
+    handleFileChange,
+    handleRemoveFile,
   } = useMediaPreview();
 
   // ------------------------------- Mutations ------------------------------------
@@ -76,12 +76,11 @@ const useCollectionManagement = () => {
     crud.setTotalItems(totalItems);
   }, [totalItems]);
 
-  // ------------------------------- Submit Mode ------------------------------------
   const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
   // ------------------------------- Media Handlers ------------------------------------
-  const handleFileChange = async (e) => {
-    const dataUrl = await onFileChange(e);
+  const handleCollectionFileChange = async (e) => {
+    const dataUrl = await handleFileChange(e);
     if (dataUrl) {
       crud.setFormData((prev) => ({
         ...prev,
@@ -90,8 +89,8 @@ const useCollectionManagement = () => {
     }
   };
 
-  const handleRemoveFile = () => {
-    onRemoveFile();
+  const handleCollectionFileRemove = () => {
+    handleRemoveFile();
     crud.setFormData((prev) => ({
       ...prev,
       image: null,
@@ -151,8 +150,8 @@ const useCollectionManagement = () => {
     isLoadingCollections,
     isSubmitting,
     isDeleting,
-    handleFileChange,
-    handleRemoveFile,
+    handleCollectionFileChange,
+    handleCollectionFileRemove,
     handleEdit,
     handleSubmit,
     handleChange,

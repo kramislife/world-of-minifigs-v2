@@ -1,5 +1,4 @@
 import React from "react";
-import { formatDate, formatCurrency, display } from "@/utils/formatting";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +11,7 @@ import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
+import { formatDate, formatCurrency, display } from "@/utils/formatting";
 import useRewardBundleManagement from "@/hooks/admin/useRewardBundleManagement";
 
 const RewardBundleManagement = () => {
@@ -29,14 +29,13 @@ const RewardBundleManagement = () => {
     totalPages,
     startItem,
     endItem,
-    handlePrevious,
-    handleNext,
     columns,
     isLoadingBundles,
     isSubmitting,
     isDeleting,
+    handleChange,
+    handleValueChange,
     handleDialogClose,
-    setDeleteDialogOpen,
     handleAdd,
     handleEdit,
     handleDelete,
@@ -45,8 +44,9 @@ const RewardBundleManagement = () => {
     handlePageChange,
     handleLimitChange,
     handleSearchChange,
-    handleChange,
-    handleValueChange,
+    handlePrevious,
+    handleNext,
+    setDeleteDialogOpen,
     handleArrayChange,
     addArrayItem,
     removeArrayItem,
@@ -92,7 +92,7 @@ const RewardBundleManagement = () => {
 
             {/* Total Price */}
             <TableCell className="font-semibold text-success">
-              ${formatCurrency(bundle.totalPrice)}
+              {formatCurrency(bundle.totalPrice)}
             </TableCell>
 
             {/* Status */}
@@ -125,8 +125,8 @@ const RewardBundleManagement = () => {
         }
         description={
           dialogMode === "edit"
-            ? "Update the reward bundle details."
-            : "Create a new reward bundle."
+            ? "Update the reward program bundle details."
+            : "Create a new bundle package for the Reward Program."
         }
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
@@ -216,8 +216,8 @@ const RewardBundleManagement = () => {
                     <Button
                       type="button"
                       variant="ghost"
-                      size="icon-sm"
-                      className="shrink-0 text-destructive hover:bg-destructive/10 h-8 w-8"
+                      size="icon"
+                      className="shrink-0 text-destructive hover:text-destructive h-10 w-10"
                       onClick={removeArrayItem("features", index)}
                       disabled={isSubmitting}
                     >

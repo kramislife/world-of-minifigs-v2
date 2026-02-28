@@ -37,8 +37,8 @@ const useSubCollectionManagement = () => {
     setFilePreview,
     fileInputRef,
     resetFile,
-    handleFileChange: onFileChange,
-    handleRemoveFile: onRemoveFile,
+    handleFileChange,
+    handleRemoveFile,
   } = useMediaPreview();
 
   // ------------------------------- Mutations ------------------------------------
@@ -76,26 +76,26 @@ const useSubCollectionManagement = () => {
     totalPages,
   } = extractPaginatedData(subCollectionsData, "subCollections");
 
-  const collections = collectionsData?.collections || [];
+  const collections = [...(collectionsData?.collections || [])].sort((a, b) =>
+    (a.collectionName || "").localeCompare(b.collectionName || ""),
+  );
 
-  // ------------------------------- Effects ------------------------------------
   useEffect(() => {
     crud.setTotalItems(totalItems);
   }, [totalItems]);
 
-  // ------------------------------- Submit Mode ------------------------------------
   const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
   // ------------------------------- File Handlers ------------------------------------
-  const handleFileChange = async (e) => {
-    const dataUrl = await onFileChange(e);
+  const handleSubCollectionFileChange = async (e) => {
+    const dataUrl = await handleFileChange(e);
     if (dataUrl) {
       crud.setFormData((prev) => ({ ...prev, image: dataUrl }));
     }
   };
 
-  const handleRemoveFile = () => {
-    onRemoveFile();
+  const handleSubCollectionFileRemove = () => {
+    handleRemoveFile();
     crud.setFormData((prev) => ({ ...prev, image: null }));
   };
 
@@ -104,9 +104,9 @@ const useSubCollectionManagement = () => {
     crud.openEdit(subCollection, {
       subCollectionName: subCollection.subCollectionName || "",
       description: subCollection.description || "",
-      collection: subCollection.collectionId?._id || "",
       isActive: subCollection.isActive !== false,
       image: null,
+      collection: subCollection.collectionId?._id || "",
     });
 
     setFilePreview(subCollection.image?.url || null);
@@ -119,9 +119,9 @@ const useSubCollectionManagement = () => {
     const payload = {
       subCollectionName: sanitizeString(crud.formData.subCollectionName),
       description: sanitizeString(crud.formData.description),
-      collection: crud.formData.collection,
       isActive: crud.formData.isActive,
       ...(crud.formData.image && { image: crud.formData.image }),
+      collection: crud.formData.collection,
     };
 
     await crud.submitForm(payload);
@@ -154,8 +154,8 @@ const useSubCollectionManagement = () => {
     isLoadingCollections,
     isSubmitting,
     isDeleting,
-    handleFileChange,
-    handleRemoveFile,
+    handleSubCollectionFileChange,
+    handleSubCollectionFileRemove,
     handleEdit,
     handleSubmit,
     handleChange,

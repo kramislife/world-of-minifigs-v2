@@ -106,11 +106,11 @@ const ProductCard = ({ product }) => {
         {/* Price */}
         <div className="flex items-center gap-2">
           <span className="text-2xl font-bold text-success dark:text-accent">
-            ${formatCurrency(product.displayPrice)}
+            {formatCurrency(product.displayPrice)}
           </span>
           {product.hasDiscount && (
             <span className="text-sm text-muted-foreground line-through">
-              ${formatCurrency(product.price)}
+              {formatCurrency(product.price)}
             </span>
           )}
         </div>

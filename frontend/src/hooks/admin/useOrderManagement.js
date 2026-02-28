@@ -34,6 +34,7 @@ const useOrderManagement = () => {
     createFn: null,
     updateFn: null,
     deleteFn: null,
+    entityName: "order",
   });
 
   // ------------------------------- Modal States ------------------------------------
@@ -64,7 +65,7 @@ const useOrderManagement = () => {
     useUpdateOrderStatusMutation();
 
   // ------------------------------- Fetch ------------------------------------
-  const { data: ordersResponse, isLoading: isLoadingOrders } =
+  const { data: ordersData, isLoading: isLoadingOrders } =
     useGetOrdersQuery({
       page: crud.page,
       limit: crud.limit,
@@ -82,7 +83,7 @@ const useOrderManagement = () => {
     items: orders,
     totalItems,
     totalPages,
-  } = extractPaginatedData(ordersResponse, "orders");
+  } = extractPaginatedData(ordersData, "orders");
 
   useEffect(() => {
     crud.setTotalItems(totalItems);

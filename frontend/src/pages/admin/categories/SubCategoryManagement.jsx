@@ -145,27 +145,17 @@ const SubCategoryManagement = () => {
             <Select
               value={formData.category}
               onValueChange={handleValueChange("category")}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLoadingCategories}
             >
               <SelectTrigger id="category" className="w-full">
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
               <SelectContent>
-                {isLoadingCategories ? (
-                  <SelectItem value="loading" disabled>
-                    Loading categories...
+                {categories.map((category) => (
+                  <SelectItem key={category._id} value={category._id}>
+                    {category.categoryName}
                   </SelectItem>
-                ) : categories.length === 0 ? (
-                  <SelectItem value="empty" disabled>
-                    No categories available
-                  </SelectItem>
-                ) : (
-                  categories.map((category) => (
-                    <SelectItem key={category._id} value={category._id}>
-                      {category.categoryName}
-                    </SelectItem>
-                  ))
-                )}
+                ))}
               </SelectContent>
             </Select>
           </div>

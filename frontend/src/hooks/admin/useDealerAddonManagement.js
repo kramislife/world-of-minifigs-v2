@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import {
   useGetDealerAddonsQuery,
   useCreateDealerAddonMutation,
@@ -6,10 +6,10 @@ import {
   useDeleteDealerAddonMutation,
   useGetColorsQuery,
 } from "@/redux/api/adminApi";
-import useMediaPreview from "@/hooks/admin/useMediaPreview";
 import { extractPaginatedData } from "@/utils/apiHelpers";
 import { sanitizeString } from "@/utils/formatting";
 import { validateDealerAddon } from "@/utils/validation";
+import useMediaPreview from "@/hooks/admin/useMediaPreview";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const initialFormData = {
@@ -29,7 +29,7 @@ const columns = [
   { key: "actions", label: "Actions" },
 ];
 
-// Factory for new preview metadata
+// Factory for preview item
 const makeNewPreview = (url) => ({
   url,
   itemName: "",
@@ -41,11 +41,11 @@ const makeNewPreview = (url) => ({
 const useDealerAddonManagement = () => {
   // ------------------------------- Media ------------------------------------
   const {
-    filePreview: filePreviews,
-    setFilePreview: setFilePreviews,
+    filePreview,
+    setFilePreview,
     fileInputRef,
     resetFile,
-    handleFileChange: onFileChange,
+    handleFileChange,
     handleRemoveFile,
   } = useMediaPreview({ multiple: true });
 
@@ -68,34 +68,47 @@ const useDealerAddonManagement = () => {
   });
 
   // ------------------------------- Fetch ------------------------------------
-  const { data: addonsResponse, isLoading: isLoadingAddons } =
+  const { data: addonsData, isLoading: isLoadingAddons } =
     useGetDealerAddonsQuery({
       page: crud.page,
       limit: crud.limit,
       search: crud.search || undefined,
     });
 
-  const { data: colorData } = useGetColorsQuery();
+  const { data: colorData, isLoading: isLoadingColors } = useGetColorsQuery();
 
   const {
     items: addons,
     totalItems,
     totalPages,
-  } = extractPaginatedData(addonsResponse, "addons");
+  } = extractPaginatedData(addonsData, "addons");
 
-  const colors = colorData?.colors
-    ? [...colorData.colors].sort((a, b) =>
-        (a.colorName || "").localeCompare(b.colorName || ""),
-      )
-    : [];
+  const colors = [...(colorData?.colors || [])].sort((a, b) =>
+    (a.colorName || "").localeCompare(b.colorName || ""),
+  );
 
-  // ------------------------------- Effects ------------------------------------
   useEffect(() => {
     crud.setTotalItems(totalItems);
   }, [totalItems]);
 
-  // ------------------------------- Submit Mode ------------------------------------
   const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
+
+  // ------------------------------- File Handlers ------------------------------------
+  const handleDealerAddonFileChange = async (e) => {
+    await handleFileChange(e, { mapFile: makeNewPreview });
+  };
+
+  const handleDealerAddonFileRemove = (index) => {
+    handleRemoveFile(index);
+  };
+
+  const handleUpdateFileMetadata = (index, field) => (e) => {
+    const value = e?.target ? e.target.value : e;
+
+    setFilePreview((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)),
+    );
+  };
 
   // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (addon) => {
@@ -108,7 +121,7 @@ const useDealerAddonManagement = () => {
         image: item.image,
       })) || [];
 
-    setFilePreviews(existingItems);
+    setFilePreview(existingItems);
 
     crud.openEdit(addon, {
       addonName: addon.addonName || "",
@@ -118,36 +131,16 @@ const useDealerAddonManagement = () => {
     });
   };
 
-  // ------------------------------- File Handlers ------------------------------------
-  const handleFileChange = useCallback(
-    (e) => onFileChange(e, { mapFile: makeNewPreview }),
-    [onFileChange],
-  );
-
-  const handleUpdateFileMetadata = useCallback(
-    (index, field) => (e) => {
-      const value = e?.target ? e.target.value : e;
-      setFilePreviews((prev) =>
-        prev.map((item, i) =>
-          i === index ? { ...item, [field]: value } : item,
-        ),
-      );
-    },
-    [setFilePreviews],
-  );
-
   // ------------------------------- Submit Handler ------------------------------------
   const handleSubmit = async () => {
     if (!validateDealerAddon(crud.formData)) return;
-
-    const previews = Array.isArray(filePreviews) ? filePreviews : [];
 
     const payload = {
       addonName: sanitizeString(crud.formData.addonName),
       price: Number(crud.formData.price || 0),
       description: sanitizeString(crud.formData.description),
       isActive: crud.formData.isActive,
-      items: previews.map((item) => ({
+      items: filePreview.map((item) => ({
         itemName: sanitizeString(item.itemName),
         itemPrice: Number(item.itemPrice || 0),
         ...(item.color && { color: item.color }),
@@ -161,7 +154,7 @@ const useDealerAddonManagement = () => {
     await crud.submitForm(payload);
   };
 
-  // ------------------------------- Handlers ------------------------------------
+  // ------------------------------- Standard Handlers ------------------------------------
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     crud.setFormData((prev) => ({
@@ -171,26 +164,30 @@ const useDealerAddonManagement = () => {
   };
 
   const handleValueChange = (field) => (value) => {
-    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+    crud.setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   // ------------------------------- Return ------------------------------------
   return {
     ...crud,
-    filePreviews: Array.isArray(filePreviews) ? filePreviews : [],
+    filePreview,
+    fileInputRef,
     addons,
     totalItems,
     totalPages,
     columns,
+    colors,
     isLoadingAddons,
+    isLoadingColors,
     isSubmitting,
     isDeleting,
-    fileInputRef,
-    colors,
-    handleEdit,
-    handleFileChange,
+    handleDealerAddonFileChange,
+    handleDealerAddonFileRemove,
     handleUpdateFileMetadata,
-    handleRemoveFile,
+    handleEdit,
     handleSubmit,
     handleChange,
     handleValueChange,

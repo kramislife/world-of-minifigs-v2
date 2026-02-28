@@ -34,14 +34,14 @@ const DealerExtraBagManagement = () => {
     search,
     startItem,
     endItem,
-    handlePrevious,
-    handleNext,
     columns,
     isLoadingExtraBags,
+    isLoadingSubCollections,
     isSubmitting,
     isDeleting,
+    handleChange,
+    handleValueChange,
     handleDialogClose,
-    setDeleteDialogOpen,
     handleAdd,
     handleEdit,
     handleDelete,
@@ -50,8 +50,9 @@ const DealerExtraBagManagement = () => {
     handlePageChange,
     handleLimitChange,
     handleSearchChange,
-    handleChange,
-    handleValueChange,
+    handlePrevious,
+    handleNext,
+    setDeleteDialogOpen,
   } = useDealerExtraBagManagement();
 
   return (
@@ -91,7 +92,7 @@ const DealerExtraBagManagement = () => {
 
             {/* Price Per Bag */}
             <TableCell className="font-bold text-success dark:text-accent">
-              ${formatCurrency(bag.price)}
+              {formatCurrency(bag.price)}
             </TableCell>
 
             {/* Status */}
@@ -122,8 +123,8 @@ const DealerExtraBagManagement = () => {
         title={dialogMode === "edit" ? "Edit Bag Pricing" : "Set Bag Pricing"}
         description={
           dialogMode === "edit"
-            ? "Update the extra bag details."
-            : "Create pricing for additional part bags."
+            ? "Update the extra bag pricing details."
+            : "Set a new base price for additional part bags."
         }
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
@@ -134,19 +135,19 @@ const DealerExtraBagManagement = () => {
         <div className="space-y-4">
           {/* Sub-Collection */}
           <div className="space-y-2">
-            <Label htmlFor="subCollectionId">Sub-Collection</Label>
+            <Label htmlFor="subCollection">Sub-Collection</Label>
             <Select
-              value={formData.subCollectionId}
-              onValueChange={handleValueChange("subCollectionId")}
-              disabled={isSubmitting}
+              value={formData.subCollection}
+              onValueChange={handleValueChange("subCollection")}
+              disabled={isSubmitting || isLoadingSubCollections}
             >
-              <SelectTrigger id="subCollectionId" className="w-full">
+              <SelectTrigger id="subCollection" className="w-full">
                 <SelectValue placeholder="Select Sub-Collection" />
               </SelectTrigger>
               <SelectContent>
-                {subCollections.map((sc) => (
-                  <SelectItem key={sc._id} value={sc._id}>
-                    {sc.subCollectionName}
+                {subCollections.map((subCollection) => (
+                  <SelectItem key={subCollection._id} value={subCollection._id}>
+                    {subCollection.subCollectionName}
                   </SelectItem>
                 ))}
               </SelectContent>

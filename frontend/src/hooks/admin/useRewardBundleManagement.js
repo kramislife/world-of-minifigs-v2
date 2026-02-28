@@ -47,7 +47,7 @@ const useRewardBundleManagement = () => {
   });
 
   // ------------------------------- Fetch ------------------------------------
-  const { data: bundlesResponse, isLoading: isLoadingBundles } =
+  const { data: bundlesData, isLoading: isLoadingBundles } =
     useGetRewardBundlesQuery({
       page: crud.page,
       limit: crud.limit,
@@ -58,13 +58,12 @@ const useRewardBundleManagement = () => {
     items: bundles,
     totalItems,
     totalPages,
-  } = extractPaginatedData(bundlesResponse, "bundles");
+  } = extractPaginatedData(bundlesData, "bundles");
 
   useEffect(() => {
     crud.setTotalItems(totalItems);
   }, [totalItems]);
 
-  // ------------------------------- Submit Mode ------------------------------------
   const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
   // ------------------------------- Edit Handler ------------------------------------

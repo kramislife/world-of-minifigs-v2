@@ -1,5 +1,4 @@
 import React from "react";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,7 +14,14 @@ import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import ViewAdminDialog from "@/components/table/ViewAdminDialog";
-import { formatCurrency, formatDate, display } from "@/utils/formatting";
+import {
+  formatCurrency,
+  formatDate,
+  display,
+  formatFullName,
+} from "@/utils/formatting";
+import StatusBadge from "@/components/shared/StatusBadge";
+import { getOrderStatusConfig } from "@/constant/orderData";
 import useOrderManagement from "@/hooks/admin/useOrderManagement";
 
 const OrderManagement = () => {
@@ -88,11 +94,10 @@ const OrderManagement = () => {
         data={orders}
         isLoading={isLoadingOrders}
         renderRow={(order) => {
-          const transitions = getAvailableTransitions(order.status);
           const invoice =
-            order.payment?.stripeInvoiceNumber ||
-            order._id?.substring(0, 7) ||
-            "-";
+            order.payment?.stripeInvoiceNumber || order._id?.substring(0, 7);
+          const transitions = getAvailableTransitions(order.status);
+          const statusConfig = getOrderStatusConfig(order);
 
           return (
             <>
@@ -103,11 +108,7 @@ const OrderManagement = () => {
 
               {/* Customer */}
               <TableCell maxWidth="180px">
-                {order.userId
-                  ? `${display(order.userId.firstName)} ${display(
-                      order.userId.lastName,
-                    )}`
-                  : "-"}
+                {formatFullName(order.userId)}
               </TableCell>
 
               {/* Email */}
@@ -125,20 +126,16 @@ const OrderManagement = () => {
 
               {/* Total */}
               <TableCell>
-                {order.payment?.totalAmount ? (
-                  <span className="font-semibold">
-                    ${formatCurrency(order.payment.totalAmount)}
-                  </span>
-                ) : (
-                  "-"
-                )}
+                <span className="font-semibold">
+                  {formatCurrency(order.payment?.totalAmount)}
+                </span>
               </TableCell>
 
               {/* Status */}
               <TableCell>
-                <Badge variant="outline" className="capitalize">
-                  {display(order.status) || "unknown"}
-                </Badge>
+                <StatusBadge variant={statusConfig.variant}>
+                  {statusConfig.label}
+                </StatusBadge>
               </TableCell>
 
               {/* ARN */}
@@ -149,9 +146,7 @@ const OrderManagement = () => {
               </TableCell>
 
               {/* Created At */}
-              <TableCell>
-                {order.createdAt ? formatDate(order.createdAt) : "-"}
-              </TableCell>
+              <TableCell>{formatDate(order.createdAt)}</TableCell>
 
               {/* Actions */}
               <ActionsColumn
@@ -266,10 +261,6 @@ const OrderManagement = () => {
         open={viewModalOpen}
         onOpenChange={handleViewModalChange}
         title="Order Details"
-        description={
-          viewOrder?.payment?.stripeInvoiceNumber ||
-          `#${viewOrder?._id?.substring(0, 7).toUpperCase()}`
-        }
       >
         {/* ── Order Information ── */}
         <section className="space-y-2">
@@ -297,9 +288,11 @@ const OrderManagement = () => {
             </div>
             <div className="grid grid-cols-[140px_1fr] p-3">
               <span className="font-semibold text-xs">Status</span>
-              <span className="text-xs capitalize">
-                {viewOrder?.status || "—"}
-              </span>
+              <div className="flex items-center">
+                <StatusBadge variant={getOrderStatusConfig(viewOrder).variant}>
+                  {getOrderStatusConfig(viewOrder).label}
+                </StatusBadge>
+              </div>
             </div>
             <div className="grid grid-cols-[140px_1fr] p-3">
               <span className="font-semibold text-xs">Order Type</span>
@@ -310,9 +303,7 @@ const OrderManagement = () => {
             <div className="grid grid-cols-[140px_1fr] p-3">
               <span className="font-semibold text-xs">Paid At</span>
               <span className="text-xs">
-                {viewOrder?.payment?.paidAt
-                  ? formatDate(viewOrder.payment.paidAt)
-                  : "—"}
+                {formatDate(viewOrder?.payment?.paidAt)}
               </span>
             </div>
           </div>
@@ -325,9 +316,7 @@ const OrderManagement = () => {
             <div className="grid grid-cols-[140px_1fr] p-3">
               <span className="font-semibold text-xs">Name</span>
               <span className="text-xs">
-                {viewOrder?.userId
-                  ? `${viewOrder.userId.firstName} ${viewOrder.userId.lastName}`
-                  : "—"}
+                {formatFullName(viewOrder?.userId)}
               </span>
             </div>
             <div className="grid grid-cols-[140px_1fr] p-3">
@@ -464,15 +453,15 @@ const OrderManagement = () => {
               >
                 <span className="text-xs truncate">{item.productName}</span>
                 <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                  {item.quantity} × ${formatCurrency(item.unitPrice)}
+                  {item.quantity} × {formatCurrency(item.unitPrice)}
                   {item.unitPrice < item.basePrice && (
                     <span className="text-[10px] line-through text-muted-foreground/50 ml-1">
-                      ${formatCurrency(item.basePrice)}
+                      {formatCurrency(item.basePrice)}
                     </span>
                   )}
                 </span>
                 <span className="text-xs font-semibold whitespace-nowrap">
-                  ${formatCurrency(item.totalPrice)}
+                  {formatCurrency(item.totalPrice)}
                 </span>
               </div>
             ))}
@@ -488,26 +477,26 @@ const OrderManagement = () => {
             <div className="grid grid-cols-[140px_1fr] p-3">
               <span className="font-semibold text-xs">Subtotal</span>
               <span className="text-xs">
-                ${formatCurrency(viewOrder?.payment?.subtotal)}
+                {formatCurrency(viewOrder?.payment?.subtotal)}
               </span>
             </div>
             <div className="grid grid-cols-[140px_1fr] p-3">
               <span className="font-semibold text-xs">Shipping Fee</span>
               <span className="text-xs">
-                ${formatCurrency(viewOrder?.payment?.shippingFee)}
+                {formatCurrency(viewOrder?.payment?.shippingFee)}
               </span>
             </div>
             {viewOrder?.payment?.taxAmount > 0 && (
               <div className="grid grid-cols-[140px_1fr] p-3">
                 <span className="font-semibold text-xs">Tax</span>
                 <span className="text-xs">
-                  ${formatCurrency(viewOrder.payment.taxAmount)}
+                  {formatCurrency(viewOrder.payment.taxAmount)}
                 </span>
               </div>
             )}
             <div className="grid grid-cols-[140px_1fr] p-3 font-semibold">
               <span>Total</span>
-              <span>${formatCurrency(viewOrder?.payment?.totalAmount)}</span>
+              <span>{formatCurrency(viewOrder?.payment?.totalAmount)}</span>
             </div>
           </div>
         </section>
@@ -527,7 +516,7 @@ const OrderManagement = () => {
                 <div className="grid grid-cols-[140px_1fr] p-3">
                   <span className="font-semibold text-xs">Amount</span>
                   <span className="text-xs">
-                    ${formatCurrency(viewOrder.refund.amount) || "-"}
+                    {formatCurrency(viewOrder.refund.amount)}
                   </span>
                 </div>
               )}

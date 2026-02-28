@@ -1,5 +1,4 @@
 import React from "react";
-import { formatDate } from "@/utils/formatting";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -12,6 +11,7 @@ import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import StatusBadge from "@/components/shared/StatusBadge";
 import TableLayout from "@/components/table/TableLayout";
 import { TableCell } from "@/components/table/BaseColumn";
+import { formatDate, formatFullName } from "@/utils/formatting";
 import useUserManagement from "@/hooks/admin/useUserManagement";
 
 const UserManagement = () => {
@@ -68,9 +68,9 @@ const UserManagement = () => {
             <TableCell maxWidth="250px">
               <div className="flex flex-col">
                 <span className="font-medium">
-                  {user.firstName} {user.lastName}{" "}
+                  {formatFullName(user)}{" "}
                   {isCurrentUser(user) && (
-                    <Badge variant="accent" className="w-fit mt-1">
+                    <Badge variant="accent" className="text-[10px] ml-1">
                       You
                     </Badge>
                   )}
@@ -79,7 +79,7 @@ const UserManagement = () => {
             </TableCell>
 
             {/* Username */}
-            <TableCell maxWidth="150px">@{user.username}</TableCell>
+            <TableCell maxWidth="150px">{user.username}</TableCell>
 
             {/* Email */}
             <TableCell maxWidth="200px">{user.email}</TableCell>
@@ -94,7 +94,7 @@ const UserManagement = () => {
                   <Select
                     value={user.role}
                     onValueChange={(newRole) => {
-                      const userId = user._id || user.id;
+                      const userId = user._id;
                       handleUpdateRole(userId, newRole);
                     }}
                     disabled={isUpdatingRole}
@@ -109,7 +109,10 @@ const UserManagement = () => {
                   </Select>
                 </div>
               ) : (
-                <Badge variant={getRoleBadgeVariant(user.role)}>
+                <Badge
+                  variant={getRoleBadgeVariant(user.role)}
+                  className="capitalize"
+                >
                   {user.role}
                 </Badge>
               )}

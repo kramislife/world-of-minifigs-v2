@@ -1,5 +1,4 @@
 import React from "react";
-import { formatDate, formatCurrency, display } from "@/utils/formatting";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +18,7 @@ import TableLayout from "@/components/table/TableLayout";
 import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
+import { formatDate, formatCurrency, display } from "@/utils/formatting";
 import useRewardAddonManagement from "@/hooks/admin/useRewardAddonManagement";
 
 const RewardAddonManagement = () => {
@@ -36,15 +36,13 @@ const RewardAddonManagement = () => {
     totalPages,
     startItem,
     endItem,
-    handlePrevious,
-    handleNext,
     columns,
     isLoadingAddons,
     isSubmitting,
     isDeleting,
+    handleChange,
+    handleValueChange,
     handleDialogClose,
-    setDeleteDialogOpen,
-    setFormData,
     handleAdd,
     handleEdit,
     handleDelete,
@@ -53,8 +51,9 @@ const RewardAddonManagement = () => {
     handlePageChange,
     handleLimitChange,
     handleSearchChange,
-    handleChange,
-    handleValueChange,
+    handlePrevious,
+    handleNext,
+    setDeleteDialogOpen,
     handleArrayChange,
     addArrayItem,
     removeArrayItem,
@@ -98,7 +97,7 @@ const RewardAddonManagement = () => {
 
             {/* Price */}
             <TableCell className="text-success dark:text-accent font-bold">
-              ${formatCurrency(addon.price)}
+              {formatCurrency(addon.price)}
             </TableCell>
 
             {/* Status */}
@@ -131,8 +130,8 @@ const RewardAddonManagement = () => {
         }
         description={
           dialogMode === "edit"
-            ? "Update the reward add-on details."
-            : "Add a new item for the Reward Program."
+            ? "Update the reward program add-on details."
+            : "Create a new optional add-on for the Reward Program."
         }
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
@@ -146,7 +145,7 @@ const RewardAddonManagement = () => {
             <div className="space-y-2">
               <Label htmlFor="duration">Duration</Label>
               <Select
-                value={formData.duration?.toString() || undefined}
+                value={formData.duration}
                 onValueChange={handleValueChange("duration")}
                 disabled={isSubmitting}
               >

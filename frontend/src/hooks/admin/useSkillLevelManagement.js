@@ -44,7 +44,7 @@ const useSkillLevelManagement = () => {
   });
 
   // ------------------------------- Fetch ------------------------------------
-  const { data: skillLevelsResponse, isLoading: isLoadingSkillLevels } =
+  const { data: skillLevelsData, isLoading: isLoadingSkillLevels } =
     useGetSkillLevelsQuery({
       page: crud.page,
       limit: crud.limit,
@@ -55,13 +55,12 @@ const useSkillLevelManagement = () => {
     items: skillLevels,
     totalItems,
     totalPages,
-  } = extractPaginatedData(skillLevelsResponse, "skillLevels");
+  } = extractPaginatedData(skillLevelsData, "skillLevels");
 
   useEffect(() => {
     crud.setTotalItems(totalItems);
   }, [totalItems]);
 
-  // ------------------------------- Submit Mode ------------------------------------
   const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
   // ------------------------------- Edit Handler ------------------------------------

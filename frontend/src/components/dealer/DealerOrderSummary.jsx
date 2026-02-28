@@ -25,11 +25,11 @@ const DealerOrderSummary = ({
               <div className="space-y-1">
                 <p className="text-sm font-bold">{selectedBundle.bundleName}</p>
                 <p className="text-xs text-muted-foreground">
-                  ${formatCurrency(selectedBundle.unitPrice)} / each
+                  {formatCurrency(selectedBundle.unitPrice)} / each
                 </p>
               </div>
               <p className="text-sm font-bold text-primary dark:text-accent">
-                ${formatCurrency(selectedBundle.totalPrice)}
+                {formatCurrency(selectedBundle.totalPrice)}
               </p>
             </div>
           </div>
@@ -43,7 +43,7 @@ const DealerOrderSummary = ({
                 {!selectedAddonData.price ||
                 Number(selectedAddonData.price) === 0
                   ? "Free"
-                  : `$${formatCurrency(selectedAddonData.price)}`}
+                  : `${formatCurrency(selectedAddonData.price)}`}
               </span>
             </div>
           </div>
@@ -69,7 +69,7 @@ const DealerOrderSummary = ({
                       {qty} x {bag.subCollectionId?.subCollectionName}
                     </span>
                     <span className="font-bold shrink-0 text-primary dark:text-accent">
-                      ${formatCurrency(bag.price * qty)}
+                      {formatCurrency(bag.price * qty)}
                     </span>
                   </div>
                 );
@@ -98,7 +98,7 @@ const DealerOrderSummary = ({
           <span className="text-lg font-bold uppercase">Estimated Total</span>
           <div className="text-right">
             <p className="text-3xl font-bold text-success dark:text-accent">
-              ${formatCurrency(totalOrderPrice)}
+              {formatCurrency(totalOrderPrice)}
             </p>
           </div>
         </div>

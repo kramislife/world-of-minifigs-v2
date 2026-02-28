@@ -43,7 +43,7 @@ const DealerBundle = ({ bundles, onSelect }) => (
               ${bundle.totalPrice}
             </span>
             <span className="text-xs text-primary font-semibold mt-2">
-              ${formatCurrency(bundle.unitPrice)} / each
+              {formatCurrency(bundle.unitPrice)} / each
             </span>
           </div>
 

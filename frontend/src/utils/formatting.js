@@ -15,6 +15,20 @@ export const getInitials = (user) => {
   );
 };
 
+export const formatFullName = (user) => {
+  if (!user?.firstName && !user?.lastName) return "-";
+  return `${user.firstName || ""} ${user.lastName || ""}`.trim();
+};
+
+export const formatCurrency = (value) => {
+  if (value === null || value === undefined) return "-";
+
+  const num = Number(value);
+  if (isNaN(num)) return "-";
+
+  return `$${num.toFixed(2)}`;
+};
+
 export const getProductDisplayInfo = (product) => ({
   displayPrice: product?.discountPrice ?? product?.price,
   hasDiscount: Boolean(product?.discountPrice),
@@ -32,11 +46,13 @@ export const toggleSetItem = (set, item) => {
   return newSet;
 };
 
-export const formatCurrency = (value) => Number(value ?? 0).toFixed(2);
-
 export const formatDate = (date) => {
-  if (!date) return null;
-  return new Date(date).toLocaleDateString("en-US", {
+  if (!date) return "-";
+
+  const parsed = new Date(date);
+  if (isNaN(parsed.getTime())) return "-";
+
+  return parsed.toLocaleString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",

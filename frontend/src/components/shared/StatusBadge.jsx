@@ -5,11 +5,16 @@ const StatusBadge = ({
   isActive,
   activeLabel = "Active",
   inactiveLabel = "Inactive",
+  variant,
   className,
+  children,
 }) => {
   return (
-    <Badge variant={isActive ? "success" : "destructive"} className={className}>
-      {isActive ? activeLabel : inactiveLabel}
+    <Badge
+      variant={variant || (isActive ? "success" : "destructive")}
+      className={className}
+    >
+      {children || (isActive ? activeLabel : inactiveLabel)}
     </Badge>
   );
 };

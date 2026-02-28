@@ -1,19 +1,45 @@
 import React from "react";
 
-const BannerPreview = ({
-  formData,
-  isDarkTheme,
-  isLightTheme,
-  layoutClasses,
-  getButtonStyle,
-}) => {
+const BannerPreview = ({ formData }) => {
+  const isDarkTheme = formData.textTheme === "dark";
+  const isLightTheme = formData.textTheme === "light";
+
+  const getPositionClasses = (position) => {
+    switch (position) {
+      case "bottom-left":
+        return {
+          container: "items-end justify-start text-left",
+          buttons: "justify-start",
+        };
+      case "bottom-right":
+        return {
+          container: "items-end justify-end text-right",
+          buttons: "justify-end",
+        };
+      default:
+        return {
+          container: "items-center justify-center text-center",
+          buttons: "justify-center",
+        };
+    }
+  };
+
+  const layoutClasses = getPositionClasses(formData.position);
   const { container, buttons } = layoutClasses;
+
+  const getButtonStyle = (btn) => {
+    if (btn.variant === "outline") return "border";
+
+    return isDarkTheme
+      ? "bg-black border-black text-white"
+      : "bg-white border-white text-black";
+  };
 
   return (
     <>
       {/* Overlay Content */}
       <div
-        className={`absolute inset-0 z-10 flex h-full w-full p-5 transition-all duration-300 ${container} ${
+        className={`absolute inset-0 z-10 pointer-events-none flex h-full w-full p-5 transition-all duration-300 ${container} ${
           isDarkTheme
             ? "text-foreground dark:text-secondary-foreground"
             : "text-background dark:text-foreground"

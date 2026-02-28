@@ -211,11 +211,11 @@ const ProductDetails = () => {
             {/* Price */}
             <div className="flex items-center gap-2">
               <span className="text-5xl font-bold text-success dark:text-accent">
-                ${formatCurrency(displayPrice)}
+                {formatCurrency(displayPrice)}
               </span>
               {hasDiscount && product.price && (
                 <span className="text-sm text-muted-foreground line-through">
-                  ${formatCurrency(product.price)}
+                  {formatCurrency(product.price)}
                 </span>
               )}
             </div>

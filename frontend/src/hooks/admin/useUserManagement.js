@@ -12,14 +12,14 @@ import {
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const columns = [
-  { key: "user", label: "User" },
+  { key: "user", label: "Full Name" },
   { key: "username", label: "Username" },
   { key: "email", label: "Email" },
-  { key: "contactNumber", label: "Contact" },
+  { key: "contactNumber", label: "Contact No." },
   { key: "role", label: "Role" },
   { key: "status", label: "Status" },
   { key: "verified", label: "Verified" },
-  { key: "createdAt", label: "Joined" },
+  { key: "createdAt", label: "Joined Date" },
 ];
 
 const useUserManagement = () => {
@@ -35,10 +35,11 @@ const useUserManagement = () => {
     createFn: null,
     updateFn: null,
     deleteFn: null,
+    entityName: "user",
   });
 
   // ------------------------------- Fetch ------------------------------------
-  const { data: usersResponse, isLoading: isLoadingUsers } = useGetUsersQuery({
+  const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery({
     page: crud.page,
     limit: crud.limit,
     search: crud.search || undefined,
@@ -48,7 +49,7 @@ const useUserManagement = () => {
     items: users,
     totalItems,
     totalPages,
-  } = extractPaginatedData(usersResponse, "users");
+  } = extractPaginatedData(usersData, "users");
 
   useEffect(() => {
     crud.setTotalItems(totalItems);

@@ -13,11 +13,7 @@ import {
 } from "@/redux/api/adminApi";
 import { extractPaginatedData } from "@/utils/apiHelpers";
 import { sanitizeString } from "@/utils/formatting";
-import {
-  validateProduct,
-  validateMinItems,
-  handleFileReadError,
-} from "@/utils/validation";
+import { validateProduct, handleFileReadError } from "@/utils/validation";
 import useMediaPreview from "@/hooks/admin/useMediaPreview";
 import { validateFile, readFileAsDataURL } from "@/utils/fileHelpers";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
@@ -72,26 +68,19 @@ const columns = [
   { key: "actions", label: "Actions" },
 ];
 
-/* -------------------------------------------------------------------------- */
-/*                             useProductManagement                           */
-/* -------------------------------------------------------------------------- */
-
 const useProductManagement = () => {
-  /* ------------------------------- Local State ------------------------------- */
-
   const [productType, setProductType] = useState("standalone");
   const [variants, setVariants] = useState([{ ...defaultVariant }]);
   const [imagesChanged, setImagesChanged] = useState(false);
 
-  /* ------------------------------- Media Preview ----------------------------- */
-
+  // ------------------------------- Media ------------------------------------
   const {
-    filePreview: galleryPreviews,
-    setFilePreview: setGalleryPreviews,
+    filePreview,
+    setFilePreview,
     fileInputRef,
     resetFile,
-    handleFileChange: onGalleryChange,
-    handleRemoveFile: onGalleryRemove,
+    handleFileChange,
+    handleRemoveFile,
   } = useMediaPreview({ multiple: true, maxFiles: 10 });
 
   const resetProductState = useCallback(() => {
@@ -101,14 +90,12 @@ const useProductManagement = () => {
     setImagesChanged(false);
   }, [resetFile]);
 
-  /* ------------------------------- Mutations -------------------------------- */
-
+  // ------------------------------- Mutations ------------------------------------
   const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
   const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
   const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation();
 
-  /* ------------------------------- Core CRUD -------------------------------- */
-
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createProduct,
@@ -118,8 +105,7 @@ const useProductManagement = () => {
     onReset: resetProductState,
   });
 
-  /* --------------------------------- Fetch ---------------------------------- */
-
+  // ------------------------------- Fetch ------------------------------------
   const { data: productsData, isLoading: isLoadingProducts } =
     useGetProductsQuery({
       page: crud.page,
@@ -127,12 +113,17 @@ const useProductManagement = () => {
       search: crud.search || undefined,
     });
 
-  const { data: categoriesData } = useGetCategoriesQuery();
-  const { data: subCategoriesData } = useGetSubCategoriesQuery();
-  const { data: collectionsData } = useGetCollectionsQuery();
-  const { data: subCollectionsData } = useGetSubCollectionsQuery();
-  const { data: colorsData } = useGetColorsQuery();
-  const { data: skillLevelsData } = useGetSkillLevelsQuery();
+  const { data: categoriesData, isLoading: isLoadingCategories } =
+    useGetCategoriesQuery();
+  const { data: subCategoriesData, isLoading: isLoadingSubCategories } =
+    useGetSubCategoriesQuery();
+  const { data: collectionsData, isLoading: isLoadingCollections } =
+    useGetCollectionsQuery();
+  const { data: subCollectionsData, isLoading: isLoadingSubCollections } =
+    useGetSubCollectionsQuery();
+  const { data: colorsData, isLoading: isLoadingColors } = useGetColorsQuery();
+  const { data: skillLevelsData, isLoading: isLoadingSkillLevels } =
+    useGetSkillLevelsQuery();
 
   const {
     items: products,
@@ -140,24 +131,34 @@ const useProductManagement = () => {
     totalPages,
   } = extractPaginatedData(productsData, "products");
 
+  const categories = [...(categoriesData?.categories || [])].sort((a, b) =>
+    (a.categoryName || "").localeCompare(b.categoryName || ""),
+  );
+
+  const subCategories = [...(subCategoriesData?.subCategories || [])].sort(
+    (a, b) => (a.subCategoryName || "").localeCompare(b.subCategoryName || ""),
+  );
+
+  const collections = [...(collectionsData?.collections || [])].sort((a, b) =>
+    (a.collectionName || "").localeCompare(b.collectionName || ""),
+  );
+
+  const subCollections = [...(subCollectionsData?.subCollections || [])].sort(
+    (a, b) =>
+      (a.subCollectionName || "").localeCompare(b.subCollectionName || ""),
+  );
+
+  const skillLevels = [...(skillLevelsData?.skillLevels || [])].sort((a, b) =>
+    (a.skillLevelName || "").localeCompare(b.skillLevelName || ""),
+  );
+
+  const colors = [...(colorsData?.colors || [])].sort((a, b) =>
+    (a.colorName || "").localeCompare(b.colorName || ""),
+  );
+
   useEffect(() => {
     crud.setTotalItems(totalItems);
   }, [totalItems]);
-
-  /* ------------------------------- Derived ---------------------------------- */
-
-  const categories = categoriesData?.categories || [];
-  const subCategories = subCategoriesData?.subCategories || [];
-  const collections = collectionsData?.collections || [];
-  const subCollections = subCollectionsData?.subCollections || [];
-  const skillLevels = skillLevelsData?.skillLevels || [];
-
-  const colors = useMemo(() => {
-    const list = colorsData?.colors || [];
-    return [...list].sort((a, b) =>
-      (a.colorName || "").localeCompare(b.colorName || ""),
-    );
-  }, [colorsData]);
 
   const categoriesWithSubs = useMemo(() => {
     return categories.map((category) => {
@@ -181,10 +182,17 @@ const useProductManagement = () => {
 
   const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
-  /* ------------------------------- Handlers --------------------------------- */
+  // ------------------------------- Handlers ------------------------------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
 
-  const handleSelectChange = (name) => (value) => {
-    crud.setFormData((prev) => ({ ...prev, [name]: value || "" }));
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleMultiSelectChange = (name) => (value) => {
@@ -200,35 +208,68 @@ const useProductManagement = () => {
     });
   };
 
+  const handleArrayChange = (arrayName, index) => (e) => {
+    const value = e?.target ? e.target.value : e;
+    crud.setFormData((prev) => {
+      const newArray = [...(prev[arrayName] || [])];
+      newArray[index] = value;
+      return { ...prev, [arrayName]: newArray };
+    });
+  };
+
+  const addArrayItem =
+    (arrayName, defaultValue = "") =>
+    () => {
+      crud.setFormData((prev) => ({
+        ...prev,
+        [arrayName]: [...(prev[arrayName] || []), defaultValue],
+      }));
+    };
+
+  const removeArrayItem = (arrayName, index) => () => {
+    crud.setFormData((prev) => ({
+      ...prev,
+      [arrayName]: (prev[arrayName] || []).filter((_, i) => i !== index),
+    }));
+  };
+
   const handleImageChange = async (e) => {
-    const dataUrls = await onGalleryChange(e);
+    const dataUrls = await handleFileChange(e, {
+      mapFile: (url) => ({ url }),
+    });
     if (dataUrls?.length) {
       crud.setFormData((prev) => ({
         ...prev,
-        images: [...prev.images, ...dataUrls],
+        images: [...prev.images, ...dataUrls.map((item) => item.url)],
       }));
       setImagesChanged(true);
     }
   };
 
-  const handleRemoveImage = (index) => () => {
-    onGalleryRemove(index);
-    crud.setFormData((prev) => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index),
-    }));
-    setImagesChanged(true);
-  };
+  const handleRemoveImage = useCallback(
+    (index) => {
+      handleRemoveFile(index);
+      crud.setFormData((prev) => ({
+        ...prev,
+        images: prev.images.filter((_, i) => i !== index),
+      }));
+      setImagesChanged(true);
+    },
+    [handleRemoveFile, crud.setFormData],
+  );
 
   const handleAddVariant = () => {
     setVariants((prev) => [...prev, { ...defaultVariant }]);
   };
 
-  const handleRemoveVariant = (index) => () => {
-    if (validateMinItems(variants, 1, "variant")) {
-      setVariants((prev) => prev.filter((_, i) => i !== index));
-    }
-  };
+  const handleRemoveVariant = useCallback(
+    (index) => {
+      if (variants.length > 1) {
+        setVariants((prev) => prev.filter((_, i) => i !== index));
+      }
+    },
+    [variants.length],
+  );
 
   const handleVariantChange = (index, field) => (e) => {
     const value = e?.target ? e.target.value : e;
@@ -259,7 +300,7 @@ const useProductManagement = () => {
     }
   };
 
-  const handleRemoveVariantImage = (variantIndex) => () => {
+  const handleRemoveVariantImage = useCallback((variantIndex) => {
     setVariants((prev) => {
       const copy = [...prev];
       copy[variantIndex] = {
@@ -269,9 +310,9 @@ const useProductManagement = () => {
       };
       return copy;
     });
-  };
+  }, []);
 
-  /* ------------------------------- Edit Handler ------------------------------ */
+  // ------------------------------- Edit Handler ------------------------------------
 
   const handleEdit = (product) => {
     const existingDescriptions = product.descriptions?.filter(Boolean) || [""];
@@ -307,8 +348,9 @@ const useProductManagement = () => {
 
     crud.openEdit(product, mappedForm);
 
-    const existingImages = product.images?.map((img) => img.url) || [];
-    setGalleryPreviews(existingImages);
+    const existingImages =
+      product.images?.map((img) => ({ url: img.url })) || [];
+    setFilePreview(existingImages);
 
     const existingImageObjects =
       product.images?.map((img) => ({
@@ -347,10 +389,10 @@ const useProductManagement = () => {
     }
   };
 
-  /* ------------------------------- Submit Handler ---------------------------- */
+  // ------------------------------- Submit Handler ------------------------------------
 
   const handleSubmit = async () => {
-    if (!validateProduct(crud.formData, productType, variants, galleryPreviews))
+    if (!validateProduct(crud.formData, productType, variants, filePreview))
       return;
 
     const validDescriptions = crud.formData.descriptions
@@ -426,56 +468,17 @@ const useProductManagement = () => {
     await crud.submitForm(productData);
   };
 
-  /* ------------------------------- Handlers --------------------------------- */
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    crud.setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  const handleValueChange = (field) => (value) => {
-    crud.setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleArrayChange = (arrayName, index) => (e) => {
-    const value = e?.target ? e.target.value : e;
-    crud.setFormData((prev) => {
-      const newArray = [...(prev[arrayName] || [])];
-      newArray[index] = value;
-      return { ...prev, [arrayName]: newArray };
-    });
-  };
-
-  const addArrayItem =
-    (arrayName, defaultValue = "") =>
-    () => {
-      crud.setFormData((prev) => ({
-        ...prev,
-        [arrayName]: [...(prev[arrayName] || []), defaultValue],
-      }));
-    };
-
-  const removeArrayItem = (arrayName, index) => () => {
-    crud.setFormData((prev) => ({
-      ...prev,
-      [arrayName]: (prev[arrayName] || []).filter((_, i) => i !== index),
-    }));
-  };
-
-  /* --------------------------------- Return --------------------------------- */
-
+  // ------------------------------- Return ------------------------------------
   return {
     ...crud,
     productType,
     variants,
-    imagePreviews: galleryPreviews,
+    filePreview,
     imagesChanged,
-    fileInputRef,
     products,
     totalItems,
     totalPages,
+    columns,
     categories,
     subCategories,
     collections,
@@ -484,12 +487,23 @@ const useProductManagement = () => {
     skillLevels,
     categoriesWithSubs,
     collectionsWithSubs,
-    columns,
     isLoadingProducts,
+    isLoadingCategories,
+    isLoadingSubCategories,
+    isLoadingCollections,
+    isLoadingSubCollections,
+    isLoadingColors,
+    isLoadingSkillLevels,
     isSubmitting,
     isDeleting,
-    handleSelectChange,
+    handleEdit,
+    handleSubmit,
+    handleChange,
+    handleValueChange,
     handleMultiSelectChange,
+    handleArrayChange,
+    addArrayItem,
+    removeArrayItem,
     handleImageChange,
     handleRemoveImage,
     handleAddVariant,
@@ -497,15 +511,10 @@ const useProductManagement = () => {
     handleVariantChange,
     handleVariantImageChange,
     handleRemoveVariantImage,
-    handleSubmit,
-    handleEdit,
+
     setProductType,
-    setGalleryPreviews,
-    handleChange,
-    handleValueChange,
-    handleArrayChange,
-    addArrayItem,
-    removeArrayItem,
+    setFilePreview,
+    fileInputRef,
   };
 };
 

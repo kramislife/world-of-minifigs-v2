@@ -57,7 +57,6 @@ const useColorManagement = () => {
     crud.setTotalItems(totalItems);
   }, [totalItems]);
 
-  // ------------------------------- Submit Mode ------------------------------------
   const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
   // ------------------------------- Helpers ------------------------------------
@@ -69,9 +68,8 @@ const useColorManagement = () => {
   };
 
   const getColorPickerValue = () => {
-    const hex = sanitizeString(crud.formData.hexCode);
-    if (!hex) return "#000000";
-    return hex.startsWith("#") ? hex : `#${hex}`;
+    const hex = sanitizeString(crud.formData.hexCode).replace("#", "");
+    return `#${hex || "000000"}`;
   };
 
   // ------------------------------- Edit Handler ------------------------------------

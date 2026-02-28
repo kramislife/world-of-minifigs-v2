@@ -13,7 +13,6 @@ const ViewAdminDialog = ({
   open,
   onOpenChange,
   title = "Details",
-  description,
   children,
   className = "sm:max-w-xl",
 }) => {
@@ -22,9 +21,9 @@ const ViewAdminDialog = ({
       <DialogContent className={className}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description && (
-            <DialogDescription>{description}</DialogDescription>
-          )}
+          <DialogDescription className="sr-only">
+            This is for Order Details
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">{children}</div>

@@ -45,30 +45,33 @@ const useDealerExtraBagManagement = () => {
   });
 
   // ------------------------------- Fetch ------------------------------------
-  const { data: extraBagsResponse, isLoading: isLoadingExtraBags } =
+  const { data: extraBagsData, isLoading: isLoadingExtraBags } =
     useGetDealerExtraBagsQuery({
       page: crud.page,
       limit: crud.limit,
       search: crud.search || undefined,
     });
 
-  const { data: subCollectionsData } = useGetSubCollectionsQuery({
-    limit: 1000,
-  });
-
-  const subCollections = subCollectionsData?.subCollections || [];
+  const { data: subCollectionsData, isLoading: isLoadingSubCollections } =
+    useGetSubCollectionsQuery({
+      limit: 1000,
+    });
 
   const {
     items: extraBags,
     totalItems,
     totalPages,
-  } = extractPaginatedData(extraBagsResponse, "extraBags");
+  } = extractPaginatedData(extraBagsData, "extraBags");
+
+  const subCollections = [...(subCollectionsData?.subCollections || [])].sort(
+    (a, b) =>
+      (a.subCollectionName || "").localeCompare(b.subCollectionName || ""),
+  );
 
   useEffect(() => {
     crud.setTotalItems(totalItems);
   }, [totalItems]);
 
-  // ------------------------------- Derived State ------------------------------------
   const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
   // ------------------------------- Edit Handler ------------------------------------
@@ -115,6 +118,7 @@ const useDealerExtraBagManagement = () => {
     totalPages,
     columns,
     isLoadingExtraBags,
+    isLoadingSubCollections,
     isSubmitting,
     isDeleting,
     handleEdit,
