@@ -449,6 +449,40 @@ export const validateDealerAddon = (formData) => {
   return true;
 };
 
+// validate all minifig inventory fields
+export const validateMinifigInventory = (items, isAddMode) => {
+  if (!items || !items.length) {
+    toast.error("Items are required", {
+      description: "Please add at least one item.",
+    });
+    return false;
+  }
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const prefix = items.length > 1 ? `Item ${i + 1} ` : "";
+
+    if (isAddMode && !validateRequired(item.minifigName, `${prefix}Name`))
+      return false;
+
+    if (!validatePositiveNumber(item.price, `${prefix}Price`, { min: 0.01 }))
+      return false;
+
+    if (!validatePositiveNumber(item.stock, `${prefix}Stock`, { min: 0 }))
+      return false;
+
+    if (!validateRequired(item.colorId || item.color, `${prefix}Color`))
+      return false;
+
+    if (isAddMode && !item.image && !item.url) {
+      toast.error(`${prefix}Image is required`);
+      return false;
+    }
+  }
+
+  return true;
+};
+
 /** Checks if an item can be removed based on a minimum items requirement */
 export const validateMinItems = (items, min, label) => {
   if (items.length <= min) {

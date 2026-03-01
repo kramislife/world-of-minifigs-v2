@@ -51,6 +51,7 @@ export const adminApi = createApi({
     "RewardBundle",
     "RewardAddon",
     "Order",
+    "MinifigInventory",
   ],
   endpoints: (builder) => ({
     // ==================== Banner Management ====================
@@ -655,6 +656,42 @@ export const adminApi = createApi({
       }),
       invalidatesTags: ["User"],
     }),
+
+    // ==================== Minifig Inventory Management ====================
+    getMinifigInventory: builder.query({
+      query: (params = {}) => ({
+        url: "/minifig-inventory",
+        method: "GET",
+        params: buildPaginationParams(params),
+      }),
+      providesTags: ["MinifigInventory"],
+    }),
+
+    createMinifigInventoryBulk: builder.mutation({
+      query: (data) => ({
+        url: "/minifig-inventory/bulk",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["MinifigInventory"],
+    }),
+
+    updateMinifigInventory: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/minifig-inventory/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["MinifigInventory"],
+    }),
+
+    deleteMinifigInventory: builder.mutation({
+      query: (id) => ({
+        url: `/minifig-inventory/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["MinifigInventory"],
+    }),
   }),
 });
 
@@ -731,4 +768,9 @@ export const {
 
   useGetUsersQuery,
   useUpdateUserRoleMutation,
+
+  useGetMinifigInventoryQuery,
+  useCreateMinifigInventoryBulkMutation,
+  useUpdateMinifigInventoryMutation,
+  useDeleteMinifigInventoryMutation,
 } = adminApi;

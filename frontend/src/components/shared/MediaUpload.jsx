@@ -10,8 +10,8 @@ const MediaUpload = ({
   accept = "image/*",
   multiple = false,
   description = "Image, GIF, or Video",
-  previewClassName = "",
-  imageClassName = "h-full object-cover",
+  previewClassName = "aspect-[16/7]",
+  imageClassName = "object-cover",
   preview,
   onChange,
   onRemove,
@@ -23,6 +23,21 @@ const MediaUpload = ({
   const inputRef = useRef(null);
   const isMulti = multiple && Array.isArray(previews);
   const hasPreview = isMulti ? previews.length > 0 : !!preview;
+
+  // Calculate the grid structure
+  // Always reserve a slot for the upload box in multi-mode to keep layout stable
+  const totalItemsCount = isMulti ? previews.length + 1 : 1;
+  const gridConfig = {
+    1: "grid-cols-1",
+    2: "grid-cols-1 sm:grid-cols-2",
+    3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+    4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
+  };
+  const gridCols = gridConfig[Math.min(totalItemsCount, 4)] || "grid-cols-1";
+
+  // Determine aspect ratio (force squares for bulk grids, keep panoramic for single)
+  const aspectClass =
+    isMulti && previews.length > 1 ? "aspect-square" : previewClassName;
 
   const RemoveButton = ({ onClick }) => (
     <Button
@@ -80,13 +95,7 @@ const MediaUpload = ({
         </Label>
       )}
 
-      <div
-        className={
-          isMulti && hasPreview
-            ? "grid gap-2 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-            : ""
-        }
-      >
+      <div className={isMulti ? `grid gap-2 ${gridCols}` : ""}>
         {isMulti
           ? previews.map((item, index) => (
               <div
@@ -94,12 +103,12 @@ const MediaUpload = ({
                 className="relative group rounded-md border overflow-hidden flex flex-col"
               >
                 <div
-                  className={`relative w-full overflow-hidden ${previewClassName}`}
+                  className={`relative w-full overflow-hidden ${aspectClass}`}
                 >
                   <img
                     src={item.url}
                     alt="preview"
-                    className={`w-full ${imageClassName}`}
+                    className={`w-full h-full ${imageClassName}`}
                   />
                   {!disabled && (
                     <RemoveButton onClick={() => onRemove?.(index)} />
@@ -111,12 +120,12 @@ const MediaUpload = ({
           : hasPreview && (
               <div className="relative group rounded-md border overflow-hidden flex flex-col">
                 <div
-                  className={`relative w-full overflow-hidden ${previewClassName}`}
+                  className={`relative w-full overflow-hidden ${aspectClass}`}
                 >
                   {mediaType === "video" ? (
                     <video
                       src={preview}
-                      className={`w-full ${imageClassName}`}
+                      className={`w-full h-full ${imageClassName}`}
                       muted
                       playsInline
                       autoPlay
@@ -126,16 +135,21 @@ const MediaUpload = ({
                     <img
                       src={preview}
                       alt="preview"
-                      className={`w-full ${imageClassName}`}
+                      className={`w-full h-full ${imageClassName}`}
                     />
                   )}
                   {!disabled && <RemoveButton onClick={onRemove} />}
                 </div>
-                {children}
+                {renderItem
+                  ? renderItem(
+                      isMulti ? item : previews[0] || { url: preview },
+                      0,
+                    )
+                  : children}
               </div>
             )}
 
-        {(!hasPreview || isMulti) && !disabled && <UploadTrigger />}
+        {(isMulti || !hasPreview) && <UploadTrigger />}
       </div>
     </div>
   );

@@ -13,7 +13,7 @@ const Home = () => {
       <LatestProduct />
       <CollectionsCarousel />
       <FeaturedCollections />
-      <RewardProgram />
+      {/* <RewardProgram /> */}
       <DealerCTA />
     </div>
   );

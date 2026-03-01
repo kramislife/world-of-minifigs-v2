@@ -253,7 +253,6 @@ const BannerManagement = () => {
             onRemove={handleBannerFileRemove}
             accept="image/*,video/*"
             description="Image, GIF, or Video (max 10s)"
-            previewClassName="aspect-[16/7]"
             disabled={isSubmitting}
           >
             {/* Banner Preview */}

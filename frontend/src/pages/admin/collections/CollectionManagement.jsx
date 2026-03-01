@@ -168,6 +168,8 @@ const CollectionManagement = () => {
             onRemove={handleCollectionFileRemove}
             accept="image/*"
             description="PNG, JPG, WEBP"
+            imageClassName="object-cover"
+            previewClassName="h-full"
             disabled={isSubmitting}
           />
 
