@@ -444,8 +444,52 @@ export const validateDealerTorsoBag = (
 };
 
 // validate all dealer add-on fields
-export const validateDealerAddon = (formData) => {
+export const validateDealerAddon = (formData, bundleItems = []) => {
   if (!validateRequired(formData.addonName, "Add-on name")) return false;
+  if (!validateRequired(formData.addonType, "Add-on type")) return false;
+
+  if (formData.addonType === "bundle") {
+    if (!bundleItems || bundleItems.length === 0) {
+      toast.error("Items are required", {
+        description: "Please add at least one inventory item to the bundle.",
+      });
+      return false;
+    }
+
+    // Check for duplicate inventory items
+    const itemIds = bundleItems.map((i) => i.inventoryItemId);
+    if (new Set(itemIds).size !== itemIds.length) {
+      toast.error("Duplicate items found", {
+        description: "Each inventory item can only appear once in a bundle.",
+      });
+      return false;
+    }
+
+    for (let i = 0; i < bundleItems.length; i++) {
+      const item = bundleItems[i];
+      if (!item.inventoryItemId) {
+        toast.error(`Item ${i + 1}: Inventory item is required`);
+        return false;
+      }
+      if (
+        !validatePositiveNumber(item.quantityPerBag, `Item ${i + 1} Quantity`, {
+          min: 1,
+        })
+      )
+        return false;
+    }
+  }
+
+  if (formData.addonType === "upgrade") {
+    if (
+      !validatePositiveNumber(formData.price, "Price", {
+        min: 0,
+        required: false,
+      })
+    )
+      return false;
+  }
+
   return true;
 };
 

@@ -2,6 +2,7 @@ import Bundle from "../models/bundle.model.js";
 import DealerAddon from "../models/dealerAddon.model.js";
 import DealerExtraBag from "../models/dealerExtraBag.model.js";
 import DealerTorsoBag from "../models/dealerTorsoBag.model.js";
+import MinifigInventory from "../models/minifigInventory.model.js";
 import SubCollection from "../models/subCollection.model.js";
 import { cleanUpImages } from "../utils/cloudinary.js";
 import {
@@ -10,7 +11,7 @@ import {
   paginateQuery,
   createPaginationResponse,
 } from "../utils/pagination.js";
-import { handleError } from "../utils/commonUtils.js";
+import { handleError, checkNameConflict } from "../utils/commonUtils.js";
 import { validateFeatures, processFeatures } from "../utils/bundleUtils.js";
 import { AUDIT_POPULATE } from "../utils/populateHelpers.js";
 import {
@@ -21,19 +22,14 @@ import {
   getMiscQuantity,
   getBaseBundleSize,
   validateTorsoItems,
-  checkAddonNameConflict,
   checkTorsoBagNameConflict,
-  processAddonItems,
-  processAddonItemsForUpdate,
   processTorsoBagItems,
   processTorsoBagItemsForUpdate,
 } from "../services/bundleService.js";
 
-// -------------------------------- Helper Functions ---------------------------------- 
+// -------------------------------- Helper Functions ----------------------------------
 
 const findDealerBundleById = async (id) => findBundleByIdAndType("dealer", id);
-
-const findDealerAddonById = async (id) => DealerAddon.findById(id);
 
 const checkBundleConflict = async (minifigQuantity, excludeId = null) =>
   checkBundleQuantityConflict("dealer", minifigQuantity, excludeId);
@@ -46,7 +42,7 @@ const checkExtraBagConflict = async (subCollectionId, excludeId = null) => {
 
 const getStandardPopulateOptions = () => AUDIT_POPULATE;
 
-// -------------------------------- Create Dealer Bundle ---------------------------------- 
+// -------------------------------- Create Dealer Bundle ----------------------------------
 
 export const createDealerBundle = async (req, res) => {
   try {
@@ -126,7 +122,7 @@ export const createDealerBundle = async (req, res) => {
   }
 };
 
-// -------------------------------- Get All Dealer Bundles ---------------------------------- 
+// -------------------------------- Get All Dealer Bundles ----------------------------------
 
 export const getAllDealerBundles = async (req, res) => {
   try {
@@ -149,7 +145,7 @@ export const getAllDealerBundles = async (req, res) => {
   }
 };
 
-// -------------------------------- Update Dealer Bundle ---------------------------------- 
+// -------------------------------- Update Dealer Bundle ----------------------------------
 
 export const updateDealerBundle = async (req, res) => {
   try {
@@ -225,7 +221,7 @@ export const updateDealerBundle = async (req, res) => {
   }
 };
 
-// -------------------------------- Delete Dealer Bundle ---------------------------------- 
+// -------------------------------- Delete Dealer Bundle ----------------------------------
 
 export const deleteDealerBundle = async (req, res) => {
   try {
@@ -253,14 +249,14 @@ export const deleteDealerBundle = async (req, res) => {
   }
 };
 
-// -------------------------------- Create Dealer Addon ---------------------------------- 
+// -------------------------------- Create Dealer Addon ----------------------------------
 
 export const createDealerAddon = async (req, res) => {
   try {
-    const { addonName, price, description, items, isActive } = req.body;
+    const { addonName, addonType, description, price, bundleItems, isActive } =
+      req.body;
 
-    // Validate required fields
-    if (!addonName) {
+    if (!addonName || !addonName.trim()) {
       return res.status(400).json({
         success: false,
         message: "Add-on name is required",
@@ -268,32 +264,135 @@ export const createDealerAddon = async (req, res) => {
       });
     }
 
-    // Check for existing addon with same name
-    const existingAddon = await checkAddonNameConflict(addonName);
-    if (existingAddon) {
-      return res.status(409).json({
+    if (!addonType || !["bundle", "upgrade"].includes(addonType)) {
+      return res.status(400).json({
         success: false,
-        message: "Add-on already exists",
-        description: `An add-on with the name "${addonName}" already exists for dealers.`,
+        message: "Valid add-on type is required",
+        description: 'Please select either "Bundle" or "Upgrade".',
       });
     }
 
-    // Process and upload items
-    const uploadedItems = await processAddonItems(items);
+    // Check name uniqueness
+    const existing = await checkNameConflict(
+      DealerAddon,
+      "addonName",
+      addonName.trim(),
+    );
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: "Add-on already exists",
+        description: `An add-on named "${addonName}" already exists.`,
+      });
+    }
 
-    const addon = await DealerAddon.create({
+    const addonData = {
       addonName: addonName.trim(),
-      price,
-      description,
-      items: uploadedItems,
+      addonType,
+      description: description?.trim() || undefined,
+      price: 0,
+      bundleItems: [],
       isActive: isActive !== undefined ? isActive : true,
       createdBy: req.user._id,
-    });
+    };
+
+    if (addonType === "bundle") {
+      if (
+        !bundleItems ||
+        !Array.isArray(bundleItems) ||
+        bundleItems.length === 0
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Bundle items are required",
+          description: "Please add at least one inventory item to the bundle.",
+        });
+      }
+
+      // Check for duplicate inventory items
+      const itemIds = bundleItems.map((i) => i.inventoryItemId);
+      if (new Set(itemIds).size !== itemIds.length) {
+        return res.status(400).json({
+          success: false,
+          message: "Duplicate items found",
+          description: "Each inventory item can only appear once in a bundle.",
+        });
+      }
+
+      // Validate each item exists and has valid quantity
+      let computedPrice = 0;
+      const validatedItems = [];
+
+      for (const item of bundleItems) {
+        if (!item.inventoryItemId) {
+          return res.status(400).json({
+            success: false,
+            message: "Inventory item is required",
+            description: "Each bundle item must reference an inventory item.",
+          });
+        }
+
+        const qty = Number(item.quantityPerBag);
+        if (!Number.isInteger(qty) || qty < 1) {
+          return res.status(400).json({
+            success: false,
+            message: "Valid quantity is required",
+            description: "Each bundle item must have a quantity of at least 1.",
+          });
+        }
+
+        const inventoryItem = await MinifigInventory.findById(
+          item.inventoryItemId,
+        ).lean();
+        if (!inventoryItem) {
+          return res.status(404).json({
+            success: false,
+            message: "Inventory item not found",
+            description: `The inventory item "${item.inventoryItemId}" does not exist.`,
+          });
+        }
+
+        if (qty > Number(inventoryItem.stock || 0)) {
+          return res.status(400).json({
+            success: false,
+            message: "Insufficient stock for bundle item",
+            description: `"${inventoryItem.minifigName}" has only ${inventoryItem.stock} in stock, but ${qty} per bag was provided.`,
+          });
+        }
+
+        computedPrice += inventoryItem.price * qty;
+        validatedItems.push({
+          inventoryItemId: item.inventoryItemId,
+          quantityPerBag: qty,
+        });
+      }
+
+      addonData.bundleItems = validatedItems;
+      addonData.price = computedPrice;
+    } else {
+      // Upgrade
+      const hasProvidedPrice =
+        price !== undefined && price !== null && String(price).trim() !== "";
+
+      if (hasProvidedPrice && Number(price) < 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Valid price is required",
+          description: "Upgrade price cannot be negative.",
+        });
+      }
+
+      if (hasProvidedPrice) {
+        addonData.price = Number(price);
+      }
+    }
+
+    const addon = await DealerAddon.create(addonData);
 
     return res.status(201).json({
       success: true,
       message: "Add-on created successfully",
-      description: `The "${addon.addonName}" add-on is now available for dealers.`,
+      description: `The "${addon.addonName}" add-on has been created.`,
       addon,
     });
   } catch (error) {
@@ -301,20 +400,26 @@ export const createDealerAddon = async (req, res) => {
   }
 };
 
-// -------------------------------- Get All Dealer Addons ---------------------------------- 
+// -------------------------------- Get All Dealer Addons ----------------------------------
 
 export const getAllDealerAddons = async (req, res) => {
   try {
     const { page, limit, search } = normalizePagination(req.query);
 
-    const searchQuery = {
-      ...buildSearchQuery(search, ["addonName", "description"]),
-    };
+    const searchQuery = buildSearchQuery(search, ["addonName", "description"]);
 
     const result = await paginateQuery(DealerAddon, searchQuery, {
       page,
       limit,
-      populate: getStandardPopulateOptions(),
+      sort: { createdAt: -1 },
+      populate: [
+        {
+          path: "bundleItems.inventoryItemId",
+          select: "minifigName price stock image colorId",
+          populate: { path: "colorId", select: "colorName hexCode" },
+        },
+        ...getStandardPopulateOptions(),
+      ],
     });
 
     return res.status(200).json(createPaginationResponse(result, "addons"));
@@ -323,56 +428,152 @@ export const getAllDealerAddons = async (req, res) => {
   }
 };
 
-// -------------------------------- Update Dealer Addon ---------------------------------- 
+// -------------------------------- Update Dealer Addon ----------------------------------
 
 export const updateDealerAddon = async (req, res) => {
   try {
     const { id } = req.params;
-    const { addonName, price, description, items, isActive } = req.body;
+    const { addonName, description, price, bundleItems, isActive } = req.body;
 
-    // Find addon
-    const addon = await findDealerAddonById(id);
+    const addon = await DealerAddon.findById(id);
+
     if (!addon) {
       return res.status(404).json({
         success: false,
         message: "Add-on not found",
-        description: "The requested dealer add-on does not exist.",
+        description: "The requested add-on does not exist.",
       });
     }
 
-    // Update fields
-    if (addonName) {
-      const addonNameTrimmed = addonName.trim();
-      if (addonNameTrimmed !== addon.addonName) {
-        const conflict = await checkAddonNameConflict(addonNameTrimmed, id);
-        if (conflict) {
-          return res.status(409).json({
-            success: false,
-            message: "Name already taken",
-            description: `Another dealer add-on named "${addonNameTrimmed}" already exists.`,
-          });
-        }
+    // Update name with uniqueness check
+    if (addonName !== undefined) {
+      const trimmed = addonName.trim();
+      if (!trimmed) {
+        return res.status(400).json({
+          success: false,
+          message: "Add-on name is required",
+          description: "Please provide a name for the add-on.",
+        });
       }
-      addon.addonName = addonNameTrimmed;
+
+      const conflict = await checkNameConflict(
+        DealerAddon,
+        "addonName",
+        trimmed,
+        id,
+      );
+      if (conflict) {
+        return res.status(409).json({
+          success: false,
+          message: "Add-on already exists",
+          description: `An add-on named "${trimmed}" already exists.`,
+        });
+      }
+
+      addon.addonName = trimmed;
     }
 
-    if (price !== undefined) addon.price = price;
-    if (description !== undefined) addon.description = description;
+    if (description !== undefined)
+      addon.description = description?.trim() || undefined;
     if (isActive !== undefined) addon.isActive = isActive;
 
-    // Process items if provided
-    if (items && Array.isArray(items)) {
-      const processedItems = await processAddonItemsForUpdate(
-        items,
-        addon.items,
-      );
-      if (processedItems !== null) {
-        addon.items = processedItems;
+    // Type-specific updates (type cannot be changed)
+    if (addon.addonType === "bundle") {
+      if (bundleItems !== undefined) {
+        if (!Array.isArray(bundleItems) || bundleItems.length === 0) {
+          return res.status(400).json({
+            success: false,
+            message: "Bundle items are required",
+            description:
+              "Please add at least one inventory item to the bundle.",
+          });
+        }
+
+        const itemIds = bundleItems.map((i) => i.inventoryItemId);
+        if (new Set(itemIds).size !== itemIds.length) {
+          return res.status(400).json({
+            success: false,
+            message: "Duplicate items found",
+            description:
+              "Each inventory item can only appear once in a bundle.",
+          });
+        }
+
+        let computedPrice = 0;
+        const validatedItems = [];
+
+        for (const item of bundleItems) {
+          if (!item.inventoryItemId) {
+            return res.status(400).json({
+              success: false,
+              message: "Inventory item is required",
+              description: "Each bundle item must reference an inventory item.",
+            });
+          }
+
+          const qty = Number(item.quantityPerBag);
+          if (!Number.isInteger(qty) || qty < 1) {
+            return res.status(400).json({
+              success: false,
+              message: "Valid quantity is required",
+              description:
+                "Each bundle item must have a quantity of at least 1.",
+            });
+          }
+
+          const inventoryItem = await MinifigInventory.findById(
+            item.inventoryItemId,
+          ).lean();
+          if (!inventoryItem) {
+            return res.status(404).json({
+              success: false,
+              message: "Inventory item not found",
+              description: `The inventory item "${item.inventoryItemId}" does not exist.`,
+            });
+          }
+
+          if (qty > Number(inventoryItem.stock || 0)) {
+            return res.status(400).json({
+              success: false,
+              message: "Insufficient stock for bundle item",
+              description: `"${inventoryItem.minifigName}" has only ${inventoryItem.stock} in stock, but ${qty} per bag was provided.`,
+            });
+          }
+
+          computedPrice += inventoryItem.price * qty;
+          validatedItems.push({
+            inventoryItemId: item.inventoryItemId,
+            quantityPerBag: qty,
+          });
+        }
+
+        addon.bundleItems = validatedItems;
+        addon.price = computedPrice;
+      }
+    } else {
+      // Upgrade — manual price
+      if (price !== undefined) {
+        if (Number(price) < 0) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid price",
+            description: "Price cannot be negative.",
+          });
+        }
+        addon.price = Number(price);
       }
     }
 
     addon.updatedBy = req.user._id;
     await addon.save();
+
+    await addon.populate([
+      {
+        path: "bundleItems.inventoryItemId",
+        select: "minifigName price image colorId",
+        populate: { path: "colorId", select: "colorName hexCode" },
+      },
+    ]);
 
     return res.status(200).json({
       success: true,
@@ -385,37 +586,32 @@ export const updateDealerAddon = async (req, res) => {
   }
 };
 
-// -------------------------------- Delete Dealer Addon ---------------------------------- 
+// -------------------------------- Delete Dealer Addon ----------------------------------
 
 export const deleteDealerAddon = async (req, res) => {
   try {
     const { id } = req.params;
-    const addon = await findDealerAddonById(id);
+    const addon = await DealerAddon.findByIdAndDelete(id);
 
     if (!addon) {
       return res.status(404).json({
         success: false,
         message: "Add-on not found",
-        description: "The requested dealer add-on does not exist.",
+        description: "The requested add-on does not exist.",
       });
     }
-
-    // Delete all images from items
-    await cleanUpImages(addon.items);
-
-    await DealerAddon.findByIdAndDelete(id);
 
     return res.status(200).json({
       success: true,
       message: "Add-on deleted successfully",
-      description: "The add-on has been removed from dealer options.",
+      description: `The "${addon.addonName}" add-on has been removed.`,
     });
   } catch (error) {
     handleError(res, error, "Delete dealer addon", "Failed to delete add-on");
   }
 };
 
-// ------------------------------- Create Dealer Extra Bag ---------------------------------- 
+// ------------------------------- Create Dealer Extra Bag ----------------------------------
 
 export const createDealerExtraBag = async (req, res) => {
   try {
@@ -882,8 +1078,13 @@ export const getDealerAddonsForUser = async (req, res) => {
   try {
     const addons = await DealerAddon.find({ isActive: true })
       .select("-createdBy -updatedBy -isActive -__v")
-      .populate("items.color", "colorName colorType hexCode")
-      .sort({ createdAt: 1 });
+      .populate({
+        path: "bundleItems.inventoryItemId",
+        select: "minifigName price image colorId",
+        populate: { path: "colorId", select: "colorName hexCode" },
+      })
+      .sort({ createdAt: 1 })
+      .lean();
 
     return res.status(200).json({
       success: true,

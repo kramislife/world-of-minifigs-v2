@@ -1,19 +1,19 @@
-import { useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   useGetDealerAddonsQuery,
   useCreateDealerAddonMutation,
   useUpdateDealerAddonMutation,
   useDeleteDealerAddonMutation,
-  useGetColorsQuery,
+  useGetMinifigInventoryQuery,
 } from "@/redux/api/adminApi";
 import { extractPaginatedData } from "@/utils/apiHelpers";
 import { sanitizeString } from "@/utils/formatting";
 import { validateDealerAddon } from "@/utils/validation";
-import useMediaPreview from "@/hooks/admin/useMediaPreview";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const initialFormData = {
   addonName: "",
+  addonType: "bundle",
   price: "",
   description: "",
   isActive: true,
@@ -21,6 +21,7 @@ const initialFormData = {
 
 const columns = [
   { key: "addonName", label: "Add-on" },
+  { key: "addonType", label: "Type" },
   { key: "description", label: "Description" },
   { key: "price", label: "Price" },
   { key: "isActive", label: "Status" },
@@ -29,25 +30,28 @@ const columns = [
   { key: "actions", label: "Actions" },
 ];
 
-// Factory for preview item
-const makeNewPreview = (url) => ({
-  url,
-  itemName: "",
-  itemPrice: "",
-  color: "",
-  image: { url },
-});
+const DEBOUNCE_MS = 300;
 
 const useDealerAddonManagement = () => {
-  // ------------------------------- Media ------------------------------------
-  const {
-    filePreview,
-    setFilePreview,
-    fileInputRef,
-    resetFile,
-    handleFileChange,
-    handleRemoveFile,
-  } = useMediaPreview({ multiple: true });
+  // ------------------------------- Bundle Items State ------------------------------------
+  const [bundleItems, setBundleItems] = useState([]);
+
+  // ------------------------------- Inventory Search (debounced) ------------------------------------
+  const [itemSearch, setItemSearch] = useState("");
+  const [debouncedItemSearch, setDebouncedItemSearch] = useState("");
+  const debounceTimer = useRef(null);
+
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      setDebouncedItemSearch(itemSearch);
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(debounceTimer.current);
+  }, [itemSearch]);
+
+  const handleItemSearchChange = useCallback((e) => {
+    setItemSearch(e.target.value);
+  }, []);
 
   // ------------------------------- Mutations ------------------------------------
   const [createAddon, { isLoading: isCreating }] =
@@ -58,13 +62,15 @@ const useDealerAddonManagement = () => {
     useDeleteDealerAddonMutation();
 
   // ------------------------------- Core CRUD ------------------------------------
+  const resetBundleItems = useCallback(() => setBundleItems([]), []);
+
   const crud = useAdminCrud({
     initialFormData,
     createFn: createAddon,
     updateFn: updateAddon,
     deleteFn: deleteAddon,
     entityName: "add-on",
-    onReset: resetFile,
+    onReset: resetBundleItems,
   });
 
   // ------------------------------- Fetch ------------------------------------
@@ -75,7 +81,11 @@ const useDealerAddonManagement = () => {
       search: crud.search || undefined,
     });
 
-  const { data: colorData, isLoading: isLoadingColors } = useGetColorsQuery();
+  const { data: inventoryData, isLoading: isLoadingInventory } =
+    useGetMinifigInventoryQuery({
+      limit: "all",
+      search: debouncedItemSearch || undefined,
+    });
 
   const {
     items: addons,
@@ -83,9 +93,18 @@ const useDealerAddonManagement = () => {
     totalPages,
   } = extractPaginatedData(addonsData, "addons");
 
-  const colors = [...(colorData?.colors || [])].sort((a, b) =>
-    (a.colorName || "").localeCompare(b.colorName || ""),
+  const inventoryItems = inventoryData?.inventory || [];
+
+  const selectedBundleItemIds = new Set(
+    bundleItems.map((item) => item.inventoryItemId),
   );
+
+  const sortedInventoryItems = [...(inventoryItems || [])].sort((a, b) =>
+    (a.minifigName || "").localeCompare(b.minifigName || ""),
+  );
+
+  const isBundleType = crud.formData.addonType === "bundle";
+  const isUpgradeType = !isBundleType;
 
   useEffect(() => {
     crud.setTotalItems(totalItems);
@@ -93,39 +112,101 @@ const useDealerAddonManagement = () => {
 
   const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
-  // ------------------------------- File Handlers ------------------------------------
-  const handleDealerAddonFileChange = async (e) => {
-    await handleFileChange(e, { mapFile: makeNewPreview });
-  };
+  // ------------------------------- Computed Bundle Price ------------------------------------
+  const computedBundlePrice = bundleItems.reduce((sum, item) => {
+    const unitPrice = item._item?.price || 0;
+    return sum + unitPrice * (Number(item.quantityPerBag) || 0);
+  }, 0);
 
-  const handleDealerAddonFileRemove = (index) => {
-    handleRemoveFile(index);
-  };
+  const bundleDisplayItems = bundleItems
+    .filter((item) => item._item)
+    .map((item) => ({
+      ...item,
+      inventory: item._item,
+    }));
 
-  const handleUpdateFileMetadata = (index, field) => (e) => {
-    const value = e?.target ? e.target.value : e;
+  // ------------------------------- Bundle Item Handlers ------------------------------------
+  const handleToggleBundleItem = useCallback(
+    (inventoryItemId, inventoryItem) => {
+      setBundleItems((prev) => {
+        const exists = prev.find((i) => i.inventoryItemId === inventoryItemId);
+        if (exists) {
+          return prev.filter((i) => i.inventoryItemId !== inventoryItemId);
+        }
+        return [
+          { inventoryItemId, quantityPerBag: 1, _item: inventoryItem },
+          ...prev,
+        ];
+      });
+    },
+    [],
+  );
 
-    setFilePreview((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)),
+  const handleRemoveBundleItem = useCallback((inventoryItemId) => {
+    setBundleItems((prev) =>
+      prev.filter((i) => i.inventoryItemId !== inventoryItemId),
     );
-  };
+  }, []);
+
+  const handleBundleItemQuantity = useCallback((inventoryItemId, delta) => {
+    setBundleItems((prev) =>
+      prev.map((item) => {
+        if (item.inventoryItemId !== inventoryItemId) return item;
+        const newQty = Math.max(1, (Number(item.quantityPerBag) || 1) + delta);
+        return { ...item, quantityPerBag: newQty };
+      }),
+    );
+  }, []);
+
+  const handleBundleItemDecrement = useCallback(
+    (inventoryItemId) => {
+      handleBundleItemQuantity(inventoryItemId, -1);
+    },
+    [handleBundleItemQuantity],
+  );
+
+  const handleBundleItemIncrement = useCallback(
+    (inventoryItemId) => {
+      handleBundleItemQuantity(inventoryItemId, 1);
+    },
+    [handleBundleItemQuantity],
+  );
+
+  const handleBundleItemQuantityValue = useCallback(
+    (inventoryItemId, value) => {
+      setBundleItems((prev) =>
+        prev.map((item) =>
+          item.inventoryItemId === inventoryItemId
+            ? {
+                ...item,
+                quantityPerBag:
+                  value === "" ? "" : Math.max(1, Number(value) || 1),
+              }
+            : item,
+        ),
+      );
+    },
+    [],
+  );
 
   // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (addon) => {
     const existingItems =
-      addon.items?.map((item) => ({
-        url: item.image?.url,
-        itemName: item.itemName || "",
-        itemPrice: item.itemPrice || "",
-        color: item.color?._id || item.color || "",
-        image: item.image,
-      })) || [];
+      addon.bundleItems?.map((item) => {
+        const populated = item.inventoryItemId || {};
+        return {
+          inventoryItemId: populated._id || item.inventoryItemId || "",
+          quantityPerBag: item.quantityPerBag || 1,
+          _item: populated._id ? populated : null,
+        };
+      }) || [];
 
-    setFilePreview(existingItems);
+    setBundleItems(existingItems);
 
     crud.openEdit(addon, {
       addonName: addon.addonName || "",
-      price: addon.price || "",
+      addonType: addon.addonType || "bundle",
+      price: addon.addonType === "upgrade" ? (addon.price ?? "") : "",
       description: addon.description || "",
       isActive: addon.isActive !== false,
     });
@@ -133,23 +214,26 @@ const useDealerAddonManagement = () => {
 
   // ------------------------------- Submit Handler ------------------------------------
   const handleSubmit = async () => {
-    if (!validateDealerAddon(crud.formData)) return;
+    const addonType = crud.formData.addonType;
+
+    if (!validateDealerAddon(crud.formData, bundleItems)) return;
 
     const payload = {
       addonName: sanitizeString(crud.formData.addonName),
-      price: Number(crud.formData.price || 0),
+      addonType,
       description: sanitizeString(crud.formData.description),
       isActive: crud.formData.isActive,
-      items: filePreview.map((item) => ({
-        itemName: sanitizeString(item.itemName),
-        itemPrice: Number(item.itemPrice || 0),
-        ...(item.color && { color: item.color }),
-        image:
-          typeof item.url === "string" && item.url.startsWith("data:")
-            ? item.url
-            : item.image,
-      })),
     };
+
+    if (addonType === "bundle") {
+      payload.bundleItems = bundleItems.map((item) => ({
+        inventoryItemId: item.inventoryItemId,
+        quantityPerBag: Number(item.quantityPerBag),
+      }));
+      payload.price = computedBundlePrice;
+    } else {
+      payload.price = Number(crud.formData.price || 0);
+    }
 
     await crud.submitForm(payload);
   };
@@ -173,20 +257,30 @@ const useDealerAddonManagement = () => {
   // ------------------------------- Return ------------------------------------
   return {
     ...crud,
-    filePreview,
-    fileInputRef,
     addons,
     totalItems,
     totalPages,
     columns,
-    colors,
+    inventoryItems,
+    sortedInventoryItems,
+    bundleItems,
+    bundleDisplayItems,
+    selectedBundleItemIds,
+    computedBundlePrice,
+    isBundleType,
+    isUpgradeType,
     isLoadingAddons,
-    isLoadingColors,
+    isLoadingInventory,
     isSubmitting,
     isDeleting,
-    handleDealerAddonFileChange,
-    handleDealerAddonFileRemove,
-    handleUpdateFileMetadata,
+    itemSearch,
+    handleItemSearchChange,
+    handleToggleBundleItem,
+    handleRemoveBundleItem,
+    handleBundleItemQuantity,
+    handleBundleItemDecrement,
+    handleBundleItemIncrement,
+    handleBundleItemQuantityValue,
     handleEdit,
     handleSubmit,
     handleChange,

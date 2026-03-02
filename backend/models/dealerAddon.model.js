@@ -7,6 +7,11 @@ const dealerAddonSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    addonType: {
+      type: String,
+      required: true,
+      enum: ["bundle", "upgrade"],
+    },
     description: {
       type: String,
       trim: true,
@@ -15,28 +20,16 @@ const dealerAddonSchema = new mongoose.Schema(
       type: Number,
       min: [0, "Price cannot be negative"],
     },
-    items: [
+    bundleItems: [
       {
         _id: false,
-        itemName: {
-          type: String,
-          trim: true,
-        },
-        itemPrice: {
-          type: Number,
-          min: [0, "Item price cannot be negative"],
-        },
-        image: {
-          publicId: {
-            type: String,
-          },
-          url: {
-            type: String,
-          },
-        },
-        color: {
+        inventoryItemId: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Color",
+          ref: "MinifigInventory",
+        },
+        quantityPerBag: {
+          type: Number,
+          min: [1, "Quantity must be at least 1"],
         },
       },
     ],
@@ -59,6 +52,9 @@ const dealerAddonSchema = new mongoose.Schema(
 );
 
 // Indexes
+
+// Fast lookup by addon type
+dealerAddonSchema.index({ addonType: 1 });
 
 // Fast lookup for active dealer addons
 dealerAddonSchema.index({ isActive: 1 });
