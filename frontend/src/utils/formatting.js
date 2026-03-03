@@ -66,3 +66,6 @@ export const cleanFeatures = (features) =>
 
 export const display = (value) =>
   value === null || value === undefined || value === "" ? "-" : value;
+
+export const sortByName = (items = [], key) =>
+  [...items].sort((a, b) => (a[key] || "").localeCompare(b[key] || ""));

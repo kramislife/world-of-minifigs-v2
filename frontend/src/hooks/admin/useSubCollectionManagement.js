@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
   useGetSubCollectionsQuery,
   useCreateSubCollectionMutation,
@@ -7,7 +7,7 @@ import {
   useGetCollectionsQuery,
 } from "@/redux/api/adminApi";
 import { extractPaginatedData } from "@/utils/apiHelpers";
-import { sanitizeString } from "@/utils/formatting";
+import { sanitizeString, sortByName } from "@/utils/formatting";
 import { validateSubCollection } from "@/utils/validation";
 import useMediaPreview from "@/hooks/admin/useMediaPreview";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
@@ -76,8 +76,9 @@ const useSubCollectionManagement = () => {
     totalPages,
   } = extractPaginatedData(subCollectionsData, "subCollections");
 
-  const collections = [...(collectionsData?.collections || [])].sort((a, b) =>
-    (a.collectionName || "").localeCompare(b.collectionName || ""),
+  const collections = useMemo(
+    () => sortByName(collectionsData?.collections, "collectionName"),
+    [collectionsData],
   );
 
   useEffect(() => {

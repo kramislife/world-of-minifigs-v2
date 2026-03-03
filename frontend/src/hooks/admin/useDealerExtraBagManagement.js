@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
   useGetDealerExtraBagsQuery,
   useCreateDealerExtraBagMutation,
@@ -7,7 +7,7 @@ import {
   useGetSubCollectionsQuery,
 } from "@/redux/api/adminApi";
 import { extractPaginatedData } from "@/utils/apiHelpers";
-import { sanitizeString } from "@/utils/formatting";
+import { sanitizeString, sortByName } from "@/utils/formatting";
 import { validateDealerExtraBag } from "@/utils/validation";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
@@ -63,9 +63,9 @@ const useDealerExtraBagManagement = () => {
     totalPages,
   } = extractPaginatedData(extraBagsData, "extraBags");
 
-  const subCollections = [...(subCollectionsData?.subCollections || [])].sort(
-    (a, b) =>
-      (a.subCollectionName || "").localeCompare(b.subCollectionName || ""),
+  const subCollections = useMemo(
+    () => sortByName(subCollectionsData?.subCollections, "subCollectionName"),
+    [subCollectionsData],
   );
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
   useGetMinifigInventoryQuery,
   useCreateMinifigInventoryBulkMutation,
@@ -7,7 +7,7 @@ import {
   useGetColorsQuery,
 } from "@/redux/api/adminApi";
 import { extractPaginatedData } from "@/utils/apiHelpers";
-import { sanitizeString } from "@/utils/formatting";
+import { sanitizeString, sortByName } from "@/utils/formatting";
 import { validateMinifigInventory } from "@/utils/validation";
 import { validateFile, readFileAsDataURL } from "@/utils/fileHelpers";
 import useMediaPreview from "@/hooks/admin/useMediaPreview";
@@ -83,8 +83,9 @@ const useMinifigInventoryManagement = () => {
     totalPages,
   } = extractPaginatedData(inventoryData, "inventory");
 
-  const colors = [...(colorsData?.colors || [])].sort((a, b) =>
-    (a.colorName || "").localeCompare(b.colorName || ""),
+  const colors = useMemo(
+    () => sortByName(colorsData?.colors, "colorName"),
+    [colorsData],
   );
 
   useEffect(() => {

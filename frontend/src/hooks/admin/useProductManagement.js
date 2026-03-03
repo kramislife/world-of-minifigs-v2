@@ -12,7 +12,7 @@ import {
   useGetSkillLevelsQuery,
 } from "@/redux/api/adminApi";
 import { extractPaginatedData } from "@/utils/apiHelpers";
-import { sanitizeString } from "@/utils/formatting";
+import { sanitizeString, sortByName } from "@/utils/formatting";
 import { validateProduct, handleFileReadError } from "@/utils/validation";
 import useMediaPreview from "@/hooks/admin/useMediaPreview";
 import { validateFile, readFileAsDataURL } from "@/utils/fileHelpers";
@@ -131,29 +131,34 @@ const useProductManagement = () => {
     totalPages,
   } = extractPaginatedData(productsData, "products");
 
-  const categories = [...(categoriesData?.categories || [])].sort((a, b) =>
-    (a.categoryName || "").localeCompare(b.categoryName || ""),
+  const categories = useMemo(
+    () => sortByName(categoriesData?.categories, "categoryName"),
+    [categoriesData],
   );
 
-  const subCategories = [...(subCategoriesData?.subCategories || [])].sort(
-    (a, b) => (a.subCategoryName || "").localeCompare(b.subCategoryName || ""),
+  const subCategories = useMemo(
+    () => sortByName(subCategoriesData?.subCategories, "subCategoryName"),
+    [subCategoriesData],
   );
 
-  const collections = [...(collectionsData?.collections || [])].sort((a, b) =>
-    (a.collectionName || "").localeCompare(b.collectionName || ""),
+  const collections = useMemo(
+    () => sortByName(collectionsData?.collections, "collectionName"),
+    [collectionsData],
   );
 
-  const subCollections = [...(subCollectionsData?.subCollections || [])].sort(
-    (a, b) =>
-      (a.subCollectionName || "").localeCompare(b.subCollectionName || ""),
+  const subCollections = useMemo(
+    () => sortByName(subCollectionsData?.subCollections, "subCollectionName"),
+    [subCollectionsData],
   );
 
-  const skillLevels = [...(skillLevelsData?.skillLevels || [])].sort((a, b) =>
-    (a.skillLevelName || "").localeCompare(b.skillLevelName || ""),
+  const skillLevels = useMemo(
+    () => sortByName(skillLevelsData?.skillLevels, "skillLevelName"),
+    [skillLevelsData],
   );
 
-  const colors = [...(colorsData?.colors || [])].sort((a, b) =>
-    (a.colorName || "").localeCompare(b.colorName || ""),
+  const colors = useMemo(
+    () => sortByName(colorsData?.colors, "colorName"),
+    [colorsData],
   );
 
   useEffect(() => {

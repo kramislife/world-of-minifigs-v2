@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
   useGetSubCategoriesQuery,
   useCreateSubCategoryMutation,
@@ -7,7 +7,7 @@ import {
   useGetCategoriesQuery,
 } from "@/redux/api/adminApi";
 import { extractPaginatedData } from "@/utils/apiHelpers";
-import { sanitizeString } from "@/utils/formatting";
+import { sanitizeString, sortByName } from "@/utils/formatting";
 import { validateSubCategory } from "@/utils/validation";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
@@ -63,8 +63,9 @@ const useSubCategoryManagement = () => {
     totalPages,
   } = extractPaginatedData(subCategoriesData, "subCategories");
 
-  const categories = [...(categoriesData?.categories || [])].sort((a, b) =>
-    (a.categoryName || "").localeCompare(b.categoryName || ""),
+  const categories = useMemo(
+    () => sortByName(categoriesData?.categories, "categoryName"),
+    [categoriesData],
   );
 
   useEffect(() => {

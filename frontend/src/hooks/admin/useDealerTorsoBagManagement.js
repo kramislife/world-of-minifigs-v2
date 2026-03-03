@@ -7,7 +7,7 @@ import {
   useGetDealerBundlesQuery,
 } from "@/redux/api/adminApi";
 import { extractPaginatedData } from "@/utils/apiHelpers";
-import { sanitizeString } from "@/utils/formatting";
+import { sanitizeString, sortByName } from "@/utils/formatting";
 import {
   validateDealerTorsoBag,
   validateTorsoAllocation,
@@ -83,8 +83,9 @@ const useDealerTorsoBagManagement = () => {
     totalPages,
   } = extractPaginatedData(torsoBagData, "bags");
 
-  const bundles = [...(bundlesData?.bundles || [])].sort((a, b) =>
-    (a.bundleName || "").localeCompare(b.bundleName || ""),
+  const bundles = useMemo(
+    () => sortByName(bundlesData?.bundles, "bundleName"),
+    [bundlesData],
   );
 
   useEffect(() => {

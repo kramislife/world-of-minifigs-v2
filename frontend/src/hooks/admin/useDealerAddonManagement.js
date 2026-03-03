@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   useGetDealerAddonsQuery,
   useCreateDealerAddonMutation,
@@ -7,7 +7,7 @@ import {
   useGetMinifigInventoryQuery,
 } from "@/redux/api/adminApi";
 import { extractPaginatedData } from "@/utils/apiHelpers";
-import { sanitizeString } from "@/utils/formatting";
+import { sanitizeString, sortByName } from "@/utils/formatting";
 import { validateDealerAddon } from "@/utils/validation";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
@@ -99,8 +99,9 @@ const useDealerAddonManagement = () => {
     bundleItems.map((item) => item.inventoryItemId),
   );
 
-  const sortedInventoryItems = [...(inventoryItems || [])].sort((a, b) =>
-    (a.minifigName || "").localeCompare(b.minifigName || ""),
+  const sortedInventoryItems = useMemo(
+    () => sortByName(inventoryItems, "minifigName"),
+    [inventoryItems],
   );
 
   const isBundleType = crud.formData.addonType === "bundle";
