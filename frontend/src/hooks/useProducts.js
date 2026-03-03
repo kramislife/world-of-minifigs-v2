@@ -18,6 +18,7 @@ import {
   parseArrayParam,
   toggleArrayItem,
   toggleSetItem,
+  sortByName,
 } from "@/utils/formatting";
 import { useProcessedProducts } from "./useLatestProducts";
 
@@ -54,7 +55,10 @@ export const useProducts = () => {
 
   // Non-dynamic params
   const page = parseInt(searchParams.get("page") || DEFAULT_PAGE, 10);
-  const limit = parseInt(searchParams.get("limit") || DEFAULT_PRODUCT_LIMIT, 10);
+  const limit = parseInt(
+    searchParams.get("limit") || DEFAULT_PRODUCT_LIMIT,
+    10,
+  );
   const search = searchParams.get("search") || "";
   const sortBy = searchParams.get("sortBy") || DEFAULT_SORT;
 
@@ -175,10 +179,40 @@ export const useProducts = () => {
 
   const extractData = (data, key) =>
     Array.isArray(data?.[key]) ? data[key] : [];
-  const categories = extractData(categoriesData, "categories");
-  const collections = extractData(collectionsData, "collections");
-  const colors = extractData(colorsData, "colors");
-  const skillLevels = extractData(skillLevelsData, "skillLevels");
+
+  const categories = useMemo(
+    () =>
+      sortByName(extractData(categoriesData, "categories"), "categoryName").map(
+        (cat) => ({
+          ...cat,
+          subCategories: sortByName(cat.subCategories, "subCategoryName"),
+        }),
+      ),
+    [categoriesData],
+  );
+
+  const collections = useMemo(
+    () =>
+      sortByName(
+        extractData(collectionsData, "collections"),
+        "collectionName",
+      ).map((col) => ({
+        ...col,
+        subCollections: sortByName(col.subCollections, "subCollectionName"),
+      })),
+    [collectionsData],
+  );
+
+  const colors = useMemo(
+    () => sortByName(extractData(colorsData, "colors"), "colorName"),
+    [colorsData],
+  );
+
+  const skillLevels = useMemo(
+    () =>
+      sortByName(extractData(skillLevelsData, "skillLevels"), "skillLevelName"),
+    [skillLevelsData],
+  );
 
   const hasActiveFilters = useMemo(() => {
     return FILTER_KEYS.some((key) => {
