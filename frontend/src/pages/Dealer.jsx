@@ -21,11 +21,7 @@ const Dealer = () => {
   const {
     // States & Setters
     setSelectedBundleId,
-    setSelectedAddonId,
-    selectedAddon,
-    setSelectedAddon,
-    extraBagQuantities,
-    selectedTorsoBagIds,
+    handleToggleAddon,
 
     // Data
     bundles,
@@ -44,13 +40,17 @@ const Dealer = () => {
     maxExtraBags,
     totalExtraBags,
     lastSelectedBag,
-    selectedAddonData,
-    totalOrderPrice,
+
+    // Order Summary
+    orderSummary,
 
     // Handlers
     handleIncreaseBag,
     handleDecreaseBag,
     handleSelectTorsoBag,
+
+    // Addon Preview Modal
+    addonPreview,
 
     // Reorder (Admin)
     localItems,
@@ -135,8 +135,8 @@ const Dealer = () => {
         <div className="space-y-10 overflow-visible">
           <DealerAddon
             addons={addons}
-            onSelect={setSelectedAddonId}
-            onPreview={setSelectedAddon}
+            onSelect={handleToggleAddon}
+            onPreview={addonPreview.onOpen}
           />
 
           <DealerExtraBag
@@ -170,27 +170,25 @@ const Dealer = () => {
 
         <DealerOrderSummary
           selectedBundle={selectedBundle}
-          selectedAddonData={selectedAddonData}
-          totalExtraBags={totalExtraBags}
-          extraBagQuantities={extraBagQuantities}
-          extraBags={extraBags}
-          selectedTorsoBagIds={selectedTorsoBagIds}
-          torsoBags={torsoBags}
-          isCustomBundle={isCustomBundle}
-          multiplier={multiplier}
-          miscQuantity={miscQuantity}
-          totalOrderPrice={totalOrderPrice}
+          {...orderSummary}
         />
       </div>
 
-      <AddonPreviewModal
-        addon={selectedAddon}
-        onClose={() => setSelectedAddon(null)}
-        onSelect={(id) => {
-          setSelectedAddonId(id);
-          setSelectedAddon(null);
-        }}
-      />
+      {addonPreview.addon && (
+        <AddonPreviewModal
+          addon={addonPreview.addon}
+          items={addonPreview.items}
+          totalBags={addonPreview.totalBags}
+          totalPrice={addonPreview.totalPrice}
+          canSubmit={addonPreview.canSubmit}
+          isUpdate={addonPreview.isUpdate}
+          onClose={addonPreview.onClose}
+          onConfirm={addonPreview.onConfirm}
+          onDecrement={addonPreview.onDecrement}
+          onIncrement={addonPreview.onIncrement}
+          onValueChange={addonPreview.onValueChange}
+        />
+      )}
     </>
   );
 };

@@ -17,11 +17,7 @@ const DealerAddon = ({ addons, onSelect, onPreview }) => (
         <Card
           key={addon._id}
           onClick={() => {
-            if (addon.isSelected) {
-              onSelect(null);
-            } else {
-              addon.hasItems ? onPreview(addon) : onSelect(addon._id);
-            }
+            addon.hasItems ? onPreview(addon) : onSelect(addon._id);
           }}
           className={`relative cursor-pointer transition-all duration-300 group gap-2 hover:shadow-2xl hover:-translate-y-2 p-5 ${
             addon.isSelected
@@ -34,7 +30,7 @@ const DealerAddon = ({ addons, onSelect, onPreview }) => (
               variant="accent"
               className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-semibold px-3 py-1 whitespace-nowrap z-10 uppercase"
             >
-              Current Selection
+              Selected
             </Badge>
           )}
 

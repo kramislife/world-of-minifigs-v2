@@ -1080,7 +1080,7 @@ export const getDealerAddonsForUser = async (req, res) => {
       .select("-createdBy -updatedBy -isActive -__v")
       .populate({
         path: "bundleItems.inventoryItemId",
-        select: "minifigName price image colorId",
+        select: "minifigName price stock image colorId",
         populate: { path: "colorId", select: "colorName hexCode" },
       })
       .sort({ createdAt: 1 })

@@ -4,13 +4,12 @@ import { formatCurrency } from "@/utils/formatting";
 
 const DealerOrderSummary = ({
   selectedBundle,
-  selectedAddonData,
-  totalExtraBags,
-  extraBagQuantities,
+  addons,
   extraBags,
-  selectedTorsoBagIds,
   torsoBags,
+  totalExtraBags,
   totalOrderPrice,
+  canCheckout,
 }) => (
   <aside className="lg:sticky lg:top-24 space-y-5">
     <Card className="border-2 border-accent overflow-hidden p-0">
@@ -35,19 +34,38 @@ const DealerOrderSummary = ({
           </div>
         )}
 
-        {selectedAddonData && (
-          <div className="space-y-3 pb-3 border-b border-dashed">
+        {addons.map((addon) => (
+          <div
+            key={addon._id}
+            className="space-y-3 pb-3 border-b border-dashed"
+          >
             <div className="flex justify-between items-start">
-              <p className="text-sm font-bold">{selectedAddonData.addonName}</p>
+              <p className="text-sm font-bold">{addon.addonName}</p>
               <span className="text-sm font-bold text-primary dark:text-accent">
-                {!selectedAddonData.price ||
-                Number(selectedAddonData.price) === 0
-                  ? "Free"
-                  : `${formatCurrency(selectedAddonData.price)}`}
+                {addon.isFree ? "Free" : formatCurrency(addon.price)}
               </span>
             </div>
+
+            {addon.items.length > 0 && (
+              <div className="space-y-1.5">
+                {addon.items.map((item) => (
+                  <div
+                    key={item.inventoryItemId}
+                    className="flex items-center justify-between text-xs"
+                  >
+                    <span className="text-muted-foreground">
+                      {item.itemName} × {item.selectedBags} bag
+                      {item.selectedBags === 1 ? "" : "s"}
+                    </span>
+                    <span className="font-semibold text-primary dark:text-accent">
+                      {formatCurrency(item.selectedTotal)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+        ))}
 
         {totalExtraBags > 0 && (
           <div className="space-y-3 pb-3 border-b border-dashed">
@@ -57,40 +75,33 @@ const DealerOrderSummary = ({
               </span>
             </div>
             <div className="space-y-2">
-              {extraBags.map((bag) => {
-                const qty = extraBagQuantities[bag._id] || 0;
-                if (qty === 0) return null;
-                return (
-                  <div
-                    key={bag._id}
-                    className="flex justify-between items-center text-sm"
-                  >
-                    <span className="font-bold">
-                      {qty} x {bag.subCollectionId?.subCollectionName}
-                    </span>
-                    <span className="font-bold shrink-0 text-primary dark:text-accent">
-                      {formatCurrency(bag.price * qty)}
-                    </span>
-                  </div>
-                );
-              })}
+              {extraBags.map((bag) => (
+                <div
+                  key={bag._id}
+                  className="flex justify-between items-center text-sm"
+                >
+                  <span className="font-bold">
+                    {bag.qty} x {bag.subCollectionId?.subCollectionName}
+                  </span>
+                  <span className="font-bold shrink-0 text-primary dark:text-accent">
+                    {formatCurrency(bag.total)}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
-        {selectedTorsoBagIds.length > 0 && (
+        {torsoBags.length > 0 && (
           <div className="space-y-2 pb-3 border-b border-dashed">
-            {selectedTorsoBagIds.map((id) => {
-              const bag = torsoBags.find((b) => b._id === id);
-              return (
-                <div
-                  key={id}
-                  className="flex justify-between items-center text-sm"
-                >
-                  <span className="font-bold">{bag?.bagName}</span>
-                </div>
-              );
-            })}
+            {torsoBags.map((bag) => (
+              <div
+                key={bag._id}
+                className="flex justify-between items-center text-sm"
+              >
+                <span className="font-bold">{bag.bagName}</span>
+              </div>
+            ))}
           </div>
         )}
 
@@ -105,7 +116,7 @@ const DealerOrderSummary = ({
 
         <CheckoutButton
           label="Checkout"
-          disabled={!selectedBundle || selectedTorsoBagIds.length === 0}
+          disabled={!canCheckout}
           className="mb-3 h-12"
         />
       </div>
