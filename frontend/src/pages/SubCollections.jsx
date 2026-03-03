@@ -60,7 +60,8 @@ const SubCollections = () => {
                 <CommonImage
                   src={subCollection.image?.url}
                   alt={subCollection.subCollectionName}
-                  className="w-full h-full transition-transform duration-300 group-hover:scale-105"
+                  className="w-full h-full"
+                  imgClassName="transition-transform duration-300 group-hover:scale-105"
                 />
               </div>
 

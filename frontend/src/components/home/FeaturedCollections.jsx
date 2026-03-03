@@ -50,7 +50,8 @@ const FeaturedCollections = () => {
               <CommonImage
                 src={collection.image?.url}
                 alt={collection.collectionName}
-                className="w-full h-full transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-full"
+                imgClassName="transition-transform duration-500 group-hover:scale-105"
               />
 
               {/* Overlay */}

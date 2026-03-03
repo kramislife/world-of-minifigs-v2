@@ -5,6 +5,7 @@ const CommonImage = ({
   src,
   alt,
   className = "",
+  imgClassName = "",
   objectFit = "object-cover",
 }) => {
   const [hasError, setHasError] = useState(false);
@@ -21,7 +22,7 @@ const CommonImage = ({
         <img
           src={src}
           alt={alt || "Image"}
-          className={`w-full h-full ${objectFit}`}
+          className={`w-full h-full ${objectFit} ${imgClassName}`}
           onError={() => setHasError(true)}
         />
       ) : (
