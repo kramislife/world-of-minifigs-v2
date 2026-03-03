@@ -135,8 +135,8 @@ const ColorManagement = () => {
             placeholder="Red, Blue, Forest Green"
             value={formData.colorName}
             onChange={handleChange}
-            required
             disabled={isSubmitting}
+            required
           />
 
           {/* Hex Code */}
@@ -151,8 +151,8 @@ const ColorManagement = () => {
                   placeholder="#000000"
                   value={formData.hexCode}
                   onChange={handleChange}
-                  required
                   disabled={isSubmitting}
+                  required
                 />
               </div>
               <Input

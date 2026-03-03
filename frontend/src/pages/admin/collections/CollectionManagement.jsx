@@ -138,8 +138,8 @@ const CollectionManagement = () => {
             placeholder="Ninjago, Video Games, Star Wars"
             value={formData.collectionName}
             onChange={handleChange}
-            required
             disabled={isSubmitting}
+            required
           />
 
           {/* Description */}

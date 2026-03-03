@@ -2,15 +2,11 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
-import { AdminFormInput } from "@/components/shared/AdminFormInput";
+import {
+  AdminFormInput,
+  AdminFormSelect,
+} from "@/components/shared/AdminFormInput";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import TableLayout from "@/components/table/TableLayout";
 import {
@@ -139,41 +135,32 @@ const DealerTorsoBagManagement = () => {
         className="sm:max-w-4xl"
       >
         <div className="space-y-5">
-          {/* Bag Name & Target Size */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Bag Name */}
             <AdminFormInput
               label="Bag Name"
               name="bagName"
               placeholder="Bag 1001"
               value={formData.bagName}
               onChange={handleChange}
-              required
               disabled={isSubmitting}
               className="col-span-2"
+              required
             />
 
-            <div className="space-y-2 col-span-1">
-              <Label htmlFor="targetBundleSize">Target Size</Label>
-              <Select
-                value={formData.targetBundleSize.toString()}
-                onValueChange={handleValueChange("targetBundleSize")}
-                disabled={isSubmitting || isLoadingBundles}
-              >
-                <SelectTrigger id="targetBundleSize" className="w-full">
-                  <SelectValue placeholder="Size" />
-                </SelectTrigger>
-                <SelectContent>
-                  {targetBundleSizeOptions.map((targetBundleSize) => (
-                    <SelectItem
-                      key={targetBundleSize.value}
-                      value={targetBundleSize.value.toString()}
-                    >
-                      {targetBundleSize.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Target Size */}
+            <AdminFormSelect
+              label="Target Size"
+              name="targetBundleSize"
+              value={formData.targetBundleSize.toString()}
+              onValueChange={handleValueChange("targetBundleSize")}
+              options={targetBundleSizeOptions}
+              getValue={(item) => item.value.toString()}
+              getLabel={(item) => item.label}
+              placeholder="Size"
+              isLoading={isLoadingBundles}
+              disabled={isSubmitting}
+            />
           </div>
 
           {/* Torso Designs Upload */}

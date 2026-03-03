@@ -3,13 +3,6 @@ import { X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import {
@@ -25,6 +18,7 @@ import MediaUpload from "@/components/shared/MediaUpload";
 import {
   AdminFormInput,
   AdminFormTextarea,
+  AdminFormSelect,
 } from "@/components/shared/AdminFormInput";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import { display } from "@/utils/formatting";
@@ -54,6 +48,7 @@ const ProductManagement = () => {
     categoriesWithSubs,
     collectionsWithSubs,
     isLoadingProducts,
+    isLoadingColors,
     isSubmitting,
     isDeleting,
     handleEdit,
@@ -197,8 +192,8 @@ const ProductManagement = () => {
               placeholder="Enter product name"
               value={formData.productName}
               onChange={handleChange}
-              required
               disabled={isSubmitting}
+              required
             />
 
             {/* Standalone Product Fields */}
@@ -219,8 +214,8 @@ const ProductManagement = () => {
                     placeholder="1234567"
                     value={formData.itemId}
                     onChange={handleChange}
-                    required
                     disabled={isSubmitting}
+                    required
                   />
                 </div>
 
@@ -236,8 +231,8 @@ const ProductManagement = () => {
                     placeholder="0.00"
                     value={formData.price}
                     onChange={handleChange}
-                    required
                     disabled={isSubmitting}
+                    required
                   />
                   <AdminFormInput
                     label="Discount (%)"
@@ -261,10 +256,10 @@ const ProductManagement = () => {
                     onChange={handleChange}
                     disabled={isSubmitting}
                   />
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="colorId">Color</Label>
-                      {!formData.showSecondaryColor && (
+                  <AdminFormSelect
+                    label="Color"
+                    labelRight={
+                      !formData.showSecondaryColor && (
                         <Button
                           type="button"
                           variant="link"
@@ -277,39 +272,35 @@ const ProductManagement = () => {
                         >
                           Dual Tone
                         </Button>
-                      )}
-                    </div>
-                    <Select
-                      value={formData.colorId}
-                      onValueChange={handleValueChange("colorId")}
-                      disabled={isSubmitting}
-                    >
-                      <SelectTrigger id="colorId" className="w-full">
-                        <SelectValue placeholder="Select Color" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {colors.map((color) => (
-                          <SelectItem key={color._id} value={color._id}>
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="size-3 rounded-full shrink-0 border"
-                                style={{
-                                  backgroundColor: color.hexCode || "#000",
-                                }}
-                              />
-                              <span>{color.colorName}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                      )
+                    }
+                    name="colorId"
+                    value={formData.colorId}
+                    onValueChange={handleValueChange("colorId")}
+                    options={colors}
+                    getValue={(c) => c._id}
+                    getLabel={(c) => c.colorName}
+                    placeholder="Select Color"
+                    isLoading={isLoadingColors}
+                    disabled={isSubmitting}
+                    renderOption={(color) => (
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="size-3 rounded-full shrink-0 border"
+                          style={{
+                            backgroundColor: color.hexCode || "#000",
+                          }}
+                        />
+                        <span>{color.colorName}</span>
+                      </div>
+                    )}
+                  />
 
                   {/* Secondary Color */}
                   {formData.showSecondaryColor && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="secondaryColorId">Secondary</Label>
+                    <AdminFormSelect
+                      label="Secondary"
+                      labelRight={
                         <Button
                           type="button"
                           variant="link"
@@ -323,32 +314,28 @@ const ProductManagement = () => {
                         >
                           Remove
                         </Button>
-                      </div>
-                      <Select
-                        value={formData.secondaryColorId}
-                        onValueChange={handleValueChange("secondaryColorId")}
-                        disabled={isSubmitting}
-                      >
-                        <SelectTrigger id="secondaryColorId" className="w-full">
-                          <SelectValue placeholder="Secondary" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {colors.map((color) => (
-                            <SelectItem key={color._id} value={color._id}>
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="size-3 rounded-full shrink-0 border"
-                                  style={{
-                                    backgroundColor: color.hexCode || "#000",
-                                  }}
-                                />
-                                <span>{color.colorName}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                      }
+                      name="secondaryColorId"
+                      value={formData.secondaryColorId}
+                      onValueChange={handleValueChange("secondaryColorId")}
+                      options={colors}
+                      getValue={(c) => c._id}
+                      getLabel={(c) => c.colorName}
+                      placeholder="Secondary"
+                      isLoading={isLoadingColors}
+                      disabled={isSubmitting}
+                      renderOption={(color) => (
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="size-3 rounded-full shrink-0 border"
+                            style={{
+                              backgroundColor: color.hexCode || "#000",
+                            }}
+                          />
+                          <span>{color.colorName}</span>
+                        </div>
+                      )}
+                    />
                   )}
                 </div>
               </div>
@@ -366,8 +353,8 @@ const ProductManagement = () => {
                   placeholder="0.00"
                   value={formData.price}
                   onChange={handleChange}
-                  required
                   disabled={isSubmitting}
+                  required
                 />
                 <AdminFormInput
                   label="Discount (%)"
@@ -486,8 +473,8 @@ const ProductManagement = () => {
                         placeholder="1234567"
                         value={variant.itemId}
                         onChange={handleVariantChange(variantIndex, "itemId")}
-                        required
                         disabled={isSubmitting}
+                        required
                       />
 
                       {/* Stock */}
@@ -503,12 +490,10 @@ const ProductManagement = () => {
                       />
 
                       {/* Color */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor={`variant-colorId-${variantIndex}`}>
-                            Color
-                          </Label>
-                          {!variant.showSecondaryColor && (
+                      <AdminFormSelect
+                        label="Color"
+                        labelRight={
+                          !variant.showSecondaryColor && (
                             <Button
                               type="button"
                               variant="link"
@@ -524,48 +509,37 @@ const ProductManagement = () => {
                             >
                               Dual Tone
                             </Button>
-                          )}
-                        </div>
-                        <Select
-                          value={variant.colorId}
-                          onValueChange={handleVariantChange(
-                            variantIndex,
-                            "colorId",
-                          )}
-                          disabled={isSubmitting}
-                        >
-                          <SelectTrigger
-                            id={`variant-colorId-${variantIndex}`}
-                            className="w-full"
-                          >
-                            <SelectValue placeholder="Select Color" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {colors.map((color) => (
-                              <SelectItem key={color._id} value={color._id}>
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="size-3 rounded-full shrink-0 border"
-                                    style={{
-                                      backgroundColor: color.hexCode || "#000",
-                                    }}
-                                  />
-                                  <span>{color.colorName}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                          )
+                        }
+                        name={`variant-colorId-${variantIndex}`}
+                        value={variant.colorId}
+                        onValueChange={handleVariantChange(
+                          variantIndex,
+                          "colorId",
+                        )}
+                        options={colors}
+                        getValue={(c) => c._id}
+                        getLabel={(c) => c.colorName}
+                        placeholder="Select Color"
+                        isLoading={isLoadingColors}
+                        disabled={isSubmitting}
+                        renderOption={(color) => (
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="size-3 rounded-full shrink-0 border"
+                              style={{
+                                backgroundColor: color.hexCode || "#000",
+                              }}
+                            />
+                            <span>{color.colorName}</span>
+                          </div>
+                        )}
+                      />
 
                       {variant.showSecondaryColor && (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <Label
-                              htmlFor={`variant-secondaryColorId-${variantIndex}`}
-                            >
-                              Secondary
-                            </Label>
+                        <AdminFormSelect
+                          label="Secondary"
+                          labelRight={
                             <Button
                               type="button"
                               variant="link"
@@ -583,41 +557,33 @@ const ProductManagement = () => {
                               }}
                               disabled={isSubmitting}
                             >
-                              <Trash2 className="size-4" />
+                              Remove
                             </Button>
-                          </div>
-                          <Select
-                            value={variant.secondaryColorId}
-                            onValueChange={handleVariantChange(
-                              variantIndex,
-                              "secondaryColorId",
-                            )}
-                            disabled={isSubmitting}
-                          >
-                            <SelectTrigger
-                              id={`variant-secondaryColorId-${variantIndex}`}
-                              className="w-full"
-                            >
-                              <SelectValue placeholder="Select secondary" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {colors.map((color) => (
-                                <SelectItem key={color._id} value={color._id}>
-                                  <div className="flex items-center gap-2">
-                                    <div
-                                      className="size-3 rounded-full shrink-0 border"
-                                      style={{
-                                        backgroundColor:
-                                          color.hexCode || "#000",
-                                      }}
-                                    />
-                                    <span>{color.colorName}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                          }
+                          name={`variant-secondaryColorId-${variantIndex}`}
+                          value={variant.secondaryColorId}
+                          onValueChange={handleVariantChange(
+                            variantIndex,
+                            "secondaryColorId",
+                          )}
+                          options={colors}
+                          getValue={(c) => c._id}
+                          getLabel={(c) => c.colorName}
+                          placeholder="Select secondary"
+                          isLoading={isLoadingColors}
+                          disabled={isSubmitting}
+                          renderOption={(color) => (
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="size-3 rounded-full shrink-0 border"
+                                style={{
+                                  backgroundColor: color.hexCode || "#000",
+                                }}
+                              />
+                              <span>{color.colorName}</span>
+                            </div>
+                          )}
+                        />
                       )}
                     </div>
 

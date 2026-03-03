@@ -263,8 +263,8 @@ export const validateSubCollection = (formData, mode) => {
   if (
     !validateRequired(
       formData.collection,
-      "Parent collection",
-      "Please select a parent collection.",
+      "Collection",
+      "Please select a collection.",
     )
   )
     return false;

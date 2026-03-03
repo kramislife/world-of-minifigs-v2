@@ -13,7 +13,11 @@ const ShowEntries = ({ value, onValueChange, defaultValue = "10" }) => {
   return (
     <div className="flex items-center gap-2">
       <Label htmlFor="entryOptions">Show</Label>
-      <Select value={value} onValueChange={onValueChange} defaultValue={defaultValue}>
+      <Select
+        value={value}
+        onValueChange={onValueChange}
+        defaultValue={defaultValue}
+      >
         <SelectTrigger>
           <SelectValue />
         </SelectTrigger>
@@ -31,4 +35,3 @@ const ShowEntries = ({ value, onValueChange, defaultValue = "10" }) => {
 };
 
 export default ShowEntries;
-

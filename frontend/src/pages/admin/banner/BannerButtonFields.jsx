@@ -2,13 +2,7 @@ import React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { AdminFormSelect } from "@/components/shared/AdminFormInput";
 
 const BannerButtonFields = ({
   formData,
@@ -66,22 +60,18 @@ const BannerButtonFields = ({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor={`btn-variant-${i}`}>Visual Style</Label>
-                <Select
-                  value={btn.variant || "primary"}
-                  onValueChange={handleNestedChange("buttons", i, "variant")}
-                  disabled={isSubmitting}
-                >
-                  <SelectTrigger id={`btn-variant-${i}`} className="w-full">
-                    <SelectValue placeholder="Select style" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="default">Solid Button</SelectItem>
-                    <SelectItem value="outline">Outline Button</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <AdminFormSelect
+                label="Visual Style"
+                name="variant"
+                value={btn.variant || "default"}
+                onValueChange={handleNestedChange("buttons", i, "variant")}
+                options={[
+                  { value: "default", label: "Solid Button" },
+                  { value: "outline", label: "Outline Button" },
+                ]}
+                placeholder="Select style"
+                disabled={isSubmitting}
+              />
             </div>
           ))}
         </div>

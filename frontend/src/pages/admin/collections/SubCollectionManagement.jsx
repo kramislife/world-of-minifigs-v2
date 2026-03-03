@@ -1,12 +1,4 @@
 import React from "react";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import {
@@ -19,6 +11,7 @@ import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import {
   AdminFormInput,
   AdminFormTextarea,
+  AdminFormSelect,
 } from "@/components/shared/AdminFormInput";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import MediaUpload from "@/components/shared/MediaUpload";
@@ -139,26 +132,19 @@ const SubCollectionManagement = () => {
         isLoading={isSubmitting}
       >
         <div className="space-y-4">
-          {/* Collection */}
-          <div className="space-y-2 col-span-1">
-            <Label htmlFor="collection">Collection</Label>
-            <Select
-              value={formData.collection}
-              onValueChange={handleValueChange("collection")}
-              disabled={isSubmitting || isLoadingCollections}
-            >
-              <SelectTrigger id="collection" className="w-full">
-                <SelectValue placeholder="Select collection" />
-              </SelectTrigger>
-              <SelectContent>
-                {collections.map((collection) => (
-                  <SelectItem key={collection._id} value={collection._id}>
-                    {collection.collectionName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Collection Select */}
+          <AdminFormSelect
+            label="Collection"
+            name="collection"
+            value={formData.collection}
+            onValueChange={handleValueChange("collection")}
+            options={collections}
+            getValue={(item) => item._id}
+            getLabel={(item) => item.collectionName}
+            placeholder="Select a collection"
+            isLoading={isLoadingCollections}
+            disabled={isSubmitting}
+          />
 
           {/* Sub-collection Name */}
           <AdminFormInput
@@ -167,9 +153,9 @@ const SubCollectionManagement = () => {
             placeholder="Headgear, Legs, Torso"
             value={formData.subCollectionName}
             onChange={handleChange}
-            required
             disabled={isSubmitting}
             className="col-span-2"
+            required
           />
 
           {/* Description */}

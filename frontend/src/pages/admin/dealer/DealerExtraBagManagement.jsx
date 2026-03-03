@@ -1,14 +1,9 @@
 import React from "react";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
-import { AdminFormInput } from "@/components/shared/AdminFormInput";
+import {
+  AdminFormInput,
+  AdminFormSelect,
+} from "@/components/shared/AdminFormInput";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import TableLayout from "@/components/table/TableLayout";
 import {
@@ -127,26 +122,19 @@ const DealerExtraBagManagement = () => {
         isLoading={isSubmitting}
       >
         <div className="space-y-4">
-          {/* Sub-Collection */}
-          <div className="space-y-2">
-            <Label htmlFor="subCollection">Sub-Collection</Label>
-            <Select
-              value={formData.subCollection}
-              onValueChange={handleValueChange("subCollection")}
-              disabled={isSubmitting || isLoadingSubCollections}
-            >
-              <SelectTrigger id="subCollection" className="w-full">
-                <SelectValue placeholder="Select Sub-Collection" />
-              </SelectTrigger>
-              <SelectContent>
-                {subCollections.map((subCollection) => (
-                  <SelectItem key={subCollection._id} value={subCollection._id}>
-                    {subCollection.subCollectionName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Sub-Collection Select */}
+          <AdminFormSelect
+            label="Sub-Collection"
+            name="subCollection"
+            value={formData.subCollection}
+            onValueChange={handleValueChange("subCollection")}
+            options={subCollections}
+            getValue={(item) => item._id}
+            getLabel={(item) => item.subCollectionName}
+            placeholder="Select Sub-Collection"
+            isLoading={isLoadingSubCollections}
+            disabled={isSubmitting}
+          />
 
           {/* Price */}
           <AdminFormInput
@@ -157,8 +145,8 @@ const DealerExtraBagManagement = () => {
             placeholder="0.00"
             value={formData.price}
             onChange={handleChange}
-            required
             disabled={isSubmitting}
+            required
           />
 
           {/* Visibility */}

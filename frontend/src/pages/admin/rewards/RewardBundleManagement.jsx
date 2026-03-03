@@ -135,8 +135,8 @@ const RewardBundleManagement = () => {
             placeholder="Starter Pack"
             value={formData.bundleName}
             onChange={handleChange}
-            required
             disabled={isSubmitting}
+            required
           />
 
           <div className="grid grid-cols-2 gap-2">
@@ -148,8 +148,8 @@ const RewardBundleManagement = () => {
               placeholder="100"
               value={formData.minifigQuantity}
               onChange={handleChange}
-              required
               disabled={isSubmitting}
+              required
             />
 
             {/* Price */}
@@ -161,8 +161,8 @@ const RewardBundleManagement = () => {
               placeholder="0.00"
               value={formData.totalPrice}
               onChange={handleChange}
-              required
               disabled={isSubmitting}
+              required
             />
           </div>
 

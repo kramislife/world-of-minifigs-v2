@@ -1,12 +1,5 @@
 import React from "react";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import {
@@ -20,6 +13,7 @@ import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import {
   AdminFormInput,
   AdminFormTextarea,
+  AdminFormSelect,
 } from "@/components/shared/AdminFormInput";
 import StatusBadge from "@/components/shared/StatusBadge";
 import ViewAdminDialog from "@/components/table/ViewAdminDialog";
@@ -70,6 +64,7 @@ const OrderManagement = () => {
     handleEdit,
     handleView,
     getAvailableTransitions,
+    isLoadingConfig,
     handleStatusModalChange,
     handleViewModalChange,
     handleStatusFormSubmit,
@@ -177,21 +172,16 @@ const OrderManagement = () => {
       >
         <div className="space-y-4">
           {/* Status Select */}
-          <div className="space-y-2">
-            <Label>Update Status</Label>
-            <Select value={newStatus} onValueChange={setNewStatus}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                {getAvailableTransitions(selectedOrder?.status).map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <AdminFormSelect
+            label="Update Status"
+            name="newStatus"
+            value={newStatus}
+            onValueChange={setNewStatus}
+            options={getAvailableTransitions(selectedOrder?.status)}
+            placeholder="Select status"
+            isLoading={isLoadingConfig}
+            disabled={isUpdatingStatus}
+          />
 
           {/* Shipping Fields */}
           {newStatus === "shipped" && (
@@ -202,6 +192,8 @@ const OrderManagement = () => {
                 value={carrier}
                 onChange={(e) => setCarrier(e.target.value)}
                 placeholder="USPS, UPS, FedEx..."
+                disabled={isUpdatingStatus}
+                required
               />
 
               <AdminFormInput
@@ -210,6 +202,8 @@ const OrderManagement = () => {
                 value={trackingNumber}
                 onChange={(e) => setTrackingNumber(e.target.value)}
                 placeholder="1Z999AA10123456784"
+                disabled={isUpdatingStatus}
+                required
               />
 
               <AdminFormInput
@@ -218,6 +212,8 @@ const OrderManagement = () => {
                 value={trackingLink}
                 onChange={(e) => setTrackingLink(e.target.value)}
                 placeholder="https://tracking.example.com/..."
+                disabled={isUpdatingStatus}
+                required
               />
             </>
           )}
@@ -232,6 +228,7 @@ const OrderManagement = () => {
                 onChange={(e) => setCancelReason(e.target.value)}
                 placeholder="e.g., Out of stock, customer request..."
                 disabled={isUpdatingStatus}
+                required
               />
 
               <AdminFormTextarea
@@ -241,6 +238,7 @@ const OrderManagement = () => {
                 onChange={(e) => setCancelNotes(e.target.value)}
                 placeholder="Optional internal notes..."
                 disabled={isUpdatingStatus}
+                required
               />
 
               <p className="text-xs text-muted-foreground">

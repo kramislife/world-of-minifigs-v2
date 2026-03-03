@@ -2,62 +2,119 @@ import React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+// Internal helper for consistent form field layout
+const FormContainer = ({
+  label,
+  name,
+  labelRight,
+  className = "",
+  children,
+}) => (
+  <div className={`space-y-2 ${className}`}>
+    {(label || labelRight) && (
+      <div className="flex items-center justify-between">
+        {label && <Label htmlFor={name}>{label}</Label>}
+        {labelRight && labelRight}
+      </div>
+    )}
+    {children}
+  </div>
+);
 
 export const AdminFormInput = ({
-  name,
   label,
-  placeholder,
-  value,
-  onChange,
-  type = "text",
-  className = "",
-  required = false,
-  disabled = false,
+  name,
+  labelRight,
+  className,
   ...props
-}) => {
-  return (
-    <div className={`space-y-2 ${className}`}>
-      {label && <Label htmlFor={name}>{label}</Label>}
-      <Input
-        id={name}
-        name={name}
-        type={type}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        required={required}
-        disabled={disabled}
-        {...props}
-      />
-    </div>
-  );
-};
+}) => (
+  <FormContainer
+    label={label}
+    name={name}
+    labelRight={labelRight}
+    className={className}
+  >
+    <Input id={name} name={name} {...props} />
+  </FormContainer>
+);
 
 export const AdminFormTextarea = ({
-  name,
   label,
-  placeholder,
-  value,
-  onChange,
-  className = "",
-  required = false,
-  disabled = false,
+  name,
+  labelRight,
+  className,
+  rows = 4,
   ...props
-}) => {
-  return (
-    <div className={`space-y-2 ${className}`}>
-      {label && <Label htmlFor={name}>{label}</Label>}
-      <Textarea
-        id={name}
-        name={name}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        required={required}
-        disabled={disabled}
-        rows={4}
-        {...props}
-      />
-    </div>
-  );
-};
+}) => (
+  <FormContainer
+    label={label}
+    name={name}
+    labelRight={labelRight}
+    className={className}
+  >
+    <Textarea id={name} name={name} rows={rows} {...props} />
+  </FormContainer>
+);
+
+export const AdminFormSelect = ({
+  label,
+  name,
+  labelRight,
+  value,
+  onValueChange,
+  options = [],
+  getValue = (opt) => opt.value,
+  getLabel = (opt) => opt.label,
+  placeholder = "Select an option",
+  className = "",
+  triggerClassName = "",
+  disabled = false,
+  isLoading = false,
+  emptyMessage = "No options available",
+  renderOption,
+  ...props
+}) => (
+  <FormContainer
+    label={label}
+    name={name}
+    labelRight={labelRight}
+    className={className}
+  >
+    <Select
+      value={value}
+      onValueChange={onValueChange}
+      disabled={disabled || isLoading}
+      {...props}
+    >
+      <SelectTrigger id={name} className={`w-full ${triggerClassName}`}>
+        <SelectValue placeholder={isLoading ? "Loading..." : placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {isLoading && (
+          <div className="p-2 text-sm text-muted-foreground">Loading...</div>
+        )}
+
+        {!isLoading && options.length === 0 && (
+          <div className="p-2 text-sm text-muted-foreground">
+            {emptyMessage}
+          </div>
+        )}
+
+        {!isLoading &&
+          options.map((option) => (
+            <SelectItem key={getValue(option)} value={getValue(option)}>
+              {renderOption?.(option) ?? getLabel(option)}
+            </SelectItem>
+          ))}
+      </SelectContent>
+    </Select>
+  </FormContainer>
+);

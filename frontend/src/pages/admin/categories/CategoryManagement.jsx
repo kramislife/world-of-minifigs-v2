@@ -127,8 +127,8 @@ const CategoryManagement = () => {
             placeholder="Gender, Character, Design"
             value={formData.categoryName}
             onChange={handleChange}
-            required
             disabled={isSubmitting}
+            required
           />
 
           {/* Description */}

@@ -35,7 +35,7 @@ export const createSubCollection = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Collection is required",
-        description: "Please select a parent collection.",
+        description: "Please select a collection.",
       });
     }
 

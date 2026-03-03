@@ -4,13 +4,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
@@ -28,6 +21,7 @@ import {
 import {
   AdminFormInput,
   AdminFormTextarea,
+  AdminFormSelect,
 } from "@/components/shared/AdminFormInput";
 import QuantityControl from "@/components/shared/QuantityControl";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
@@ -168,27 +162,23 @@ const DealerAddonManagement = () => {
               placeholder="Accessories, Animal Pieces"
               value={formData.addonName}
               onChange={handleChange}
-              required
               disabled={isSubmitting}
+              required
             />
 
-            {/* Type */}
-            <div className="space-y-2">
-              <Label>Type</Label>
-              <Select
-                value={formData.addonType}
-                onValueChange={handleValueChange("addonType")}
-                disabled={isSubmitting || dialogMode === "edit"}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bundle">Bundle</SelectItem>
-                  <SelectItem value="upgrade">Upgrade</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Add-on Type Select */}
+            <AdminFormSelect
+              label="Type"
+              name="addonType"
+              value={formData.addonType}
+              onValueChange={handleValueChange("addonType")}
+              disabled={isSubmitting || dialogMode === "edit"}
+              options={[
+                { value: "bundle", label: "Bundle" },
+                { value: "upgrade", label: "Upgrade" },
+              ]}
+              placeholder="Select type"
+            />
           </div>
 
           {/* Description */}

@@ -2,13 +2,6 @@ import React from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import TableLayout from "@/components/table/TableLayout";
@@ -25,6 +18,7 @@ import { display } from "@/utils/formatting";
 import {
   AdminFormInput,
   AdminFormTextarea,
+  AdminFormSelect,
 } from "@/components/shared/AdminFormInput";
 import useRewardAddonManagement from "@/hooks/admin/useRewardAddonManagement";
 
@@ -135,23 +129,19 @@ const RewardAddonManagement = () => {
         <div className="space-y-4">
           {/* Duration, Quantity, Price */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <div className="space-y-2">
-              <Label htmlFor="duration">Duration</Label>
-              <Select
-                value={formData.duration}
-                onValueChange={handleValueChange("duration")}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger id="duration" className="w-full">
-                  <SelectValue placeholder="Select duration" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="3">3 months</SelectItem>
-                  <SelectItem value="6">6 months</SelectItem>
-                  <SelectItem value="12">12 months</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <AdminFormSelect
+              label="Duration"
+              name="duration"
+              value={formData.duration}
+              onValueChange={handleValueChange("duration")}
+              disabled={isSubmitting}
+              options={[
+                { value: "3", label: "3 months" },
+                { value: "6", label: "6 months" },
+                { value: "12", label: "12 months" },
+              ]}
+              placeholder="Select duration"
+            />
 
             {/* Quantity */}
             <AdminFormInput
@@ -161,8 +151,8 @@ const RewardAddonManagement = () => {
               placeholder="100"
               value={formData.quantity}
               onChange={handleChange}
-              required
               disabled={isSubmitting}
+              required
             />
 
             {/* Price monthly */}
@@ -174,8 +164,8 @@ const RewardAddonManagement = () => {
               placeholder="0.00"
               value={formData.price}
               onChange={handleChange}
-              required
               disabled={isSubmitting}
+              required
             />
           </div>
 
@@ -186,7 +176,6 @@ const RewardAddonManagement = () => {
             placeholder="Enter addon description..."
             value={formData.description}
             onChange={handleChange}
-            required
             disabled={isSubmitting}
           />
 

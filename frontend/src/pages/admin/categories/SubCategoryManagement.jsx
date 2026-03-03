@@ -1,12 +1,4 @@
 import React from "react";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import {
@@ -18,8 +10,8 @@ import {
 import {
   AdminFormInput,
   AdminFormTextarea,
+  AdminFormSelect,
 } from "@/components/shared/AdminFormInput";
-
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
@@ -137,25 +129,18 @@ const SubCategoryManagement = () => {
       >
         <div className="space-y-4">
           {/* Category Select */}
-          <div className="space-y-2">
-            <Label htmlFor="category">Category</Label>
-            <Select
-              value={formData.category}
-              onValueChange={handleValueChange("category")}
-              disabled={isSubmitting || isLoadingCategories}
-            >
-              <SelectTrigger id="category" className="w-full">
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category._id} value={category._id}>
-                    {category.categoryName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <AdminFormSelect
+            label="Category"
+            name="category"
+            value={formData.category}
+            onValueChange={handleValueChange("category")}
+            options={categories}
+            getValue={(item) => item._id}
+            getLabel={(item) => item.categoryName}
+            placeholder="Select a category"
+            isLoading={isLoadingCategories}
+            disabled={isSubmitting}
+          />
 
           {/* Sub-category Name */}
           <AdminFormInput
@@ -164,8 +149,8 @@ const SubCategoryManagement = () => {
             placeholder="Printed, Male, Casual"
             value={formData.subCategoryName}
             onChange={handleChange}
-            required
             disabled={isSubmitting}
+            required
           />
 
           {/* Description */}

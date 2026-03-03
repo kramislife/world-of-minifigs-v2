@@ -1,12 +1,6 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { AdminFormSelect } from "@/components/shared/AdminFormInput";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import {
@@ -88,28 +82,25 @@ const UserManagement = () => {
             <TableCell maxWidth="200px">{display(user.email)}</TableCell>
 
             {/* Contact Number */}
-            <TableCell maxWidth="150px">{display(user.contactNumber)}</TableCell>
+            <TableCell maxWidth="150px">
+              {display(user.contactNumber)}
+            </TableCell>
 
             {/* Role */}
             <TableCell className="text-center">
               {canUpdateRole(user) ? (
                 <div className="flex justify-center">
-                  <Select
+                  <AdminFormSelect
                     value={user.role}
-                    onValueChange={(newRole) => {
-                      const userId = user._id;
-                      handleUpdateRole(userId, newRole);
-                    }}
+                    onValueChange={(newRole) =>
+                      handleUpdateRole(user._id, newRole)
+                    }
+                    options={[
+                      { value: "customer", label: "Customer" },
+                      { value: "dealer", label: "Dealer" },
+                    ]}
                     disabled={isUpdatingRole}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="customer">Customer</SelectItem>
-                      <SelectItem value="dealer">Dealer</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  />
                 </div>
               ) : (
                 <Badge

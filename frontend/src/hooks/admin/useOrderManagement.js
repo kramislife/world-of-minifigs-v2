@@ -65,14 +65,14 @@ const useOrderManagement = () => {
     useUpdateOrderStatusMutation();
 
   // ------------------------------- Fetch ------------------------------------
-  const { data: ordersData, isLoading: isLoadingOrders } =
-    useGetOrdersQuery({
-      page: crud.page,
-      limit: crud.limit,
-      search: crud.search || undefined,
-    });
+  const { data: ordersData, isLoading: isLoadingOrders } = useGetOrdersQuery({
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search || undefined,
+  });
 
-  const { data: configData } = useGetOrderConfigQuery();
+  const { data: configData, isLoading: isLoadingConfig } =
+    useGetOrderConfigQuery();
 
   const adminStatusOptions = useMemo(
     () => buildAdminStatusOptions(configData?.validTransitions),
@@ -231,6 +231,7 @@ const useOrderManagement = () => {
     handleViewModalChange,
     handleUpdateStatus,
     getAvailableTransitions,
+    isLoadingConfig,
     handleStatusFormSubmit,
   };
 };

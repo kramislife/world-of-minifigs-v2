@@ -2,17 +2,11 @@ import React from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import {
   AdminFormInput,
   AdminFormTextarea,
+  AdminFormSelect,
 } from "@/components/shared/AdminFormInput";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import TableLayout from "@/components/table/TableLayout";
@@ -150,8 +144,8 @@ const DealerBundleManagement = () => {
             placeholder="100 Minifigs"
             value={formData.bundleName}
             onChange={handleChange}
-            required
             disabled={isSubmitting}
+            required
           />
 
           {/* Description */}
@@ -161,7 +155,6 @@ const DealerBundleManagement = () => {
             placeholder="Enter bundle description..."
             value={formData.description}
             onChange={handleChange}
-            required
             disabled={isSubmitting}
           />
 
@@ -174,8 +167,8 @@ const DealerBundleManagement = () => {
               placeholder="100"
               value={formData.minifigQuantity}
               onChange={handleChange}
-              required
               disabled={isSubmitting}
+              required
             />
 
             {/* Unit Price */}
@@ -187,26 +180,22 @@ const DealerBundleManagement = () => {
               placeholder="0.00"
               value={formData.unitPrice}
               onChange={handleChange}
-              required
               disabled={isSubmitting}
+              required
             />
 
-            {/* Torso Bag Type */}
-            <div className="space-y-2">
-              <Label htmlFor="torsoBagType">Torso Bag Type</Label>
-              <Select
-                value={formData.torsoBagType}
-                onValueChange={handleValueChange("torsoBagType")}
-              >
-                <SelectTrigger id="torsoBagType" className="w-full">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="regular">Regular</SelectItem>
-                  <SelectItem value="custom">Custom Bundle</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <AdminFormSelect
+              label="Torso Bag Type"
+              name="torsoBagType"
+              value={formData.torsoBagType}
+              onValueChange={handleValueChange("torsoBagType")}
+              options={[
+                { value: "regular", label: "Regular" },
+                { value: "custom", label: "Custom Bundle" },
+              ]}
+              placeholder="Select type"
+              disabled={isSubmitting}
+            />
           </div>
 
           {/* Features */}

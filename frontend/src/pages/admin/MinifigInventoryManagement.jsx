@@ -1,12 +1,11 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
+
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  AdminFormInput,
+  AdminFormTextarea,
+  AdminFormSelect,
+} from "@/components/shared/AdminFormInput";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import {
@@ -184,30 +183,29 @@ const MinifigInventoryManagement = () => {
                   />
                 </div>
 
-                <Select
+                <AdminFormSelect
+                  name="color"
                   value={item.color}
                   onValueChange={handleUpdateFileMetadata(index, "color")}
-                  disabled={isSubmitting || isLoadingColors}
-                >
-                  <SelectTrigger id="color" className="h-8 text-[11px] w-full">
-                    <SelectValue placeholder="Select Color" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {colors.map((color) => (
-                      <SelectItem key={color._id} value={color._id}>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="size-3 rounded-full shrink-0 border"
-                            style={{
-                              backgroundColor: color.hexCode || "#000",
-                            }}
-                          />
-                          <span>{color.colorName}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  triggerClassName="text-[11px]"
+                  options={colors}
+                  getValue={(color) => color._id}
+                  getLabel={(color) => color.colorName}
+                  renderOption={(color) => (
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="size-3 rounded-full shrink-0 border"
+                        style={{
+                          backgroundColor: color.hexCode || "#000",
+                        }}
+                      />
+                      <span>{color.colorName}</span>
+                    </div>
+                  )}
+                  placeholder="Select Color"
+                  isLoading={isLoadingColors}
+                  disabled={isSubmitting}
+                />
               </div>
             )}
           />

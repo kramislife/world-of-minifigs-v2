@@ -1,17 +1,10 @@
 import React from "react";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import {
   AdminFormInput,
   AdminFormTextarea,
+  AdminFormSelect,
 } from "@/components/shared/AdminFormInput";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import {
@@ -191,42 +184,34 @@ const BannerManagement = () => {
           />
 
           <div className="grid grid-cols-2 gap-3">
-            {/* Position */}
-            <div className="space-y-2">
-              <Label htmlFor="position">Text Position</Label>
-              <Select
-                value={formData.position}
-                onValueChange={handleValueChange("position")}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger id="position" className="w-full">
-                  <SelectValue placeholder="Select position" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="center">Center</SelectItem>
-                  <SelectItem value="bottom-left">Bottom Left</SelectItem>
-                  <SelectItem value="bottom-right">Bottom Right</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <AdminFormSelect
+              label="Text Position"
+              name="position"
+              value={formData.position}
+              onValueChange={handleValueChange("position")}
+              options={[
+                { value: "center", label: "Center" },
+                { value: "bottom-left", label: "Bottom Left" },
+                { value: "bottom-right", label: "Bottom Right" },
+              ]}
+              placeholder="Select position"
+              isLoading={isLoadingBanners}
+              disabled={isSubmitting}
+            />
 
-            {/* Text theme */}
-            <div className="space-y-2">
-              <Label htmlFor="textTheme">Text Theme</Label>
-              <Select
-                value={formData.textTheme}
-                onValueChange={handleValueChange("textTheme")}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger id="textTheme" className="w-full">
-                  <SelectValue placeholder="Select text theme" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="light">Light Text</SelectItem>
-                  <SelectItem value="dark">Dark Text</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <AdminFormSelect
+              label="Text Theme"
+              name="textTheme"
+              value={formData.textTheme}
+              onValueChange={handleValueChange("textTheme")}
+              options={[
+                { value: "light", label: "Light Text" },
+                { value: "dark", label: "Dark Text" },
+              ]}
+              placeholder="Select text theme"
+              isLoading={isLoadingBanners}
+              disabled={isSubmitting}
+            />
           </div>
 
           {/* Visibility */}

@@ -127,8 +127,8 @@ const SkillLevelManagement = () => {
             placeholder="Beginner, Intermediate, Advanced"
             value={formData.skillLevelName}
             onChange={handleChange}
-            required
             disabled={isSubmitting}
+            required
           />
 
           {/* Description */}
