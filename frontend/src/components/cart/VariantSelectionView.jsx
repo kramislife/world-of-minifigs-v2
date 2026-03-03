@@ -10,6 +10,7 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
+import CommonImage from "@/components/shared/CommonImage";
 import { AddToCartButton } from "@/components/shared/OrderActionButton";
 import { useVariantSelection } from "@/hooks/useCart";
 
@@ -48,14 +49,14 @@ const VariantSelectionView = ({ product, switchToCart }) => {
               {carouselImages.map((img, i) => (
                 <CarouselItem key={i} className="basis-1/2">
                   <div
-                    className={`aspect-square overflow-hidden border-2 transition-all ${
-                      idx === i ? "border-accent" : "border-transparent"
+                    className={`aspect-square border-2 transition-all ${
+                      idx === i ? "border-accent" : "border"
                     }`}
                   >
-                    <img
+                    <CommonImage
                       src={img}
-                      className="w-full h-full object-cover"
                       alt={product.productName}
+                      className="w-full h-full"
                     />
                   </div>
                 </CarouselItem>

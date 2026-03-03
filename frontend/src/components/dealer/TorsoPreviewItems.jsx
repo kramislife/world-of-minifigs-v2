@@ -3,7 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import Logo from "@/assets/media/Logo.png";
+import CommonImage from "@/components/shared/CommonImage";
 
 export const PreviewItem = ({ item, idx, displayQuantity }) => (
   <Card className="relative p-0 border-border shadow-none">
@@ -11,10 +11,10 @@ export const PreviewItem = ({ item, idx, displayQuantity }) => (
       <Badge variant="accent" className="absolute top-1 right-1 size-5">
         {displayQuantity}
       </Badge>
-      <img
-        src={item.image?.url || Logo}
+      <CommonImage
+        src={item.image?.url}
         alt={`Torso ${idx}`}
-        className="w-full h-full object-cover"
+        className="w-full h-full"
       />
     </div>
   </Card>
@@ -56,10 +56,10 @@ export const SortablePreviewItem = ({ id, item, idx, displayQuantity }) => {
           {displayQuantity}
         </Badge>
 
-        <img
-          src={item.image?.url || Logo}
+        <CommonImage
+          src={item.image?.url}
           alt={`Torso ${idx}`}
-          className="w-full h-full object-cover"
+          className="w-full h-full"
         />
       </div>
     </Card>

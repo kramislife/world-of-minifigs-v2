@@ -9,7 +9,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/utils/formatting";
-import Logo from "@/assets/media/Logo.png";
+import CommonImage from "@/components/shared/CommonImage";
 
 const AddonPreviewModal = ({ addon, onClose, onSelect }) => {
   if (!addon) return null;
@@ -32,23 +32,11 @@ const AddonPreviewModal = ({ addon, onClose, onSelect }) => {
                 className="p-0 border border-border rounded-md overflow-hidden shadow-none"
               >
                 <CardContent className="flex flex-row items-start gap-3 pt-2 px-2 pb-1">
-                  <div className="shrink-0 rounded border flex items-center justify-center transition-all duration-300 w-20 h-20">
-                    {item.image?.url ? (
-                      <img
-                        src={item.image.url}
-                        alt={item.itemName}
-                        className="object-cover aspect-square"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center w-full h-full">
-                        <img
-                          src={Logo}
-                          alt="Placeholder"
-                          className="max-h-40 max-w-40 object-contain opacity-80"
-                        />
-                      </div>
-                    )}
-                  </div>
+                  <CommonImage
+                    src={item.image?.url}
+                    alt={item.itemName}
+                    className="size-20"
+                  />
 
                   <div className="flex flex-col">
                     <h4
@@ -114,19 +102,11 @@ export default AddonPreviewModal;
           className="p-0 border border-border rounded-md overflow-hidden shadow-none"
         >
           <div className="aspect-square relative flex items-center justify-center overflow-hidden">
-            {item.image?.url ? (
-              <img
-                src={item.image.url}
-                alt={item.itemName}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <img
-                src={Logo}
-                alt="Placeholder"
-                className="max-h-40 max-w-40 object-contain opacity-80"
-              />
-            )}
+            <CommonImage
+              src={item.image?.url}
+              alt={item.itemName}
+              className="size-20"
+            />
           </div>
           <div className="p-2 bg-background border-t border-border space-y-1">
             <h3

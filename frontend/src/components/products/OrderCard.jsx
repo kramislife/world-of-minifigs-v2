@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import Logo from "@/assets/media/Logo.png";
+import CommonImage from "@/components/shared/CommonImage";
 
 const OrderCard = ({ orderCard }) => {
   const {
@@ -24,28 +24,16 @@ const OrderCard = ({ orderCard }) => {
           {/* Top Thumbnails Row */}
           <div className="flex items-center gap-2">
             {thumbnails.map((item) => (
-              <div
+              <CommonImage
                 key={item.id}
-                className="size-16 rounded-md border border-border flex items-center justify-center overflow-hidden"
-              >
-                {item.imageUrl ? (
-                  <img
-                    src={item.imageUrl}
-                    alt={item.productName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <img
-                    src={Logo}
-                    alt="No image"
-                    className="w-16 h-16 object-contain opacity-40"
-                  />
-                )}
-              </div>
+                src={item.imageUrl}
+                alt={item.productName}
+                className="size-16 border"
+              />
             ))}
 
             {overflowCount > 0 && (
-              <div className="size-16 rounded-md border border-border flex items-center justify-center  text-sm font-semibold text-muted-foreground">
+              <div className="size-16 border flex items-center justify-center text-sm font-semibold text-muted-foreground">
                 +{overflowCount}
               </div>
             )}

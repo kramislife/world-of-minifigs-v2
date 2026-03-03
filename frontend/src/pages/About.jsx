@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import PageHero from "@/components/shared/PageHero";
 import SectionWithCards from "@/components/shared/SectionWithCards";
 import PageCTA from "@/components/shared/PageCTA";
+import CommonImage from "@/components/shared/CommonImage";
 import {
   aboutHero,
   aboutStory,
@@ -10,6 +11,7 @@ import {
   aboutChoose,
   aboutExplore,
 } from "@/constant/aboutData";
+
 const About = () => {
   return (
     <>
@@ -23,13 +25,12 @@ const About = () => {
       {/* Our Story */}
       <section className="py-10 px-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-          <div>
-            <img
-              src={aboutStory.image}
-              alt={aboutStory.title}
-              className="w-full h-auto rounded-md"
-            />
-          </div>
+          <CommonImage
+            src={aboutStory.image}
+            alt={aboutStory.title}
+            className="w-full h-full rounded-md border"
+          />
+
           <div className="space-y-4 leading-relaxed">
             <Badge variant="accent" className="px-3 py-1 text-sm uppercase">
               {aboutStory.badge}
@@ -69,8 +70,8 @@ const About = () => {
         title={aboutExplore.title}
         highlight={aboutExplore.highlight}
         description={aboutExplore.description}
-        buttonText="Explore Products"
-        buttonLink="/products"
+        buttonText={aboutExplore.buttonText}
+        buttonLink={aboutExplore.buttonLink}
         backgroundImage={aboutExplore.image}
       />
     </>

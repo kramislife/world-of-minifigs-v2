@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import Logo from "@/assets/media/Logo.png";
+import CommonImage from "@/components/shared/CommonImage";
 import PageHero from "@/components/shared/PageHero";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import ErrorState from "@/components/shared/ErrorState";
@@ -48,23 +48,15 @@ const Collections = () => {
             <Link
               key={collection._id}
               to={getCollectionLink(collection)}
-              className="group"
+              className="group block"
             >
               {/* Image Container */}
-              <div className="aspect-square overflow-hidden mb-2 flex items-center justify-center border">
-                {collection.image?.url ? (
-                  <img
-                    src={collection.image.url}
-                    alt={collection.collectionName}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                ) : (
-                  <img
-                    src={Logo}
-                    alt="Placeholder"
-                    className="max-h-40 max-w-40 object-contain opacity-80"
-                  />
-                )}
+              <div className="relative aspect-square mb-2 border">
+                <CommonImage
+                  src={collection.image?.url}
+                  alt={collection.collectionName}
+                  className="w-full h-full transition-transform duration-300 group-hover:scale-105"
+                />
               </div>
 
               {/* Collection Name */}

@@ -11,6 +11,7 @@ import {
   Users,
   Handshake,
   Image,
+  ChartCandlestick,
 } from "lucide-react";
 
 export const adminNavigation = [
@@ -36,7 +37,7 @@ export const adminNavigation = [
     id: "minifig-inventory",
     label: "Minifig Inventory",
     path: "minifig-inventory",
-    icon: Package,
+      icon: ChartCandlestick,
   },
   {
     id: "product-color",

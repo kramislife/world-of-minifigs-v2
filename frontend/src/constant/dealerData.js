@@ -13,6 +13,7 @@ import {
   Origami,
   TrendingUp,
 } from "lucide-react";
+import dealerVideo from "@/assets/media/dealer.mp4";
 
 export const dealerHero = {
   title: "Build a Minifig",
@@ -131,4 +132,5 @@ export const dealerCta = {
   description:
     "Join our network of successful LEGO dealers. Get first pick of new arrivals and genuine parts at prices designed to help you succeed",
   buttonText: "Register as Dealer",
+  backgroundVideo: dealerVideo,
 };

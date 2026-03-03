@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import CommonImage from "@/components/shared/CommonImage";
 import MiscellaneousPreviewImage from "@/assets/media/MiscellaneousPreview.png";
 
 const MiscellaneousPreview = ({ miscQuantity }) => (
@@ -22,10 +23,10 @@ const MiscellaneousPreview = ({ miscQuantity }) => (
     {/* Front Card */}
     <Card className="relative h-full w-full overflow-hidden flex items-center justify-center text-center">
       {/* Background Image */}
-      <img
+      <CommonImage
         src={MiscellaneousPreviewImage}
-        alt=""
-        className="absolute inset-0 w-full h-full object-cover"
+        alt="Mystery Drop"
+        className="absolute inset-0"
       />
 
       {/* Overlay */}

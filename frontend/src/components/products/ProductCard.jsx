@@ -2,7 +2,7 @@ import React from "react";
 import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import Logo from "@/assets/media/Logo.png";
+import CommonImage from "@/components/shared/CommonImage";
 import { AddToCartButton } from "@/components/shared/OrderActionButton";
 import { formatCurrency } from "@/utils/formatting";
 import {
@@ -36,39 +36,26 @@ const ProductCard = ({ product }) => {
     >
       <CardHeader className="p-0 gap-0">
         <div
-          className="relative aspect-square overflow-hidden border-b border-border"
+          className="relative aspect-square border-b border-border"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          {imageUrls.length > 0 ? (
-            <div className={`relative h-full w-full`}>
-              {imageUrls.map((url, index) => (
-                <img
-                  key={`${product._id}-${url}-${index}`}
-                  src={url}
-                  alt={`${product.productName}${
-                    hasMultipleImages ? ` - Image ${index + 1}` : ""
-                  }`}
-                  title={`Go to ${product.productName}`}
-                  className={[
-                    "absolute inset-0 h-full w-full object-cover transition-opacity duration-500",
-                    index === currentImageIndex
-                      ? "opacity-100 z-10"
-                      : "opacity-0 z-0",
-                  ].join(" ")}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className={`flex h-full w-full items-center justify-center`}>
-              <img
-                src={Logo}
-                alt="Product placeholder"
-                title={product.productName}
-                className="max-h-40 max-w-40 object-contain opacity-80"
+          <div className="relative h-full w-full">
+            {imageUrls.map((url, index) => (
+              <CommonImage
+                key={`${product._id}-${index}`}
+                src={url}
+                alt={`${product.productName}${
+                  hasMultipleImages ? ` - Image ${index + 1}` : ""
+                }`}
+                className={`absolute inset-0 transition-opacity duration-500 ${
+                  index === currentImageIndex
+                    ? "opacity-100 z-10"
+                    : "opacity-0 z-0"
+                }`}
               />
-            </div>
-          )}
+            ))}
+          </div>
 
           {/* Status Badges */}
           <div className="absolute top-2 right-2 flex flex-col gap-1 z-20">

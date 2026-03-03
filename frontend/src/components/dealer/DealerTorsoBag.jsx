@@ -3,7 +3,7 @@ import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import Logo from "@/assets/media/Logo.png";
+import CommonImage from "@/components/shared/CommonImage";
 import MiscellaneousPreview from "@/components/dealer/MiscellaneousPreview";
 import {
   PreviewItem,
@@ -61,10 +61,10 @@ const DealerTorsoBag = ({
             )}
 
             <div className="aspect-square flex items-center justify-center">
-              <img
-                src={bag.firstImage || Logo}
+              <CommonImage
+                src={bag.firstImage}
                 alt={bag.bagName}
-                className="w-full h-full object-cover"
+                className="w-full h-full"
               />
             </div>
 

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import ErrorState from "@/components/shared/ErrorState";
+import CommonImage from "@/components/shared/CommonImage";
 import { useBanner } from "@/hooks/useBanner";
 
 const Banner = () => {
@@ -76,7 +77,7 @@ const Banner = () => {
         <CarouselContent className="h-full">
           {banners.map((banner, index) => (
             <CarouselItem key={banner._id} className="h-full">
-              <div className="relative w-full h-full aspect-4/5 md:aspect-16/7 overflow-hidden">
+              <div className="relative w-full h-full aspect-4/5 md:aspect-16/7">
                 {banner.mediaType === "video" ? (
                   <video
                     data-banner-video={index}
@@ -87,10 +88,10 @@ const Banner = () => {
                     playsInline
                   />
                 ) : (
-                  <img
+                  <CommonImage
                     src={banner.mediaUrl}
                     alt={banner.label || "Banner"}
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="absolute inset-0"
                   />
                 )}
 

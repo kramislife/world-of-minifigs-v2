@@ -8,7 +8,7 @@ const SearchResults = ({ categorizedResults, handleSelect }) => (
     {categorizedResults.map(({ key, label, items }) => (
       <div key={key}>
         <div className="flex items-center gap-2 mb-3 px-5">
-          <span className="text-sm font-semibold text-muted-foreground tracking-tight uppercase">
+          <span className="text-xs font-semibold text-muted-foreground tracking-tight uppercase">
             {items.length}{" "}
             {items.length === 1 ? label.replace(/s$/, "") : label} found
           </span>

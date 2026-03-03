@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import ErrorState from "@/components/shared/ErrorState";
 import CancelOrderModal from "@/components/products/CancelOrderModal";
+import CommonImage from "@/components/shared/CommonImage";
 import Logo from "@/assets/media/Logo.png";
 import { formatCurrency, formatDate } from "@/utils/formatting";
 import useCheckoutSuccess from "@/hooks/useCheckoutSuccess";
@@ -115,23 +116,11 @@ const CheckoutSuccess = () => {
               {order?.items?.map((item, index) => (
                 <Card key={index}>
                   <CardContent className="flex gap-3 items-center">
-                    <div className="relative w-20 h-20 overflow-hidden shrink-0">
-                      {item.imageUrl ? (
-                        <img
-                          src={item.imageUrl}
-                          alt={item.productName}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center p-3 border">
-                          <img
-                            src={Logo}
-                            alt="No image"
-                            className="w-full h-full object-contain opacity-50"
-                          />
-                        </div>
-                      )}
-                    </div>
+                    <CommonImage
+                      src={item.imageUrl}
+                      alt={item.productName}
+                      className="size-20"
+                    />
                     <div className="flex-1 flex flex-col justify-between self-stretch">
                       <div className="grid grid-cols-[1fr_auto] items-start">
                         <Link

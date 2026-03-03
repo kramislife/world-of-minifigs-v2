@@ -3,6 +3,7 @@ import { Upload, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import CommonImage from "@/components/shared/CommonImage";
 
 const MediaUpload = ({
   label,
@@ -100,15 +101,14 @@ const MediaUpload = ({
           ? previews.map((item, index) => (
               <div
                 key={index}
-                className="relative group rounded-md border overflow-hidden flex flex-col"
+                className="relative group rounded-md border flex flex-col"
               >
-                <div
-                  className={`relative w-full overflow-hidden ${aspectClass}`}
-                >
-                  <img
+                <div className={`relative w-full ${aspectClass}`}>
+                  <CommonImage
                     src={item.url}
                     alt="preview"
-                    className={`w-full h-full ${imageClassName}`}
+                    className="w-full h-full"
+                    objectFit={imageClassName}
                   />
                   {!disabled && (
                     <RemoveButton onClick={() => onRemove?.(index)} />
@@ -118,10 +118,8 @@ const MediaUpload = ({
               </div>
             ))
           : hasPreview && (
-              <div className="relative group rounded-md border overflow-hidden flex flex-col">
-                <div
-                  className={`relative w-full overflow-hidden ${aspectClass}`}
-                >
+              <div className="relative group rounded-md border flex flex-col">
+                <div className={`relative w-full ${aspectClass}`}>
                   {mediaType === "video" ? (
                     <video
                       src={preview}
@@ -132,10 +130,11 @@ const MediaUpload = ({
                       loop
                     />
                   ) : (
-                    <img
+                    <CommonImage
                       src={preview}
                       alt="preview"
-                      className={`w-full h-full ${imageClassName}`}
+                      className="w-full h-full"
+                      objectFit={imageClassName}
                     />
                   )}
                   {!disabled && <RemoveButton onClick={onRemove} />}

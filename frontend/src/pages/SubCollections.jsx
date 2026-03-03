@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, Navigate } from "react-router-dom";
-import Logo from "@/assets/media/Logo.png";
+import CommonImage from "@/components/shared/CommonImage";
 import PageHero from "@/components/shared/PageHero";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import ErrorState from "@/components/shared/ErrorState";
@@ -48,28 +48,20 @@ const SubCollections = () => {
 
       {/* Sub-Collections Grid */}
       <section className="p-5">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-2 gap-y-7">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-2 gap-y-7">
           {subCollections.map((subCollection) => (
             <Link
               key={subCollection._id}
               to={`/products?subCollectionIds=${subCollection._id}`}
-              className="group"
+              className="group block"
             >
-              {/* Sub-Collection Image */}
-              <div className="aspect-square overflow-hidden mb-2 flex items-center justify-center border">
-                {subCollection.image?.url ? (
-                  <img
-                    src={subCollection.image.url}
-                    alt={subCollection.subCollectionName}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                ) : (
-                  <img
-                    src={Logo}
-                    alt="Placeholder"
-                    className="max-h-40 max-w-40 object-contain opacity-80"
-                  />
-                )}
+              {/* Image Container */}
+              <div className="relative aspect-square mb-2 border">
+                <CommonImage
+                  src={subCollection.image?.url}
+                  alt={subCollection.subCollectionName}
+                  className="w-full h-full transition-transform duration-300 group-hover:scale-105"
+                />
               </div>
 
               {/* Sub-Collection Name */}

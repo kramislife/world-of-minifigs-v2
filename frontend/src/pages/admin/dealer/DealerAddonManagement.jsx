@@ -34,6 +34,7 @@ import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import { formatCurrency, display } from "@/utils/formatting";
+import CommonImage from "@/components/shared/CommonImage";
 import useDealerAddonManagement from "@/hooks/admin/useDealerAddonManagement";
 
 const DealerAddonManagement = () => {
@@ -302,13 +303,11 @@ const DealerAddonManagement = () => {
                           className="flex items-center gap-3 p-3"
                         >
                           {/* Image */}
-                          {item.inventory.image?.url && (
-                            <img
-                              src={item.inventory.image.url}
-                              alt={item.inventory.minifigName}
-                              className="size-12 object-cover shrink-0"
-                            />
-                          )}
+                          <CommonImage
+                            src={item.inventory.image?.url}
+                            alt={item.inventory.minifigName}
+                            className="size-12"
+                          />
 
                           {/* Name + Color & Price */}
                           <div className="flex flex-col min-w-0 flex-1 space-y-1">
