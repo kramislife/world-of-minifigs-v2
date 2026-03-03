@@ -133,15 +133,9 @@ const DealerTorsoBagManagement = () => {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Torso Bag" : "Add Torso Bag"}
-        description={
-          dialogMode === "edit"
-            ? "Update the bag name, target size, and designs."
-            : "Create a new torso design bag."
-        }
+        entityName="Torso Bag"
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
-        submitButtonText={dialogMode === "edit" ? "Update Bag" : "Create Bag"}
         className="sm:max-w-4xl"
       >
         <div className="space-y-5">

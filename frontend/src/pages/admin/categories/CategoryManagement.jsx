@@ -115,17 +115,9 @@ const CategoryManagement = () => {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Category" : "Add Category"}
-        description={
-          dialogMode === "edit"
-            ? "Update the category details."
-            : "Create a new category for your products."
-        }
+        entityName="Category"
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Category" : "Create Category"
-        }
       >
         <div className="space-y-4">
           {/* Category Name */}

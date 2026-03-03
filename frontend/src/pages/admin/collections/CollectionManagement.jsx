@@ -126,17 +126,9 @@ const CollectionManagement = () => {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Collection" : "Add Collection"}
-        description={
-          dialogMode === "edit"
-            ? "Update the collection details."
-            : "Create a new collection for your products."
-        }
+        entityName="Collection"
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Collection" : "Create Collection"
-        }
       >
         <div className="space-y-4">
           {/* Collection Name */}

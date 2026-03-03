@@ -174,7 +174,6 @@ const OrderManagement = () => {
         submitButtonText={
           newStatus === "cancelled" ? "Confirm Cancellation" : "Update Status"
         }
-        className="sm:max-w-lg"
       >
         <div className="space-y-4">
           {/* Status Select */}

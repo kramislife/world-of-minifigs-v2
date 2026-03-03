@@ -128,19 +128,9 @@ const RewardAddonManagement = () => {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={
-          dialogMode === "edit" ? "Edit Reward Add-on" : "Add Reward Add-on"
-        }
-        description={
-          dialogMode === "edit"
-            ? "Update the reward program add-on details."
-            : "Create a new optional add-on for the Reward Program."
-        }
+        entityName="Reward Add-on"
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Add-on" : "Create Add-on"
-        }
       >
         <div className="space-y-4">
           {/* Duration, Quantity, Price */}

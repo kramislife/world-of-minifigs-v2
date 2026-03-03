@@ -134,21 +134,9 @@ const SubCollectionManagement = () => {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={
-          dialogMode === "edit" ? "Edit Sub-collection" : "Add Sub-collection"
-        }
-        description={
-          dialogMode === "edit"
-            ? "Update the sub-collection details."
-            : "Create a new sub-collection for your products."
-        }
+        entityName="Sub-collection"
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
-        submitButtonText={
-          dialogMode === "edit"
-            ? "Update Sub-collection"
-            : "Create Sub-collection"
-        }
       >
         <div className="space-y-4">
           {/* Collection */}

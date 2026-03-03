@@ -131,17 +131,9 @@ const SubCategoryManagement = () => {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Sub-category" : "Add Sub-category"}
-        description={
-          dialogMode === "edit"
-            ? "Update the sub-category details."
-            : "Create a new sub-category for your products."
-        }
+        entityName="Sub-category"
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Sub-category" : "Create Sub-category"
-        }
       >
         <div className="space-y-4">
           {/* Category Select */}

@@ -115,17 +115,9 @@ const SkillLevelManagement = () => {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Skill Level" : "Add Skill Level"}
-        description={
-          dialogMode === "edit"
-            ? "Update the skill level details."
-            : "Create a new skill level for your products."
-        }
+        entityName="Skill Level"
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Skill Level" : "Create Skill Level"
-        }
       >
         <div className="space-y-4">
           {/* Skill Level Name */}

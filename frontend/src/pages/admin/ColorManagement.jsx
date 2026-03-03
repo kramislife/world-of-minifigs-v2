@@ -122,17 +122,9 @@ const ColorManagement = () => {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Color" : "Add New Color"}
-        description={
-          dialogMode === "edit"
-            ? "Update the color details."
-            : "Create a new color for your products."
-        }
+        entityName="Color"
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Color" : "Create Color"
-        }
       >
         <div className="space-y-4">
           {/* Color Name */}

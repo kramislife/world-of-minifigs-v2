@@ -137,17 +137,9 @@ const DealerBundleManagement = () => {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Bundle" : "Add Bundle"}
-        description={
-          dialogMode === "edit"
-            ? "Update the dealer bundle details and pricing."
-            : "Create a new bundle package for dealers."
-        }
+        entityName="Bundle"
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Bundle" : "Create Bundle"
-        }
         className="sm:max-w-2xl"
       >
         <div className="space-y-4">

@@ -158,17 +158,9 @@ const ProductManagement = () => {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Product" : "Add Product"}
-        description={
-          dialogMode === "edit"
-            ? "Update the product details and management settings."
-            : "Create a new product entry for your catalog."
-        }
+        entityName="Product"
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Product" : "Create Product"
-        }
         className="sm:max-w-4xl"
       >
         <div className="space-y-5">

@@ -85,7 +85,6 @@ const DealerAddonManagement = () => {
     handleLimitChange,
     handleSearchChange,
     setDeleteDialogOpen,
-    isEditMode,
   } = useDealerAddonManagement();
 
   return (
@@ -155,17 +154,9 @@ const DealerAddonManagement = () => {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Add-on" : "Add Add-on"}
-        description={
-          dialogMode === "edit"
-            ? "Update the add-on details."
-            : "Create a new add-on for dealer bundles."
-        }
+        entityName="Add-on"
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Add-on" : "Create Add-on"
-        }
         className="sm:max-w-2xl"
       >
         <div className="space-y-4">
@@ -187,7 +178,7 @@ const DealerAddonManagement = () => {
               <Select
                 value={formData.addonType}
                 onValueChange={handleValueChange("addonType")}
-                disabled={isSubmitting || isEditMode}
+                disabled={isSubmitting || dialogMode === "edit"}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select type" />

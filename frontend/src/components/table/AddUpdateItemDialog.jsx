@@ -13,6 +13,7 @@ const AddUpdateItemDialog = ({
   open,
   onOpenChange,
   mode = "add", // "add" or "edit"
+  entityName = "Item",
   title,
   description,
   onSubmit,
@@ -21,18 +22,27 @@ const AddUpdateItemDialog = ({
   children,
   className = "sm:max-w-xl", // Default size
 }) => {
-  // Default titles and descriptions based on mode
-  const defaultTitle = mode === "edit" ? "Edit Item" : "Add New Item";
-  const defaultDescription =
-    mode === "edit"
-      ? "Update the item details."
-      : "Create a new item for your store.";
-  const defaultSubmitText = mode === "edit" ? "Update" : "Create";
+  const modeConfig = {
+    add: {
+      title: `Add ${entityName}`,
+      description: `Create a new ${entityName.toLowerCase()} record`,
+      submitText: `Create ${entityName}`,
+      loadingText: "Creating...",
+    },
+    edit: {
+      title: `Edit ${entityName}`,
+      description: `Update the selected ${entityName.toLowerCase()} record`,
+      submitText: `Update ${entityName}`,
+      loadingText: "Updating...",
+    },
+  };
 
-  const dialogTitle = title || defaultTitle;
-  const dialogDescription = description || defaultDescription;
-  const buttonText = submitButtonText || defaultSubmitText;
-  const loadingText = mode === "edit" ? "Updating..." : "Creating...";
+  const config = modeConfig[mode];
+
+  const dialogTitle = title || config.title;
+  const dialogDescription = description || config.description;
+  const buttonText = submitButtonText || config.submitText;
+  const loadingText = config.loadingText;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -123,19 +123,9 @@ const RewardBundleManagement = () => {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={
-          dialogMode === "edit" ? "Edit Reward Bundle" : "Add Reward Bundle"
-        }
-        description={
-          dialogMode === "edit"
-            ? "Update the reward program bundle details."
-            : "Create a new bundle package for the Reward Program."
-        }
+        entityName="Reward Bundle"
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Bundle" : "Create Bundle"
-        }
       >
         <div className="space-y-4">
           {/* Bundle Name */}

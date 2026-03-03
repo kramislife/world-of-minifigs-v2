@@ -53,10 +53,6 @@ const useAdminCrud = ({
   const [selectedItem, setSelectedItem] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
 
-  // Centralized Mode Flags
-  const isEditMode = useMemo(() => dialogMode === "edit", [dialogMode]);
-  const isAddMode = useMemo(() => dialogMode === "add", [dialogMode]);
-
   const resetForm = useCallback(() => {
     setFormData(initialFormData);
     setSelectedItem(null);
@@ -99,7 +95,7 @@ const useAdminCrud = ({
   const submitForm = useCallback(
     async (payload) => {
       try {
-        if (isAddMode) {
+        if (dialogMode === "add") {
           const response = await createFn(payload).unwrap();
           if (response.success) {
             handleApiSuccess(response, `${entityName} created successfully`);
@@ -121,7 +117,7 @@ const useAdminCrud = ({
       }
     },
     [
-      isAddMode,
+      dialogMode,
       selectedItem,
       createFn,
       updateFn,
@@ -170,8 +166,6 @@ const useAdminCrud = ({
     dialogOpen,
     deleteDialogOpen,
     dialogMode,
-    isEditMode,
-    isAddMode,
     selectedItem,
     formData,
     setFormData,

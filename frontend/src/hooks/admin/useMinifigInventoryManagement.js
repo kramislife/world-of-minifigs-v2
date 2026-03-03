@@ -92,11 +92,11 @@ const useMinifigInventoryManagement = () => {
     crud.setTotalItems(totalItems);
   }, [totalItems]);
 
-  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
+  const isSubmitting = crud.dialogMode === "edit" ? isUpdating : isCreating;
 
   // ------------------------------- File Handlers ------------------------------------
   const handleInventoryFileChange = async (e) => {
-    if (crud.isEditMode) {
+    if (crud.dialogMode === "edit") {
       const files = Array.from(e.target.files || []);
       if (files.length > 0) {
         const file = files[0];
@@ -144,8 +144,9 @@ const useMinifigInventoryManagement = () => {
 
   // ------------------------------- Submit Handler ------------------------------------
   const handleSubmit = async () => {
-    if (crud.isAddMode) {
-      if (!validateMinifigInventory(filePreview, crud.isAddMode)) return;
+    if (crud.dialogMode === "add") {
+      if (!validateMinifigInventory(filePreview, crud.dialogMode === "add"))
+        return;
 
       const payload = {
         items: filePreview.map((item) => ({
@@ -162,7 +163,8 @@ const useMinifigInventoryManagement = () => {
 
       await crud.submitForm(payload);
     } else {
-      if (!validateMinifigInventory(filePreview, crud.isAddMode)) return;
+      if (!validateMinifigInventory(filePreview, crud.dialogMode === "add"))
+        return;
 
       const item = filePreview[0];
 

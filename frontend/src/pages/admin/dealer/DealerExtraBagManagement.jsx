@@ -122,17 +122,9 @@ const DealerExtraBagManagement = () => {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Bag Pricing" : "Set Bag Pricing"}
-        description={
-          dialogMode === "edit"
-            ? "Update the extra bag pricing details."
-            : "Set a new base price for additional part bags."
-        }
+        entityName="Bag Pricing"
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Pricing" : "Create Pricing"
-        }
       >
         <div className="space-y-4">
           {/* Sub-Collection */}

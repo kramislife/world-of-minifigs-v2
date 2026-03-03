@@ -134,17 +134,9 @@ const BannerManagement = () => {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Banner" : "Add Banner"}
-        description={
-          dialogMode === "edit"
-            ? "Update the banner details and media."
-            : "Create a new banner for the homepage carousel."
-        }
+        entityName="Banner"
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Banner" : "Create Banner"
-        }
         className="sm:max-w-2xl"
       >
         <div className="space-y-4">

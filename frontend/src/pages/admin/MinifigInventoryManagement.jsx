@@ -138,18 +138,10 @@ const MinifigInventoryManagement = () => {
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Inventory" : "Add Inventory"}
-        description={
-          dialogMode === "edit"
-            ? "Update minifig details."
-            : "Drop multiple images to bulk create minifig items."
-        }
+        entityName="Inventory"
         onSubmit={handleSubmit}
         isLoading={isSubmitting}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Inventory" : "Create Inventory"
-        }
-        className={dialogMode === "edit" ? "" : "sm:max-w-5xl"}
+        className={dialogMode === "add" ? "sm:max-w-5xl" : ""}
       >
         <div className="space-y-4">
           {/* Media Upload with Metadata Inputs */}
