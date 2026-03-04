@@ -12,7 +12,13 @@ import { buildSearchQuery } from "../utils/pagination.js";
 const GLOBAL_SEARCH_LIMIT = 10; // Max results per category
 
 // Search a single model by name field and return limited results.
-const searchModel = async (Model, searchFields, search, selectFields, extraFilter = {}) => {
+const searchModel = async (
+  Model,
+  searchFields,
+  search,
+  selectFields,
+  extraFilter = {},
+) => {
   const query = buildSearchQuery(search, searchFields);
   if (Object.keys(query).length === 0) return [];
 
@@ -70,7 +76,9 @@ export const globalSearch = async (req, res) => {
         ])
         .limit(GLOBAL_SEARCH_LIMIT)
         .lean(),
-      searchModel(Category, ["categoryName"], searchTerm, "_id categoryName", { isActive: { $ne: false } }),
+      searchModel(Category, ["categoryName"], searchTerm, "_id categoryName", {
+        isActive: { $ne: false },
+      }),
       searchModel(
         SubCategory,
         ["subCategoryName"],
@@ -92,7 +100,9 @@ export const globalSearch = async (req, res) => {
         "_id subCollectionName collectionId image",
         { isActive: { $ne: false } },
       ),
-      searchModel(Color, ["colorName"], searchTerm, "_id colorName hexCode", { isActive: { $ne: false } }),
+      searchModel(Color, ["colorName"], searchTerm, "_id colorName hexCode", {
+        isActive: { $ne: false },
+      }),
       searchModel(
         SkillLevel,
         ["skillLevelName"],

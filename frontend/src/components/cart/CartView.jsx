@@ -13,8 +13,7 @@ const CartView = ({
   items,
   totalPriceFormatted,
   totalQuantity,
-  onQuantityDecrement,
-  onQuantityIncrement,
+  onQuantityChange,
   removeItem,
   closeSheet,
   isUpdating,
@@ -43,8 +42,7 @@ const CartView = ({
             <CartItem
               key={`${item.productId}-${item.variantIndex ?? "default"}`}
               item={item}
-              onDecrement={onQuantityDecrement}
-              onIncrement={onQuantityIncrement}
+              onChange={onQuantityChange}
               onRemove={removeItem}
             />
           ))}

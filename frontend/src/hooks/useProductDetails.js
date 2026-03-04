@@ -17,7 +17,7 @@ export const useProductDetails = (id) => {
   const isLoading = isQueryLoading || (isFetching && product?._id !== id);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(null);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, handleQuantityChange] = useState(1);
   const thumbnailScrollRef = useRef(null);
 
   const allImages = product?.allImages || [];
@@ -143,7 +143,7 @@ export const useProductDetails = (id) => {
   // Reset to first image/variant when product changes
   useEffect(() => {
     setSelectedImageIndex(0);
-    setQuantity(1);
+    handleQuantityChange(1);
     if (product?.productType === "variant" && product.variants?.length > 0) {
       setSelectedVariantIndex(0);
     } else {
@@ -171,18 +171,9 @@ export const useProductDetails = (id) => {
   // Clamp quantity when variant/stock changes
   useEffect(() => {
     if (currentStock !== undefined && quantity > currentStock) {
-      setQuantity(Math.max(1, currentStock));
+      handleQuantityChange(Math.max(1, currentStock));
     }
   }, [currentStock, quantity]);
-
-  const handleQuantityDecrement = useCallback(() => {
-    setQuantity((q) => Math.max(1, q - 1));
-  }, []);
-
-  const handleQuantityIncrement = useCallback(() => {
-    const max = currentStock ?? Infinity;
-    setQuantity((q) => Math.min(max, q + 1));
-  }, [currentStock]);
 
   // Get stock alert info
   const stockAlert = useMemo(() => {
@@ -290,8 +281,7 @@ export const useProductDetails = (id) => {
     handleNextImage,
     handleColorVariantClick,
     quantity,
-    handleQuantityDecrement,
-    handleQuantityIncrement,
+    handleQuantityChange,
     maxQuantity: currentStock ?? Infinity,
   };
 };

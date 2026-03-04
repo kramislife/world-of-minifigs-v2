@@ -307,13 +307,7 @@ const DealerAddonManagement = () => {
                           {/* Quantity controls */}
                           <QuantityControl
                             value={item.quantityPerBag}
-                            onDecrement={() =>
-                              handleBundleItemDecrement(item.inventoryItemId)
-                            }
-                            onIncrement={() =>
-                              handleBundleItemIncrement(item.inventoryItemId)
-                            }
-                            onValueChange={(value) =>
+                            onChange={(value) =>
                               handleBundleItemQuantityValue(
                                 item.inventoryItemId,
                                 value,
@@ -322,7 +316,6 @@ const DealerAddonManagement = () => {
                             min={1}
                             max={Number(item.inventory.stock || 0)}
                             allowInput
-                            valueClassName="w-12"
                           />
 
                           {/* Remove */}

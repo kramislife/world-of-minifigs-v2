@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import CommonImage from "@/components/shared/CommonImage";
 import QuantityControl from "@/components/shared/QuantityControl";
 
-const CartItem = ({ item, onDecrement, onIncrement, onRemove }) => {
+const CartItem = ({ item, onChange, onRemove }) => {
   const {
     productId,
     productName,
@@ -18,6 +18,10 @@ const CartItem = ({ item, onDecrement, onIncrement, onRemove }) => {
     colorDisplay,
     stock,
   } = item;
+
+  const handleQuantityChange = (newQty) =>
+    onChange(newQty, productId, variantIndex);
+  const handleRemove = () => onRemove(productId, variantIndex);
 
   return (
     <div className="flex gap-3 group pb-5 border-b last:border-0 last:pb-0">
@@ -55,8 +59,7 @@ const CartItem = ({ item, onDecrement, onIncrement, onRemove }) => {
         <div className="flex items-center gap-2">
           <QuantityControl
             value={quantity}
-            onDecrement={() => onDecrement(productId, variantIndex)}
-            onIncrement={() => onIncrement(productId, variantIndex)}
+            onChange={handleQuantityChange}
             min={1}
             max={stock}
           />
@@ -64,7 +67,7 @@ const CartItem = ({ item, onDecrement, onIncrement, onRemove }) => {
             variant="ghost"
             size="icon"
             className="size-8 h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-transparent"
-            onClick={() => onRemove(productId, variantIndex)}
+            onClick={handleRemove}
             title="Remove item"
           >
             <Trash2 className="size-4" />

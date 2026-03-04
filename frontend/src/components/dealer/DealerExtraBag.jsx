@@ -7,8 +7,7 @@ const DealerExtraBag = ({
   totalExtraBags,
   maxExtraBags,
   selectedBundle,
-  onIncrease,
-  onDecrease,
+  onQtyChange,
 }) => (
   <section id="step3" className="overflow-visible">
     <div className="flex flex-col mb-10">
@@ -34,39 +33,43 @@ const DealerExtraBag = ({
     </div>
 
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-      {extraBags.map((bag) => (
-        <Card
-          key={bag._id}
-          className={`p-5 transition-all duration-300 group overflow-visible hover:shadow-2xl hover:-translate-y-2 flex flex-col gap-2 ${
-            bag.qty > 0 ? "border-accent ring-2 ring-accent ring-offset-2" : ""
-          }`}
-        >
-          <h3 className="text-xl font-bold text-left">
-            {bag.subCollectionId?.subCollectionName || "Extra Bag"}
-          </h3>
+      {extraBags.map((bag) => {
+        const handleQuantityChange = (newVal) => onQtyChange(bag._id, newVal);
 
-          <div className="w-full flex flex-col mt-3">
-            <span className="text-5xl font-extrabold text-success dark:text-accent">
-              ${bag.price}
-            </span>
-            <span className="text-xs text-muted-foreground mt-2">
-              per extra bag
-            </span>
-          </div>
+        return (
+          <Card
+            key={bag._id}
+            className={`p-5 transition-all duration-300 group overflow-visible hover:shadow-2xl hover:-translate-y-2 flex flex-col gap-2 ${
+              bag.qty > 0
+                ? "border-accent ring-2 ring-accent ring-offset-2"
+                : ""
+            }`}
+          >
+            <h3 className="text-xl font-bold text-left">
+              {bag.subCollectionId?.subCollectionName || "Extra Bag"}
+            </h3>
 
-          <div className="mt-3">
-            <QuantityControl
-              value={bag.qty}
-              onDecrement={() => onDecrease(bag._id)}
-              onIncrement={() => onIncrease(bag._id)}
-              min={0}
-              max={bag.qty + Math.max(0, maxExtraBags - totalExtraBags)}
-              className="rounded-md h-10"
-              valueClassName="flex-1"
-            />
-          </div>
-        </Card>
-      ))}
+            <div className="w-full flex flex-col mt-3">
+              <span className="text-5xl font-extrabold text-success dark:text-accent">
+                ${bag.price}
+              </span>
+              <span className="text-xs text-muted-foreground mt-2">
+                per extra bag
+              </span>
+            </div>
+
+            <div className="mt-3 w-full">
+              <QuantityControl
+                value={bag.qty}
+                onChange={handleQuantityChange}
+                min={0}
+                max={bag.max}
+                size="md"
+              />
+            </div>
+          </Card>
+        );
+      })}
     </div>
   </section>
 );

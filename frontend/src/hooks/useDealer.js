@@ -151,10 +151,12 @@ export const useDealer = () => {
     () =>
       extraBags.map((bag) => {
         const qty = extraBagQuantities[bag._id] || 0;
+        const availableSlots = Math.max(0, maxExtraBags - totalExtraBags);
         return {
           ...bag,
           qty,
           total: (bag.price || 0) * qty,
+          max: qty + availableSlots,
           canIncrease: totalExtraBags < maxExtraBags,
           canDecrease: qty > 0,
         };
@@ -187,20 +189,15 @@ export const useDealer = () => {
 
   // ==================== Handlers ====================
 
-  const handleIncreaseBag = (bagId) => {
-    if (totalExtraBags >= maxExtraBags) return;
-    setExtraBagQuantities((prev) => ({
-      ...prev,
-      [bagId]: (prev[bagId] || 0) + 1,
-    }));
-  };
-
-  const handleDecreaseBag = (bagId) => {
-    if (!extraBagQuantities[bagId] || extraBagQuantities[bagId] <= 0) return;
-    setExtraBagQuantities((prev) => ({
-      ...prev,
-      [bagId]: prev[bagId] - 1,
-    }));
+  const handleExtraBagQtyChange = (bagId, newQty) => {
+    setExtraBagQuantities((prev) => {
+      const otherBagsQty = Object.entries(prev).reduce(
+        (acc, [id, qty]) => (id === bagId ? acc : acc + qty),
+        0,
+      );
+      if (otherBagsQty + newQty > maxExtraBags) return prev;
+      return { ...prev, [bagId]: newQty };
+    });
   };
 
   const handleToggleAddon = (addonId) => {
@@ -297,27 +294,25 @@ export const useDealer = () => {
   const modalSelectedItems = useMemo(
     () =>
       sortByName(modalItems, "itemName").map((item) => {
-          const bagQty = Number(
-            modalBagQuantities[item.inventoryItemId] || 0,
-          );
-          const selectedBags = Math.max(0, Math.min(bagQty, item.maxBags));
-          const selectedQuantity = selectedBags * item.perBagLimit;
-          const selectedTotal = selectedQuantity * item.unitPrice;
-          const bagPrice = item.unitPrice * item.perBagLimit;
-          const isActive = selectedBags > 0;
-          const usedPercent =
-            item.maxBags > 0 ? (selectedBags / item.maxBags) * 100 : 0;
+        const bagQty = Number(modalBagQuantities[item.inventoryItemId] || 0);
+        const selectedBags = Math.max(0, Math.min(bagQty, item.maxBags));
+        const selectedQuantity = selectedBags * item.perBagLimit;
+        const selectedTotal = selectedQuantity * item.unitPrice;
+        const bagPrice = item.unitPrice * item.perBagLimit;
+        const isActive = selectedBags > 0;
+        const usedPercent =
+          item.maxBags > 0 ? (selectedBags / item.maxBags) * 100 : 0;
 
-          return {
-            ...item,
-            selectedBags,
-            selectedQuantity,
-            selectedTotal,
-            bagPrice,
-            isActive,
-            usedPercent,
-          };
-        }),
+        return {
+          ...item,
+          selectedBags,
+          selectedQuantity,
+          selectedTotal,
+          bagPrice,
+          isActive,
+          usedPercent,
+        };
+      }),
     [modalItems, modalBagQuantities],
   );
 
@@ -342,9 +337,7 @@ export const useDealer = () => {
     handleConfigureAddon({
       addonId: selectedAddon._id,
       price: modalTotalPrice,
-      selectedItems: modalSelectedItems.filter(
-        (item) => item.selectedBags > 0,
-      ),
+      selectedItems: modalSelectedItems.filter((item) => item.selectedBags > 0),
     });
     setSelectedAddon(null);
   };
@@ -532,8 +525,7 @@ export const useDealer = () => {
 
     // Handlers
     handleToggleAddon,
-    handleIncreaseBag,
-    handleDecreaseBag,
+    handleExtraBagQtyChange,
     handleSelectTorsoBag,
 
     // Addon Preview Modal

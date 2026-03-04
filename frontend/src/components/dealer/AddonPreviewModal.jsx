@@ -83,15 +83,11 @@ const AddonPreviewModal = ({
                 <div className="flex items-center gap-3 mt-2">
                   <QuantityControl
                     value={item.selectedBags}
-                    onDecrement={() => onDecrement(item.inventoryItemId)}
-                    onIncrement={() => onIncrement(item.inventoryItemId)}
-                    onValueChange={(value) =>
-                      onValueChange(item.inventoryItemId, value)
-                    }
+                    onChange={(val) => onValueChange(item.inventoryItemId, val)}
                     min={0}
                     max={item.maxBags}
                     allowInput
-                    valueClassName="w-12 h-8"
+                    size="xs"
                   />
 
                   <div className="flex-1 min-w-0">

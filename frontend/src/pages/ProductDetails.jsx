@@ -47,8 +47,7 @@ const ProductDetails = () => {
     handleNextImage,
     handleColorVariantClick,
     quantity,
-    handleQuantityDecrement,
-    handleQuantityIncrement,
+    handleQuantityChange,
     maxQuantity,
   } = useProductDetails(id);
 
@@ -94,13 +93,14 @@ const ProductDetails = () => {
         <div className="flex flex-col lg:flex-row gap-3">
           {/* Main Image */}
           <div
-            className={`relative border border-border rounded-lg group order-1 lg:order-2 
-  aspect-square ${hasMultipleImages ? "max-h-[630px]" : "max-h-[600px]"} w-full flex flex-1 items-center justify-center`}
+            className={`relative border border-border rounded-lg group order-1 lg:order-2 overflow-hidden
+  aspect-square ${hasMultipleImages ? "max-h-[630px]" : "max-h-[600px]"} w-full flex items-center justify-center`}
           >
             <CommonImage
               src={currentImageUrl}
               alt={product.productName}
               objectFit="object-contain"
+              className="w-full h-full"
             />
 
             {/* Discount Badge */}
@@ -343,12 +343,10 @@ const ProductDetails = () => {
               <div className="grid grid-cols-4 gap-2">
                 <QuantityControl
                   value={quantity}
-                  onDecrement={handleQuantityDecrement}
-                  onIncrement={handleQuantityIncrement}
+                  onChange={handleQuantityChange}
                   min={1}
                   max={maxQuantity}
-                  className="h-12 col-span-1"
-                  valueClassName="w-full"
+                  size="lg"
                 />
                 <AddToCartButton
                   product={product}

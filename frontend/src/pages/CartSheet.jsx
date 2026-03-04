@@ -12,9 +12,7 @@ const CartSheet = () => {
     isOpen,
     closeSheet,
     sheetMode,
-    selectedProduct,
-    handleQuantityDecrement,
-    handleQuantityIncrement,
+    updateQuantity,
     removeItem,
     setSheetMode,
     handleCheckout,
@@ -30,8 +28,7 @@ const CartSheet = () => {
             items={items}
             totalPriceFormatted={totalPriceFormatted}
             totalQuantity={totalQuantity}
-            onQuantityDecrement={handleQuantityDecrement}
-            onQuantityIncrement={handleQuantityIncrement}
+            onQuantityChange={updateQuantity}
             removeItem={removeItem}
             closeSheet={closeSheet}
             isUpdating={isUpdating}

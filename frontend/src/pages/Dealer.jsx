@@ -45,8 +45,7 @@ const Dealer = () => {
     orderSummary,
 
     // Handlers
-    handleIncreaseBag,
-    handleDecreaseBag,
+    handleExtraBagQtyChange,
     handleSelectTorsoBag,
 
     // Addon Preview Modal
@@ -144,8 +143,7 @@ const Dealer = () => {
             totalExtraBags={totalExtraBags}
             maxExtraBags={maxExtraBags}
             selectedBundle={selectedBundle}
-            onIncrease={handleIncreaseBag}
-            onDecrease={handleDecreaseBag}
+            onQtyChange={handleExtraBagQtyChange}
           />
 
           <DealerTorsoBag
@@ -168,10 +166,7 @@ const Dealer = () => {
           />
         </div>
 
-        <DealerOrderSummary
-          selectedBundle={selectedBundle}
-          {...orderSummary}
-        />
+        <DealerOrderSummary selectedBundle={selectedBundle} {...orderSummary} />
       </div>
 
       {addonPreview.addon && (
