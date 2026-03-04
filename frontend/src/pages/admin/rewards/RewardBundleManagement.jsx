@@ -169,7 +169,7 @@ const RewardBundleManagement = () => {
           {/* Features */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>Features</Label>
+              <Label htmlFor="feature-0">Features</Label>
 
               {formData.features.length < 5 && (
                 <Button

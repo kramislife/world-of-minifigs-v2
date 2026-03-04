@@ -92,6 +92,7 @@ export const AdminFormSelect = ({
       value={value}
       onValueChange={onValueChange}
       disabled={disabled || isLoading}
+      name={name}
       {...props}
     >
       <SelectTrigger id={name} className={`w-full ${triggerClassName}`}>

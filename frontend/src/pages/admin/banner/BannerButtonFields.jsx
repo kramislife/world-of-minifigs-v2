@@ -15,6 +15,7 @@ const BannerButtonFields = ({
       <div className="flex items-center space-x-2">
         <Checkbox
           id="enableButtons"
+          name="enableButtons"
           checked={formData.enableButtons}
           onCheckedChange={handleValueChange("enableButtons")}
           disabled={isSubmitting}
@@ -42,6 +43,7 @@ const BannerButtonFields = ({
                 <Label htmlFor={`btn-label-${i}`}>Button Label</Label>
                 <Input
                   id={`btn-label-${i}`}
+                  name={`btn-label-${i}`}
                   placeholder="e.g. Shop Now"
                   value={btn.label}
                   onChange={handleNestedChange("buttons", i, "label")}
@@ -53,6 +55,7 @@ const BannerButtonFields = ({
                 <Label htmlFor={`btn-href-${i}`}>Link URL</Label>
                 <Input
                   id={`btn-href-${i}`}
+                  name={`btn-href-${i}`}
                   placeholder="/products, /collections..."
                   value={btn.href}
                   onChange={handleNestedChange("buttons", i, "href")}
@@ -62,7 +65,7 @@ const BannerButtonFields = ({
 
               <AdminFormSelect
                 label="Visual Style"
-                name="variant"
+                name={`btn-variant-${i}`}
                 value={btn.variant || "default"}
                 onValueChange={handleNestedChange("buttons", i, "variant")}
                 options={[

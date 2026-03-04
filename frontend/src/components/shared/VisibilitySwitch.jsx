@@ -26,6 +26,7 @@ const VisibilitySwitch = ({
 
       <Switch
         id={id}
+        name={id}
         checked={checked}
         onCheckedChange={onChange}
         disabled={disabled}

@@ -17,7 +17,7 @@ const CommonImage = ({
   const hasImage = typeof src === "string" && src.trim() !== "" && !hasError;
 
   return (
-    <div className={`overflow-hidden ${className}`}>
+    <div className={`overflow-hidden rounded-md ${className}`}>
       {hasImage ? (
         <img
           src={src}

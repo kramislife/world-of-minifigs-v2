@@ -18,7 +18,7 @@ const ShowEntries = ({ value, onValueChange, defaultValue = "10" }) => {
         onValueChange={onValueChange}
         defaultValue={defaultValue}
       >
-        <SelectTrigger>
+        <SelectTrigger id="entryOptions">
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="w-24">

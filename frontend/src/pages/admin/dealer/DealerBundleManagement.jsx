@@ -201,7 +201,7 @@ const DealerBundleManagement = () => {
           {/* Features */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Features</Label>
+              <Label htmlFor="feature-0">Features</Label>
               {formData.features.length < 5 && (
                 <Button
                   type="button"
@@ -223,6 +223,7 @@ const DealerBundleManagement = () => {
                   value={feature}
                   onChange={handleArrayChange("features", index)}
                   className="flex-1"
+                  disabled={isSubmitting}
                 />
                 {formData.features.length > 1 && (
                   <Button

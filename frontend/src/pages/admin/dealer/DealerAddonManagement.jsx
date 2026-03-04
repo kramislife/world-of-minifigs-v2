@@ -196,7 +196,7 @@ const DealerAddonManagement = () => {
               {/* Select Items */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Label>Select Items</Label>
+                  <h4 className="text-sm font-medium">Select Items</h4>
                   {selectedBundleItemIds.size > 0 && (
                     <span className="text-xs text-muted-foreground">
                       {selectedBundleItemIds.size} selected
@@ -206,6 +206,7 @@ const DealerAddonManagement = () => {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger
+                    asChild
                     className="w-full"
                     disabled={isSubmitting || isLoadingInventory}
                   >
@@ -276,65 +277,63 @@ const DealerAddonManagement = () => {
                 <div className="space-y-2">
                   <Label>Quantity per Bag</Label>
 
-                  <div className="rounded-md border divide-y">
-                    {bundleDisplayItems.map((item) => {
-                      return (
-                        <div
-                          key={item.inventoryItemId}
-                          className="flex items-center gap-3 p-3"
-                        >
-                          {/* Image */}
-                          <CommonImage
-                            src={item.inventory.image?.url}
-                            alt={item.inventory.minifigName}
-                            className="size-12"
-                          />
+                  {bundleDisplayItems.map((item) => {
+                    return (
+                      <div
+                        key={item.inventoryItemId}
+                        className="flex items-center gap-3 p-3 rounded-md border divide-y"
+                      >
+                        {/* Image */}
+                        <CommonImage
+                          src={item.inventory.image?.url}
+                          alt={item.inventory.minifigName}
+                          className="size-12"
+                        />
 
-                          {/* Name + Color & Price */}
-                          <div className="flex flex-col min-w-0 flex-1 space-y-1">
-                            <span className="text-sm font-semibold line-clamp-1">
-                              {item.inventory.minifigName}
+                        {/* Name + Color & Price */}
+                        <div className="flex flex-col min-w-0 flex-1 space-y-1">
+                          <span className="text-sm font-semibold line-clamp-1">
+                            {item.inventory.minifigName}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {item.inventory.colorId?.colorName || "—"}
+                            {" · "}
+                            <span className="text-success dark:text-accent font-bold">
+                              {formatCurrency(item.inventory.price)}
                             </span>
-                            <span className="text-xs text-muted-foreground">
-                              {item.inventory.colorId?.colorName || "—"}
-                              {" · "}
-                              <span className="text-success dark:text-accent font-bold">
-                                {formatCurrency(item.inventory.price)}
-                              </span>
-                            </span>
-                          </div>
-
-                          {/* Quantity controls */}
-                          <QuantityControl
-                            value={item.quantityPerBag}
-                            onChange={(value) =>
-                              handleBundleItemQuantityValue(
-                                item.inventoryItemId,
-                                value,
-                              )
-                            }
-                            min={1}
-                            max={Number(item.inventory.stock || 0)}
-                            allowInput
-                          />
-
-                          {/* Remove */}
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="shrink-0 size-8 text-destructive hover:text-destructive"
-                            onClick={() =>
-                              handleRemoveBundleItem(item.inventoryItemId)
-                            }
-                            disabled={isSubmitting}
-                          >
-                            <X className="size-4" />
-                          </Button>
+                          </span>
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        {/* Quantity controls */}
+                        <QuantityControl
+                          value={item.quantityPerBag}
+                          onChange={(value) =>
+                            handleBundleItemQuantityValue(
+                              item.inventoryItemId,
+                              value,
+                            )
+                          }
+                          min={1}
+                          max={Number(item.inventory.stock || 0)}
+                          allowInput
+                        />
+
+                        {/* Remove */}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0 size-8 text-destructive hover:text-destructive"
+                          onClick={() =>
+                            handleRemoveBundleItem(item.inventoryItemId)
+                          }
+                          disabled={isSubmitting}
+                        >
+                          <X className="size-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
 
                   {/* Computed total price */}
                   <div className="flex justify-end items-center gap-2 pt-2">

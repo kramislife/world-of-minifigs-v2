@@ -383,7 +383,7 @@ const ProductManagement = () => {
           {/* Descriptions */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>
+              <Label htmlFor="description-0">
                 Description{formData.descriptions.length > 1 ? "s" : ""}
               </Label>
               {formData.descriptions.length < 3 && (
@@ -430,7 +430,7 @@ const ProductManagement = () => {
           {productType === "variant" && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label>Product Variants</Label>
+                <h3 className="text-sm font-semibold">Product Variants</h3>
                 <Button
                   type="button"
                   variant="link"
@@ -450,7 +450,9 @@ const ProductManagement = () => {
                     className="border rounded-lg p-4 space-y-4 bg-card"
                   >
                     <div className="flex items-center justify-between">
-                      <Label>Variant {variantIndex + 1}</Label>
+                      <h4 className="text-sm font-medium">
+                        Variant {variantIndex + 1}
+                      </h4>
                       <Button
                         type="button"
                         variant="ghost"
@@ -606,7 +608,7 @@ const ProductManagement = () => {
 
           {/* Categories */}
           <div className="space-y-3">
-            <Label>Categories</Label>
+            <h3 className="text-sm font-semibold">Categories</h3>
 
             {/* Categories with Sub-categories */}
             {categoriesWithSubs.filter((c) => c.subCategories.length > 0)
@@ -621,9 +623,9 @@ const ProductManagement = () => {
                         key={categoryId}
                         className="space-y-2 border rounded-md p-3"
                       >
-                        <Label className="pb-2 text-primary dark:text-accent">
+                        <h4 className="pb-2 text-primary dark:text-accent font-medium text-sm">
                           {category.categoryName}
-                        </Label>
+                        </h4>
                         <div className="grid grid-cols-4 gap-3 pl-2">
                           {category.subCategories.map((sub) => {
                             const subId = sub._id || sub.id;
@@ -636,6 +638,7 @@ const ProductManagement = () => {
                               >
                                 <Checkbox
                                   id={`subcategory-${subId}`}
+                                  name={`subcategory-${subId}`}
                                   checked={isChecked}
                                   onCheckedChange={() => {
                                     setFormData((prev) => {
@@ -699,6 +702,7 @@ const ProductManagement = () => {
                         >
                           <Checkbox
                             id={`category-${categoryId}`}
+                            name={`category-${categoryId}`}
                             checked={formData.categoryIds.includes(categoryId)}
                             onCheckedChange={() =>
                               handleMultiSelectChange("categoryIds")(categoryId)
@@ -721,7 +725,7 @@ const ProductManagement = () => {
 
           {/* Collections */}
           <div className="space-y-3">
-            <Label>Collections</Label>
+            <h3 className="text-sm font-semibold">Collections</h3>
 
             {/* Collections with Sub-collections */}
             {collectionsWithSubs.filter((c) => c.subCollections.length > 0)
@@ -736,9 +740,9 @@ const ProductManagement = () => {
                         key={collectionId}
                         className="space-y-2 border rounded-md p-3"
                       >
-                        <Label className="pb-2 text-primary dark:text-accent">
+                        <h4 className="pb-2 text-primary dark:text-accent font-medium text-sm">
                           {collection.collectionName}
-                        </Label>
+                        </h4>
                         <div className="grid grid-cols-4 gap-3 pl-2">
                           {collection.subCollections.map((sub) => {
                             const subId = sub._id || sub.id;
@@ -751,6 +755,7 @@ const ProductManagement = () => {
                               >
                                 <Checkbox
                                   id={`subcollection-${subId}`}
+                                  name={`subcollection-${subId}`}
                                   checked={isChecked}
                                   onCheckedChange={() => {
                                     setFormData((prev) => {
@@ -821,6 +826,7 @@ const ProductManagement = () => {
                         >
                           <Checkbox
                             id={`collection-${collectionId}`}
+                            name={`collection-${collectionId}`}
                             checked={formData.collectionIds.includes(
                               collectionId,
                             )}
@@ -902,7 +908,7 @@ const ProductManagement = () => {
 
           {/* Skill Levels */}
           <div className="space-y-3">
-            <Label>Skill Levels</Label>
+            <h3 className="text-sm font-semibold">Skill Levels</h3>
             <div className="grid grid-cols-3 gap-3">
               {skillLevels.map((skillLevel) => {
                 const skillId = skillLevel._id || skillLevel.id;
