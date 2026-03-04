@@ -93,8 +93,8 @@ const ProductDetails = () => {
         <div className="flex flex-col lg:flex-row gap-3">
           {/* Main Image */}
           <div
-            className={`relative border border-border rounded-lg group order-1 lg:order-2 overflow-hidden
-  aspect-square ${hasMultipleImages ? "max-h-[630px]" : "max-h-[600px]"} w-full flex items-center justify-center`}
+            className={`relative border border-border rounded-lg group order-1 lg:order-2 
+  aspect-square ${hasMultipleImages ? "max-h-[630px]" : "max-h-[600px]"} w-full flex flex-1 items-center justify-center`}
           >
             <CommonImage
               src={currentImageUrl}

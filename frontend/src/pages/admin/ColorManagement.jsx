@@ -9,6 +9,7 @@ import {
   TimestampCells,
   StatusCell,
 } from "@/components/table/BaseColumn";
+import ColorSwatch from "@/components/shared/ColorSwatch";
 import { AdminFormInput } from "@/components/shared/AdminFormInput";
 import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
@@ -88,15 +89,12 @@ const ColorManagement = () => {
 
             {/* Hex Code */}
             <TableCell>
-              <div className="flex items-center justify-center gap-2">
-                {color.hexCode && (
-                  <div
-                    className="size-5 rounded-md shrink-0 border"
-                    style={{ backgroundColor: color.hexCode }}
-                  />
-                )}
-                <span>{display(color.hexCode)}</span>
-              </div>
+              <ColorSwatch
+                color={color.hexCode}
+                label={display(color.hexCode)}
+                size="lg"
+                className="justify-center"
+              />
             </TableCell>
 
             {/* Status */}

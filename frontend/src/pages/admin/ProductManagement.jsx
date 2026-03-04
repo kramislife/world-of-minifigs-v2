@@ -12,6 +12,7 @@ import {
   StatusCell,
   PriceCell,
 } from "@/components/table/BaseColumn";
+import ColorSwatch from "@/components/shared/ColorSwatch";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import MediaUpload from "@/components/shared/MediaUpload";
@@ -284,15 +285,10 @@ const ProductManagement = () => {
                     isLoading={isLoadingColors}
                     disabled={isSubmitting}
                     renderOption={(color) => (
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="size-3 rounded-full shrink-0 border"
-                          style={{
-                            backgroundColor: color.hexCode || "#000",
-                          }}
-                        />
-                        <span>{color.colorName}</span>
-                      </div>
+                      <ColorSwatch
+                        color={color.hexCode}
+                        label={color.colorName}
+                      />
                     )}
                   />
 
@@ -325,15 +321,10 @@ const ProductManagement = () => {
                       isLoading={isLoadingColors}
                       disabled={isSubmitting}
                       renderOption={(color) => (
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="size-3 rounded-full shrink-0 border"
-                            style={{
-                              backgroundColor: color.hexCode || "#000",
-                            }}
-                          />
-                          <span>{color.colorName}</span>
-                        </div>
+                        <ColorSwatch
+                          color={color.hexCode}
+                          label={color.colorName}
+                        />
                       )}
                     />
                   )}
@@ -526,15 +517,10 @@ const ProductManagement = () => {
                         isLoading={isLoadingColors}
                         disabled={isSubmitting}
                         renderOption={(color) => (
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="size-3 rounded-full shrink-0 border"
-                              style={{
-                                backgroundColor: color.hexCode || "#000",
-                              }}
-                            />
-                            <span>{color.colorName}</span>
-                          </div>
+                          <ColorSwatch
+                            color={color.hexCode}
+                            label={color.colorName}
+                          />
                         )}
                       />
 
@@ -575,15 +561,10 @@ const ProductManagement = () => {
                           isLoading={isLoadingColors}
                           disabled={isSubmitting}
                           renderOption={(color) => (
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="size-3 rounded-full shrink-0 border"
-                                style={{
-                                  backgroundColor: color.hexCode || "#000",
-                                }}
-                              />
-                              <span>{color.colorName}</span>
-                            </div>
+                            <ColorSwatch
+                              color={color.hexCode}
+                              label={color.colorName}
+                            />
                           )}
                         />
                       )}

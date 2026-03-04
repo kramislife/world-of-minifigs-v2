@@ -9,6 +9,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import ColorSwatch from "@/components/shared/ColorSwatch";
 import { PRICE_RANGES } from "@/constant/productFilters";
 
 // --------------------------------------------------------------- Components ----------------------------------------------------
@@ -18,12 +19,7 @@ const FilterItem = ({ checked, onToggle, label, count, colorSwatch }) => (
   <Label className="p-2 hover:bg-muted-foreground/10 rounded-md cursor-pointer flex items-center justify-between group transition-colors">
     <div className="flex items-center space-x-2 flex-1 min-w-0">
       <Checkbox checked={checked} onCheckedChange={onToggle} />
-      {colorSwatch && (
-        <div
-          className="w-4 h-4 rounded border border-border shrink-0"
-          style={{ backgroundColor: colorSwatch || "#ccc" }}
-        />
-      )}
+      {colorSwatch && <ColorSwatch color={colorSwatch} size="md" />}
       <span className="text-sm truncate">{label}</span>
     </div>
     {count !== undefined && (

@@ -18,6 +18,7 @@ const CartSheet = () => {
     handleCheckout,
     isUpdating,
     isCheckoutLoading,
+    selectedProduct,
   } = useCart();
 
   return (

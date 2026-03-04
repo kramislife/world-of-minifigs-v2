@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
+import ColorSwatch from "@/components/shared/ColorSwatch";
 import {
   ActionsColumn,
   TableCell,
@@ -66,8 +67,6 @@ const DealerAddonManagement = () => {
     handleItemSearchChange,
     handleToggleBundleItem,
     handleRemoveBundleItem,
-    handleBundleItemDecrement,
-    handleBundleItemIncrement,
     handleBundleItemQuantityValue,
     handleSubmit,
     handleDialogClose,
@@ -253,17 +252,10 @@ const DealerAddonManagement = () => {
                             }
                             onSelect={(e) => e.preventDefault()}
                           >
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="size-3 rounded-full shrink-0 border"
-                                style={{
-                                  backgroundColor:
-                                    inv.colorId?.hexCode || "#000",
-                                }}
-                                title={inv.colorId?.colorName || "No color"}
-                              />
-                              <span>{inv.minifigName}</span>
-                            </div>
+                            <ColorSwatch
+                              color={inv.colorId?.hexCode}
+                              label={inv.minifigName}
+                            />
                           </DropdownMenuCheckboxItem>
                         ))
                       )}
@@ -281,13 +273,13 @@ const DealerAddonManagement = () => {
                     return (
                       <div
                         key={item.inventoryItemId}
-                        className="flex items-center gap-3 p-3 rounded-md border divide-y"
+                        className="flex items-center gap-3 p-2 rounded-md border"
                       >
                         {/* Image */}
                         <CommonImage
                           src={item.inventory.image?.url}
                           alt={item.inventory.minifigName}
-                          className="size-12"
+                          className="w-16 aspect-4/3"
                         />
 
                         {/* Name + Color & Price */}
