@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import {
   useGetMinifigInventoryQuery,
   useCreateMinifigInventoryBulkMutation,
@@ -111,18 +111,63 @@ const useMinifigInventoryManagement = () => {
     }
   };
 
-  const handleInventoryFileRemove = (index) => {
-    // If index is undefined (single mode) or we are in edit mode, default to 0
-    const targetIndex = typeof index === "number" ? index : 0;
-    handleRemoveFile(targetIndex);
-  };
+  // Stable ref-cached handler factories — return the SAME function for the same index so that React.memo children skip re-rendering on sibling edits.
+  const itemChangeHandlers = React.useRef({});
+  const valueChangeHandlers = React.useRef({});
 
-  const handleUpdateFileMetadata = (index, field) => (e) => {
-    const value = e?.target ? e.target.value : e;
-    setFilePreview((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item)),
-    );
-  };
+  const clearHandlerCaches = useCallback(() => {
+    itemChangeHandlers.current = {};
+    valueChangeHandlers.current = {};
+  }, []);
+
+  const handleInventoryFileRemove = useCallback(
+    (index) => {
+      const targetIndex = typeof index === "number" ? index : 0;
+      handleRemoveFile(targetIndex);
+      // Invalidate cached handlers because indices shifted
+      clearHandlerCaches();
+    },
+    [handleRemoveFile, clearHandlerCaches],
+  );
+
+  const getItemChangeHandler = useCallback(
+    (index) => {
+      if (!itemChangeHandlers.current[index]) {
+        itemChangeHandlers.current[index] = (e) => {
+          const { name, value, type, checked } = e.target;
+          const val = type === "checkbox" ? checked : value;
+          setFilePreview((prev) =>
+            prev.map((item, i) =>
+              i === index ? { ...item, [name]: val } : item,
+            ),
+          );
+        };
+      }
+      return itemChangeHandlers.current[index];
+    },
+    [setFilePreview],
+  );
+
+  const getValueChangeHandler = useCallback(
+    (field, index) => {
+      const key = `${field}_${index}`;
+      if (!valueChangeHandlers.current[key]) {
+        valueChangeHandlers.current[key] = (value) => {
+          if (typeof index === "number") {
+            setFilePreview((prev) =>
+              prev.map((item, i) =>
+                i === index ? { ...item, [field]: value } : item,
+              ),
+            );
+          } else {
+            crud.setFormData((prev) => ({ ...prev, [field]: value }));
+          }
+        };
+      }
+      return valueChangeHandlers.current[key];
+    },
+    [setFilePreview, crud.setFormData],
+  );
 
   // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (item) => {
@@ -191,9 +236,18 @@ const useMinifigInventoryManagement = () => {
     }));
   };
 
-  const handleValueChange = (field) => (value) => {
-    crud.setFormData((prev) => ({ ...prev, [field]: value }));
-  };
+  const handleValueChange = useCallback(
+    (field, index) => {
+      // For non-indexed calls (e.g. VisibilitySwitch), return a new handler
+      if (typeof index !== "number") {
+        return (value) =>
+          crud.setFormData((prev) => ({ ...prev, [field]: value }));
+      }
+      // For indexed calls, delegate to the cached version
+      return getValueChangeHandler(field, index);
+    },
+    [crud.setFormData, getValueChangeHandler],
+  );
 
   // ------------------------------- Return ------------------------------------
   return {
@@ -211,7 +265,7 @@ const useMinifigInventoryManagement = () => {
     isDeleting,
     handleInventoryFileChange,
     handleInventoryFileRemove,
-    handleUpdateFileMetadata,
+    getItemChangeHandler,
     handleEdit,
     handleSubmit,
     handleChange,

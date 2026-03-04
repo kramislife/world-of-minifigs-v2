@@ -34,6 +34,7 @@ export const AdminFormInput = ({
   name,
   labelRight,
   className,
+  inputClassName,
   ...props
 }) => (
   <FormContainer
@@ -42,7 +43,7 @@ export const AdminFormInput = ({
     labelRight={labelRight}
     className={className}
   >
-    <Input id={name} name={name} {...props} />
+    <Input id={name} name={name} className={inputClassName} {...props} />
   </FormContainer>
 );
 
@@ -51,6 +52,7 @@ export const AdminFormTextarea = ({
   name,
   labelRight,
   className,
+  textareaClassName,
   rows = 4,
   ...props
 }) => (
@@ -60,7 +62,13 @@ export const AdminFormTextarea = ({
     labelRight={labelRight}
     className={className}
   >
-    <Textarea id={name} name={name} rows={rows} {...props} />
+    <Textarea
+      id={name}
+      name={name}
+      rows={rows}
+      className={textareaClassName}
+      {...props}
+    />
   </FormContainer>
 );
 

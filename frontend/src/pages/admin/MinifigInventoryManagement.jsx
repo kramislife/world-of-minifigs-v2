@@ -1,9 +1,7 @@
 import React from "react";
-import { Input } from "@/components/ui/input";
-
+import ColorSwatch from "@/components/shared/ColorSwatch";
 import {
   AdminFormInput,
-  AdminFormTextarea,
   AdminFormSelect,
 } from "@/components/shared/AdminFormInput";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
@@ -22,6 +20,71 @@ import DeleteDialog from "@/components/table/DeleteDialog";
 import { display } from "@/utils/formatting";
 import useMinifigInventoryManagement from "@/hooks/admin/useMinifigInventoryManagement";
 
+const InventoryItemInputs = React.memo(
+  ({
+    item,
+    index,
+    colors,
+    isLoadingColors,
+    isSubmitting,
+    onChange,
+    getValueChangeHandler,
+  }) => (
+    <div className="p-2 space-y-2">
+      <AdminFormInput
+        name="minifigName"
+        type="text"
+        placeholder="Enter Minifig Name"
+        value={item.minifigName}
+        onChange={onChange}
+        disabled={isSubmitting}
+        required
+        inputClassName="h-8 text-xs"
+      />
+      <div className="grid grid-cols-2 gap-2">
+        <AdminFormInput
+          name="price"
+          type="number"
+          placeholder="Price"
+          step="0.01"
+          value={item.price}
+          onChange={onChange}
+          disabled={isSubmitting}
+          required
+          inputClassName="h-8 text-xs"
+        />
+
+        <AdminFormInput
+          name="stock"
+          type="number"
+          placeholder="Stock"
+          value={item.stock}
+          onChange={onChange}
+          disabled={isSubmitting}
+          required
+          inputClassName="h-8 text-xs"
+        />
+      </div>
+
+      <AdminFormSelect
+        name="color"
+        value={item.color}
+        onValueChange={getValueChangeHandler("color", index)}
+        triggerClassName="text-[11px]"
+        options={colors}
+        getValue={(color) => color._id}
+        getLabel={(color) => color.colorName}
+        renderOption={(color) => (
+          <ColorSwatch color={color.hexCode} label={color.colorName} />
+        )}
+        placeholder="Select Color"
+        isLoading={isLoadingColors}
+        disabled={isSubmitting}
+      />
+    </div>
+  ),
+);
+
 const MinifigInventoryManagement = () => {
   const {
     inventory,
@@ -33,7 +96,7 @@ const MinifigInventoryManagement = () => {
     filePreview,
     handleInventoryFileChange,
     handleInventoryFileRemove,
-    handleUpdateFileMetadata,
+    getItemChangeHandler,
     dialogOpen,
     dialogMode,
     formData,
@@ -97,15 +160,10 @@ const MinifigInventoryManagement = () => {
 
             {/* Color */}
             <TableCell>
-              <div className="flex items-center justify-center gap-2">
-                {item.colorId?.hexCode && (
-                  <div
-                    className="size-5 rounded-md shrink-0 border"
-                    style={{ backgroundColor: item.colorId?.hexCode }}
-                  />
-                )}
-                <span>{display(item.colorId?.colorName)}</span>
-              </div>
+              <ColorSwatch
+                color={item.colorId?.hexCode}
+                label={display(item.colorId?.colorName)}
+              />
             </TableCell>
 
             {/* Price */}
@@ -153,60 +211,17 @@ const MinifigInventoryManagement = () => {
             onRemove={handleInventoryFileRemove}
             accept="image/*"
             description="PNG, JPG, WEBP"
-            previewClassName="aspect-square"
             disabled={isSubmitting}
             renderItem={(item, index) => (
-              <div className="p-2 space-y-2">
-                <Input
-                  placeholder="Minifig Name"
-                  value={item.minifigName}
-                  onChange={handleUpdateFileMetadata(index, "minifigName")}
-                  className="h-8 text-xs"
-                />
-
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    type="number"
-                    placeholder="Price"
-                    step="0.01"
-                    value={item.price}
-                    onChange={handleUpdateFileMetadata(index, "price")}
-                    className="h-8 text-xs"
-                  />
-
-                  <Input
-                    type="number"
-                    placeholder="Stock"
-                    value={item.stock}
-                    onChange={handleUpdateFileMetadata(index, "stock")}
-                    className="h-8 text-xs"
-                  />
-                </div>
-
-                <AdminFormSelect
-                  name="color"
-                  value={item.color}
-                  onValueChange={handleUpdateFileMetadata(index, "color")}
-                  triggerClassName="text-[11px]"
-                  options={colors}
-                  getValue={(color) => color._id}
-                  getLabel={(color) => color.colorName}
-                  renderOption={(color) => (
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="size-3 rounded-full shrink-0 border"
-                        style={{
-                          backgroundColor: color.hexCode || "#000",
-                        }}
-                      />
-                      <span>{color.colorName}</span>
-                    </div>
-                  )}
-                  placeholder="Select Color"
-                  isLoading={isLoadingColors}
-                  disabled={isSubmitting}
-                />
-              </div>
+              <InventoryItemInputs
+                item={item}
+                index={index}
+                colors={colors}
+                isLoadingColors={isLoadingColors}
+                isSubmitting={isSubmitting}
+                onChange={getItemChangeHandler(index)}
+                getValueChangeHandler={handleValueChange}
+              />
             )}
           />
 

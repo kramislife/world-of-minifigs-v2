@@ -172,7 +172,6 @@ const DealerTorsoBagManagement = () => {
             onRemove={handleDealerTorsoBagFileRemove}
             accept="image/*"
             description="PNG, JPG, WEBP (Multiple)"
-            previewClassName="aspect-square"
             disabled={isSubmitting}
             renderItem={(item, index) => (
               <div className="p-2 space-y-2">

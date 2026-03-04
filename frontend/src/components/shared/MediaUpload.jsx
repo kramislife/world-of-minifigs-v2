@@ -2,8 +2,54 @@ import React, { useRef } from "react";
 import { Upload, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import CommonImage from "@/components/shared/CommonImage";
+
+const MediaItem = React.memo(
+  ({
+    item,
+    index,
+    onRemove,
+    renderItem,
+    disabled,
+    previewClassName,
+    imageClassName,
+    mediaType,
+  }) => (
+    <div className="relative group rounded-md border flex flex-col">
+      <div className={`relative w-full ${previewClassName}`}>
+        {mediaType === "video" ? (
+          <video
+            src={item.url}
+            className={`w-full h-full ${imageClassName}`}
+            muted
+            playsInline
+            autoPlay
+            loop
+          />
+        ) : (
+          <CommonImage
+            src={item.url}
+            alt="preview"
+            className="w-full h-full"
+            objectFit={imageClassName}
+          />
+        )}
+        {!disabled && (
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="destructive"
+            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-50"
+            onClick={() => onRemove?.(index)}
+          >
+            <X className="size-4" />
+          </Button>
+        )}
+      </div>
+      {renderItem?.(item, index)}
+    </div>
+  ),
+);
 
 const MediaUpload = ({
   label,
@@ -11,7 +57,7 @@ const MediaUpload = ({
   accept = "image/*",
   multiple = false,
   description = "Image, GIF, or Video",
-  previewClassName = "aspect-[16/7]",
+  previewClassName = "aspect-4/3",
   imageClassName = "object-cover",
   preview,
   onChange,
@@ -36,22 +82,6 @@ const MediaUpload = ({
   };
   const gridCols = gridConfig[Math.min(totalItemsCount, 4)] || "grid-cols-1";
 
-  // Determine aspect ratio (force squares for bulk grids, keep panoramic for single)
-  const aspectClass =
-    isMulti && previews.length > 1 ? "aspect-square" : previewClassName;
-
-  const RemoveButton = ({ onClick }) => (
-    <Button
-      type="button"
-      size="icon-sm"
-      variant="destructive"
-      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-50"
-      onClick={onClick}
-    >
-      <X className="size-4" />
-    </Button>
-  );
-
   const UploadTrigger = () => (
     <>
       <Button
@@ -67,8 +97,9 @@ const MediaUpload = ({
         </p>
         <p className="text-xs text-muted-foreground">{description}</p>
       </Button>
-      <Input
+      <input
         ref={inputRef}
+        id="media-upload"
         type="file"
         accept={accept}
         multiple={isMulti}
@@ -90,7 +121,7 @@ const MediaUpload = ({
   return (
     <div className="space-y-2">
       {label && (
-        <Label>
+        <Label htmlFor="media-upload">
           {label}
           {fileCountLabel}
         </Label>
@@ -99,27 +130,21 @@ const MediaUpload = ({
       <div className={isMulti ? `grid gap-2 ${gridCols}` : ""}>
         {isMulti
           ? previews.map((item, index) => (
-              <div
+              <MediaItem
                 key={index}
-                className="relative group rounded-md border flex flex-col"
-              >
-                <div className={`relative w-full ${aspectClass}`}>
-                  <CommonImage
-                    src={item.url}
-                    alt="preview"
-                    className="w-full h-full"
-                    objectFit={imageClassName}
-                  />
-                  {!disabled && (
-                    <RemoveButton onClick={() => onRemove?.(index)} />
-                  )}
-                </div>
-                {renderItem?.(item, index)}
-              </div>
+                item={item}
+                index={index}
+                onRemove={onRemove}
+                renderItem={renderItem}
+                disabled={disabled}
+                previewClassName={previewClassName}
+                imageClassName={imageClassName}
+                mediaType={mediaType}
+              />
             ))
           : hasPreview && (
               <div className="relative group rounded-md border flex flex-col">
-                <div className={`relative w-full ${aspectClass}`}>
+                <div className={`relative w-full ${previewClassName}`}>
                   {mediaType === "video" ? (
                     <video
                       src={preview}
@@ -137,7 +162,17 @@ const MediaUpload = ({
                       objectFit={imageClassName}
                     />
                   )}
-                  {!disabled && <RemoveButton onClick={onRemove} />}
+                  {!disabled && (
+                    <Button
+                      type="button"
+                      size="icon-sm"
+                      variant="destructive"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-50"
+                      onClick={onRemove}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  )}
                 </div>
                 {renderItem
                   ? renderItem(
