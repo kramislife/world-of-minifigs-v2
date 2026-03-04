@@ -10,6 +10,61 @@ import {
   SortablePreviewItem,
 } from "@/components/dealer/TorsoPreviewItems";
 
+// ─── Shared grid — renders items + misc tail in one place ──────────────────────
+const PreviewGrid = ({
+  items,
+  miscQuantity,
+  isAdmin,
+  isCustomBundle,
+  multiplier,
+  reorderItemIds,
+  reorderSensors,
+  onDragEnd,
+}) => {
+  const itemNodes = isAdmin
+    ? items.map((item, idx) => (
+        <SortablePreviewItem
+          key={idx}
+          id={idx.toString()}
+          item={item}
+          idx={idx}
+          displayQuantity={
+            isCustomBundle ? item.quantity : item.quantity * multiplier
+          }
+        />
+      ))
+    : items.map((item, idx) => (
+        <PreviewItem
+          key={idx}
+          item={item}
+          idx={idx}
+          displayQuantity={item.displayQuantity}
+        />
+      ));
+
+  const grid = (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+      {itemNodes}
+      {miscQuantity > 0 && <MiscellaneousPreview miscQuantity={miscQuantity} />}
+    </div>
+  );
+
+  if (!isAdmin) return grid;
+
+  return (
+    <DndContext
+      sensors={reorderSensors}
+      collisionDetection={closestCenter}
+      onDragEnd={onDragEnd}
+    >
+      <SortableContext items={reorderItemIds} strategy={rectSortingStrategy}>
+        {grid}
+      </SortableContext>
+    </DndContext>
+  );
+};
+
+// ─── Main component ────────────────────────────────────────────────────────────
 const DealerTorsoBag = ({
   torsoBags,
   lastSelectedBag,
@@ -60,18 +115,12 @@ const DealerTorsoBag = ({
               </Badge>
             )}
 
-            <div className="aspect-square flex items-center justify-center">
-              <CommonImage
-                src={bag.firstImage}
-                alt={bag.bagName}
-                className="w-full h-full"
-              />
+            <div className="flex items-center justify-center mt-3">
+              <CommonImage src={bag.firstImage} alt={bag.bagName} />
             </div>
 
             <div
-              className={`p-2 text-center border-t ${
-                bag.isSelected ? "bg-accent text-accent-foreground" : ""
-              }`}
+              className={`p-2 text-center ${bag.isSelected ? "bg-accent text-accent-foreground" : ""}`}
             >
               <h3 className="text-lg font-bold font-mono uppercase tracking-tight">
                 {bag.bagName}
@@ -84,7 +133,7 @@ const DealerTorsoBag = ({
       {/* Preview Section */}
       {lastSelectedBag && displayItems.length > 0 && (
         <div className="mt-10 space-y-5 pt-5 border-t border-dashed">
-          {/* HEADER */}
+          {/* Header */}
           <div className="flex items-start justify-between">
             <div className="space-y-2">
               <h3 className="text-2xl font-bold tracking-tight flex items-center gap-3">
@@ -98,9 +147,9 @@ const DealerTorsoBag = ({
 
               <p className="text-muted-foreground text-sm">
                 {displayItems.length} unique designs • {multiplier} bags of the
-                same torso design •
+                same torso design
                 {isAdmin && (
-                  <span className="ml-1 text-primary">Drag to reorder</span>
+                  <span className="ml-1 text-primary"> • Drag to reorder</span>
                 )}
               </p>
             </div>
@@ -127,54 +176,17 @@ const DealerTorsoBag = ({
             )}
           </div>
 
-          {/* GRID */}
-          {isAdmin ? (
-            <DndContext
-              sensors={reorderSensors}
-              collisionDetection={closestCenter}
-              onDragEnd={onDragEnd}
-            >
-              <SortableContext
-                items={reorderItemIds}
-                strategy={rectSortingStrategy}
-              >
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                  {localItems.map((item, idx) => (
-                    <SortablePreviewItem
-                      key={idx}
-                      id={idx.toString()}
-                      item={item}
-                      idx={idx}
-                      displayQuantity={
-                        isCustomBundle
-                          ? item.quantity
-                          : item.quantity * multiplier
-                      }
-                    />
-                  ))}
-
-                  {miscQuantity > 0 && (
-                    <MiscellaneousPreview miscQuantity={miscQuantity} />
-                  )}
-                </div>
-              </SortableContext>
-            </DndContext>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {displayItems.map((item, idx) => (
-                <PreviewItem
-                  key={idx}
-                  item={item}
-                  idx={idx}
-                  displayQuantity={item.displayQuantity}
-                />
-              ))}
-
-              {miscQuantity > 0 && (
-                <MiscellaneousPreview miscQuantity={miscQuantity} />
-              )}
-            </div>
-          )}
+          {/* Grid — admin gets drag-and-drop, others get static */}
+          <PreviewGrid
+            items={isAdmin ? localItems : displayItems}
+            miscQuantity={miscQuantity}
+            isAdmin={isAdmin}
+            isCustomBundle={isCustomBundle}
+            multiplier={multiplier}
+            reorderItemIds={reorderItemIds}
+            reorderSensors={reorderSensors}
+            onDragEnd={onDragEnd}
+          />
         </div>
       )}
     </section>

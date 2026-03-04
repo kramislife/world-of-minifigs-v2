@@ -4,7 +4,7 @@ import CommonImage from "@/components/shared/CommonImage";
 import MiscellaneousPreviewImage from "@/assets/media/MiscellaneousPreview.png";
 
 const MiscellaneousPreview = ({ miscQuantity }) => (
-  <div className="relative aspect-square select-none transition-all duration-300 hover:-translate-y-1">
+  <div className="relative aspect-4/3 select-none transition-all duration-300 hover:-translate-y-1">
     {/* Back Card 3 */}
     <div className="absolute inset-0 translate-x-4.5 translate-y-4.5 rotate-4">
       <Card className="h-full w-full dark:shadow-none" />

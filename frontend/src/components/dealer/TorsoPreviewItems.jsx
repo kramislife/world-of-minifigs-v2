@@ -5,12 +5,29 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import CommonImage from "@/components/shared/CommonImage";
 
-export const PreviewItem = ({ item, idx, displayQuantity }) => (
-  <Card className="relative p-0 border-border shadow-none">
-    <div className="aspect-square relative overflow-hidden">
-      <Badge variant="accent" className="absolute top-1 right-1 size-5">
+const PreviewCard = ({
+  item,
+  idx,
+  displayQuantity,
+  dragHandleProps = {},
+  isDragging = false,
+  cardProps = {},
+}) => (
+  <Card
+    className={`relative p-2 ${isDragging ? "ring-2 ring-accent" : ""}`}
+    {...cardProps}
+  >
+    <div className="aspect-4/3 relative overflow-hidden group">
+      {dragHandleProps && Object.keys(dragHandleProps).length > 0 && (
+        <div className="absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          <GripVertical className="size-4 text-muted-foreground" />
+        </div>
+      )}
+
+      <Badge variant="accent" className="absolute top-0 right-0 size-5">
         {displayQuantity}
       </Badge>
+
       <CommonImage
         src={item.image?.url}
         alt={`Torso ${idx}`}
@@ -18,6 +35,10 @@ export const PreviewItem = ({ item, idx, displayQuantity }) => (
       />
     </div>
   </Card>
+);
+
+export const PreviewItem = ({ item, idx, displayQuantity }) => (
+  <PreviewCard item={item} idx={idx} displayQuantity={displayQuantity} />
 );
 
 export const SortablePreviewItem = ({ id, item, idx, displayQuantity }) => {
@@ -30,38 +51,25 @@ export const SortablePreviewItem = ({ id, item, idx, displayQuantity }) => {
     isDragging,
   } = useSortable({ id });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 50 : 1,
-  };
-
   return (
-    <Card
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className={`relative p-0 border-border shadow-none cursor-grab active:cursor-grabbing ${
-        isDragging ? "ring-2 ring-accent" : ""
-      }`}
-    >
-      <div className="aspect-square relative overflow-hidden group">
-        <div className="absolute top-1 left-1 bg-background/80 backdrop-blur-sm rounded p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <GripVertical className="size-4 text-muted-foreground" />
-        </div>
-
-        <Badge variant="accent" className="absolute top-1 right-1 size-5">
-          {displayQuantity}
-        </Badge>
-
-        <CommonImage
-          src={item.image?.url}
-          alt={`Torso ${idx}`}
-          className="w-full h-full"
-        />
-      </div>
-    </Card>
+    <PreviewCard
+      item={item}
+      idx={idx}
+      displayQuantity={displayQuantity}
+      isDragging={isDragging}
+      dragHandleProps={listeners}
+      cardProps={{
+        ref: setNodeRef,
+        style: {
+          transform: CSS.Transform.toString(transform),
+          transition,
+          opacity: isDragging ? 0.5 : 1,
+          zIndex: isDragging ? 50 : 1,
+        },
+        className: `relative p-2 cursor-grab active:cursor-grabbing ${isDragging ? "ring-2 ring-accent" : ""}`,
+        ...attributes,
+        ...listeners,
+      }}
+    />
   );
 };
