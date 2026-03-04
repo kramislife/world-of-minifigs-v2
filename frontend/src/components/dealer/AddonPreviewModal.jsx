@@ -7,7 +7,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
 import CommonImage from "@/components/shared/CommonImage";
 import QuantityControl from "@/components/shared/QuantityControl";
 import { formatCurrency } from "@/utils/formatting";
@@ -21,8 +20,6 @@ const AddonPreviewModal = ({
   isUpdate,
   onClose,
   onConfirm,
-  onDecrement,
-  onIncrement,
   onValueChange,
 }) => {
   return (
@@ -45,61 +42,56 @@ const AddonPreviewModal = ({
                   item.isActive ? "border-accent border-l-4" : "border"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  {/* Item Image */}
+                <div className="flex items-center gap-2">
+                  {/* Image */}
                   <CommonImage
                     src={item.image?.url}
                     alt={item.itemName}
-                    className="shrink-0 size-14"
+                    className="w-24 aspect-4/3"
                   />
 
-                  <div className="flex flex-col min-w-0 flex-1 space-y-2">
-                    <div className="flex items-start justify-between gap-1">
+                  {/* Right Content */}
+                  <div className="flex flex-col gap-1 flex-1">
+                    {/* Name + Total */}
+                    <div className="flex items-start justify-between gap-2">
                       <h4
                         className="text-sm font-semibold line-clamp-1 leading-tight min-w-0"
-                        title={item.itemName}
+                        title={`${item.itemName} - ${item.perBagLimit} pcs/bag`}
                       >
-                        {item.itemName}
+                        {item.itemName}{" "}
+                        <span className="text-xs font-normal">
+                          - {item.perBagLimit} pcs/bag
+                        </span>
                       </h4>
-                      <span className="font-bold text-sm text-success dark:text-accent whitespace-nowrap">
-                        {item.selectedTotal > 0 &&
-                          formatCurrency(item.selectedTotal)}
-                      </span>
+
+                      {item.selectedTotal > 0 && (
+                        <span className="font-bold text-sm text-success dark:text-accent whitespace-nowrap">
+                          {formatCurrency(item.selectedTotal)}
+                        </span>
+                      )}
                     </div>
 
-                    {/* Color + Per-bag pricing */}
-
+                    {/* Info Row */}
                     <span className="text-xs text-muted-foreground">
-                      {item.color?.colorName || "—"}
-                      {" · "}
-                      <span className="text-success dark:text-accent font-bold">
+                      {item.color?.colorName || "—"} {" · "}
+                      <span className="font-semibold text-success dark:text-accent">
                         {formatCurrency(item.bagPrice)}
                       </span>
                     </span>
-                  </div>
-                </div>
 
-                {/* Row 2: Quantity Control + Progress */}
-                <div className="flex items-center gap-3 mt-2">
-                  <QuantityControl
-                    value={item.selectedBags}
-                    onChange={(val) => onValueChange(item.inventoryItemId, val)}
-                    min={0}
-                    max={item.maxBags}
-                    allowInput
-                    size="xs"
-                  />
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-semibold uppercase text-muted-foreground">
-                        Bags
-                      </span>
-                      <span className="text-[10px] font-semibold text-muted-foreground">
-                        {item.selectedBags}/{item.maxBags}
-                      </span>
+                    {/* Quantity Control */}
+                    <div className="mt-1 flex items-center">
+                      <QuantityControl
+                        value={item.selectedBags}
+                        onChange={(val) =>
+                          onValueChange(item.inventoryItemId, val)
+                        }
+                        min={0}
+                        max={item.maxBags}
+                        allowInput
+                        size="xs"
+                      />
                     </div>
-                    <Progress value={item.usedPercent} />
                   </div>
                 </div>
               </div>

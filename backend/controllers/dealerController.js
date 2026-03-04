@@ -807,7 +807,7 @@ export const createDealerTorsoBag = async (req, res) => {
 
     // Determine target: use provided value or fall back to base bundle size
     const resolvedTarget = targetBundleSize || (await getBaseBundleSize());
-    const validation = validateTorsoItems(items, resolvedTarget);
+    const validation = await validateTorsoItems(items, resolvedTarget);
 
     if (!validation.isValid) {
       return res.status(400).json({
@@ -919,7 +919,7 @@ export const updateDealerTorsoBag = async (req, res) => {
     if (items && Array.isArray(items)) {
       const resolvedTarget =
         targetBundleSize || torsoBag.targetBundleSize || 100;
-      const validation = validateTorsoItems(items, resolvedTarget);
+      const validation = await validateTorsoItems(items, resolvedTarget);
 
       if (!validation.isValid) {
         return res.status(400).json({

@@ -45,12 +45,12 @@ const FeaturedCollections = () => {
             to={getCollectionLink(collection)}
             className="group block"
           >
-            <div className="relative aspect-4/3 sm:aspect-16/5 border">
+            <div className="relative aspect-4/3 sm:aspect-16/5">
               {/* Banner Image */}
               <CommonImage
                 src={collection.image?.url}
                 alt={collection.collectionName}
-                className="w-full h-full"
+                className="w-full h-full rounded-none"
                 imgClassName="transition-transform duration-500 group-hover:scale-105"
               />
 

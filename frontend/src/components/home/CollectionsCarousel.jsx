@@ -65,11 +65,11 @@ const CollectionsCarousel = () => {
             className="group block"
           >
             {/* Image Container */}
-            <div className="relative aspect-square border">
+            <div className="relative aspect-square">
               <CommonImage
                 src={collection.image?.url}
                 alt={collection.collectionName}
-                className="w-full h-full"
+                className="w-full h-full rounded-none border"
                 imgClassName="transition-transform duration-300 group-hover:scale-105"
               />
 
