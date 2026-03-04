@@ -16,9 +16,19 @@ import {
 import useMediaPreview from "@/hooks/admin/useMediaPreview";
 import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
-const MISC_RATIO = 0.2;
-const getMiscQuantity = (target) => Math.round(target * MISC_RATIO);
-const getAdminTarget = (target) => target - getMiscQuantity(target);
+const getMiscQuantity = (target, base = 100) => {
+  // 1. Bulk bundles (500 and above) - specifically 10 per 500
+  if (target >= 500) return Math.floor(target / 500) * 10;
+
+  // 2. Regular small bundles (e.g., 100-499) - scale linearly by base (e.g. 10 per 100)
+  if (target >= base) return Math.floor((target / base) * 10);
+
+  // 3. Mini bundles (under 100) - 10%
+  return Math.ceil(target * 0.1);
+};
+
+const getAdminTarget = (target, base = 100) =>
+  target - getMiscQuantity(target, base);
 
 const initialFormData = {
   bagName: "",
@@ -123,9 +133,17 @@ const useDealerTorsoBagManagement = () => {
       }));
   }, [bundles]);
 
+  const baseBundleSize = useMemo(() => {
+    const regularBundles = bundles.filter(
+      (b) => b.isActive && (b.torsoBagType || "regular") === "regular",
+    );
+    if (regularBundles.length === 0) return 100;
+    return Math.min(...regularBundles.map((b) => b.minifigQuantity));
+  }, [bundles]);
+
   const targetSize = Number(crud.formData.targetBundleSize) || 100;
-  const miscQuantity = getMiscQuantity(targetSize);
-  const adminTarget = getAdminTarget(targetSize);
+  const miscQuantity = getMiscQuantity(targetSize, baseBundleSize);
+  const adminTarget = getAdminTarget(targetSize, baseBundleSize);
 
   const currentTotal = useMemo(() => {
     return crud.formData.items.reduce(
@@ -252,7 +270,19 @@ const useDealerTorsoBagManagement = () => {
 
   const handleUpdateItemQuantity = (index) => (e) => {
     const value = e?.target ? e.target.value : e;
-    const cleaned = value.toString().replace(/[^0-9]/g, "");
+    const strValue = value.toString();
+
+    // Allow empty string to let users clear the input
+    if (strValue === "") {
+      crud.setFormData((prev) => {
+        const newItems = [...prev.items];
+        newItems[index] = { ...newItems[index], quantity: "" };
+        return { ...prev, items: newItems };
+      });
+      return;
+    }
+
+    const cleaned = strValue.replace(/[^0-9]/g, "");
     if (!cleaned) return;
 
     const newValue = parseInt(cleaned, 10);
@@ -260,7 +290,7 @@ const useDealerTorsoBagManagement = () => {
 
     const otherItemsTotal = crud.formData.items.reduce(
       (acc, item, i) =>
-        i === index ? acc : acc + (Number(item.quantity) || 1),
+        i === index ? acc : acc + (Number(item.quantity) || 0),
       0,
     );
 

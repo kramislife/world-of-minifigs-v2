@@ -1,10 +1,10 @@
 import MinifigInventory from "../models/minifigInventory.model.js";
 import Color from "../models/color.model.js";
 import {
-  uploadImage,
-  deleteImage,
-  validateImage,
-} from "../utils/cloudinary.js";
+  uploadSingleImage,
+  replaceSingleImage,
+  deleteSingleImage,
+} from "../services/imageService.js";
 import {
   normalizePagination,
   buildSearchQuery,
@@ -13,6 +13,8 @@ import {
 } from "../utils/pagination.js";
 import { checkNameConflict } from "../utils/commonUtils.js";
 import { AUDIT_POPULATE } from "../utils/populateHelpers.js";
+
+const IMAGE_FOLDER = "world-of-minifigs-v2/minifig-inventory";
 
 //------------------------------------------------ Create Minifig Inventory (Bulk) ------------------------------------------
 export const createMinifigInventoryBulk = async (req, res) => {
@@ -58,10 +60,6 @@ export const createMinifigInventoryBulk = async (req, res) => {
       const color = await Color.findById(colorId);
       if (!color) throw new Error("Selected color does not exist");
 
-      // Validate image
-      const imgValidation = validateImage(image);
-      if (!imgValidation.isValid) throw new Error(imgValidation.error);
-
       // Check for duplicate name + color combo (Non-blocking warning for bulk)
       const existing = await checkNameConflict(
         MinifigInventory,
@@ -74,21 +72,15 @@ export const createMinifigInventoryBulk = async (req, res) => {
         ? `Item with name "${minifigName}" and color "${color.colorName}" already exists.`
         : null;
 
-      // Upload image to Cloudinary
-      const uploadResult = await uploadImage(
-        image,
-        "world-of-minifigs-v2/minifig-inventory",
-      );
+      // Upload image via imageService (validate + upload)
+      const uploadedImage = await uploadSingleImage(image, IMAGE_FOLDER);
 
       const newInventory = await MinifigInventory.create({
         minifigName: String(minifigName).trim(),
         price: Number(price),
         stock: Number(stock),
         colorId,
-        image: {
-          publicId: uploadResult.public_id,
-          url: uploadResult.url,
-        },
+        image: uploadedImage,
         createdBy: req.user._id,
       });
 
@@ -124,42 +116,34 @@ export const createMinifigInventoryBulk = async (req, res) => {
 //------------------------------------------------ Get All Minifig Inventory ------------------------------------------
 export const getAllMinifigInventory = async (req, res) => {
   try {
-    const { page, limit, search, isActive } = normalizePagination(req.query);
+    const { page, limit, search } = normalizePagination(req.query);
 
     let searchQuery = {};
-    if (search) {
-      // Search in minifig specific fields
-      const inventorySearchFields = ["minifigName"];
-      const inventoryQuery = buildSearchQuery(search, inventorySearchFields);
 
-      // Search via linked color fields
-      const colorSearchFields = ["colorName", "hexCode"];
-      const colorSearchQuery = buildSearchQuery(search, colorSearchFields);
-      const matchingColors = await Color.find(colorSearchQuery)
+    if (search) {
+      const baseQuery = buildSearchQuery(search, ["minifigName"]);
+
+      // Also search by color name
+      const matchingColors = await Color.find(
+        buildSearchQuery(search, ["colorName"]),
+      )
         .select("_id")
         .lean();
+
       const matchingColorIds = matchingColors.map((c) => c._id);
 
-      searchQuery = { $or: [inventoryQuery] };
-
-      if (matchingColorIds.length > 0) {
-        searchQuery.$or.push({ colorId: { $in: matchingColorIds } });
-      }
-
-      // Numeric search for stock
-      const searchNum = Number(search);
-      if (!isNaN(searchNum)) {
-        searchQuery.$or.push({ stock: searchNum });
+      if (Object.keys(baseQuery).length > 0 && matchingColorIds.length > 0) {
+        searchQuery = {
+          $or: [baseQuery, { colorId: { $in: matchingColorIds } }],
+        };
+      } else if (Object.keys(baseQuery).length > 0) {
+        searchQuery = baseQuery;
+      } else if (matchingColorIds.length > 0) {
+        searchQuery = { colorId: { $in: matchingColorIds } };
       }
     }
 
-    const query = { ...searchQuery };
-
-    if (isActive !== undefined) {
-      query.isActive = isActive === "true" || isActive === true;
-    }
-
-    const result = await paginateQuery(MinifigInventory, query, {
+    const result = await paginateQuery(MinifigInventory, searchQuery, {
       page,
       limit,
       sort: { createdAt: -1 },
@@ -186,7 +170,6 @@ export const getMinifigInventoryById = async (req, res) => {
     const { id } = req.params;
 
     const inventory = await MinifigInventory.findById(id)
-      .select("-__v")
       .populate("colorId", "colorName hexCode")
       .populate("createdBy", "firstName lastName username")
       .populate("updatedBy", "firstName lastName username")
@@ -300,32 +283,21 @@ export const updateMinifigInventory = async (req, res) => {
       inventory.colorId = colorId;
     }
 
+    // Replace image if new base64 provided via imageService
     if (image !== undefined && image !== null) {
-      if (typeof image === "string" && image.startsWith("data:image/")) {
-        const imgValidation = validateImage(image);
-        if (!imgValidation.isValid) {
-          return res.status(400).json({
-            success: false,
-            message: imgValidation.error,
-          });
-        }
-
-        if (inventory.image?.publicId) {
-          try {
-            await deleteImage(inventory.image.publicId);
-          } catch (err) {
-            console.error("Old image deletion failed:", err);
-          }
-        }
-
-        const uploadResult = await uploadImage(
+      try {
+        const uploaded = await replaceSingleImage(
           image,
-          "world-of-minifigs-v2/minifig-inventory",
+          inventory.image,
+          IMAGE_FOLDER,
         );
-        inventory.image = {
-          publicId: uploadResult.public_id,
-          url: uploadResult.url,
-        };
+        if (uploaded) inventory.image = uploaded;
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to update image",
+          description: error.message,
+        });
       }
     }
 
@@ -368,15 +340,10 @@ export const deleteMinifigInventory = async (req, res) => {
       });
     }
 
-    if (inventory.image?.publicId) {
-      try {
-        await deleteImage(inventory.image.publicId);
-      } catch (err) {
-        console.error("Image deletion failed:", err);
-      }
-    }
-
     await MinifigInventory.findByIdAndDelete(id);
+
+    // Delete image in background (fire-and-forget)
+    deleteSingleImage(inventory.image?.publicId);
 
     return res.status(200).json({
       success: true,

@@ -1,19 +1,34 @@
 import Bundle from "../models/bundle.model.js";
-import DealerAddon from "../models/dealerAddon.model.js";
 import DealerTorsoBag from "../models/dealerTorsoBag.model.js";
-import { uploadImage, deleteImage } from "../utils/cloudinary.js";
+import {
+  processItemsForCreate,
+  processItemsForUpdate,
+} from "./imageService.js";
 
 // ------------------------ Constants ------------------------------------
 
-const MISC_RATIO = 0.2;
+const TORSO_FOLDER = "world-of-minifigs-v2/dealers/torsos";
+const ADDON_FOLDER = "world-of-minifigs-v2/dealers/addons";
 
 // ------------------------ Quantity Helpers ------------------------------------
 
-export const getMiscQuantity = (targetBundleSize) =>
-  Math.round(targetBundleSize * MISC_RATIO);
+export const getMiscQuantity = (targetBundleSize, baseSize = 100) => {
+  // 1. Bulk bundles (500 and above) - specifically 10 per 500
+  if (targetBundleSize >= 500) {
+    return Math.floor(targetBundleSize / 500) * 10;
+  }
 
-export const getAdminTarget = (targetBundleSize) =>
-  targetBundleSize - getMiscQuantity(targetBundleSize);
+  // 2. Regular small bundles (e.g., 100-499) - scale linearly by base (e.g. 10 per 100)
+  if (targetBundleSize >= baseSize) {
+    return Math.floor((targetBundleSize / baseSize) * 10);
+  }
+
+  // 3. Mini bundles (under 100) - 10%
+  return Math.ceil(targetBundleSize * 0.1);
+};
+
+export const getAdminTarget = (targetBundleSize, baseSize = 100) =>
+  targetBundleSize - getMiscQuantity(targetBundleSize, baseSize);
 
 export const getBaseBundleSize = async (bundleType = "dealer") => {
   const lowestBundle = await Bundle.findOne({
@@ -25,8 +40,9 @@ export const getBaseBundleSize = async (bundleType = "dealer") => {
 
 // ------------------------ Torso Item Validation ------------------------------------
 
-export const validateTorsoItems = (items, targetBundleSize) => {
-  const adminTarget = getAdminTarget(targetBundleSize);
+export const validateTorsoItems = async (items, targetBundleSize) => {
+  const baseSize = await getBaseBundleSize();
+  const adminTarget = getAdminTarget(targetBundleSize, baseSize);
   const totalQty = items.reduce(
     (sum, item) => sum + (Number(item.quantity) || 0),
     0,
@@ -36,7 +52,7 @@ export const validateTorsoItems = (items, targetBundleSize) => {
     return {
       isValid: false,
       message: "Invalid total quantity",
-      description: `Total designs quantity must equal ${adminTarget} (${targetBundleSize} minus ${getMiscQuantity(targetBundleSize)} miscellaneous). Current total: ${totalQty}.`,
+      description: `Total designs quantity must equal ${adminTarget} (${targetBundleSize} minus ${getMiscQuantity(targetBundleSize, baseSize)} miscellaneous). Current total: ${totalQty}.`,
     };
   }
 
@@ -44,12 +60,6 @@ export const validateTorsoItems = (items, targetBundleSize) => {
 };
 
 // ------------------------ Conflict Checks ------------------------------------
-
-export const checkAddonNameConflict = async (addonName, excludeId = null) => {
-  const query = { addonName: addonName.trim() };
-  if (excludeId) query._id = { $ne: excludeId };
-  return DealerAddon.findOne(query);
-};
 
 export const checkTorsoBagNameConflict = async (bagName, excludeId = null) => {
   const query = {
@@ -59,151 +69,79 @@ export const checkTorsoBagNameConflict = async (bagName, excludeId = null) => {
   return DealerTorsoBag.findOne(query);
 };
 
-// ------------------------ Addon Item Processing (Create) --------------------------------
-
-export const processAddonItems = async (
-  items,
-  folderPath = "world-of-minifigs-v2/dealers/addons",
-) => {
-  if (!items || !Array.isArray(items) || items.length === 0) return [];
-
-  const processedItems = [];
-  for (const itemData of items) {
-    const isObject = typeof itemData === "object";
-    const imageToUpload = isObject ? itemData.image : itemData;
-
-    if (imageToUpload) {
-      const uploadResult = await uploadImage(imageToUpload, folderPath);
-      processedItems.push({
-        itemName: isObject ? itemData.itemName : undefined,
-        itemPrice: isObject ? itemData.itemPrice : undefined,
-        color: isObject ? itemData.color : undefined,
-        image: {
-          publicId: uploadResult.public_id,
-          url: uploadResult.url,
-        },
-      });
-    }
-  }
-  return processedItems;
-};
-
-// ------------------------ Addon Item Processing (Update) --------------------------------
-
-export const processAddonItemsForUpdate = async (
-  items,
-  existingItems,
-  folderPath = "world-of-minifigs-v2/dealers/addons",
-) => {
-  if (!items || !Array.isArray(items)) return null;
-
-  const processedItems = [];
-  const oldPublicIds = (existingItems || [])
-    .map((item) => item.image?.publicId)
-    .filter(Boolean);
-
-  for (const itemData of items) {
-    if (
-      typeof itemData === "object" &&
-      itemData.image &&
-      itemData.image.publicId
-    ) {
-      processedItems.push(itemData);
-    } else {
-      const isObject = typeof itemData === "object";
-      const imageToUpload = isObject ? itemData.image : itemData;
-
-      if (imageToUpload) {
-        const uploadResult = await uploadImage(imageToUpload, folderPath);
-        processedItems.push({
-          itemName: isObject ? itemData.itemName : undefined,
-          itemPrice: isObject ? itemData.itemPrice : undefined,
-          color: isObject ? itemData.color : undefined,
-          image: {
-            publicId: uploadResult.public_id,
-            url: uploadResult.url,
-          },
-        });
-      }
-    }
-  }
-
-  const newPublicIds = processedItems
-    .map((item) => item.image?.publicId)
-    .filter(Boolean);
-  const idsToDelete = oldPublicIds.filter((id) => !newPublicIds.includes(id));
-
-  for (const id of idsToDelete) {
-    await deleteImage(id);
-  }
-
-  return processedItems;
-};
-
 // ------------------------ Torso Bag Item Processing (Create) ------------------------------
 
-export const processTorsoBagItems = async (
-  items,
-  folderPath = "world-of-minifigs-v2/dealers/torsos",
-) => {
-  const uploadedItems = [];
-  for (const item of items) {
-    const designUpload = await uploadImage(item.image, folderPath);
-    uploadedItems.push({
-      image: {
-        publicId: designUpload.public_id,
-        url: designUpload.url,
-      },
+export const processTorsoBagItems = async (items, folderPath = TORSO_FOLDER) =>
+  processItemsForCreate(items, folderPath, {
+    getImage: (item) => item.image,
+    transform: (item, uploadedImage) => ({
+      image: uploadedImage,
       quantity: Number(item.quantity),
-    });
-  }
-  return uploadedItems;
-};
+    }),
+  });
 
 // ------------------------ Torso Bag Item Processing (Update) ------------------------------
 
 export const processTorsoBagItemsForUpdate = async (
   items,
   existingItems,
-  folderPath = "world-of-minifigs-v2/dealers/torsos",
-) => {
-  const processedItems = [];
-  const currentPublicIds = existingItems.map((item) => item.image.publicId);
+  folderPath = TORSO_FOLDER,
+) =>
+  processItemsForUpdate(items, existingItems, folderPath, {
+    isExisting: (item) =>
+      typeof item === "object" && item.image && item.image.publicId,
+    getImage: (item) => {
+      if (typeof item.image === "string") return item.image;
+      return item.image?.url && !item.image.url.startsWith("http")
+        ? item.image.url
+        : null;
+    },
+    transform: (item, uploadedImage) => ({
+      image: uploadedImage,
+      quantity: Number(item.quantity),
+    }),
+  });
 
-  for (const itemData of items) {
-    if (
-      typeof itemData === "object" &&
-      itemData.image &&
-      itemData.image.publicId
-    ) {
-      processedItems.push(itemData);
-    } else {
-      const imageToUpload =
-        typeof itemData.image === "string"
-          ? itemData.image
-          : itemData.image?.url;
+// ------------------------ Addon Item Processing (Create) --------------------------------
 
-      if (imageToUpload && !imageToUpload.startsWith("http")) {
-        const uploadResult = await uploadImage(imageToUpload, folderPath);
-        processedItems.push({
-          image: {
-            publicId: uploadResult.public_id,
-            url: uploadResult.url,
-          },
-          quantity: Number(itemData.quantity),
-        });
-      }
-    }
-  }
+export const processAddonItems = async (items, folderPath = ADDON_FOLDER) =>
+  processItemsForCreate(items, folderPath, {
+    getImage: (item) => {
+      const isObject = typeof item === "object";
+      return isObject ? item.image : item;
+    },
+    transform: (item, uploadedImage) => {
+      const isObject = typeof item === "object";
+      return {
+        itemName: isObject ? item.itemName : undefined,
+        itemPrice: isObject ? item.itemPrice : undefined,
+        color: isObject ? item.color : undefined,
+        image: uploadedImage,
+      };
+    },
+  });
 
-  const newPublicIds = processedItems.map((item) => item.image.publicId);
-  const idsToDelete = currentPublicIds.filter(
-    (id) => !newPublicIds.includes(id),
-  );
+// ------------------------ Addon Item Processing (Update) --------------------------------
 
-  for (const id of idsToDelete) {
-    await deleteImage(id);
-  }
-
-  return processedItems;
-};
+export const processAddonItemsForUpdate = async (
+  items,
+  existingItems,
+  folderPath = ADDON_FOLDER,
+) =>
+  processItemsForUpdate(items, existingItems, folderPath, {
+    isExisting: (item) =>
+      typeof item === "object" && item.image && item.image.publicId,
+    getImage: (item) => {
+      const isObject = typeof item === "object";
+      return isObject ? item.image : item;
+    },
+    transform: (item, uploadedImage) => {
+      const isObject = typeof item === "object";
+      return {
+        itemName: isObject ? item.itemName : undefined,
+        itemPrice: isObject ? item.itemPrice : undefined,
+        color: isObject ? item.color : undefined,
+        image: uploadedImage,
+      };
+    },
+  });

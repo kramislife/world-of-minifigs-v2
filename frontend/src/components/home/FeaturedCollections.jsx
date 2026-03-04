@@ -37,7 +37,7 @@ const FeaturedCollections = () => {
   }
 
   return (
-    <section>
+    <section className="mb-5">
       <div className="flex flex-col gap-5">
         {collections.slice(0, 2).map((collection) => (
           <Link

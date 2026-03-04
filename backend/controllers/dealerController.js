@@ -4,7 +4,7 @@ import DealerExtraBag from "../models/dealerExtraBag.model.js";
 import DealerTorsoBag from "../models/dealerTorsoBag.model.js";
 import MinifigInventory from "../models/minifigInventory.model.js";
 import SubCollection from "../models/subCollection.model.js";
-import { cleanUpImages } from "../utils/cloudinary.js";
+import { cleanupItemImages } from "../services/imageService.js";
 import {
   normalizePagination,
   buildSearchQuery,
@@ -972,10 +972,11 @@ export const deleteDealerTorsoBag = async (req, res) => {
       });
     }
 
-    // Delete all item images
-    await cleanUpImages(torsoBag.items);
-
+    // Delete DB record first (instant response for admin)
     await DealerTorsoBag.findByIdAndDelete(id);
+
+    // Clean up images in background (fire-and-forget)
+    cleanupItemImages(torsoBag.items);
 
     return res.status(200).json({
       success: true,

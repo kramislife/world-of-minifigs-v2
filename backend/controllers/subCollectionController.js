@@ -3,10 +3,10 @@ import Collection from "../models/collection.model.js";
 import DealerExtraBag from "../models/dealerExtraBag.model.js";
 import Product from "../models/product.model.js";
 import {
-  uploadImage,
-  deleteImage,
-  validateImage,
-} from "../utils/cloudinary.js";
+  uploadSingleImage,
+  replaceSingleImage,
+  deleteSingleImage,
+} from "../services/imageService.js";
 import {
   normalizePagination,
   buildSearchQuery,
@@ -16,6 +16,8 @@ import {
 import { onSubCollectionToggle } from "../utils/Products/visibilityUtils.js";
 import { checkNameConflict } from "../utils/commonUtils.js";
 import { AUDIT_POPULATE } from "../utils/populateHelpers.js";
+
+const IMAGE_FOLDER = "world-of-minifigs-v2/sub-collections";
 
 //------------------------------------------------ Create Sub-collection ------------------------------------------
 export const createSubCollection = async (req, res) => {
@@ -44,16 +46,6 @@ export const createSubCollection = async (req, res) => {
         success: false,
         message: "Sub-collection image is required",
         description: "Please upload an image for the sub-collection.",
-      });
-    }
-
-    // Validate image format and size
-    const imageValidation = validateImage(image, 5);
-    if (!imageValidation.isValid) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid image",
-        description: imageValidation.error,
       });
     }
 
@@ -96,19 +88,16 @@ export const createSubCollection = async (req, res) => {
       });
     }
 
-    // Upload image to Cloudinary
+    // Upload image via imageService
     let uploadedImage;
     try {
-      uploadedImage = await uploadImage(
-        image,
-        "world-of-minifigs-v2/sub-collections",
-      );
-    } catch (uploadError) {
-      console.error("Image upload error:", uploadError);
-      return res.status(500).json({
+      uploadedImage = await uploadSingleImage(image, IMAGE_FOLDER);
+    } catch (error) {
+      console.error("Image upload error:", error);
+      return res.status(400).json({
         success: false,
         message: "Failed to upload image",
-        description: "An error occurred while uploading the image.",
+        description: error.message,
       });
     }
 
@@ -120,11 +109,7 @@ export const createSubCollection = async (req, res) => {
       subCollectionName: subCollectionNameStr,
       description: descriptionStr,
       collectionId: collection,
-      image: {
-        publicId: uploadedImage.public_id,
-        url: uploadedImage.url,
-      },
-
+      image: uploadedImage,
       createdBy: req.user._id,
     });
 
@@ -328,39 +313,21 @@ export const updateSubCollection = async (req, res) => {
       subCollection.collectionId = collection;
     }
 
-    // Update image if provided
+    // Replace image if provided via imageService
     if (image) {
-      // Validate image format and size
-      const imageValidation = validateImage(image, 5);
-      if (!imageValidation.isValid) {
+      try {
+        const uploaded = await replaceSingleImage(
+          image,
+          subCollection.image,
+          IMAGE_FOLDER,
+        );
+        if (uploaded) subCollection.image = uploaded;
+      } catch (error) {
+        console.error("Image update error:", error);
         return res.status(400).json({
           success: false,
-          message: "Invalid image",
-          description: imageValidation.error,
-        });
-      }
-
-      try {
-        // Delete old image from Cloudinary
-        if (subCollection.image?.publicId) {
-          await deleteImage(subCollection.image.publicId);
-        }
-
-        // Upload new image
-        const uploadedImage = await uploadImage(
-          image,
-          "world-of-minifigs-v2/sub-collections",
-        );
-        subCollection.image = {
-          publicId: uploadedImage.public_id,
-          url: uploadedImage.url,
-        };
-      } catch (uploadError) {
-        console.error("Image update error:", uploadError);
-        return res.status(500).json({
-          success: false,
           message: "Failed to update image",
-          description: "An error occurred while updating the image.",
+          description: error.message,
         });
       }
     }
@@ -453,17 +420,10 @@ export const deleteSubCollection = async (req, res) => {
       });
     }
 
-    // Delete image from Cloudinary
-    try {
-      if (subCollection.image?.publicId) {
-        await deleteImage(subCollection.image.publicId);
-      }
-    } catch (deleteError) {
-      console.error("Image deletion error:", deleteError);
-      // Continue with sub-collection deletion even if image deletion fails
-    }
-
     await SubCollection.findByIdAndDelete(id);
+
+    // Delete image in background (fire-and-forget)
+    deleteSingleImage(subCollection.image?.publicId);
 
     return res.status(200).json({
       success: true,

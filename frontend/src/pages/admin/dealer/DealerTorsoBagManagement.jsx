@@ -167,7 +167,7 @@ const DealerTorsoBagManagement = () => {
           <MediaUpload
             label="Torso Designs Attachment"
             multiple
-            previews={filePreview}
+            previews={formData.items}
             onChange={handleDealerTorsoBagFileChange}
             onRemove={handleDealerTorsoBagFileRemove}
             accept="image/*"

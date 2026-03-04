@@ -52,6 +52,7 @@ const useAdminCrud = ({
   const [dialogMode, setDialogMode] = useState("add");
   const [selectedItem, setSelectedItem] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
+  const isEditMode = dialogMode === "edit";
 
   const resetForm = useCallback(() => {
     setFormData(initialFormData);
@@ -166,6 +167,7 @@ const useAdminCrud = ({
     dialogOpen,
     deleteDialogOpen,
     dialogMode,
+    isEditMode,
     selectedItem,
     formData,
     setFormData,

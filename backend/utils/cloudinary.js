@@ -13,8 +13,11 @@ const validateCloudinaryConfig = () => {
   }
 };
 
-// Configure Cloudinary
+// Configure Cloudinary (cached — only runs once)
+let isConfigured = false;
+
 const configureCloudinary = () => {
+  if (isConfigured) return;
   validateCloudinaryConfig();
 
   cloudinary.config({
@@ -22,6 +25,8 @@ const configureCloudinary = () => {
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
   });
+
+  isConfigured = true;
 };
 
 // Validate image format and size
@@ -103,8 +108,8 @@ export const deleteImage = async (publicId) => {
   }
 };
 
-// Validate banner media (image, gif, video)
-export const validateBannerMedia = (file, maxImageMB = 5, maxVideoMB = 50) => {
+// Validate media (image, gif, video)
+export const validateMedia = (file, maxImageMB = 5, maxVideoMB = 50) => {
   if (!file) {
     return {
       isValid: false,
@@ -143,8 +148,8 @@ export const validateBannerMedia = (file, maxImageMB = 5, maxVideoMB = 50) => {
   };
 };
 
-// Upload banner media (image / gif / video)
-export const uploadBannerMedia = (file, folder) => {
+// Upload media (image / gif / video)
+export const uploadMedia = (file, folder) => {
   configureCloudinary();
 
   return new Promise((resolve, reject) => {
@@ -195,13 +200,5 @@ export const deleteMedia = async (publicId, resourceType = "image") => {
   }
 };
 
-// Delete Cloudinary images from an array of items
-
-export const cleanUpImages = async (items) => {
-  if (!items || !Array.isArray(items) || items.length === 0) return;
-  for (const item of items) {
-    if (item.image?.publicId) {
-      await deleteImage(item.image.publicId);
-    }
-  }
-};
+// NOTE: cleanUpImages has been removed.
+// Use cleanupItemImages from services/imageService.js instead.
