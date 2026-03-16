@@ -19,6 +19,8 @@
   },
   "scripts": {
     "start": "node app.js",
-    "dev": "node --watch app.js"
+    "dev": "node --watch app.js",
+    "migrate": "node migrations/migrate.js",
+    "migrate:status": "node migrations/migrate.js --status"
   }
 }

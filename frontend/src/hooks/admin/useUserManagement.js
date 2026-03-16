@@ -1,47 +1,61 @@
-import { useState } from "react";
 import { useSelector } from "react-redux";
+import { useEffect } from "react";
 import {
   useGetUsersQuery,
   useUpdateUserRoleMutation,
 } from "@/redux/api/adminApi";
-import { extractPaginatedData } from "@/utils/apiHelpers";
-import { handleApiError, handleApiSuccess } from "@/utils/apiHelpers";
+import {
+  extractPaginatedData,
+  handleApiError,
+  handleApiSuccess,
+} from "@/utils/apiHelpers";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
+
+const columns = [
+  { key: "user", label: "Full Name" },
+  { key: "username", label: "Username" },
+  { key: "email", label: "Email" },
+  { key: "contactNumber", label: "Contact No." },
+  { key: "role", label: "Role" },
+  { key: "status", label: "Status" },
+  { key: "verified", label: "Verified" },
+  { key: "createdAt", label: "Joined Date" },
+];
 
 const useUserManagement = () => {
   const { user: currentUser } = useSelector((state) => state.auth);
 
-  // Pagination and search state
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState("10");
-  const [search, setSearch] = useState("");
-
-  // Fetch data
-  const { data: usersResponse, isLoading: isLoadingUsers } = useGetUsersQuery({
-    page,
-    limit,
-    search: search || undefined,
-  });
-
+  // ------------------------------- Mutations ------------------------------------
   const [updateUserRole, { isLoading: isUpdatingRole }] =
     useUpdateUserRoleMutation();
+
+  // ------------------------------- Core CRUD ------------------------------------
+  const crud = useAdminCrud({
+    initialFormData: {},
+    createFn: null,
+    updateFn: null,
+    deleteFn: null,
+    entityName: "user",
+  });
+
+  // ------------------------------- Fetch ------------------------------------
+  const { data: usersData, isLoading: isLoadingUsers } = useGetUsersQuery({
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search || undefined,
+  });
 
   const {
     items: users,
     totalItems,
     totalPages,
-  } = extractPaginatedData(usersResponse, "users");
+  } = extractPaginatedData(usersData, "users");
 
-  const columns = [
-    { key: "user", label: "User" },
-    { key: "username", label: "Username" },
-    { key: "email", label: "Email" },
-    { key: "contactNumber", label: "Contact" },
-    { key: "role", label: "Role" },
-    { key: "status", label: "Status" },
-    { key: "verified", label: "Verified" },
-    { key: "createdAt", label: "Joined" },
-  ];
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems]);
 
+  // ------------------------------- Helpers ------------------------------------
   const isCurrentUser = (user) => {
     const currentUserId = currentUser?._id || currentUser?.id;
     const userId = user._id || user.id;
@@ -61,6 +75,9 @@ const useUserManagement = () => {
     }
   };
 
+  const canUpdateRole = (user) => user.role !== "admin";
+
+  // ------------------------------- Handlers ------------------------------------
   const handleUpdateRole = async (userId, newRole) => {
     try {
       const response = await updateUserRole({
@@ -76,24 +93,9 @@ const useUserManagement = () => {
     }
   };
 
-  const canUpdateRole = (user) => user.role !== "admin";
-
-  // Pagination Handlers
-  const handlePageChange = (newPage) => setPage(newPage);
-  const handleLimitChange = (newLimit) => {
-    setLimit(newLimit);
-    setPage(1);
-  };
-  const handleSearchChange = (value) => {
-    setSearch(value);
-    setPage(1);
-  };
-
+  // ------------------------------- Return ------------------------------------
   return {
-    // State
-    page,
-    limit,
-    search,
+    ...crud,
     users,
     totalItems,
     totalPages,
@@ -101,11 +103,6 @@ const useUserManagement = () => {
     isLoadingUsers,
     isUpdatingRole,
     currentUser,
-
-    // Handlers
-    handlePageChange,
-    handleLimitChange,
-    handleSearchChange,
     handleUpdateRole,
     isCurrentUser,
     getRoleBadgeVariant,

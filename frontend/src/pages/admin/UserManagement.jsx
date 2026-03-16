@@ -1,24 +1,28 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { AdminFormSelect } from "@/components/shared/AdminFormInput";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
-import { TableCell } from "@/components/table/BaseColumn";
+import {
+  TableCell,
+  TimestampCells,
+  StatusCell,
+} from "@/components/table/BaseColumn";
+import { formatFullName, display } from "@/utils/formatting";
 import useUserManagement from "@/hooks/admin/useUserManagement";
 
 const UserManagement = () => {
   const {
-    page,
-    limit,
-    search,
     users,
     totalItems,
     totalPages,
+    page,
+    limit,
+    search,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     columns,
     isLoadingUsers,
     isUpdatingRole,
@@ -33,15 +37,10 @@ const UserManagement = () => {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">User Management</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            View and manage all registered users
-          </p>
-        </div>
-      </div>
+      <AdminManagementHeader
+        title="User Management"
+        description="View and manage all registered users"
+      />
 
       <TableLayout
         searchPlaceholder="Search users..."
@@ -53,6 +52,10 @@ const UserManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={users}
         isLoading={isLoadingUsers}
@@ -62,9 +65,9 @@ const UserManagement = () => {
             <TableCell maxWidth="250px">
               <div className="flex flex-col">
                 <span className="font-medium">
-                  {user.firstName} {user.lastName}{" "}
+                  {formatFullName(user)}{" "}
                   {isCurrentUser(user) && (
-                    <Badge variant="accent" className="w-fit mt-1">
+                    <Badge variant="accent" className="text-[10px] ml-1">
                       You
                     </Badge>
                   )}
@@ -73,62 +76,54 @@ const UserManagement = () => {
             </TableCell>
 
             {/* Username */}
-            <TableCell maxWidth="150px">@{user.username}</TableCell>
+            <TableCell maxWidth="150px">{display(user.username)}</TableCell>
 
             {/* Email */}
-            <TableCell maxWidth="200px">{user.email}</TableCell>
+            <TableCell maxWidth="200px">{display(user.email)}</TableCell>
 
             {/* Contact Number */}
-            <TableCell maxWidth="150px">{user.contactNumber || "-"}</TableCell>
+            <TableCell maxWidth="150px">
+              {display(user.contactNumber)}
+            </TableCell>
 
             {/* Role */}
             <TableCell className="text-center">
               {canUpdateRole(user) ? (
                 <div className="flex justify-center">
-                  <Select
+                  <AdminFormSelect
                     value={user.role}
-                    onValueChange={(newRole) => {
-                      const userId = user._id || user.id;
-                      handleUpdateRole(userId, newRole);
-                    }}
+                    onValueChange={(newRole) =>
+                      handleUpdateRole(user._id, newRole)
+                    }
+                    options={[
+                      { value: "customer", label: "Customer" },
+                      { value: "dealer", label: "Dealer" },
+                    ]}
                     disabled={isUpdatingRole}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="customer">Customer</SelectItem>
-                      <SelectItem value="dealer">Dealer</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  />
                 </div>
               ) : (
-                <Badge variant={getRoleBadgeVariant(user.role)}>
+                <Badge
+                  variant={getRoleBadgeVariant(user.role)}
+                  className="capitalize"
+                >
                   {user.role}
                 </Badge>
               )}
             </TableCell>
 
             {/* Status */}
-            <TableCell>
-              <Badge variant={user.isActive ? "accent" : "default"}>
-                {user.isActive ? "Active" : "Inactive"}
-              </Badge>
-            </TableCell>
+            <StatusCell isActive={user.isActive} />
 
             {/* Verified */}
-            <TableCell>
-              <Badge variant={user.isVerified ? "accent" : "default"}>
-                {user.isVerified ? "Verified" : "Unverified"}
-              </Badge>
-            </TableCell>
+            <StatusCell
+              isActive={user.isVerified}
+              activeLabel="Verified"
+              inactiveLabel="Unverified"
+            />
 
             {/* Joined Date */}
-            <TableCell>
-              {user.createdAt
-                ? new Date(user.createdAt).toLocaleDateString()
-                : "-"}
-            </TableCell>
+            <TimestampCells createdAt={user.createdAt} />
           </>
         )}
       />

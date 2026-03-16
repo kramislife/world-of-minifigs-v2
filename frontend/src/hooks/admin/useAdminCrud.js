@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { handleApiError, handleApiSuccess } from "@/utils/apiHelpers";
 
 const useAdminCrud = ({
@@ -8,20 +8,52 @@ const useAdminCrud = ({
   deleteFn,
   entityName = "item",
   onReset,
+  totalItems: externalTotalItems = 0,
 }) => {
-  // Dialog State
+  // ------------------------------- Table State ------------------------------------
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState("10");
+  const [search, setSearch] = useState("");
+  const [totalItems, setTotalItems] = useState(externalTotalItems);
+
+  useEffect(() => {
+    setTotalItems(externalTotalItems);
+  }, [externalTotalItems]);
+
+  const entriesPerPage =
+    limit === "all" ? totalItems : parseInt(limit, 10) || 10;
+
+  const totalPages = Math.ceil(totalItems / entriesPerPage);
+  const startItem = totalItems === 0 ? 0 : (page - 1) * entriesPerPage + 1;
+  const endItem = Math.min(page * entriesPerPage, totalItems);
+
+  const handlePageChange = useCallback((newPage) => setPage(newPage), []);
+  const handleLimitChange = useCallback((value) => {
+    setLimit(value);
+    setPage(1);
+  }, []);
+  const handleSearchChange = useCallback((value) => {
+    const finalValue = value?.target ? value.target.value : value;
+    setSearch(finalValue || "");
+    setPage(1);
+  }, []);
+
+  const handlePrevious = useCallback(() => {
+    if (page > 1) setPage(page - 1);
+  }, [page]);
+
+  const handleNext = useCallback(() => {
+    if (page < totalPages) setPage(page + 1);
+  }, [page, totalPages]);
+
+  // ------------------------------- Dialog & Form State ------------------------------------
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState("add");
   const [selectedItem, setSelectedItem] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
+  const isEditMode = dialogMode === "edit";
 
-  // Pagination & Search State
-  const [search, setSearch] = useState("");
-  const [limit, setLimit] = useState("10");
-  const [page, setPage] = useState(1);
-
-  // Reset form to initial state
   const resetForm = useCallback(() => {
     setFormData(initialFormData);
     setSelectedItem(null);
@@ -29,7 +61,6 @@ const useAdminCrud = ({
     onReset?.();
   }, [initialFormData, onReset]);
 
-  // Dialog Handlers
   const handleDialogClose = useCallback(
     (open) => {
       setDialogOpen(open);
@@ -61,7 +92,7 @@ const useAdminCrud = ({
     setDeleteDialogOpen(true);
   }, []);
 
-  // CRUD: Submit (create or update)
+  // ------------------------------- Submit Logic ------------------------------------
   const submitForm = useCallback(
     async (payload) => {
       try {
@@ -96,12 +127,14 @@ const useAdminCrud = ({
     ],
   );
 
-  // CRUD: Delete
+  // ------------------------------- Delete Logic ------------------------------------
   const handleConfirmDelete = useCallback(async () => {
     if (!selectedItem) return;
+
     try {
       const id = selectedItem._id || selectedItem.id;
       const response = await deleteFn(id).unwrap();
+
       if (response.success) {
         handleApiSuccess(response, `${entityName} deleted successfully`);
         setDeleteDialogOpen(false);
@@ -112,31 +145,33 @@ const useAdminCrud = ({
     }
   }, [selectedItem, deleteFn, entityName]);
 
-  // Pagination Handlers
-  const handlePageChange = useCallback((p) => setPage(p), []);
-  const handleLimitChange = useCallback((l) => {
-    setLimit(l);
-    setPage(1);
-  }, []);
-  const handleSearchChange = useCallback((s) => {
-    setSearch(s);
-    setPage(1);
-  }, []);
-
   return {
+    // Table State
+    page,
+    limit,
+    search,
+    totalItems,
+    totalPages,
+    startItem,
+    endItem,
+    setTotalItems,
+
+    // Table Handlers
+    handlePageChange,
+    handleLimitChange,
+    handleSearchChange,
+    handlePrevious,
+    handleNext,
+
     // Dialog State
     dialogOpen,
     deleteDialogOpen,
     dialogMode,
+    isEditMode,
     selectedItem,
     formData,
     setFormData,
     setDeleteDialogOpen,
-
-    // Pagination State
-    search,
-    limit,
-    page,
 
     // Dialog Handlers
     handleDialogClose,
@@ -144,14 +179,9 @@ const useAdminCrud = ({
     openEdit,
     handleDelete,
 
-    // CRUD Handlers
+    // CRUD
     submitForm,
     handleConfirmDelete,
-
-    // Pagination Handlers
-    handlePageChange,
-    handleLimitChange,
-    handleSearchChange,
   };
 };
 

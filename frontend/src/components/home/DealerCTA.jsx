@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import dealerVideo from "@/assets/media/dealer.mp4";
 import PageCTA from "@/components/shared/PageCTA";
 import Auth from "@/pages/Auth";
 import { dealerCta } from "@/constant/dealerData";
@@ -16,7 +15,7 @@ const DealerCTA = () => {
         description={dealerCta.description}
         buttonText={dealerCta.buttonText}
         buttonOnClick={() => setAuthOpen(true)}
-        backgroundVideo={dealerVideo}
+        backgroundVideo={dealerCta.backgroundVideo}
       />
     </>
   );

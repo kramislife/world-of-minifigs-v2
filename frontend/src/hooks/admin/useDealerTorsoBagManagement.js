@@ -1,5 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from "react";
-import { toast } from "sonner";
+import { useEffect, useMemo, useCallback } from "react";
 import {
   useGetDealerTorsoBagsQuery,
   useCreateDealerTorsoBagMutation,
@@ -7,13 +6,29 @@ import {
   useDeleteDealerTorsoBagMutation,
   useGetDealerBundlesQuery,
 } from "@/redux/api/adminApi";
-import useAdminCrud from "@/hooks/admin/useAdminCrud";
 import { extractPaginatedData } from "@/utils/apiHelpers";
+import { sanitizeString, sortByName } from "@/utils/formatting";
+import {
+  validateDealerTorsoBag,
+  validateTorsoAllocation,
+  showTorsoAllocationWarning,
+} from "@/utils/validation";
+import useMediaPreview from "@/hooks/admin/useMediaPreview";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
-// Misc is always 20% of the target bundle size
-const MISC_RATIO = 0.2;
-const getMiscQuantity = (target) => Math.round(target * MISC_RATIO);
-const getAdminTarget = (target) => target - getMiscQuantity(target);
+const getMiscQuantity = (target, base = 100) => {
+  // 1. Bulk bundles (500 and above) - specifically 10 per 500
+  if (target >= 500) return Math.floor(target / 500) * 10;
+
+  // 2. Regular small bundles (e.g., 100-499) - scale linearly by base (e.g. 10 per 100)
+  if (target >= base) return Math.floor((target / base) * 10);
+
+  // 3. Mini bundles (under 100) - 10%
+  return Math.ceil(target * 0.1);
+};
+
+const getAdminTarget = (target, base = 100) =>
+  target - getMiscQuantity(target, base);
 
 const initialFormData = {
   bagName: "",
@@ -22,15 +37,28 @@ const initialFormData = {
   items: [],
 };
 
+const columns = [
+  { key: "bagName", label: "Bag Name" },
+  { key: "targetBundleSize", label: "Target" },
+  { key: "itemCount", label: "Total Designs" },
+  { key: "isActive", label: "Status" },
+  { key: "createdAt", label: "Created At" },
+  { key: "updatedAt", label: "Updated At" },
+  { key: "actions", label: "Actions" },
+];
+
 const useDealerTorsoBagManagement = () => {
-  const [itemPreviews, setItemPreviews] = useState([]);
-  const fileInputRef = useRef(null);
+  // ------------------------------- Media ------------------------------------
+  const {
+    filePreview,
+    setFilePreview,
+    fileInputRef,
+    resetFile,
+    handleFileChange: onFileChange,
+    handleRemoveFile: onFileRemove,
+  } = useMediaPreview({ multiple: true });
 
-  const resetImages = useCallback(() => {
-    setItemPreviews([]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }, []);
-
+  // ------------------------------- Mutations ------------------------------------
   const [createBag, { isLoading: isCreating }] =
     useCreateDealerTorsoBagMutation();
   const [updateBag, { isLoading: isUpdating }] =
@@ -38,51 +66,59 @@ const useDealerTorsoBagManagement = () => {
   const [deleteBag, { isLoading: isDeleting }] =
     useDeleteDealerTorsoBagMutation();
 
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createBag,
     updateFn: updateBag,
     deleteFn: deleteBag,
     entityName: "torso bag",
-    onReset: resetImages,
+    onReset: resetFile,
   });
 
-  // Fetch data
-  const { data: bagsResponse, isLoading: isLoadingBags } =
+  // ------------------------------- Fetch ------------------------------------
+  const { data: torsoBagData, isLoading: isLoadingBags } =
     useGetDealerTorsoBagsQuery({
       page: crud.page,
       limit: crud.limit,
       search: crud.search || undefined,
     });
 
-  // Fetch bundles to build targetBundleSize options
-  const { data: bundlesData } = useGetDealerBundlesQuery({ limit: 100 });
-  const bundles = bundlesData?.bundles || [];
+  const { data: bundlesData, isLoading: isLoadingBundles } =
+    useGetDealerBundlesQuery({ limit: 100 });
 
   const {
     items: bags,
     totalItems,
     totalPages,
-  } = extractPaginatedData(bagsResponse, "bags");
+  } = extractPaginatedData(torsoBagData, "bags");
 
-  // Build target options from active bundles
-  // Regular bundles use the base (smallest), custom bundles use their own size
+  const bundles = useMemo(
+    () => sortByName(bundlesData?.bundles, "bundleName"),
+    [bundlesData],
+  );
+
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems]);
+
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
+
   const targetBundleSizeOptions = useMemo(() => {
     if (!bundles.length) return [{ value: 100, label: "100 Minifigs (Base)" }];
 
     const activeBundles = bundles.filter((b) => b.isActive);
     const sizes = new Set();
 
-    // Always include the base (smallest regular)
     const regularBundles = activeBundles.filter(
       (b) => (b.torsoBagType || "regular") === "regular",
     );
+
     if (regularBundles.length > 0) {
       const base = Math.min(...regularBundles.map((b) => b.minifigQuantity));
       sizes.add(base);
     }
 
-    // Include custom bundle sizes
     activeBundles
       .filter((b) => b.torsoBagType === "custom")
       .forEach((b) => sizes.add(b.minifigQuantity));
@@ -97,10 +133,17 @@ const useDealerTorsoBagManagement = () => {
       }));
   }, [bundles]);
 
-  // Derived validation values
+  const baseBundleSize = useMemo(() => {
+    const regularBundles = bundles.filter(
+      (b) => b.isActive && (b.torsoBagType || "regular") === "regular",
+    );
+    if (regularBundles.length === 0) return 100;
+    return Math.min(...regularBundles.map((b) => b.minifigQuantity));
+  }, [bundles]);
+
   const targetSize = Number(crud.formData.targetBundleSize) || 100;
-  const miscQuantity = getMiscQuantity(targetSize);
-  const adminTarget = getAdminTarget(targetSize);
+  const miscQuantity = getMiscQuantity(targetSize, baseBundleSize);
+  const adminTarget = getAdminTarget(targetSize, baseBundleSize);
 
   const currentTotal = useMemo(() => {
     return crud.formData.items.reduce(
@@ -109,208 +152,182 @@ const useDealerTorsoBagManagement = () => {
     );
   }, [crud.formData.items]);
 
-  const columns = [
-    { key: "bagName", label: "Bag Name" },
-    { key: "targetBundleSize", label: "Target" },
-    { key: "itemCount", label: "Designs Inside" },
-    { key: "isActive", label: "Status" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-    { key: "actions", label: "Actions" },
-  ];
-
+  // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (bag) => {
     const existingItems =
       bag.items?.map((item) => ({
-        url: item.image?.url,
-        quantity: item.quantity,
-        image: item.image,
+        url: item.image?.url || "",
+        quantity: item.quantity || 1,
+        image: item.image || null,
       })) || [];
 
-    setItemPreviews(existingItems);
+    setFilePreview(existingItems);
+
     crud.openEdit(bag, {
-      bagName: bag.bagName,
+      bagName: bag.bagName || "",
       targetBundleSize: bag.targetBundleSize || 100,
-      isActive: bag.isActive,
+      isActive: bag.isActive !== false,
       items: existingItems,
     });
   };
 
-  const handleItemImageChange = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
+  // ------------------------------- Media Handlers ------------------------------------
+  const handleDealerTorsoBagFileChange = useCallback(
+    async (e) => {
+      let skippedCount = 0;
 
-    let tempTotal = currentTotal;
-    let skippedCount = 0;
+      const items = await onFileChange(e, {
+        mapFile: (url) => {
+          if (currentTotal + 1 > adminTarget) {
+            skippedCount++;
+            return null;
+          }
+          return {
+            url,
+            quantity: 1,
+            image: { url },
+          };
+        },
+      });
 
-    files.forEach((file) => {
-      if (tempTotal + 1 > adminTarget) {
-        skippedCount++;
-        return;
+      const validItems = (items || []).filter(Boolean);
+
+      if (skippedCount > 0) {
+        showTorsoAllocationWarning(
+          skippedCount,
+          adminTarget,
+          targetSize,
+          miscQuantity,
+        );
       }
 
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error(`Image "${file.name}" is too large`, {
-          description: "Images must be less than 5MB.",
-        });
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const newItem = {
-          url: reader.result,
-          quantity: 1,
-          image: { url: reader.result },
-        };
-        setItemPreviews((prev) => [...prev, newItem]);
+      if (validItems.length > 0) {
         crud.setFormData((prev) => ({
           ...prev,
-          items: [...prev.items, newItem],
+          items: [...prev.items, ...validItems],
         }));
-      };
-      reader.readAsDataURL(file);
-      tempTotal += 1;
-    });
+      }
+    },
+    [onFileChange, currentTotal, adminTarget, targetSize, miscQuantity],
+  );
 
-    if (skippedCount > 0) {
-      toast.warning(`Limit reached: ${skippedCount} designs were skipped`, {
-        description: `Admin allocation target is ${adminTarget} (${targetSize} minus ${miscQuantity} miscellaneous).`,
-      });
-    }
+  const handleDealerTorsoBagFileRemove = useCallback(
+    (index) => {
+      onFileRemove(index);
+      crud.setFormData((prev) => ({
+        ...prev,
+        items: prev.items.filter((_, i) => i !== index),
+      }));
+    },
+    [onFileRemove],
+  );
+
+  // ------------------------------- Submit Handler ------------------------------------
+  const handleSubmit = async () => {
+    if (
+      !validateDealerTorsoBag(
+        crud.formData,
+        adminTarget,
+        targetSize,
+        miscQuantity,
+      )
+    )
+      return;
+
+    const items = crud.formData.items.map((item) => ({
+      image:
+        typeof item?.url === "string" && item.url.startsWith("data:")
+          ? item.url
+          : item?.image,
+      quantity:
+        item.quantity === "" || item.quantity == null
+          ? 1
+          : Number(item.quantity),
+    }));
+
+    const payload = {
+      bagName: sanitizeString(crud.formData.bagName),
+      targetBundleSize: targetSize,
+      isActive: crud.formData.isActive,
+      items,
+    };
+
+    await crud.submitForm(payload);
   };
 
-  const handleUpdateItemQuantity = (index, value) => {
-    const cleaned = value.toString().replace(/[^0-9]/g, "");
+  // ------------------------------- Handlers ------------------------------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
 
-    // Empty input — allow temporarily, will default to 1 on submit
-    if (cleaned === "") {
-      const updateMap = (items) =>
-        items.map((item, i) =>
-          i === index ? { ...item, quantity: "" } : item,
-        );
-      setItemPreviews((prev) => updateMap(prev));
-      crud.setFormData((prev) => ({ ...prev, items: updateMap(prev.items) }));
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleUpdateItemQuantity = (index) => (e) => {
+    const value = e?.target ? e.target.value : e;
+    const strValue = value.toString();
+
+    // Allow empty string to let users clear the input
+    if (strValue === "") {
+      crud.setFormData((prev) => {
+        const newItems = [...prev.items];
+        newItems[index] = { ...newItems[index], quantity: "" };
+        return { ...prev, items: newItems };
+      });
       return;
     }
+
+    const cleaned = strValue.replace(/[^0-9]/g, "");
+    if (!cleaned) return;
 
     const newValue = parseInt(cleaned, 10);
     if (newValue < 1) return;
 
-    // Total allocation check
     const otherItemsTotal = crud.formData.items.reduce(
       (acc, item, i) =>
-        i === index ? acc : acc + (Number(item.quantity) || 1),
+        i === index ? acc : acc + (Number(item.quantity) || 0),
       0,
     );
 
-    if (otherItemsTotal + newValue > adminTarget) {
-      toast.error("Allocation limit reached", {
-        description: `Total quantity cannot exceed ${adminTarget}.`,
-      });
+    if (!validateTorsoAllocation(otherItemsTotal, newValue, adminTarget))
       return;
-    }
 
-    const updateMap = (items) =>
-      items.map((item, i) =>
-        i === index ? { ...item, quantity: newValue } : item,
-      );
-
-    setItemPreviews((prev) => updateMap(prev));
-    crud.setFormData((prev) => ({ ...prev, items: updateMap(prev.items) }));
-  };
-
-  const handleRemoveItem = (index) => {
-    setItemPreviews((prev) => prev.filter((_, i) => i !== index));
-    crud.setFormData((prev) => ({
-      ...prev,
-      items: prev.items.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!crud.formData.bagName.trim()) {
-      toast.error("Bag name is required");
-      return;
-    }
-
-    if (crud.formData.items.length === 0) {
-      toast.error("Items are required", {
-        description: "Please add at least one torso design.",
-      });
-      return;
-    }
-
-    // Validate total matches admin target
-    const submitTotal = crud.formData.items.reduce(
-      (acc, item) => acc + (Number(item.quantity) || 1),
-      0,
-    );
-
-    if (submitTotal !== adminTarget) {
-      toast.error("Quantity mismatch", {
-        description: `Total must equal ${adminTarget} (${targetSize} minus ${miscQuantity} misc). Current: ${submitTotal}.`,
-      });
-      return;
-    }
-
-    const items = crud.formData.items.map((item) => ({
-      image: typeof item?.url === "string" && item.url.startsWith("data:")
-        ? item.url
-        : item?.image,
-      quantity: item.quantity === "" ? 1 : Number(item.quantity),
-    }));
-
-    await crud.submitForm({
-      bagName: crud.formData.bagName.trim(),
-      targetBundleSize: targetSize,
-      isActive: crud.formData.isActive,
-      items,
+    crud.setFormData((prev) => {
+      const newItems = [...prev.items];
+      newItems[index] = { ...newItems[index], quantity: newValue };
+      return { ...prev, items: newItems };
     });
   };
 
+  // ------------------------------- Return ------------------------------------
   return {
-    // State
-    dialogOpen: crud.dialogOpen,
-    deleteDialogOpen: crud.deleteDialogOpen,
-    selectedBag: crud.selectedItem,
-    dialogMode: crud.dialogMode,
-    formData: crud.formData,
-    itemPreviews,
-    fileInputRef,
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search,
+    ...crud,
+    filePreview,
     bags,
     totalItems,
     totalPages,
     columns,
+    bundles,
     targetBundleSizeOptions,
     adminTarget,
     miscQuantity,
     currentTotal,
     isLoadingBags,
-    isCreating,
-    isUpdating,
+    isLoadingBundles,
+    isSubmitting,
     isDeleting,
-
-    // Handlers
-    handleDialogClose: crud.handleDialogClose,
-    setDeleteDialogOpen: crud.setDeleteDialogOpen,
-    setFormData: crud.setFormData,
-    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete: crud.handleDelete,
-    handleItemImageChange,
+    handleDealerTorsoBagFileChange,
+    handleDealerTorsoBagFileRemove,
     handleUpdateItemQuantity,
-    handleRemoveItem,
     handleSubmit,
-    handleConfirmDelete: crud.handleConfirmDelete,
-    handlePageChange: crud.handlePageChange,
-    handleLimitChange: crud.handleLimitChange,
-    handleSearchChange: crud.handleSearchChange,
+    handleChange,
+    handleValueChange,
   };
 };
 

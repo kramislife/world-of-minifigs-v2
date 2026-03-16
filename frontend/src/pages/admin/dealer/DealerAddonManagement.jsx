@@ -1,76 +1,96 @@
 import React from "react";
-import { Plus, Upload, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Search, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
-import DeleteDialog from "@/components/table/DeleteDialog";
+import ColorSwatch from "@/components/shared/ColorSwatch";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+  StatusCell,
+} from "@/components/table/BaseColumn";
+import {
+  AdminFormInput,
+  AdminFormTextarea,
+  AdminFormSelect,
+} from "@/components/shared/AdminFormInput";
+import QuantityControl from "@/components/shared/QuantityControl";
+import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
+import DeleteDialog from "@/components/table/DeleteDialog";
+import { formatCurrency, display } from "@/utils/formatting";
+import CommonImage from "@/components/shared/CommonImage";
 import useDealerAddonManagement from "@/hooks/admin/useDealerAddonManagement";
 
 const DealerAddonManagement = () => {
   const {
-    search,
-    limit,
-    page,
     dialogOpen,
     deleteDialogOpen,
+    selectedItem,
     dialogMode,
-    selectedAddon,
-    imagePreviews,
     formData,
+    page,
+    limit,
+    search,
     addons,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     columns,
+    sortedInventoryItems,
+    bundleItems,
+    bundleDisplayItems,
+    selectedBundleItemIds,
+    isBundleType,
+    isUpgradeType,
     isLoadingAddons,
-    isCreating,
-    isUpdating,
+    isLoadingInventory,
+    isSubmitting,
     isDeleting,
-    fileInputRef,
-    colors,
+    handleChange,
+    handleValueChange,
+    itemSearch,
+    handleItemSearchChange,
+    handleToggleBundleItem,
+    handleRemoveBundleItem,
+    handleBundleItemQuantityValue,
+    handleSubmit,
     handleDialogClose,
-    setDeleteDialogOpen,
-    setFormData,
     handleAdd,
     handleEdit,
     handleDelete,
-    handleImageChange,
-    handleUpdateImageMetadata,
-    handleRemoveImage,
-    handleSubmit,
     handleConfirmDelete,
     handlePageChange,
     handleLimitChange,
     handleSearchChange,
+    setDeleteDialogOpen,
   } = useDealerAddonManagement();
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Dealer Add-ons</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            Manage optional premium items for bulk orders
-          </p>
-        </div>
-        <Button variant="accent" onClick={handleAdd}>
-          <Plus className="size-4 mr-2" />
-          Add Add-on
-        </Button>
-      </div>
+      {/* Admin Page Header */}
+      <AdminManagementHeader
+        title="Dealer Add-on Management"
+        description="Manage dealer add-ons — bundles from inventory or service upgrades"
+        actionLabel="Add Add-on"
+        onAction={handleAdd}
+      />
 
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search add-ons..."
         searchValue={search}
@@ -81,33 +101,45 @@ const DealerAddonManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={addons}
         isLoading={isLoadingAddons}
         renderRow={(addon) => (
           <>
-            <TableCell maxWidth="200px">{addon.addonName}</TableCell>
-            <TableCell maxWidth="300px">{addon.description || "-"}</TableCell>
-            <TableCell className="text-success dark:text-accent font-bold">
-              {!addon.price || Number(addon.price) === 0
-                ? "Free"
-                : `$${addon.price?.toFixed(2)}`}
-            </TableCell>
+            {/* Add-on Name */}
+            <TableCell maxWidth="200px">{display(addon.addonName)}</TableCell>
+
+            {/* Type */}
+            <TableCell className="capitalize">{addon.addonType}</TableCell>
+
+            {/* Description */}
+            <TableCell maxWidth="300px">{display(addon.description)}</TableCell>
+
+            {/* Price */}
             <TableCell>
-              <Badge variant={addon.isActive ? "success" : "destructive"}>
-                {addon.isActive ? "Active" : "Inactive"}
-              </Badge>
+              {addon.addonType === "bundle" ? (
+                <span>Per Item Picking</span>
+              ) : addon.price === 0 ? (
+                "Free"
+              ) : (
+                formatCurrency(addon.price)
+              )}
             </TableCell>
-            <TableCell>
-              {addon.createdAt
-                ? new Date(addon.createdAt).toLocaleString()
-                : "-"}
-            </TableCell>
-            <TableCell>
-              {addon.updatedAt
-                ? new Date(addon.updatedAt).toLocaleString()
-                : "-"}
-            </TableCell>
+
+            {/* Status */}
+            <StatusCell isActive={addon.isActive} />
+
+            {/* Timestamps */}
+            <TimestampCells
+              createdAt={addon.createdAt}
+              updatedAt={addon.updatedAt}
+            />
+
+            {/* Actions */}
             <ActionsColumn
               onEdit={() => handleEdit(addon)}
               onDelete={() => handleDelete(addon)}
@@ -116,214 +148,251 @@ const DealerAddonManagement = () => {
         )}
       />
 
+      {/* Add/Update Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Add-on" : "Add New Add-on"}
-        description={
-          dialogMode === "edit"
-            ? "Update the add-on details."
-            : "Add a new premium item for dealers."
-        }
+        entityName="Add-on"
         onSubmit={handleSubmit}
-        isLoading={isCreating || isUpdating}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Add-on" : "Create Add-on"
-        }
-        className="sm:max-w-5xl"
+        isLoading={isSubmitting}
+        className="sm:max-w-2xl"
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {/* Add-on Name */}
-            <div className="space-y-2">
-              <Label htmlFor="addonName">Add-on</Label>
-              <Input
-                id="addonName"
-                placeholder="e.g., Premium Chrome Pack"
-                value={formData.addonName}
-                onChange={(e) =>
-                  setFormData({ ...formData, addonName: e.target.value })
-                }
-                required
-              />
-            </div>
+            <AdminFormInput
+              label="Add-on Name"
+              name="addonName"
+              placeholder="Accessories, Animal Pieces"
+              value={formData.addonName}
+              onChange={handleChange}
+              disabled={isSubmitting}
+              required
+            />
 
-            {/* Price */}
-            <div className="space-y-2">
-              <Label htmlFor="price">Price</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                placeholder="20.00"
-                value={formData.price}
-                onChange={(e) =>
-                  setFormData({ ...formData, price: e.target.value })
-                }
-              />
-            </div>
+            {/* Add-on Type Select */}
+            <AdminFormSelect
+              label="Type"
+              name="addonType"
+              value={formData.addonType}
+              onValueChange={handleValueChange("addonType")}
+              disabled={isSubmitting || dialogMode === "edit"}
+              options={[
+                { value: "bundle", label: "Bundle" },
+                { value: "upgrade", label: "Upgrade" },
+              ]}
+              placeholder="Select type"
+            />
           </div>
 
           {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="Describe what's included in this addon..."
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-            />
-          </div>
+          <AdminFormTextarea
+            label="Description"
+            name="description"
+            placeholder="Enter add-on description..."
+            value={formData.description}
+            onChange={handleChange}
+            disabled={isSubmitting}
+          />
 
-          {/* Image Attachment */}
-          <div className="space-y-3">
-            <Label>Image Attachment</Label>
-            <div
-              className={`grid gap-2 ${
-                imagePreviews.length > 0
-                  ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-                  : "grid-cols-1"
-              }`}
-            >
-              {imagePreviews.map((preview, index) => (
-                <div
-                  key={index}
-                  className="relative group border rounded-lg overflow-hidden"
-                >
-                  <div className="aspect-square relative border-b">
-                    <img
-                      src={preview.url}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
+          {isBundleType && (
+            <div className="space-y-4">
+              {/* Select Items */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-medium">Select Items</h4>
+                  {selectedBundleItemIds.size > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {selectedBundleItemIds.size} selected
+                    </span>
+                  )}
+                </div>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    asChild
+                    className="w-full"
+                    disabled={isSubmitting || isLoadingInventory}
+                  >
                     <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2"
-                      onClick={() => handleRemoveImage(index)}
-                      disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                      variant="outline"
+                      className="w-full justify-between shadow-none hover:bg-input/50"
                     >
-                      <X className="size-4" />
+                      Add-ons
                     </Button>
-                  </div>
+                  </DropdownMenuTrigger>
 
-                  {/* Metadata Overlay/Inputs */}
-                  <div className="p-2 space-y-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs font-semibold">Item Name</Label>
-                      <Input
-                        placeholder="e.g. Chrome Wings"
-                        className="h-9 text-xs"
-                        value={preview.itemName}
-                        onChange={(e) =>
-                          handleUpdateImageMetadata(
-                            index,
-                            "itemName",
-                            e.target.value,
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="space-y-1 col-span-1">
-                        <Label className="text-xs font-semibold">Price</Label>
+                  <DropdownMenuContent>
+                    <DropdownMenuLabel className="border-b">
+                      <div className="flex items-center gap-2">
+                        <Search className="size-4 text-muted-foreground shrink-0" />
                         <Input
-                          type="number"
-                          placeholder="0.00"
-                          className="h-9 text-xs w-full"
-                          value={preview.itemPrice}
-                          onChange={(e) =>
-                            handleUpdateImageMetadata(
-                              index,
-                              "itemPrice",
-                              e.target.value,
-                            )
-                          }
+                          type="text"
+                          placeholder="Search items..."
+                          value={itemSearch}
+                          onChange={handleItemSearchChange}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          className="h-8 border-0 shadow-none px-2 bg-transparent focus-visible:ring-0"
+                          disabled={isSubmitting || isLoadingInventory}
                         />
                       </div>
-                      <div className="space-y-1 col-span-2">
-                        <Label className="text-xs font-semibold">Color</Label>
-                        <Select
-                          value={preview.color || ""}
-                          onValueChange={(value) =>
-                            handleUpdateImageMetadata(index, "color", value)
-                          }
-                        >
-                          <SelectTrigger className="w-full text-xs">
-                            <SelectValue placeholder="Select color" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {colors.map((color) => (
-                              <SelectItem
-                                key={color._id || color.id}
-                                value={color._id || color.id}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="size-3 rounded-md shrink-0"
-                                    style={{
-                                      backgroundColor: color.hexCode || "#000",
-                                    }}
-                                  />
-                                  <span>{color.colorName}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    </DropdownMenuLabel>
+
+                    <div className="max-h-60 overflow-y-auto p-1">
+                      {isLoadingInventory ? (
+                        <div className="p-2 text-sm text-center text-muted-foreground">
+                          Loading...
+                        </div>
+                      ) : sortedInventoryItems.length === 0 ? (
+                        <div className="p-2 text-sm text-center text-muted-foreground">
+                          No items found
+                        </div>
+                      ) : (
+                        sortedInventoryItems.map((inv) => (
+                          <DropdownMenuCheckboxItem
+                            key={inv._id}
+                            checked={selectedBundleItemIds.has(inv._id)}
+                            onCheckedChange={() =>
+                              handleToggleBundleItem(inv._id, inv)
+                            }
+                            onSelect={(e) => e.preventDefault()}
+                          >
+                            <div className="flex items-center justify-between gap-4 w-full">
+                              <ColorSwatch
+                                color={inv.colorId?.hexCode}
+                                label={inv.minifigName}
+                              />
+                              {(inv.stock === 0 || !inv.stock) && (
+                                <Badge
+                                  variant="destructive"
+                                  className="uppercase text-[8px] px-1 leading-none"
+                                >
+                                  Out of Stock
+                                </Badge>
+                              )}
+                            </div>
+                          </DropdownMenuCheckboxItem>
+                        ))
+                      )}
                     </div>
-                  </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Adjust Quantities */}
+              {bundleItems.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Quantity per Bag</Label>
+
+                  {bundleDisplayItems.map((item) => {
+                    return (
+                      <div
+                        key={item.inventoryItemId}
+                        className="flex items-center gap-3 p-2 rounded-md border"
+                      >
+                        {/* Image */}
+                        <CommonImage
+                          src={item.inventory.image?.url}
+                          alt={item.inventory.minifigName}
+                          className="w-20 aspect-4/3"
+                        />
+
+                        {/* Name + Color & Price */}
+                        <div className="flex flex-col min-w-0 flex-1 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold line-clamp-1">
+                              {item.inventory.minifigName}
+                            </span>
+                            {(Number(item.inventory.stock || 0) <
+                              Number(item.quantityPerBag || 1) ||
+                              !item.inventory.stock) && (
+                              <Badge
+                                variant="destructive"
+                                className="uppercase text-[9px] px-1.5 py-0"
+                              >
+                                Out of Stock
+                              </Badge>
+                            )}
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {item.inventory.colorId?.colorName || "—"}
+                            {" · "}
+                            <span className="text-success dark:text-accent font-bold">
+                              {formatCurrency(item.inventory.price)}
+                            </span>
+                          </span>
+                          <span className="text-xs font-semibold">
+                            Price per Bag:{" "}
+                            <span className="text-success dark:text-accent font-semibold">
+                              {formatCurrency(item.pricePerBag)}
+                            </span>
+                          </span>
+                        </div>
+
+                        {/* Quantity controls */}
+                        <QuantityControl
+                          value={item.quantityPerBag}
+                          onChange={(value) =>
+                            handleBundleItemQuantityValue(
+                              item.inventoryItemId,
+                              value,
+                            )
+                          }
+                          min={1}
+                          max={Number(item.inventory.stock || 0)}
+                          allowInput
+                        />
+
+                        {/* Remove */}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0 size-8 text-destructive hover:text-destructive"
+                          onClick={() =>
+                            handleRemoveBundleItem(item.inventoryItemId)
+                          }
+                          disabled={isSubmitting}
+                        >
+                          <X className="size-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-
-              <Label
-                htmlFor="addon-images"
-                className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors flex flex-col items-center justify-center min-h-[150px]"
-              >
-                <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground mb-1">
-                  Click to upload
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  PNG, JPG, WEBP (5MB max)
-                </p>
-                <Input
-                  ref={fileInputRef}
-                  id="addon-images"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageChange}
-                  disabled={isUpdating || isCreating}
-                  className="hidden"
-                />
-              </Label>
+              )}
             </div>
-          </div>
+          )}
 
-          {/* Status Checkbox */}
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="addonActive"
-              checked={formData.isActive}
-              onCheckedChange={(checked) =>
-                setFormData({ ...formData, isActive: !!checked })
-              }
+          {/* Upgrade-specific: Manual price */}
+          {isUpgradeType && (
+            <AdminFormInput
+              label="Price"
+              name="price"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={formData.price}
+              onChange={handleChange}
+              disabled={isSubmitting}
             />
-            <Label htmlFor="addonActive">Available to Dealers</Label>
-          </div>
+          )}
+
+          {/* Visibility */}
+          <VisibilitySwitch
+            checked={formData.isActive}
+            onChange={handleValueChange("isActive")}
+            disabled={isSubmitting}
+          />
         </div>
       </AddUpdateItemDialog>
 
+      {/* Delete Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedAddon?.addonName || ""}
+        itemName={display(selectedItem?.addonName)}
         title="Delete Add-on"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

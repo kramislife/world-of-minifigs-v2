@@ -3,7 +3,6 @@ import SearchBar from "@/components/table/SearchBar";
 import ShowEntries from "@/components/table/ShowEntries";
 import Pagination from "@/components/table/Pagination";
 import { TableHeader } from "@/components/table/BaseColumn";
-import useTableLayout from "@/hooks/useTableLayout";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 
 const TableLayout = ({
@@ -20,35 +19,21 @@ const TableLayout = ({
   data = [],
   renderRow,
   isLoading = false,
+  startItem = 0,
+  endItem = 0,
+  onPrevious,
+  onNext,
 }) => {
-  const {
-    search,
-    limit,
-    startItem,
-    endItem,
-    handleSearchChange,
-    handleLimitChange,
-    handlePrevious,
-    handleNext,
-  } = useTableLayout({
-    page,
-    onPageChange,
-    limit: entriesValue,
-    onLimitChange: onEntriesChange,
-    search: searchValue,
-    onSearchChange,
-    totalItems,
-  });
-
   return (
     <div className="space-y-5 pt-5">
-      {/* Table Controls - Top */}
       <div className="flex items-center justify-between">
-        <ShowEntries value={limit} onValueChange={handleLimitChange} />
+        {/* Show entries */}
+        <ShowEntries value={entriesValue} onValueChange={onEntriesChange} />
+        {/* Search bar */}
         <SearchBar
           placeholder={searchPlaceholder}
-          value={search}
-          onChange={handleSearchChange}
+          value={searchValue}
+          onChange={onSearchChange}
         />
       </div>
 
@@ -90,15 +75,15 @@ const TableLayout = ({
         </table>
       </div>
 
-      {/* Table Controls - Bottom */}
+      {/* Pagination - Show N of N to N entries and Previous and Next Button */}
       <Pagination
         currentPage={page}
         totalPages={totalPages}
         totalItems={totalItems}
         startItem={startItem}
         endItem={endItem}
-        onPrevious={() => handlePrevious()}
-        onNext={() => handleNext(totalPages)}
+        onPrevious={onPrevious}
+        onNext={onNext}
       />
     </div>
   );

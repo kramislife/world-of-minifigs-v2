@@ -1,12 +1,14 @@
-import { toast } from "sonner";
+import { useEffect } from "react";
 import {
   useGetRewardAddonsQuery,
   useCreateRewardAddonMutation,
   useUpdateRewardAddonMutation,
   useDeleteRewardAddonMutation,
 } from "@/redux/api/adminApi";
-import useAdminCrud from "@/hooks/admin/useAdminCrud";
 import { extractPaginatedData } from "@/utils/apiHelpers";
+import { cleanFeatures } from "@/utils/formatting";
+import { validateRewardAddon } from "@/utils/validation";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const initialFormData = {
   price: "",
@@ -16,7 +18,18 @@ const initialFormData = {
   features: [""],
 };
 
+const columns = [
+  { key: "duration", label: "Duration" },
+  { key: "quantity", label: "Quantity" },
+  { key: "price", label: "Price monthly" },
+  { key: "isActive", label: "Status" },
+  { key: "createdAt", label: "Created At" },
+  { key: "updatedAt", label: "Updated At" },
+  { key: "actions", label: "Actions" },
+];
+
 const useRewardAddonManagement = () => {
+  // ------------------------------- Mutations ------------------------------------
   const [createAddon, { isLoading: isCreating }] =
     useCreateRewardAddonMutation();
   const [updateAddon, { isLoading: isUpdating }] =
@@ -24,6 +37,7 @@ const useRewardAddonManagement = () => {
   const [deleteAddon, { isLoading: isDeleting }] =
     useDeleteRewardAddonMutation();
 
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createAddon,
@@ -32,8 +46,8 @@ const useRewardAddonManagement = () => {
     entityName: "reward add-on",
   });
 
-  // Fetch data
-  const { data: addonsResponse, isLoading: isLoadingAddons } =
+  // ------------------------------- Fetch ------------------------------------
+  const { data: addonsData, isLoading: isLoadingAddons } =
     useGetRewardAddonsQuery({
       page: crud.page,
       limit: crud.limit,
@@ -44,84 +58,101 @@ const useRewardAddonManagement = () => {
     items: addons,
     totalItems,
     totalPages,
-  } = extractPaginatedData(addonsResponse, "addons");
+  } = extractPaginatedData(addonsData, "addons");
 
-  const columns = [
-    { key: "duration", label: "Duration" },
-    { key: "quantity", label: "Quantity" },
-    { key: "price", label: "Price monthly" },
-    { key: "isActive", label: "Status" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-    { key: "actions", label: "Actions" },
-  ];
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems]);
 
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
+
+  // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (addon) => {
     crud.openEdit(addon, {
-      price: addon.price,
+      price: addon.price || "",
       quantity: addon.quantity || "",
       duration: addon.duration || "",
-      isActive: addon.isActive,
-      features: addon.features?.length > 0 ? addon.features : [""],
+      isActive: addon.isActive !== false,
+      features: addon.features?.length ? addon.features : [""],
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // ------------------------------- Submit Handler ------------------------------------
+  const handleSubmit = async () => {
+    if (!validateRewardAddon(crud.formData)) return;
 
-    if (!crud.formData.quantity) {
-      toast.error("Quantity is required");
-      return;
-    }
-
-    const cleanFeatures = (crud.formData.features || [])
-      .map((f) => (f || "").trim())
-      .filter((f) => f !== "");
-
-    await crud.submitForm({
-      price: crud.formData.price ? Number(crud.formData.price) : undefined,
-      quantity: crud.formData.quantity
-        ? Number(crud.formData.quantity)
-        : undefined,
-      duration: crud.formData.duration
-        ? Number(crud.formData.duration)
-        : undefined,
+    const payload = {
+      ...(crud.formData.price && {
+        price: Number(crud.formData.price),
+      }),
+      ...(crud.formData.quantity && {
+        quantity: Number(crud.formData.quantity),
+      }),
+      ...(crud.formData.duration && {
+        duration: Number(crud.formData.duration),
+      }),
       isActive: crud.formData.isActive,
-      features: cleanFeatures,
+      features: cleanFeatures(crud.formData.features),
+    };
+
+    await crud.submitForm(payload);
+  };
+
+  // ------------------------------- Handlers ------------------------------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleArrayChange = (arrayName, index) => (e) => {
+    const value = e?.target ? e.target.value : e;
+    crud.setFormData((prev) => {
+      const newArray = [...(prev[arrayName] || [])];
+      newArray[index] = value;
+      return { ...prev, [arrayName]: newArray };
     });
   };
 
+  const addArrayItem =
+    (arrayName, defaultValue = "") =>
+    () => {
+      crud.setFormData((prev) => ({
+        ...prev,
+        [arrayName]: [...(prev[arrayName] || []), defaultValue],
+      }));
+    };
+
+  const removeArrayItem = (arrayName, index) => () => {
+    crud.setFormData((prev) => ({
+      ...prev,
+      [arrayName]: (prev[arrayName] || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  // ------------------------------- Return ------------------------------------
   return {
-    // State
-    dialogOpen: crud.dialogOpen,
-    deleteDialogOpen: crud.deleteDialogOpen,
-    selectedAddon: crud.selectedItem,
-    dialogMode: crud.dialogMode,
-    formData: crud.formData,
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search,
+    ...crud,
     addons,
     totalItems,
     totalPages,
     columns,
     isLoadingAddons,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
-
-    // Handlers
-    handleDialogClose: crud.handleDialogClose,
-    setDeleteDialogOpen: crud.setDeleteDialogOpen,
-    setFormData: crud.setFormData,
-    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete: crud.handleDelete,
     handleSubmit,
-    handleConfirmDelete: crud.handleConfirmDelete,
-    handlePageChange: crud.handlePageChange,
-    handleLimitChange: crud.handleLimitChange,
-    handleSearchChange: crud.handleSearchChange,
+    handleChange,
+    handleValueChange,
+    handleArrayChange,
+    addArrayItem,
+    removeArrayItem,
   };
 };
 

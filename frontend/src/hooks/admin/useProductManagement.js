@@ -1,5 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from "react";
-import { toast } from "sonner";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   useGetProductsQuery,
   useCreateProductMutation,
@@ -12,8 +11,16 @@ import {
   useGetColorsQuery,
   useGetSkillLevelsQuery,
 } from "@/redux/api/adminApi";
-import useAdminCrud from "@/hooks/admin/useAdminCrud";
 import { extractPaginatedData } from "@/utils/apiHelpers";
+import { sanitizeString, sortByName } from "@/utils/formatting";
+import { validateProduct, handleFileReadError } from "@/utils/validation";
+import useMediaPreview from "@/hooks/admin/useMediaPreview";
+import { validateFile, readFileAsDataURL } from "@/utils/fileHelpers";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
+
+/* -------------------------------------------------------------------------- */
+/*                                Initial Data                                */
+/* -------------------------------------------------------------------------- */
 
 const initialFormData = {
   productName: "",
@@ -49,25 +56,46 @@ const defaultVariant = {
   imagePreview: "",
 };
 
+const columns = [
+  { key: "productName", label: "Product Name" },
+  { key: "productType", label: "Type" },
+  { key: "price", label: "Price" },
+  { key: "discount", label: "Discount" },
+  { key: "discountPrice", label: "Discount Price" },
+  { key: "isActive", label: "Status" },
+  { key: "createdAt", label: "Created At" },
+  { key: "updatedAt", label: "Updated At" },
+  { key: "actions", label: "Actions" },
+];
+
 const useProductManagement = () => {
   const [productType, setProductType] = useState("standalone");
   const [variants, setVariants] = useState([{ ...defaultVariant }]);
-  const [imagePreviews, setImagePreviews] = useState([]);
   const [imagesChanged, setImagesChanged] = useState(false);
-  const fileInputRef = useRef(null);
+
+  // ------------------------------- Media ------------------------------------
+  const {
+    filePreview,
+    setFilePreview,
+    fileInputRef,
+    resetFile,
+    handleFileChange,
+    handleRemoveFile,
+  } = useMediaPreview({ multiple: true, maxFiles: 10 });
 
   const resetProductState = useCallback(() => {
     setProductType("standalone");
     setVariants([{ ...defaultVariant }]);
-    setImagePreviews([]);
+    resetFile();
     setImagesChanged(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }, []);
+  }, [resetFile]);
 
+  // ------------------------------- Mutations ------------------------------------
   const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
   const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
   const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation();
 
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createProduct,
@@ -77,19 +105,25 @@ const useProductManagement = () => {
     onReset: resetProductState,
   });
 
-  // Fetch data
+  // ------------------------------- Fetch ------------------------------------
   const { data: productsData, isLoading: isLoadingProducts } =
     useGetProductsQuery({
       page: crud.page,
       limit: crud.limit,
       search: crud.search || undefined,
     });
-  const { data: categoriesData } = useGetCategoriesQuery();
-  const { data: subCategoriesData } = useGetSubCategoriesQuery();
-  const { data: collectionsData } = useGetCollectionsQuery();
-  const { data: subCollectionsData } = useGetSubCollectionsQuery();
-  const { data: colorsData } = useGetColorsQuery();
-  const { data: skillLevelsData } = useGetSkillLevelsQuery();
+
+  const { data: categoriesData, isLoading: isLoadingCategories } =
+    useGetCategoriesQuery();
+  const { data: subCategoriesData, isLoading: isLoadingSubCategories } =
+    useGetSubCategoriesQuery();
+  const { data: collectionsData, isLoading: isLoadingCollections } =
+    useGetCollectionsQuery();
+  const { data: subCollectionsData, isLoading: isLoadingSubCollections } =
+    useGetSubCollectionsQuery();
+  const { data: colorsData, isLoading: isLoadingColors } = useGetColorsQuery();
+  const { data: skillLevelsData, isLoading: isLoadingSkillLevels } =
+    useGetSkillLevelsQuery();
 
   const {
     items: products,
@@ -97,20 +131,40 @@ const useProductManagement = () => {
     totalPages,
   } = extractPaginatedData(productsData, "products");
 
-  // Option lists
-  const categories = categoriesData?.categories || [];
-  const subCategories = subCategoriesData?.subCategories || [];
-  const collections = collectionsData?.collections || [];
-  const subCollections = subCollectionsData?.subCollections || [];
-  const colors = useMemo(() => {
-    const colorsList = colorsData?.colors || [];
-    return [...colorsList].sort((a, b) =>
-      (a.colorName || "").localeCompare(b.colorName || ""),
-    );
-  }, [colorsData]);
-  const skillLevels = skillLevelsData?.skillLevels || [];
+  const categories = useMemo(
+    () => sortByName(categoriesData?.categories, "categoryName"),
+    [categoriesData],
+  );
 
-  // Group sub-categories by category
+  const subCategories = useMemo(
+    () => sortByName(subCategoriesData?.subCategories, "subCategoryName"),
+    [subCategoriesData],
+  );
+
+  const collections = useMemo(
+    () => sortByName(collectionsData?.collections, "collectionName"),
+    [collectionsData],
+  );
+
+  const subCollections = useMemo(
+    () => sortByName(subCollectionsData?.subCollections, "subCollectionName"),
+    [subCollectionsData],
+  );
+
+  const skillLevels = useMemo(
+    () => sortByName(skillLevelsData?.skillLevels, "skillLevelName"),
+    [skillLevelsData],
+  );
+
+  const colors = useMemo(
+    () => sortByName(colorsData?.colors, "colorName"),
+    [colorsData],
+  );
+
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems]);
+
   const categoriesWithSubs = useMemo(() => {
     return categories.map((category) => {
       const categoryId = category._id || category.id;
@@ -121,7 +175,6 @@ const useProductManagement = () => {
     });
   }, [categories, subCategories]);
 
-  // Group sub-collections by collection
   const collectionsWithSubs = useMemo(() => {
     return collections.map((collection) => {
       const collectionId = collection._id || collection.id;
@@ -132,19 +185,9 @@ const useProductManagement = () => {
     });
   }, [collections, subCollections]);
 
-  const columns = [
-    { key: "productName", label: "Product Name" },
-    { key: "productType", label: "Type" },
-    { key: "price", label: "Price" },
-    { key: "discount", label: "Discount" },
-    { key: "discountPrice", label: "Discount Price" },
-    { key: "isActive", label: "Status" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-    { key: "actions", label: "Actions" },
-  ];
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
-  // Form handlers
+  // ------------------------------- Handlers ------------------------------------
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     crud.setFormData((prev) => ({
@@ -153,161 +196,148 @@ const useProductManagement = () => {
     }));
   };
 
-  const handleSelectChange = (name, value) => {
-    crud.setFormData((prev) => ({ ...prev, [name]: value || "" }));
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleMultiSelectChange = (name, value) => {
+  const handleMultiSelectChange = (name) => (value) => {
     crud.setFormData((prev) => {
-      const currentValues = prev[name] || [];
-      const isSelected = currentValues.includes(value);
+      const current = prev[name] || [];
+      const exists = current.includes(value);
       return {
         ...prev,
-        [name]: isSelected
-          ? currentValues.filter((id) => id !== value)
-          : [...currentValues, value],
+        [name]: exists
+          ? current.filter((id) => id !== value)
+          : [...current, value],
       };
     });
   };
 
-  // Image handlers
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    const currentImageCount = imagePreviews.length;
-    const maxImages = 10;
-
-    if (currentImageCount + files.length > maxImages) {
-      const allowedCount = maxImages - currentImageCount;
-      toast.error("Too many images", {
-        description: `You can only add ${allowedCount} more image${
-          allowedCount !== 1 ? "s" : ""
-        }. Maximum ${maxImages} images allowed.`,
-      });
-      e.target.value = "";
-      return;
-    }
-
-    const newPreviews = [];
-    const newImages = [];
-
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        newPreviews.push(reader.result);
-        newImages.push(reader.result);
-
-        if (newPreviews.length === files.length) {
-          setImagePreviews((prev) => [...prev, ...newPreviews]);
-          crud.setFormData((prev) => ({
-            ...prev,
-            images: [...prev.images, ...newImages],
-          }));
-          setImagesChanged(true);
-        }
-      };
-      reader.readAsDataURL(file);
+  const handleArrayChange = (arrayName, index) => (e) => {
+    const value = e?.target ? e.target.value : e;
+    crud.setFormData((prev) => {
+      const newArray = [...(prev[arrayName] || [])];
+      newArray[index] = value;
+      return { ...prev, [arrayName]: newArray };
     });
   };
 
-  const handleRemoveImage = (index) => {
-    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  const addArrayItem =
+    (arrayName, defaultValue = "") =>
+    () => {
+      crud.setFormData((prev) => ({
+        ...prev,
+        [arrayName]: [...(prev[arrayName] || []), defaultValue],
+      }));
+    };
+
+  const removeArrayItem = (arrayName, index) => () => {
     crud.setFormData((prev) => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index),
+      [arrayName]: (prev[arrayName] || []).filter((_, i) => i !== index),
     }));
-    setImagesChanged(true);
   };
 
-  // Variant handlers
+  const handleImageChange = async (e) => {
+    const dataUrls = await handleFileChange(e, {
+      mapFile: (url) => ({ url }),
+    });
+    if (dataUrls?.length) {
+      crud.setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, ...dataUrls.map((item) => item.url)],
+      }));
+      setImagesChanged(true);
+    }
+  };
+
+  const handleRemoveImage = useCallback(
+    (index) => {
+      handleRemoveFile(index);
+      crud.setFormData((prev) => ({
+        ...prev,
+        images: prev.images.filter((_, i) => i !== index),
+      }));
+      setImagesChanged(true);
+    },
+    [handleRemoveFile, crud.setFormData],
+  );
+
   const handleAddVariant = () => {
     setVariants((prev) => [...prev, { ...defaultVariant }]);
   };
 
-  const handleRemoveVariant = (index) => {
-    if (variants.length > 1) {
-      setVariants((prev) => prev.filter((_, i) => i !== index));
-    } else {
-      toast.error("At least one variant is required");
+  const handleRemoveVariant = useCallback(
+    (index) => {
+      if (variants.length > 1) {
+        setVariants((prev) => prev.filter((_, i) => i !== index));
+      }
+    },
+    [variants.length],
+  );
+
+  const handleVariantChange = (index, field) => (e) => {
+    const value = e?.target ? e.target.value : e;
+    setVariants((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
+  };
+
+  const handleVariantImageChange = (variantIndex) => async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !validateFile(file)) return;
+
+    try {
+      const dataUrl = await readFileAsDataURL(file);
+      setVariants((prev) => {
+        const copy = [...prev];
+        copy[variantIndex] = {
+          ...copy[variantIndex],
+          imagePreview: dataUrl,
+          image: dataUrl,
+        };
+        return copy;
+      });
+    } catch {
+      handleFileReadError();
     }
   };
 
-  const handleVariantChange = (index, field, value) => {
+  const handleRemoveVariantImage = useCallback((variantIndex) => {
     setVariants((prev) => {
-      const newVariants = [...prev];
-      newVariants[index] = { ...newVariants[index], [field]: value };
-      return newVariants;
-    });
-  };
-
-  const handleVariantImageChange = (variantIndex, e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setVariants((prev) => {
-        const newVariants = [...prev];
-        newVariants[variantIndex] = {
-          ...newVariants[variantIndex],
-          imagePreview: reader.result,
-          image: reader.result,
-        };
-        return newVariants;
-      });
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveVariantImage = (variantIndex) => {
-    setVariants((prev) => {
-      const newVariants = [...prev];
-      newVariants[variantIndex] = {
-        ...newVariants[variantIndex],
+      const copy = [...prev];
+      copy[variantIndex] = {
+        ...copy[variantIndex],
         imagePreview: "",
         image: "",
       };
-      return newVariants;
+      return copy;
     });
-  };
+  }, []);
 
-  // Edit handler (complex — sets product type, variants, images)
+  // ------------------------------- Edit Handler ------------------------------------
+
   const handleEdit = (product) => {
-    const existingDescriptions =
-      product.descriptions && product.descriptions.length > 0
-        ? product.descriptions.filter((d) => d)
-        : [""];
+    const existingDescriptions = product.descriptions?.filter(Boolean) || [""];
 
     const hasSecondaryColor = !!(
       product.secondaryColorId?._id || product.secondaryColorId
     );
 
     const mappedForm = {
+      ...initialFormData,
       productName: product.productName || "",
       partId: product.partId || "",
       itemId: product.itemId || "",
       price: product.price || "",
       discount: product.discount || "",
-      descriptions:
-        existingDescriptions.length > 0 ? existingDescriptions : [""],
-      images: [],
-      categoryIds:
-        product.categoryIds?.map((c) => c._id || c) ||
-        product.categoryIds ||
-        [],
-      subCategoryIds:
-        product.subCategoryIds?.map((sc) => sc._id || sc) ||
-        product.subCategoryIds ||
-        [],
-      collectionIds:
-        product.collectionIds?.map((c) => c._id || c) ||
-        product.collectionIds ||
-        [],
-      subCollectionIds:
-        product.subCollectionIds?.map((sc) => sc._id || sc) ||
-        product.subCollectionIds ||
-        [],
+      descriptions: existingDescriptions,
+      categoryIds: product.categoryIds?.map((c) => c._id || c) || [],
+      subCategoryIds: product.subCategoryIds?.map((c) => c._id || c) || [],
+      collectionIds: product.collectionIds?.map((c) => c._id || c) || [],
+      subCollectionIds: product.subCollectionIds?.map((c) => c._id || c) || [],
       pieceCount: product.pieceCount || "",
       length: product.length || "",
       width: product.width || "",
@@ -316,50 +346,47 @@ const useProductManagement = () => {
       secondaryColorId:
         product.secondaryColorId?._id || product.secondaryColorId || "",
       showSecondaryColor: hasSecondaryColor,
-      skillLevelIds:
-        product.skillLevelIds?.map((sl) => sl._id || sl) ||
-        product.skillLevelIds ||
-        [],
+      skillLevelIds: product.skillLevelIds?.map((sl) => sl._id || sl) || [],
       stock: product.stock || "",
       isActive: product.isActive !== undefined ? product.isActive : true,
     };
 
     crud.openEdit(product, mappedForm);
 
-    // Set images
-    const existingImages = product.images?.map((img) => img.url) || [];
-    setImagePreviews(existingImages);
+    const existingImages =
+      product.images?.map((img) => ({ url: img.url })) || [];
+    setFilePreview(existingImages);
+
     const existingImageObjects =
       product.images?.map((img) => ({
         publicId: img.publicId,
         url: img.url,
       })) || [];
-    crud.setFormData((prev) => ({ ...prev, images: existingImageObjects }));
+
+    crud.setFormData((prev) => ({
+      ...prev,
+      images: existingImageObjects,
+    }));
+
     setImagesChanged(false);
 
-    // Set variants / product type
-    if (product.variants && product.variants.length > 0) {
+    if (product.variants?.length) {
       setProductType("variant");
-      crud.setFormData((prev) => ({ ...prev, partId: product.partId || "" }));
-      const variantData = product.variants.map((variant) => {
-        const variantHasSecondary = !!(
-          variant.secondaryColorId?._id || variant.secondaryColorId
-        );
-        return {
+      setVariants(
+        product.variants.map((variant) => ({
           colorId: variant.colorId?._id || variant.colorId || "",
           secondaryColorId:
             variant.secondaryColorId?._id || variant.secondaryColorId || "",
-          showSecondaryColor: variantHasSecondary,
+          showSecondaryColor: !!(
+            variant.secondaryColorId?._id || variant.secondaryColorId
+          ),
           itemId: variant.itemId || "",
           stock: variant.stock || "",
           image: variant.image
             ? { publicId: variant.image.publicId, url: variant.image.url }
             : "",
           imagePreview: variant.image?.url || "",
-        };
-      });
-      setVariants(
-        variantData.length > 0 ? variantData : [{ ...defaultVariant }],
+        })),
       );
     } else {
       setProductType("standalone");
@@ -367,122 +394,96 @@ const useProductManagement = () => {
     }
   };
 
-  // Submit handler (complex — builds product-specific payload)
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // ------------------------------- Submit Handler ------------------------------------
 
-    if (!crud.formData.productName.trim()) {
-      toast.error("Product name is required");
+  const handleSubmit = async () => {
+    if (!validateProduct(crud.formData, productType, variants, filePreview))
       return;
-    }
-    if (!crud.formData.price || crud.formData.price <= 0) {
-      toast.error("Valid price is required");
-      return;
-    }
-    if (!crud.formData.descriptions[0]?.trim()) {
-      toast.error("At least one description is required");
-      return;
-    }
 
-    // Image validation
-    if (productType === "standalone") {
-      if (!imagePreviews.length) {
-        toast.error("Image is required", {
-          description: "Please add at least one product image.",
-        });
-        return;
-      }
-    } else if (productType === "variant") {
-      const variantWithoutImageIndex = variants.findIndex(
-        (variant) => !variant.image && !variant.imagePreview,
-      );
-      if (variantWithoutImageIndex !== -1) {
-        toast.error("Variant image is required", {
-          description: `Please add an image for Variant ${
-            variantWithoutImageIndex + 1
-          }.`,
-        });
-        return;
-      }
-    }
-
-    const validDescriptions = crud.formData.descriptions.filter((d) =>
-      d.trim(),
-    );
+    const validDescriptions = crud.formData.descriptions
+      .map((d) => sanitizeString(d))
+      .filter(Boolean);
 
     const productData = {
-      productName: crud.formData.productName.trim(),
-      price: parseFloat(crud.formData.price),
-      descriptions: validDescriptions.map((d) => d.trim()).slice(0, 3),
+      productName: sanitizeString(crud.formData.productName),
+      price: Number(crud.formData.price),
+      descriptions: validDescriptions.slice(0, 3),
       isActive: crud.formData.isActive,
     };
 
-    // Product type specific fields
     if (productType === "standalone") {
       productData.productType = "standalone";
-      productData.partId = crud.formData.partId.trim();
-      productData.itemId = crud.formData.itemId.trim();
+      productData.partId = sanitizeString(crud.formData.partId);
+      productData.itemId = sanitizeString(crud.formData.itemId);
       productData.images = crud.formData.images;
+
       if (crud.formData.colorId) productData.colorId = crud.formData.colorId;
+
       if (crud.formData.secondaryColorId)
         productData.secondaryColorId = crud.formData.secondaryColorId;
+
       if (crud.formData.stock !== "")
-        productData.stock = parseInt(crud.formData.stock) || 0;
-    } else if (productType === "variant") {
+        productData.stock = Number(crud.formData.stock) || 0;
+    }
+
+    if (productType === "variant") {
       productData.productType = "variant";
-      productData.partId = crud.formData.partId.trim();
+      productData.partId = sanitizeString(crud.formData.partId);
       productData.variants = variants.map((variant) => ({
         colorId: variant.colorId,
-        secondaryColorId: variant.secondaryColorId || undefined,
-        itemId: variant.itemId.trim(),
-        stock: parseInt(variant.stock) || 0,
+        ...(variant.secondaryColorId && {
+          secondaryColorId: variant.secondaryColorId,
+        }),
+        itemId: sanitizeString(variant.itemId),
+        stock: Number(variant.stock) || 0,
         image: variant.image || null,
       }));
     }
 
-    // Optional fields
-    if (crud.formData.discount)
-      productData.discount = parseFloat(crud.formData.discount);
-    if (crud.formData.categoryIds.length > 0)
+    if (crud.formData.discount !== "")
+      productData.discount = Number(crud.formData.discount);
+
+    if (crud.formData.categoryIds?.length)
       productData.categoryIds = crud.formData.categoryIds;
-    if (crud.formData.subCategoryIds.length > 0)
+
+    if (crud.formData.subCategoryIds?.length)
       productData.subCategoryIds = crud.formData.subCategoryIds;
-    if (crud.formData.collectionIds.length > 0)
+
+    if (crud.formData.collectionIds?.length)
       productData.collectionIds = crud.formData.collectionIds;
-    if (crud.formData.subCollectionIds.length > 0)
+
+    if (crud.formData.subCollectionIds?.length)
       productData.subCollectionIds = crud.formData.subCollectionIds;
-    if (crud.formData.pieceCount)
-      productData.pieceCount = parseInt(crud.formData.pieceCount);
-    if (crud.formData.length)
-      productData.length = parseFloat(crud.formData.length);
-    if (crud.formData.width)
-      productData.width = parseFloat(crud.formData.width);
-    if (crud.formData.height)
-      productData.height = parseFloat(crud.formData.height);
-    if (crud.formData.skillLevelIds.length > 0)
+
+    if (crud.formData.pieceCount !== "")
+      productData.pieceCount = Number(crud.formData.pieceCount);
+
+    if (crud.formData.length !== "")
+      productData.length = Number(crud.formData.length);
+
+    if (crud.formData.width !== "")
+      productData.width = Number(crud.formData.width);
+
+    if (crud.formData.height !== "")
+      productData.height = Number(crud.formData.height);
+
+    if (crud.formData.skillLevelIds?.length)
       productData.skillLevelIds = crud.formData.skillLevelIds;
 
     await crud.submitForm(productData);
   };
 
+  // ------------------------------- Return ------------------------------------
   return {
-    // State
-    dialogOpen: crud.dialogOpen,
-    deleteDialogOpen: crud.deleteDialogOpen,
-    selectedProduct: crud.selectedItem,
-    dialogMode: crud.dialogMode,
+    ...crud,
     productType,
     variants,
-    formData: crud.formData,
-    imagePreviews,
+    filePreview,
     imagesChanged,
-    fileInputRef,
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search,
     products,
     totalItems,
     totalPages,
+    columns,
     categories,
     subCategories,
     collections,
@@ -491,16 +492,23 @@ const useProductManagement = () => {
     skillLevels,
     categoriesWithSubs,
     collectionsWithSubs,
-    columns,
     isLoadingProducts,
-    isCreating,
-    isUpdating,
+    isLoadingCategories,
+    isLoadingSubCategories,
+    isLoadingCollections,
+    isLoadingSubCollections,
+    isLoadingColors,
+    isLoadingSkillLevels,
+    isSubmitting,
     isDeleting,
-
-    // Handlers
+    handleEdit,
+    handleSubmit,
     handleChange,
-    handleSelectChange,
+    handleValueChange,
     handleMultiSelectChange,
+    handleArrayChange,
+    addArrayItem,
+    removeArrayItem,
     handleImageChange,
     handleRemoveImage,
     handleAddVariant,
@@ -508,18 +516,10 @@ const useProductManagement = () => {
     handleVariantChange,
     handleVariantImageChange,
     handleRemoveVariantImage,
-    handleSubmit,
-    handleDialogClose: crud.handleDialogClose,
-    handleAdd: crud.handleAdd,
-    handleEdit,
-    handleDelete: crud.handleDelete,
-    handleConfirmDelete: crud.handleConfirmDelete,
-    handlePageChange: crud.handlePageChange,
-    handleLimitChange: crud.handleLimitChange,
-    handleSearchChange: crud.handleSearchChange,
+
     setProductType,
-    setDeleteDialogOpen: crud.setDeleteDialogOpen,
-    setFormData: crud.setFormData,
+    setFilePreview,
+    fileInputRef,
   };
 };
 

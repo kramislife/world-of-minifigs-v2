@@ -8,6 +8,8 @@ const SearchBar = ({ placeholder = "Search...", value, onChange }) => {
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground dark:text-secondary-foreground/50 z-10 pointer-events-none" />
       <Input
         type="text"
+        name="search"
+        id="search"
         placeholder={placeholder}
         value={value}
         onChange={onChange}

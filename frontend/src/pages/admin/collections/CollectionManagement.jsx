@@ -1,41 +1,49 @@
 import React from "react";
-import { Plus, Upload, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+  StatusCell,
+} from "@/components/table/BaseColumn";
+import {
+  AdminFormInput,
+  AdminFormTextarea,
+} from "@/components/shared/AdminFormInput";
+import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
+import MediaUpload from "@/components/shared/MediaUpload";
 import DeleteDialog from "@/components/table/DeleteDialog";
+import { display } from "@/utils/formatting";
 import useCollectionManagement from "@/hooks/admin/useCollectionManagement";
 
 const CollectionManagement = () => {
   const {
     dialogOpen,
     deleteDialogOpen,
-    selectedCollection,
+    selectedItem,
     dialogMode,
     formData,
-    imagePreview,
-    fileInputRef,
+    filePreview,
     page,
     limit,
     search,
     collections,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     columns,
     isLoadingCollections,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
     handleChange,
-    handleSwitchChange,
-    handleImageChange,
-    handleRemoveImage,
+    handleValueChange,
+    handleCollectionFileChange,
+    handleCollectionFileRemove,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -50,20 +58,15 @@ const CollectionManagement = () => {
 
   return (
     <div className="space-y-5">
-      {/* Header with Add Button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Collection Management</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            Manage product collections in your store
-          </p>
-        </div>
-        <Button variant="accent" onClick={handleAdd}>
-          <Plus className="size-4" />
-          Add Collection
-        </Button>
-      </div>
+      {/* Admin Page Header */}
+      <AdminManagementHeader
+        title="Collection Management"
+        description="Manage product collections in your store"
+        actionLabel="Add Collection"
+        onAction={handleAdd}
+      />
 
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search collections..."
         searchValue={search}
@@ -74,32 +77,42 @@ const CollectionManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={collections}
         isLoading={isLoadingCollections}
         renderRow={(collection) => (
           <>
-            <TableCell maxWidth="200px">{collection.collectionName}</TableCell>
+            {/* Collection Name */}
+            <TableCell maxWidth="200px">
+              {display(collection.collectionName)}
+            </TableCell>
+
+            {/* Description */}
             <TableCell maxWidth="300px">
-              {collection.description || "-"}
+              {display(collection.description)}
             </TableCell>
-            <TableCell>
-              {collection.isFeatured ? (
-                <Badge variant="accent">Featured</Badge>
-              ) : (
-                <Badge variant="secondary">Collection</Badge>
-              )}
-            </TableCell>
-            <TableCell>
-              {collection.createdAt
-                ? new Date(collection.createdAt).toLocaleString()
-                : "-"}
-            </TableCell>
-            <TableCell>
-              {collection.updatedAt
-                ? new Date(collection.updatedAt).toLocaleString()
-                : "-"}
-            </TableCell>
+
+            {/* Featured */}
+            <StatusCell
+              isActive={collection.isFeatured}
+              activeLabel="Featured"
+              inactiveLabel="Not Featured"
+            />
+
+            {/* Status */}
+            <StatusCell isActive={collection.isActive} />
+
+            {/* Timestamps */}
+            <TimestampCells
+              createdAt={collection.createdAt}
+              updatedAt={collection.updatedAt}
+            />
+
+            {/* Actions */}
             <ActionsColumn
               onEdit={() => handleEdit(collection)}
               onDelete={() => handleDelete(collection)}
@@ -108,119 +121,72 @@ const CollectionManagement = () => {
         )}
       />
 
-      {/* Add/Edit Collection Dialog */}
+      {/* Add/Update Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Collection" : "Add New Collection"}
-        description={
-          dialogMode === "edit"
-            ? "Update the collection details."
-            : "Create a new collection for your products."
-        }
+        entityName="Collection"
         onSubmit={handleSubmit}
-        isLoading={dialogMode === "edit" ? isUpdating : isCreating}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Collection" : "Create Collection"
-        }
+        isLoading={isSubmitting}
       >
-        <div className="space-y-2">
-          <Label htmlFor="collectionName">Collection Name</Label>
-          <Input
-            id="collectionName"
+        <div className="space-y-4">
+          {/* Collection Name */}
+          <AdminFormInput
+            label="Collection Name"
             name="collectionName"
-            type="text"
-            placeholder="e.g., Star Wars, Harry Potter, Marvel"
+            placeholder="Ninjago, Video Games, Star Wars"
             value={formData.collectionName}
             onChange={handleChange}
+            disabled={isSubmitting}
             required
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
           />
-        </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            id="description"
+          {/* Description */}
+          <AdminFormTextarea
+            label="Description"
             name="description"
-            placeholder="Enter collection description (optional)"
+            placeholder="Enter collection description..."
             value={formData.description}
             onChange={handleChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
-            rows={4}
+            disabled={isSubmitting}
           />
-        </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="image">Image Attachment</Label>
-          {imagePreview ? (
-            <div className="relative w-full h-60 border rounded-lg overflow-hidden">
-              <img
-                src={imagePreview}
-                alt="Preview"
-                className="w-full h-full object-contain"
-              />
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                className="absolute top-2 right-2"
-                onClick={handleRemoveImage}
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
-              >
-                <X className="size-4" />
-              </Button>
-            </div>
-          ) : (
-            <Label
-              htmlFor="image"
-              className="border-2 border-dashed rounded-md p-7 text-center cursor-pointer hover:border-accent/50 transition-colors block"
-            >
-              <Upload className="mx-auto h-12 w-12 text-popover-foreground/80" />
-              <p className="mt-2 text-sm text-popover-foreground/80">
-                {dialogMode === "edit"
-                  ? "Upload a new image to replace the current one"
-                  : "Click to upload an image"}
-              </p>
-              <p className="text-xs text-popover-foreground/80 mt-1">
-                PNG, JPG, WEBP
-              </p>
-              <Input
-                ref={fileInputRef}
-                id="image"
-                name="image"
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
-                className="hidden"
-              />
-            </Label>
-          )}
-        </div>
+          {/* Image Attachment */}
+          <MediaUpload
+            label="Image Attachment"
+            preview={filePreview}
+            onChange={handleCollectionFileChange}
+            onRemove={handleCollectionFileRemove}
+            accept="image/*"
+            description="PNG, JPG, WEBP"
+            disabled={isSubmitting}
+          />
 
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <Label htmlFor="isFeatured">Featured Collection</Label>
-            <p className="text-xs text-popover-foreground/80">
-              Mark as featured (max 2 featured collections)
-            </p>
-          </div>
-          <Switch
+          {/* Featured */}
+          <VisibilitySwitch
             id="isFeatured"
+            label="Featured Status"
+            description="You can feature up to 2 collections"
             checked={formData.isFeatured}
-            onCheckedChange={handleSwitchChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
+            onChange={handleValueChange("isFeatured")}
+            disabled={isSubmitting}
+          />
+
+          {/* Visibility */}
+          <VisibilitySwitch
+            checked={formData.isActive}
+            onChange={handleValueChange("isActive")}
+            disabled={isSubmitting}
           />
         </div>
       </AddUpdateItemDialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedCollection?.collectionName || ""}
+        itemName={display(selectedItem?.collectionName)}
         title="Delete Collection"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

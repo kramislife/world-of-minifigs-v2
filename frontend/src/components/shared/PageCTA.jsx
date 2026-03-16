@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import Logo from "@/assets/media/Logo.png";
+import CommonImage from "@/components/shared/CommonImage";
 
 const PageCTA = ({
   title,
@@ -26,19 +26,12 @@ const PageCTA = ({
           >
             <source src={backgroundVideo} type="video/mp4" />
           </video>
-        ) : backgroundImage ? (
-          <div
-            className="w-full h-full bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: `url(${backgroundImage})` }}
-          />
         ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <img
-              src={Logo}
-              alt="Logo placeholder"
-              className="max-h-64 max-w-64 object-cover opacity-80"
-            />
-          </div>
+          <CommonImage
+            src={backgroundImage}
+            alt={title}
+            className="w-full h-full"
+          />
         )}
         <div className="absolute inset-0 bg-black/70 mix-blend-multiply" />
       </div>

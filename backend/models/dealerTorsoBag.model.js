@@ -7,6 +7,11 @@ const dealerTorsoBagSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    targetBundleSize: {
+      type: Number,
+      required: true,
+      default: 100,
+    },
     items: [
       {
         _id: false,
@@ -27,11 +32,6 @@ const dealerTorsoBagSchema = new mongoose.Schema(
         },
       },
     ],
-    targetBundleSize: {
-      type: Number,
-      required: true,
-      default: 100,
-    },
     isActive: {
       type: Boolean,
       default: true,

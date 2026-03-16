@@ -1,20 +1,27 @@
 import React from "react";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+  StatusCell,
+} from "@/components/table/BaseColumn";
+import {
+  AdminFormInput,
+  AdminFormTextarea,
+} from "@/components/shared/AdminFormInput";
+import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
+import { display } from "@/utils/formatting";
 import useCategoryManagement from "@/hooks/admin/useCategoryManagement";
 
 const CategoryManagement = () => {
   const {
     dialogOpen,
     deleteDialogOpen,
-    selectedCategory,
+    selectedItem,
     dialogMode,
     formData,
     page,
@@ -23,12 +30,16 @@ const CategoryManagement = () => {
     categories,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     columns,
     isLoadingCategories,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
     handleChange,
+    handleValueChange,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -43,20 +54,15 @@ const CategoryManagement = () => {
 
   return (
     <div className="space-y-5">
-      {/* Header with Add Button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Category Management</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            Manage product categories in your store
-          </p>
-        </div>
-        <Button variant="accent" onClick={handleAdd}>
-          <Plus className="size-4" />
-          Add Category
-        </Button>
-      </div>
+      {/* Admin Page Header */}
+      <AdminManagementHeader
+        title="Category Management"
+        description="Manage product categories in your store"
+        actionLabel="Add Category"
+        onAction={handleAdd}
+      />
 
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search categories..."
         searchValue={search}
@@ -67,25 +73,35 @@ const CategoryManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={categories}
         isLoading={isLoadingCategories}
         renderRow={(category) => (
           <>
-            <TableCell maxWidth="200px">{category.categoryName}</TableCell>
+            {/* Category Name */}
+            <TableCell maxWidth="200px">
+              {display(category.categoryName)}
+            </TableCell>
+
+            {/* Description */}
             <TableCell maxWidth="300px">
-              {category.description || "-"}
+              {display(category.description)}
             </TableCell>
-            <TableCell>
-              {category.createdAt
-                ? new Date(category.createdAt).toLocaleString()
-                : "-"}
-            </TableCell>
-            <TableCell>
-              {category.updatedAt
-                ? new Date(category.updatedAt).toLocaleString()
-                : "-"}
-            </TableCell>
+
+            {/* Status */}
+            <StatusCell isActive={category.isActive} />
+
+            {/* Timestamps */}
+            <TimestampCells
+              createdAt={category.createdAt}
+              updatedAt={category.updatedAt}
+            />
+
+            {/* Actions */}
             <ActionsColumn
               onEdit={() => handleEdit(category)}
               onDelete={() => handleDelete(category)}
@@ -94,55 +110,51 @@ const CategoryManagement = () => {
         )}
       />
 
-      {/* Add/Edit Category Dialog */}
+      {/* Add/Update Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Category" : "Add New Category"}
-        description={
-          dialogMode === "edit"
-            ? "Update the category details."
-            : "Create a new category for your products."
-        }
+        entityName="Category"
         onSubmit={handleSubmit}
-        isLoading={dialogMode === "edit" ? isUpdating : isCreating}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Category" : "Create Category"
-        }
+        isLoading={isSubmitting}
       >
-        <div className="space-y-2">
-          <Label htmlFor="categoryName">Category Name</Label>
-          <Input
-            id="categoryName"
+        <div className="space-y-4">
+          {/* Category Name */}
+          <AdminFormInput
+            label="Category Name"
             name="categoryName"
-            type="text"
-            placeholder="e.g., Vehicles, Buildings, Minifigures"
+            placeholder="Gender, Character, Design"
             value={formData.categoryName}
             onChange={handleChange}
+            disabled={isSubmitting}
             required
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            id="description"
+
+          {/* Description */}
+          <AdminFormTextarea
+            label="Description"
             name="description"
-            placeholder="Enter category description (optional)"
+            placeholder="Enter category description..."
             value={formData.description}
             onChange={handleChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
-            rows={4}
+            disabled={isSubmitting}
+          />
+
+          {/* Visibility */}
+          <VisibilitySwitch
+            checked={formData.isActive}
+            onChange={handleValueChange("isActive")}
+            disabled={isSubmitting}
           />
         </div>
       </AddUpdateItemDialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedCategory?.categoryName || ""}
+        itemName={display(selectedItem?.categoryName)}
         title="Delete Category"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

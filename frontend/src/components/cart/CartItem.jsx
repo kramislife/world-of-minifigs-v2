@@ -1,10 +1,10 @@
 import React from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import CommonImage from "@/components/shared/CommonImage";
 import QuantityControl from "@/components/shared/QuantityControl";
-import Logo from "@/assets/media/Logo.png";
 
-const CartItem = ({ item, onDecrement, onIncrement, onRemove }) => {
+const CartItem = ({ item, onChange, onRemove }) => {
   const {
     productId,
     productName,
@@ -19,25 +19,13 @@ const CartItem = ({ item, onDecrement, onIncrement, onRemove }) => {
     stock,
   } = item;
 
+  const handleQuantityChange = (newQty) =>
+    onChange(newQty, productId, variantIndex);
+  const handleRemove = () => onRemove(productId, variantIndex);
+
   return (
     <div className="flex gap-3 group pb-5 border-b last:border-0 last:pb-0">
-      <div className="relative w-28 h-28 overflow-hidden shrink-0">
-        {image ? (
-          <img
-            src={image}
-            alt={productName}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center p-3 border">
-            <img
-              src={Logo}
-              alt="No image"
-              className="w-full h-full object-contain opacity-50"
-            />
-          </div>
-        )}
-      </div>
+      <CommonImage src={image} alt={productName} className="size-28" />
 
       <div className="flex-1 flex flex-col justify-between">
         <div>
@@ -71,8 +59,7 @@ const CartItem = ({ item, onDecrement, onIncrement, onRemove }) => {
         <div className="flex items-center gap-2">
           <QuantityControl
             value={quantity}
-            onDecrement={() => onDecrement(productId, variantIndex)}
-            onIncrement={() => onIncrement(productId, variantIndex)}
+            onChange={handleQuantityChange}
             min={1}
             max={stock}
           />
@@ -80,7 +67,7 @@ const CartItem = ({ item, onDecrement, onIncrement, onRemove }) => {
             variant="ghost"
             size="icon"
             className="size-8 h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-transparent"
-            onClick={() => onRemove(productId, variantIndex)}
+            onClick={handleRemove}
             title="Remove item"
           >
             <Trash2 className="size-4" />

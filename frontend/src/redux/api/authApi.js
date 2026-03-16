@@ -30,7 +30,15 @@ const baseQueryWithAuth = async (args, api, extraOptions) => {
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: baseQueryWithAuth,
-  tagTypes: ["User", "Cart", "Bundle", "Addon", "ExtraBag", "TorsoBag"],
+  tagTypes: [
+    "User",
+    "Cart",
+    "Bundle",
+    "Addon",
+    "ExtraBag",
+    "TorsoBag",
+    "UserOrder",
+  ],
   endpoints: (builder) => ({
     // ==================== Authentication ====================
     login: builder.mutation({
@@ -193,6 +201,43 @@ export const authApi = createApi({
       invalidatesTags: ["Cart"],
     }),
 
+    // ==================== Order Management (User) ====================
+    getOrderConfig: builder.query({
+      query: () => ({ url: "/orders/config", method: "GET" }),
+      keepUnusedDataFor: 3600,
+    }),
+
+    getUserOrders: builder.query({
+      query: (params = {}) => ({
+        url: "/orders",
+        method: "GET",
+        params: {
+          ...(params.page && { page: params.page }),
+          ...(params.limit && { limit: params.limit }),
+          ...(params.search?.trim() && { search: params.search.trim() }),
+          ...(params.status && { status: params.status }),
+        },
+      }),
+      providesTags: ["UserOrder"],
+    }),
+
+    getUserOrderById: builder.query({
+      query: (id) => ({
+        url: `/orders/${id}`,
+        method: "GET",
+      }),
+      providesTags: (_, __, id) => [{ type: "UserOrder", id }],
+    }),
+
+    cancelOrder: builder.mutation({
+      query: ({ id, reason, notes }) => ({
+        url: `/orders/${id}/cancel`,
+        method: "POST",
+        body: { reason, notes },
+      }),
+      invalidatesTags: ["UserOrder"],
+    }),
+
     // ==================== Others ====================
     sendContactMessage: builder.mutation({
       query: (data) => ({
@@ -242,6 +287,11 @@ export const {
   useRemoveCartItemMutation,
   useClearCartMutation,
   useSyncCartMutation,
+
+  useGetOrderConfigQuery,
+  useGetUserOrdersQuery,
+  useGetUserOrderByIdQuery,
+  useCancelOrderMutation,
 
   useSendContactMessageMutation,
 

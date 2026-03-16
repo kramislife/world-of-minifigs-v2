@@ -1,11 +1,16 @@
 import mongoose from "mongoose";
+import {
+  ORDER_STATUSES,
+  REFUND_STATUSES,
+} from "../constants/orderConstants.js";
 
-const orderItemSchema = new mongoose.Schema(
+/* ------------------------------------------- Product Schema --------------------------------------- */
+
+const productItemSchema = new mongoose.Schema(
   {
     productId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
-      required: true,
     },
     productName: { type: String, required: true },
     variantIndex: { type: Number },
@@ -18,6 +23,55 @@ const orderItemSchema = new mongoose.Schema(
   },
   { _id: false },
 );
+
+/* ----------------------------------------- Dealer Schema ------------------------------------------ */
+
+const dealerItemSchema = new mongoose.Schema(
+  {
+    bundle: {
+      id: { type: mongoose.Schema.Types.ObjectId, ref: "Bundle" },
+      name: { type: String },
+      price: { type: Number },
+    },
+    torsoBag: {
+      id: { type: mongoose.Schema.Types.ObjectId, ref: "DealerTorsoBag" },
+      name: { type: String },
+      multiplier: { type: Number },
+    },
+    addons: [
+      {
+        _id: false,
+        id: { type: mongoose.Schema.Types.ObjectId, ref: "DealerAddon" },
+        name: { type: String },
+        type: { type: String },
+        totalPrice: { type: Number },
+        subItems: [
+          {
+            _id: false,
+            invId: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: "MinifigInventory",
+            },
+            name: { type: String },
+            qty: { type: Number },
+          },
+        ],
+      },
+    ],
+    extraBags: [
+      {
+        _id: false,
+        id: { type: mongoose.Schema.Types.ObjectId, ref: "DealerExtraBag" },
+        name: { type: String },
+        quantity: { type: Number },
+        price: { type: Number },
+      },
+    ],
+  },
+  { _id: false },
+);
+
+/* ----------------------------------------- Order Schema ------------------------------------------- */
 
 const orderSchema = new mongoose.Schema(
   {
@@ -32,39 +86,88 @@ const orderSchema = new mongoose.Schema(
       enum: ["product", "dealer", "reward"],
       default: "product",
     },
-    items: {
-      type: [orderItemSchema],
-      required: true,
-    },
-    subtotal: { type: Number, required: true, min: 0 },
-    taxAmount: { type: Number, default: 0, min: 0 },
-    totalAmount: { type: Number, required: true, min: 0 },
     status: {
       type: String,
-      enum: ["pending", "paid", "failed", "refunded", "cancelled"],
-      default: "pending",
+      enum: Object.values(ORDER_STATUSES),
+      default: ORDER_STATUSES.PAID,
     },
-    shippingAddress: {
-      name: { type: String },
-      line1: { type: String },
-      line2: { type: String },
-      city: { type: String },
-      state: { type: String },
-      postalCode: { type: String },
+    productItems: {
+      type: [productItemSchema],
+      default: undefined,
+    },
+    dealerItems: {
+      type: dealerItemSchema,
+      default: undefined,
+    },
+    payment: {
+      subtotal: { type: Number, required: true, min: 0 },
+      shippingFee: { type: Number, default: 0, min: 0 },
+      taxAmount: { type: Number, default: 0, min: 0 },
+      totalAmount: { type: Number, required: true, min: 0 },
+      stripeSessionId: { type: String },
+      stripePaymentIntentId: { type: String },
+      stripeInvoiceNumber: { type: String },
+      invoiceUrl: { type: String },
+      paidAt: { type: Date },
+    },
+    refund: {
+      status: {
+        type: String,
+        enum: Object.values(REFUND_STATUSES),
+        default: REFUND_STATUSES.NONE,
+      },
+      amount: { type: Number, min: 0 },
+      stripeRefundId: { type: String },
+      arn: { type: String }, // Acquirer Reference Number (admin-only)
+      initiatedAt: { type: Date },
+      completedAt: { type: Date },
+    },
+    shipping: {
+      address: {
+        name: { type: String },
+        line1: { type: String },
+        line2: { type: String },
+        city: { type: String },
+        state: { type: String },
+        postalCode: { type: String },
+        country: { type: String },
+      },
+      carrier: { type: String },
+      trackingNumber: { type: String },
+      trackingLink: { type: String },
+      shippedAt: { type: Date },
+      deliveredAt: { type: Date },
+    },
+    billing: {
+      cardHolderName: { type: String },
       country: { type: String },
     },
-    stripeSessionId: { type: String },
-    stripePaymentIntentId: { type: String },
-    stripeInvoiceNumber: { type: String },
-    invoiceUrl: { type: String },
-    metadata: { type: mongoose.Schema.Types.Mixed },
+    cancellation: {
+      reason: { type: String },
+      notes: { type: String },
+      cancelledAt: { type: Date },
+      cancelledByRole: {
+        type: String,
+        enum: ["user", "admin"],
+      },
+      cancelledById: {
+        type: mongoose.Schema.Types.ObjectId,
+      },
+      isLocked: { type: Boolean, default: false },
+      lockExpiresAt: { type: Date },
+    },
   },
   { timestamps: true },
 );
 
+/* ------------------------------------------- Indexes --------------------------------------------- */
+
 orderSchema.index({ userId: 1, createdAt: -1 });
-orderSchema.index({ stripeSessionId: 1 });
 orderSchema.index({ status: 1 });
+orderSchema.index({ orderType: 1 });
+orderSchema.index({ "refund.status": 1 });
+orderSchema.index({ "payment.stripePaymentIntentId": 1 });
+orderSchema.index({ "payment.stripeSessionId": 1 });
 
 const Order = mongoose.model("Order", orderSchema);
 

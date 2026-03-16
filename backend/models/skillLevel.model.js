@@ -13,6 +13,11 @@ const skillLevelSchema = new mongoose.Schema(
       trim: true,
     },
 
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -40,6 +45,8 @@ skillLevelSchema.index(
 
 // Faster sorting for getAllSkillLevels
 skillLevelSchema.index({ createdAt: -1 });
+
+skillLevelSchema.index({ isActive: 1 });
 
 const SkillLevel = mongoose.model("SkillLevel", skillLevelSchema);
 

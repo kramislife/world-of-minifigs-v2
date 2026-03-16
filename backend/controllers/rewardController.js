@@ -6,47 +6,15 @@ import {
   paginateQuery,
   createPaginationResponse,
 } from "../utils/pagination.js";
+import { handleError } from "../utils/commonUtils.js";
+import { validateAndReturnFeatures } from "../utils/bundleUtils.js";
+import { AUDIT_POPULATE } from "../utils/populateHelpers.js";
+import {
+  checkBundleQuantityConflict,
+  findBundleByIdAndType,
+} from "../utils/bundleUtils.js";
 
 // ==================== Helper Functions ====================
-
-const handleError = (res, error, logPrefix, customMessage) => {
-  console.error(`${logPrefix}:`, error);
-  res.status(500).json({
-    success: false,
-    message: customMessage || "Internal server error",
-    description: "An unexpected error occurred. Please try again.",
-  });
-};
-
-const validateFeatures = (features) => {
-  if (features && Array.isArray(features) && features.length > 5) {
-    return {
-      isValid: false,
-      error: {
-        status: 400,
-        message: "Too many features",
-        description: "A bundle/add-on can have a maximum of 5 features.",
-      },
-    };
-  }
-  return { isValid: true };
-};
-
-const processFeatures = (features) => {
-  // Only include features if it's a non-empty array
-  if (features && Array.isArray(features) && features.length > 0) {
-    return features;
-  }
-  return undefined;
-};
-
-const validateAndReturnFeatures = (features) => {
-  const validation = validateFeatures(features);
-  if (!validation.isValid) {
-    return { error: validation.error };
-  }
-  return { features: processFeatures(features) };
-};
 
 const validateQuantity = (quantity, fieldName = "Quantity") => {
   if (!quantity || quantity < 1) {
@@ -94,27 +62,14 @@ const createConflictResponse = (message, description) => ({
   },
 });
 
-const findRewardBundleById = async (id) => {
-  return await Bundle.findOne({ _id: id, bundleType: "reward" });
-};
+const findRewardBundleById = async (id) => findBundleByIdAndType("reward", id);
 
 const findRewardAddonById = async (id) => {
   return await RewardAddon.findById(id);
 };
 
-const checkBundleQuantityConflict = async (
-  minifigQuantity,
-  excludeId = null,
-) => {
-  const query = {
-    bundleType: "reward",
-    minifigQuantity,
-  };
-  if (excludeId) {
-    query._id = { $ne: excludeId };
-  }
-  return await Bundle.findOne(query);
-};
+const checkBundleConflict = async (minifigQuantity, excludeId = null) =>
+  checkBundleQuantityConflict("reward", minifigQuantity, excludeId);
 
 const checkAddonConflict = async (quantity, duration, excludeId = null) => {
   const query = {
@@ -127,10 +82,7 @@ const checkAddonConflict = async (quantity, duration, excludeId = null) => {
   return await RewardAddon.findOne(query);
 };
 
-const getStandardPopulateOptions = () => [
-  { path: "createdBy", select: "firstName lastName username" },
-  { path: "updatedBy", select: "firstName lastName username" },
-];
+const getStandardPopulateOptions = () => AUDIT_POPULATE;
 
 // ==================== Create Reward Bundle ====================
 
@@ -165,7 +117,7 @@ export const createRewardBundle = async (req, res) => {
     }
 
     // Check for existing bundle with same quantity
-    const existingBundle = await checkBundleQuantityConflict(minifigQuantity);
+    const existingBundle = await checkBundleConflict(minifigQuantity);
     if (existingBundle) {
       const conflict = createConflictResponse(
         "Bundle already exists",
@@ -257,7 +209,7 @@ export const updateRewardBundle = async (req, res) => {
 
     if (minifigQuantity !== undefined) {
       if (minifigQuantity !== bundle.minifigQuantity) {
-        const conflict = await checkBundleQuantityConflict(minifigQuantity, id);
+        const conflict = await checkBundleConflict(minifigQuantity, id);
         if (conflict) {
           const conflictResponse = createConflictResponse(
             "Quantity conflict",

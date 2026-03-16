@@ -10,7 +10,7 @@ import {
   useClearCartMutation,
   useSyncCartMutation,
 } from "@/redux/api/authApi";
-import { useCreateCheckoutSessionMutation } from "@/redux/api/paymentApi";
+import { useCheckout } from "@/hooks/useCheckout";
 import {
   setCartItems,
   addToCartLocal,
@@ -23,6 +23,7 @@ import {
   setSheetMode,
 } from "@/redux/slices/cartSlice";
 import { handleApiError } from "@/utils/apiHelpers";
+import { formatCurrency } from "@/utils/formatting";
 
 //------------------------------------------- Helpers -------------------------------------------
 
@@ -85,9 +86,7 @@ export const useProductCheckout = ({
   variantIndex = null,
   quantity = 1,
 }) => {
-  const { isAuthenticated } = useSelector((state) => state.auth);
-  const [createCheckoutSession, { isLoading: isCheckoutLoading }] =
-    useCreateCheckoutSessionMutation();
+  const { checkout, isCheckoutLoading, isAuthenticated } = useCheckout();
 
   const { isSoldOut, label } = useMemo(
     () => getAddToCartStatus(product, variantIndex),
@@ -100,41 +99,14 @@ export const useProductCheckout = ({
     isSoldOut ||
     (product.productType === "variant" && variantIndex === null);
 
-  const handleProductCheckout = useCallback(async () => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to checkout", {
-        description: "You need to be signed in to complete your purchase",
-      });
-      return;
-    }
+  const handleProductCheckout = useCallback(() => {
     if (isDisabled) return;
-
-    try {
-      const res = await createCheckoutSession({
-        productId: product._id,
-        variantIndex: product.productType === "variant" ? variantIndex : null,
-        quantity,
-      }).unwrap();
-      if (res?.url) {
-        window.location.href = res.url;
-      } else {
-        handleApiError(
-          null,
-          "Checkout failed",
-          "Could not start checkout, please try again",
-        );
-      }
-    } catch (err) {
-      handleApiError(err, "Checkout failed", "Please try again");
-    }
-  }, [
-    isAuthenticated,
-    isDisabled,
-    product,
-    variantIndex,
-    quantity,
-    createCheckoutSession,
-  ]);
+    checkout({
+      productId: product._id,
+      variantIndex: product.productType === "variant" ? variantIndex : null,
+      quantity,
+    });
+  }, [isDisabled, product, variantIndex, quantity, checkout]);
 
   const buttonLabel =
     isDisabled && !isAuthenticated
@@ -211,8 +183,8 @@ export const useVariantSelection = ({ product }) => {
     salePrice < basePrice &&
     basePrice > 0;
 
-  const displayPrice = effectivePrice.toFixed(2);
-  const originalPrice = basePrice.toFixed(2);
+  const displayPrice = formatCurrency(effectivePrice);
+  const originalPrice = formatCurrency(basePrice);
 
   return {
     selectedVariantIndex,
@@ -262,8 +234,7 @@ export const useCart = () => {
     useRemoveCartItemMutation();
   const [clearCartServer] = useClearCartMutation();
   const [syncCartServer] = useSyncCartMutation();
-  const [createCheckoutSession, { isLoading: isCheckoutLoading }] =
-    useCreateCheckoutSessionMutation();
+  const { checkout, isCheckoutLoading } = useCheckout();
 
   // Sync server data to local state for authenticated users
   // Also persist to localStorage so cart survives logout (unified cart experience)
@@ -306,10 +277,10 @@ export const useCart = () => {
 
       return {
         ...item,
-        displayPrice: effectivePrice.toFixed(2),
-        originalPrice: price.toFixed(2),
+        displayPrice: formatCurrency(effectivePrice),
+        originalPrice: formatCurrency(price),
         hasDiscount,
-        totalItemPrice: (effectivePrice * item.quantity).toFixed(2),
+        totalItemPrice: formatCurrency(effectivePrice * item.quantity),
         colorLabel,
         colorDisplay: getColorDisplay({ ...item, colorLabel }),
       };
@@ -339,7 +310,7 @@ export const useCart = () => {
       totalPriceFormatted:
         serverSubtotalFormatted != null
           ? serverSubtotalFormatted
-          : (computedTotal || 0).toFixed(2),
+          : formatCurrency(computedTotal || 0),
     };
   }, [items, serverCartData]);
 
@@ -542,28 +513,8 @@ export const useCart = () => {
   }, [isAuthenticated, localItems, syncCartServer, dispatch]);
 
   const handleCheckout = useCallback(async () => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to checkout", {
-        description: "You need to be signed in to complete your purchase",
-      });
-      dispatch(closeSheet());
-      return;
-    }
-    try {
-      const res = await createCheckoutSession().unwrap();
-      if (res?.url) {
-        window.location.href = res.url;
-      } else {
-        handleApiError(
-          null,
-          "Checkout failed",
-          "Could not start checkout, please try again",
-        );
-      }
-    } catch (err) {
-      handleApiError(err, "Checkout failed", "Please try again");
-    }
-  }, [isAuthenticated, createCheckoutSession, dispatch]);
+    await checkout();
+  }, [checkout]);
 
   return {
     items,

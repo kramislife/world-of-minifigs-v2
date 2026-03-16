@@ -88,8 +88,18 @@ import {
   updateSkillLevel,
   deleteSkillLevel,
 } from "../controllers/skillLevelController.js";
-import { getAllOrders, getOrderById } from "../controllers/orderController.js";
+import {
+  getAllOrders,
+  getOrderById,
+  updateOrderStatus,
+} from "../controllers/orderController.js";
 import { getAllUsers, updateUserRole } from "../controllers/authController.js";
+import {
+  createMinifigInventoryBulk,
+  getAllMinifigInventory,
+  updateMinifigInventory,
+  deleteMinifigInventory,
+} from "../controllers/minifigInventoryController.js";
 
 const router = express.Router();
 
@@ -187,9 +197,16 @@ router.delete("/skillLevels/:id", deleteSkillLevel);
 // Order Management routes
 router.get("/orders", getAllOrders);
 router.get("/orders/:id", getOrderById);
+router.patch("/orders/:id/status", updateOrderStatus);
 
 // User Management routes
 router.get("/users", getAllUsers);
 router.put("/users/:id/role", updateUserRole);
+
+// Minifig Inventory CRUD routes
+router.post("/minifig-inventory/bulk", createMinifigInventoryBulk);
+router.get("/minifig-inventory", getAllMinifigInventory);
+router.put("/minifig-inventory/:id", updateMinifigInventory);
+router.delete("/minifig-inventory/:id", deleteMinifigInventory);
 
 export default router;

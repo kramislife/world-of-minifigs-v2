@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import Logo from "@/assets/media/Logo.png";
+import CommonImage from "@/components/shared/CommonImage";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import ErrorState from "@/components/shared/ErrorState";
 import { useCollectionsGrid, getCollectionLink } from "@/hooks/useCollections";
@@ -57,31 +57,24 @@ const CollectionsCarousel = () => {
       </div>
 
       {/* Grid - 4 columns */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
         {collections.map((collection) => (
           <Link
             key={collection._id}
             to={getCollectionLink(collection)}
-            className="block group"
+            className="group block"
           >
-            <div className="relative aspect-square overflow-hidden flex items-center justify-center border">
-              {/* Background Image */}
-              {collection.image?.url ? (
-                <img
-                  src={collection.image.url}
-                  alt={collection.collectionName}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              ) : (
-                <img
-                  src={Logo}
-                  alt="Placeholder"
-                  className="max-h-40 max-w-40 object-contain opacity-80"
-                />
-              )}
+            {/* Image Container */}
+            <div className="relative aspect-square">
+              <CommonImage
+                src={collection.image?.url}
+                alt={collection.collectionName}
+                className="w-full h-full rounded-none border"
+                imgClassName="transition-transform duration-300 group-hover:scale-105"
+              />
 
-              {/* Collection Name */}
-              <div className="absolute inset-x-0 bottom-2 px-2">
+              {/* Collection Name Overlay */}
+              <div className="absolute inset-x-0 bottom-2 px-2 z-10">
                 <h3 className="text-background dark:text-foreground font-bold text-2xl uppercase text-center">
                   {collection.collectionName}
                 </h3>
@@ -205,20 +198,12 @@ export default CollectionsCarousel;
 //               <Link to={getCollectionLink(collection)} className="block group">
 //                 <div className="relative aspect-square overflow-hidden flex items-center justify-center border">
 //                   {/* Background Image */}
-//                   {collection.image?.url ? (
-//                     <img
-//                       src={collection.image.url}
-//                       alt={collection.collectionName}
-//                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-//                     />
-//                   ) : (
-//                     <img
-//                       src={Logo}
-//                       alt="Placeholder"
-//                       className="max-h-40 max-w-40 object-contain opacity-80"
-//                     />
-//                   )}
-
+//                   <CommonImage
+//                 src={collection.image?.url}
+//                 alt={collection.collectionName}
+//                 className="w-full h-full transition-transform duration-300
+//                 group-hover:scale-105"
+//               />
 //                   {/* Collection Name */}
 //                   <div className="absolute inset-x-0 bottom-2 px-2">
 //                     <h3 className="text-background dark:text-foreground font-bold text-2xl  uppercase text-center">

@@ -1,45 +1,49 @@
 import React from "react";
-import { Plus, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
+import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import TableLayout from "@/components/table/TableLayout";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+  StatusCell,
+  PriceCell,
+} from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
+import { display } from "@/utils/formatting";
+import {
+  AdminFormInput,
+  AdminFormTextarea,
+  AdminFormSelect,
+} from "@/components/shared/AdminFormInput";
 import useRewardAddonManagement from "@/hooks/admin/useRewardAddonManagement";
 
 const RewardAddonManagement = () => {
   const {
-    search,
-    limit,
-    page,
     dialogOpen,
     deleteDialogOpen,
+    selectedItem,
     dialogMode,
-    selectedAddon,
     formData,
+    page,
+    limit,
+    search,
     addons,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
     columns,
     isLoadingAddons,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
+    handleChange,
+    handleValueChange,
     handleDialogClose,
-    setDeleteDialogOpen,
-    setFormData,
     handleAdd,
     handleEdit,
     handleDelete,
@@ -48,23 +52,25 @@ const RewardAddonManagement = () => {
     handlePageChange,
     handleLimitChange,
     handleSearchChange,
+    handlePrevious,
+    handleNext,
+    setDeleteDialogOpen,
+    handleArrayChange,
+    addArrayItem,
+    removeArrayItem,
   } = useRewardAddonManagement();
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Reward Add-ons</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            Manage optional items for the Reward Program
-          </p>
-        </div>
-        <Button variant="accent" onClick={handleAdd}>
-          <Plus className="size-4 mr-2" />
-          Add Add-on
-        </Button>
-      </div>
+      {/* Admin Page Header */}
+      <AdminManagementHeader
+        title="Reward Add-ons"
+        description="Manage optional items for the Reward Program"
+        actionLabel="Add Add-on"
+        onAction={handleAdd}
+      />
 
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search add-ons..."
         searchValue={search}
@@ -75,31 +81,34 @@ const RewardAddonManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={addons}
         isLoading={isLoadingAddons}
         renderRow={(addon) => (
           <>
-            <TableCell>{addon.duration || "-"} months</TableCell>
-            <TableCell>{addon.quantity || "-"} Minifigs</TableCell>
-            <TableCell className="text-success dark:text-accent font-bold">
-              ${addon.price?.toFixed(2)}
-            </TableCell>
-            <TableCell>
-              <Badge variant={addon.isActive ? "success" : "destructive"}>
-                {addon.isActive ? "Active" : "Inactive"}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              {addon.createdAt
-                ? new Date(addon.createdAt).toLocaleString()
-                : "-"}
-            </TableCell>
-            <TableCell>
-              {addon.updatedAt
-                ? new Date(addon.updatedAt).toLocaleString()
-                : "-"}
-            </TableCell>
+            {/* Duration */}
+            <TableCell>{display(addon.duration)} months</TableCell>
+
+            {/* Quantity */}
+            <TableCell>{display(addon.quantity)} Minifigs</TableCell>
+
+            {/* Price */}
+            <PriceCell amount={addon.price} />
+
+            {/* Status */}
+            <StatusCell isActive={addon.isActive} />
+
+            {/* Timestamps */}
+            <TimestampCells
+              createdAt={addon.createdAt}
+              updatedAt={addon.updatedAt}
+            />
+
+            {/* Actions */}
             <ActionsColumn
               onEdit={() => handleEdit(addon)}
               onDelete={() => handleDelete(addon)}
@@ -108,117 +117,96 @@ const RewardAddonManagement = () => {
         )}
       />
 
+      {/* Add/Update Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={
-          dialogMode === "edit" ? "Edit Reward Add-on" : "Add Reward Add-on"
-        }
-        description={
-          dialogMode === "edit"
-            ? "Update the reward add-on details."
-            : "Add a new item for the Reward Program."
-        }
+        entityName="Reward Add-on"
         onSubmit={handleSubmit}
-        isLoading={isCreating || isUpdating}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Add-on" : "Create Add-on"
-        }
+        isLoading={isSubmitting}
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
-            <div className="space-y-2">
-              <Label htmlFor="duration">Duration</Label>
-              <Select
-                value={formData.duration || undefined}
-                onValueChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    duration: value,
-                  })
-                }
-              >
-                <SelectTrigger id="duration" className="w-full">
-                  <SelectValue placeholder="Select duration" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="3">3 months</SelectItem>
-                  <SelectItem value="6">6 months</SelectItem>
-                  <SelectItem value="12">12 months</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="quantity">
-                Quantity
-              </Label>
-              <Select
-                value={formData.quantity}
-                onValueChange={(value) =>
-                  setFormData({
-                    ...formData,
-                    quantity: value,
-                  })
-                }
-                required
-              >
-                <SelectTrigger id="quantity" className="w-full">
-                  <SelectValue placeholder="Select quantity" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="8">8 Minifigs</SelectItem>
-                  <SelectItem value="16">16 Minifigs</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="price">Monthly Price</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                placeholder="35.00"
-                value={formData.price}
-                onChange={(e) =>
-                  setFormData({ ...formData, price: e.target.value })
-                }
-              />
-            </div>
+          {/* Duration, Quantity, Price */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <AdminFormSelect
+              label="Duration"
+              name="duration"
+              value={formData.duration}
+              onValueChange={handleValueChange("duration")}
+              disabled={isSubmitting}
+              options={[
+                { value: "3", label: "3 months" },
+                { value: "6", label: "6 months" },
+                { value: "12", label: "12 months" },
+              ]}
+              placeholder="Select duration"
+            />
+
+            {/* Quantity */}
+            <AdminFormInput
+              label="Quantity"
+              name="quantity"
+              type="number"
+              placeholder="100"
+              value={formData.quantity}
+              onChange={handleChange}
+              disabled={isSubmitting}
+              required
+            />
+
+            {/* Price monthly */}
+            <AdminFormInput
+              label="Price monthly"
+              name="price"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={formData.price}
+              onChange={handleChange}
+              disabled={isSubmitting}
+              required
+            />
           </div>
 
+          {/* Description */}
+          <AdminFormTextarea
+            label="Description"
+            name="description"
+            placeholder="Enter addon description..."
+            value={formData.description}
+            onChange={handleChange}
+            disabled={isSubmitting}
+          />
+
+          {/* Features */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>Features</Label>
+              <Label htmlFor="feature-0">Features</Label>
+
               {formData.features?.length < 5 && (
                 <Button
                   type="button"
                   variant="link"
                   size="sm"
                   className="px-0 h-auto"
-                  onClick={() => {
-                    setFormData({
-                      ...formData,
-                      features: [...(formData.features || [""]), ""],
-                    });
-                  }}
+                  onClick={addArrayItem("features")}
+                  disabled={isSubmitting}
                 >
                   Add Feature
                 </Button>
               )}
             </div>
+
             <div className="space-y-3">
               {(formData.features || [""]).map((feature, index) => (
                 <div key={index} className="flex gap-2 items-start">
-                  <Textarea
-                    placeholder={`Feature ${index + 1}`}
+                  <AdminFormTextarea
+                    name={`feature-${index}`}
+                    placeholder="Enter addon features..."
                     value={feature}
-                    onChange={(e) => {
-                      const newFeatures = [...(formData.features || [""])];
-                      newFeatures[index] = e.target.value;
-                      setFormData({ ...formData, features: newFeatures });
-                    }}
-                    rows={2}
+                    onChange={handleArrayChange("features", index)}
+                    disabled={isSubmitting}
                     className="flex-1"
                   />
                   {(formData.features?.length || 1) > 1 && (
@@ -227,15 +215,8 @@ const RewardAddonManagement = () => {
                       variant="ghost"
                       size="icon"
                       className="shrink-0 text-destructive hover:text-destructive h-10 w-10"
-                      onClick={() => {
-                        const newFeatures = (formData.features || [""]).filter(
-                          (_, i) => i !== index,
-                        );
-                        setFormData({
-                          ...formData,
-                          features: newFeatures.length > 0 ? newFeatures : [""],
-                        });
-                      }}
+                      onClick={removeArrayItem("features", index)}
+                      disabled={isSubmitting}
                     >
                       <X className="size-4" />
                     </Button>
@@ -245,25 +226,24 @@ const RewardAddonManagement = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="addonActive"
-              checked={formData.isActive}
-              onCheckedChange={(checked) =>
-                setFormData({ ...formData, isActive: !!checked })
-              }
-            />
-            <Label htmlFor="addonActive">Active</Label>
-          </div>
+          {/* Visibility */}
+          <VisibilitySwitch
+            checked={formData.isActive}
+            onChange={handleValueChange("isActive")}
+            disabled={isSubmitting}
+          />
         </div>
       </AddUpdateItemDialog>
 
+      {/* Delete Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         itemName={
-          selectedAddon
-            ? `${selectedAddon.quantity || "-"} Minifigs for ${selectedAddon.duration || "-"} Months`
+          selectedItem
+            ? `${display(selectedItem.quantity)} Minifigs for ${display(
+                selectedItem.duration,
+              )} Months`
             : ""
         }
         title="Delete Reward Add-on"

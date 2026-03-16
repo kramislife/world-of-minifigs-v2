@@ -7,10 +7,11 @@ const PageHero = ({
   description,
   badge,
   features,
+  bannerPadding = "py-40",
 }) => {
   return (
     <section
-      className={`relative overflow-hidden py-40 border border-border/50`}
+      className={`relative overflow-hidden ${bannerPadding} border border-border/50`}
     >
       <div className="absolute inset-0 opacity-10">
         <div className="absolute -top-24 -left-24 w-64 h-64 md:w-96 md:h-96 rounded-full bg-accent" />

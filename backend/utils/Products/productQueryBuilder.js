@@ -187,8 +187,8 @@ export const buildPublicProductQuery = async (queryParams) => {
     skillLevelIds,
   } = queryParams;
 
-  // Base query - only active products
-  let query = { isActive: true };
+  // Base query - only visible products
+  let query = { isVisible: true };
   const andConditions = [];
 
   // Build search query

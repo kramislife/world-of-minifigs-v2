@@ -1,0 +1,360 @@
+import MinifigInventory from "../models/minifigInventory.model.js";
+import Color from "../models/color.model.js";
+import {
+  uploadSingleImage,
+  replaceSingleImage,
+  deleteSingleImage,
+} from "../services/imageService.js";
+import {
+  normalizePagination,
+  buildSearchQuery,
+  paginateQuery,
+  createPaginationResponse,
+} from "../utils/pagination.js";
+import { checkNameConflict } from "../utils/commonUtils.js";
+import { AUDIT_POPULATE } from "../utils/populateHelpers.js";
+
+const IMAGE_FOLDER = "world-of-minifigs-v2/minifig-inventory";
+
+//------------------------------------------------ Create Minifig Inventory (Bulk) ------------------------------------------
+export const createMinifigInventoryBulk = async (req, res) => {
+  const { items } = req.body;
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "No items provided",
+      description: "Please provide an array of inventory items to upload.",
+    });
+  }
+
+  const results = {
+    saved: [],
+    failed: [],
+  };
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const rowId = item.rowId || i;
+
+    try {
+      const { minifigName, price, stock, colorId, image } = item;
+
+      // Validate required fields
+      if (!minifigName || !String(minifigName).trim())
+        throw new Error("Minifig name is required");
+      if (!price || Number(price) <= 0)
+        throw new Error("Price must be greater than zero");
+      if (
+        stock === undefined ||
+        stock === null ||
+        !Number.isInteger(Number(stock)) ||
+        Number(stock) < 0
+      ) {
+        throw new Error("Stock must be a non-negative integer");
+      }
+      if (!colorId) throw new Error("Color is required");
+      if (!image) throw new Error("Image is required");
+
+      // Verify color exists
+      const color = await Color.findById(colorId);
+      if (!color) throw new Error("Selected color does not exist");
+
+      // Check for duplicate name + color combo (Non-blocking warning for bulk)
+      const existing = await checkNameConflict(
+        MinifigInventory,
+        "minifigName",
+        String(minifigName).trim(),
+        null,
+        { colorId },
+      );
+      const warning = existing
+        ? `Item with name "${minifigName}" and color "${color.colorName}" already exists.`
+        : null;
+
+      // Upload image via imageService (validate + upload)
+      const uploadedImage = await uploadSingleImage(image, IMAGE_FOLDER);
+
+      const newInventory = await MinifigInventory.create({
+        minifigName: String(minifigName).trim(),
+        price: Number(price),
+        stock: Number(stock),
+        colorId,
+        image: uploadedImage,
+        createdBy: req.user._id,
+      });
+
+      results.saved.push({
+        rowId,
+        id: newInventory._id,
+        minifigName: newInventory.minifigName,
+        warning,
+      });
+    } catch (error) {
+      results.failed.push({
+        rowId,
+        name: item.minifigName || item.name || `Row ${i + 1}`,
+        reason: error.message,
+      });
+    }
+  }
+
+  const totalSaved = results.saved.length;
+  const totalFailed = results.failed.length;
+
+  return res.status(200).json({
+    success: true,
+    message: `Minifig completed: ${totalSaved} saved, ${totalFailed} failed.`,
+    summary: {
+      totalSaved,
+      totalFailed,
+    },
+    results,
+  });
+};
+
+//------------------------------------------------ Get All Minifig Inventory ------------------------------------------
+export const getAllMinifigInventory = async (req, res) => {
+  try {
+    const { page, limit, search } = normalizePagination(req.query);
+
+    let searchQuery = {};
+
+    if (search) {
+      const baseQuery = buildSearchQuery(search, ["minifigName"]);
+
+      // Also search by color name
+      const matchingColors = await Color.find(
+        buildSearchQuery(search, ["colorName"]),
+      )
+        .select("_id")
+        .lean();
+
+      const matchingColorIds = matchingColors.map((c) => c._id);
+
+      if (Object.keys(baseQuery).length > 0 && matchingColorIds.length > 0) {
+        searchQuery = {
+          $or: [baseQuery, { colorId: { $in: matchingColorIds } }],
+        };
+      } else if (Object.keys(baseQuery).length > 0) {
+        searchQuery = baseQuery;
+      } else if (matchingColorIds.length > 0) {
+        searchQuery = { colorId: { $in: matchingColorIds } };
+      }
+    }
+
+    const result = await paginateQuery(MinifigInventory, searchQuery, {
+      page,
+      limit,
+      sort: { createdAt: -1 },
+      populate: [
+        { path: "colorId", select: "colorName hexCode" },
+        ...AUDIT_POPULATE,
+      ],
+    });
+
+    return res.status(200).json(createPaginationResponse(result, "inventory"));
+  } catch (error) {
+    console.error("Get all inventory error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch inventory",
+      description: "An unexpected error occurred. Please try again.",
+    });
+  }
+};
+
+//------------------------------------------------ Get Single Minifig Inventory ------------------------------------------
+export const getMinifigInventoryById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const inventory = await MinifigInventory.findById(id)
+      .populate("colorId", "colorName hexCode")
+      .populate("createdBy", "firstName lastName username")
+      .populate("updatedBy", "firstName lastName username")
+      .lean();
+
+    if (!inventory) {
+      return res.status(404).json({
+        success: false,
+        message: "Inventory item not found",
+        description: "The requested inventory item does not exist.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      inventory,
+    });
+  } catch (error) {
+    console.error("Get inventory by ID error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch inventory item",
+      description: "An unexpected error occurred. Please try again.",
+    });
+  }
+};
+
+//------------------------------------------------ Update Minifig Inventory ------------------------------------------
+export const updateMinifigInventory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { minifigName, price, stock, colorId, image, isActive } = req.body;
+
+    const inventory = await MinifigInventory.findById(id);
+
+    if (!inventory) {
+      return res.status(404).json({
+        success: false,
+        message: "Inventory item not found",
+        description: "The requested inventory item does not exist.",
+      });
+    }
+
+    // Update name with uniqueness check
+    if (minifigName !== undefined) {
+      if (!minifigName || !String(minifigName).trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "Minifig name is required",
+          description: "Please provide a valid name.",
+        });
+      }
+
+      const checkName = String(minifigName).trim();
+      const checkColorId = colorId || inventory.colorId;
+
+      if (
+        checkName !== inventory.minifigName ||
+        (colorId && colorId !== inventory.colorId.toString())
+      ) {
+        const existing = await checkNameConflict(
+          MinifigInventory,
+          "minifigName",
+          checkName,
+          id,
+          { colorId: checkColorId },
+        );
+
+        if (existing) {
+          return res.status(409).json({
+            success: false,
+            message: "Duplicate item",
+            description: "An item with this name and color already exists.",
+          });
+        }
+      }
+      inventory.minifigName = checkName;
+    }
+
+    if (price !== undefined) {
+      if (Number(price) <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Price must be greater than zero",
+          description: "Please provide a valid positive price.",
+        });
+      }
+      inventory.price = Number(price);
+    }
+
+    if (stock !== undefined) {
+      if (!Number.isInteger(Number(stock)) || Number(stock) < 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Stock must be an integer >= 0",
+          description: "Please provide a valid non-negative integer for stock.",
+        });
+      }
+      inventory.stock = Number(stock);
+    }
+
+    if (colorId !== undefined) {
+      const color = await Color.findById(colorId);
+      if (!color) {
+        return res.status(404).json({
+          success: false,
+          message: "Color not found",
+          description: "The selected color does not exist.",
+        });
+      }
+      inventory.colorId = colorId;
+    }
+
+    // Replace image if new base64 provided via imageService
+    if (image !== undefined && image !== null) {
+      try {
+        const uploaded = await replaceSingleImage(
+          image,
+          inventory.image,
+          IMAGE_FOLDER,
+        );
+        if (uploaded) inventory.image = uploaded;
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to update image",
+          description: error.message,
+        });
+      }
+    }
+
+    if (isActive !== undefined) {
+      inventory.isActive = Boolean(isActive);
+    }
+
+    inventory.updatedBy = req.user._id;
+    await inventory.save();
+
+    await inventory.populate({ path: "colorId", select: "colorName hexCode" });
+
+    return res.status(200).json({
+      success: true,
+      message: "Inventory item updated successfully",
+      inventory,
+    });
+  } catch (error) {
+    console.error("Update inventory error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update inventory item",
+      description: "An unexpected error occurred. Please try again.",
+    });
+  }
+};
+
+//------------------------------------------------ Delete Minifig Inventory ------------------------------------------
+export const deleteMinifigInventory = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const inventory = await MinifigInventory.findById(id).lean();
+
+    if (!inventory) {
+      return res.status(404).json({
+        success: false,
+        message: "Inventory item not found",
+        description: "The requested inventory item does not exist.",
+      });
+    }
+
+    await MinifigInventory.findByIdAndDelete(id);
+
+    // Delete image in background (fire-and-forget)
+    deleteSingleImage(inventory.image?.publicId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Inventory item deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete inventory error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete inventory item",
+      description: "An unexpected error occurred. Please try again.",
+    });
+  }
+};

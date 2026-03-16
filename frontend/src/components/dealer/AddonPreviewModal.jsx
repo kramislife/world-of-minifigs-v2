@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -8,85 +7,120 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import Logo from "@/assets/media/Logo.png";
+import { Badge } from "@/components/ui/badge";
+import CommonImage from "@/components/shared/CommonImage";
+import QuantityControl from "@/components/shared/QuantityControl";
+import { formatCurrency } from "@/utils/formatting";
 
-const AddonPreviewModal = ({ addon, onClose, onSelect }) => {
-  if (!addon) return null;
-
+const AddonPreviewModal = ({
+  addon,
+  items,
+  totalBags,
+  totalPrice,
+  canSubmit,
+  isUpdate,
+  onClose,
+  onConfirm,
+  onValueChange,
+}) => {
   return (
-    <Dialog open={!!addon} onOpenChange={onClose}>
+    <Dialog open onOpenChange={onClose}>
       <DialogContent className="sm:max-w-4xl overflow-hidden flex flex-col gap-0">
         <DialogHeader>
-          <DialogTitle>{addon.addonName} Items</DialogTitle>
-          <DialogDescription className="sr-only">
-            Review the parts included in this premium add-on before selecting.
-          </DialogDescription>
+          <DialogTitle className="text-xl">{addon.addonName}</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {addon.items?.map((item, index) => (
-              <Card
-                key={index}
-                className="p-0 border border-border rounded-md overflow-hidden shadow-none"
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1">
+            {items.map((item) => (
+              <div
+                key={item.key}
+                className={`relative rounded-md border p-2 transition-all duration-300 ${
+                  item.isActive ? "border-accent border-l-4" : "border"
+                } ${item.isOutOfStock ? "opacity-60 grayscale-[0.5]" : ""}`}
               >
-                <CardContent className="flex flex-row items-start gap-3 pt-2 px-2 pb-1">
-                  <div className="shrink-0 rounded border flex items-center justify-center transition-all duration-300 w-20 h-20">
-                    {item.image?.url ? (
-                      <img
-                        src={item.image.url}
-                        alt={item.itemName}
-                        className="object-cover aspect-square"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center w-full h-full">
-                        <img
-                          src={Logo}
-                          alt="Placeholder"
-                          className="max-h-40 max-w-40 object-contain opacity-80"
-                        />
-                      </div>
-                    )}
+                {/* Out of Stock Badge */}
+                {item.isOutOfStock && (
+                  <div className="absolute top-2 right-2 z-10">
+                    <Badge variant="destructive" className="uppercase text-[10px] px-1.5 py-0">
+                      Out of Stock
+                    </Badge>
                   </div>
+                )}
 
-                  <div className="flex flex-col">
-                    <h4
-                      className="text-lg font-semibold line-clamp-1"
-                      title={item.itemName}
-                    >
-                      {item.itemName}
-                    </h4>
+                <div className="flex items-center gap-2">
+                  {/* Image */}
+                  <CommonImage
+                    src={item.image?.url}
+                    alt={item.itemName}
+                    className="w-24 aspect-4/3"
+                  />
 
-                    {item.color && (
-                      <p className="text-sm text-muted-foreground font-medium py-1">
-                        {item.color.colorName}
-                      </p>
-                    )}
+                  {/* Right Content */}
+                  <div className="flex flex-col gap-1 flex-1">
+                    {/* Name + Total */}
+                    <div className="flex items-start justify-between gap-2">
+                      <h4
+                        className="text-sm font-semibold line-clamp-1 leading-tight min-w-0"
+                        title={`${item.itemName} - ${item.perBagLimit} pcs/bag`}
+                      >
+                        {item.itemName}{" "}
+                        <span className="text-xs font-normal">
+                          - {item.perBagLimit} pcs/bag
+                        </span>
+                      </h4>
 
-                    <div className="flex flex-wrap gap-2">
-                      {item.itemPrice > 0 && (
-                        <div className="flex items-center gap-1 text-lg">
-                          <span className="font-semibold">Total Value:</span>
-                          <span className="text-success dark:text-accent font-bold">
-                            ${item.itemPrice.toFixed(2)}
-                          </span>
-                        </div>
+                      {item.selectedTotal > 0 && (
+                        <span className="font-bold text-sm text-success dark:text-accent whitespace-nowrap">
+                          {formatCurrency(item.selectedTotal)}
+                        </span>
                       )}
                     </div>
+
+                    {/* Info Row */}
+                    <span className="text-xs text-muted-foreground">
+                      {item.color?.colorName || "—"} {" · "}
+                      <span className="font-semibold text-success dark:text-accent">
+                        {formatCurrency(item.bagPrice)}
+                      </span>
+                    </span>
+
+                    {/* Quantity Control */}
+                    <div className="mt-1 flex items-center">
+                      <QuantityControl
+                        value={item.selectedBags}
+                        onChange={(val) =>
+                          onValueChange(item.inventoryItemId, val)
+                        }
+                        min={0}
+                        max={item.maxBags}
+                        disabled={item.isOutOfStock}
+                        allowInput={!item.isOutOfStock}
+                        size="xs"
+                      />
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         </div>
 
-        <DialogFooter className="pt-3">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="accent" onClick={() => onSelect(addon._id)}>
-            Add to Order
-          </Button>
+        <DialogFooter className="pt-3 sm:justify-between items-center">
+          <div className="font-bold text-sm">
+            Total:{" "}
+            <span className="text-success dark:text-accent">
+              {formatCurrency(totalPrice)}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button variant="accent" disabled={!canSubmit} onClick={onConfirm}>
+              {isUpdate ? "Update Order" : "Add to Order"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -94,72 +128,3 @@ const AddonPreviewModal = ({ addon, onClose, onSelect }) => {
 };
 
 export default AddonPreviewModal;
-
-{
-  /* <Dialog open={!!addon} onOpenChange={onClose}>
-<DialogContent className="sm:max-w-4xl overflow-hidden flex flex-col gap-0">
-  <DialogHeader>
-    <DialogTitle>{addon.addonName} Items</DialogTitle>
-    <DialogDescription className="sr-only">
-      Review the parts included in this premium add-on before selecting.
-    </DialogDescription>
-  </DialogHeader>
-
-  <div className="flex-1 overflow-y-auto">
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-      {addon.items?.map((item, index) => (
-        <div
-          key={index}
-          className="p-0 border border-border rounded-md overflow-hidden shadow-none"
-        >
-          <div className="aspect-square relative flex items-center justify-center overflow-hidden">
-            {item.image?.url ? (
-              <img
-                src={item.image.url}
-                alt={item.itemName}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <img
-                src={Logo}
-                alt="Placeholder"
-                className="max-h-40 max-w-40 object-contain opacity-80"
-              />
-            )}
-          </div>
-          <div className="p-2 bg-background border-t border-border space-y-1">
-            <h3
-              className="text-md font-bold line-clamp-1"
-              title={item.itemName}
-            >
-              {item.itemName}
-            </h3>
-            {item.color && (
-              <div className="flex items-center gap-1">
-                <span className="text-xs font-normal">
-                  {item.color.colorName}
-                </span>
-              </div>
-            )}
-            {item.itemPrice > 0 && (
-              <p className="text-sm font-bold text-success dark:text-accent mt-1">
-                ${item.itemPrice.toFixed(2)}
-              </p>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-
-  <DialogFooter className="pt-3">
-    <Button variant="outline" onClick={onClose}>
-      Cancel
-    </Button>
-    <Button variant="accent" onClick={() => onSelect(addon._id)}>
-      Add to Order
-    </Button>
-  </DialogFooter>
-</DialogContent>
-</Dialog> */
-}

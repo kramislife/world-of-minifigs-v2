@@ -2,7 +2,7 @@ import { useParams } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Check, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import Logo from "@/assets/media/Logo.png";
+import CommonImage from "@/components/shared/CommonImage";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import ErrorState from "@/components/shared/ErrorState";
 import {
@@ -12,6 +12,7 @@ import {
 import QuantityControl from "@/components/shared/QuantityControl";
 import RelatedProducts from "@/components/products/RelatedProducts";
 import { useProductDetails } from "@/hooks/useProductDetails";
+import { formatCurrency } from "@/utils/formatting";
 import { useProductCheckout } from "@/hooks/useCart";
 
 const ProductDetails = () => {
@@ -46,8 +47,7 @@ const ProductDetails = () => {
     handleNextImage,
     handleColorVariantClick,
     quantity,
-    handleQuantityDecrement,
-    handleQuantityIncrement,
+    handleQuantityChange,
     maxQuantity,
   } = useProductDetails(id);
 
@@ -93,64 +93,50 @@ const ProductDetails = () => {
         <div className="flex flex-col lg:flex-row gap-3">
           {/* Main Image */}
           <div
-            className={`relative border border-border rounded-lg overflow-hidden group order-1 lg:order-2 
+            className={`relative border border-border rounded-lg group order-1 lg:order-2 
   aspect-square ${hasMultipleImages ? "max-h-[630px]" : "max-h-[600px]"} w-full flex flex-1 items-center justify-center`}
           >
-            {currentImageUrl ? (
+            <CommonImage
+              src={currentImageUrl}
+              alt={product.productName}
+              objectFit="object-contain"
+              className="w-full h-full"
+            />
+
+            {/* Discount Badge */}
+            {product.discount && (
+              <Badge variant="accent" className="absolute top-4 right-4 z-10">
+                {product.discount}% OFF
+              </Badge>
+            )}
+
+            {/* Item ID */}
+            {hasItemId && (
+              <span className="absolute bottom-2 right-2 z-10 text-sm">
+                # {currentItemId}
+              </span>
+            )}
+
+            {/* Navigation Arrows */}
+            {hasMultipleImages && (
               <>
-                <img
-                  src={currentImageUrl}
-                  alt={product.productName}
-                  className="w-full h-full object-contain"
-                />
-
-                {/* Discount Badge */}
-                {product.discount && (
-                  <Badge
-                    variant="accent"
-                    className="absolute top-4 right-4 z-10"
-                  >
-                    {product.discount}% OFF
-                  </Badge>
-                )}
-
-                {/* Item ID */}
-                {hasItemId && (
-                  <span className="absolute bottom-2 right-2 z-10 text-sm">
-                    # {currentItemId}
-                  </span>
-                )}
-
-                {/* Navigation Arrows */}
-                {hasMultipleImages && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="absolute left-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={handlePreviousImage}
-                    >
-                      <ChevronLeft className="size-5" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={handleNextImage}
-                    >
-                      <ChevronRight className="size-5" />
-                    </Button>
-                  </>
-                )}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={handlePreviousImage}
+                >
+                  <ChevronLeft className="size-5" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={handleNextImage}
+                >
+                  <ChevronRight className="size-5" />
+                </Button>
               </>
-            ) : (
-              <div className="flex h-full w-full items-center justify-center">
-                <img
-                  src={Logo}
-                  alt="Product placeholder"
-                  className="max-h-56 max-w-56 object-contain opacity-80"
-                />
-              </div>
             )}
           </div>
 
@@ -171,11 +157,7 @@ const ProductDetails = () => {
                       : "border-border hover:border-destructive"
                   }`}
                 >
-                  <img
-                    src={img.url || Logo}
-                    alt={`Thumbnail ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
+                  <CommonImage src={img.url} alt={`Thumbnail ${index + 1}`} />
                 </Button>
               ))}
             </div>
@@ -210,11 +192,11 @@ const ProductDetails = () => {
             {/* Price */}
             <div className="flex items-center gap-2">
               <span className="text-5xl font-bold text-success dark:text-accent">
-                ${displayPrice?.toFixed(2) || "0.00"}
+                {formatCurrency(displayPrice)}
               </span>
               {hasDiscount && product.price && (
                 <span className="text-sm text-muted-foreground line-through">
-                  ${product.price.toFixed(2)}
+                  {formatCurrency(product.price)}
                 </span>
               )}
             </div>
@@ -361,12 +343,10 @@ const ProductDetails = () => {
               <div className="grid grid-cols-4 gap-2">
                 <QuantityControl
                   value={quantity}
-                  onDecrement={handleQuantityDecrement}
-                  onIncrement={handleQuantityIncrement}
+                  onChange={handleQuantityChange}
                   min={1}
                   max={maxQuantity}
-                  className="h-12 col-span-1"
-                  valueClassName="w-full"
+                  size="lg"
                 />
                 <AddToCartButton
                   product={product}

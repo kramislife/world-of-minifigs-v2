@@ -1,23 +1,37 @@
-import { toast } from "sonner";
+import { useEffect } from "react";
 import {
   useCreateColorMutation,
   useUpdateColorMutation,
   useGetColorsQuery,
   useDeleteColorMutation,
 } from "@/redux/api/adminApi";
-import useAdminCrud from "@/hooks/admin/useAdminCrud";
 import { extractPaginatedData } from "@/utils/apiHelpers";
+import { sanitizeString } from "@/utils/formatting";
+import { validateColor } from "@/utils/validation";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const initialFormData = {
   colorName: "",
   hexCode: "",
+  isActive: true,
 };
 
+const columns = [
+  { key: "colorName", label: "Color Name" },
+  { key: "hexCode", label: "Hex Code" },
+  { key: "isActive", label: "Status" },
+  { key: "createdAt", label: "Created At" },
+  { key: "updatedAt", label: "Updated At" },
+  { key: "actions", label: "Actions" },
+];
+
 const useColorManagement = () => {
+  // ------------------------------- Mutations ------------------------------------
   const [createColor, { isLoading: isCreating }] = useCreateColorMutation();
   const [updateColor, { isLoading: isUpdating }] = useUpdateColorMutation();
   const [deleteColor, { isLoading: isDeleting }] = useDeleteColorMutation();
 
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createColor,
@@ -26,116 +40,89 @@ const useColorManagement = () => {
     entityName: "color",
   });
 
-  // Fetch data
-  const { data: colorsResponse, isLoading: isLoadingColors } =
-    useGetColorsQuery({
-      page: crud.page,
-      limit: crud.limit,
-      search: crud.search || undefined,
-    });
+  // ------------------------------- Fetch ------------------------------------
+  const { data: colorsData, isLoading: isLoadingColors } = useGetColorsQuery({
+    page: crud.page,
+    limit: crud.limit,
+    search: crud.search || undefined,
+  });
 
-  const { items: colors, totalItems, totalPages } =
-    extractPaginatedData(colorsResponse, "colors");
+  const {
+    items: colors,
+    totalItems,
+    totalPages,
+  } = extractPaginatedData(colorsData, "colors");
 
-  const columns = [
-    { key: "colorName", label: "Color Name" },
-    { key: "hexCode", label: "Hex Code" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-    { key: "actions", label: "Actions" },
-  ];
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    crud.setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
+  // ------------------------------- Helpers ------------------------------------
   const handleColorPickerChange = (e) => {
-    const colorValue = e.target.value;
     crud.setFormData((prev) => ({
       ...prev,
-      hexCode: colorValue.toUpperCase(),
+      hexCode: e.target.value.toUpperCase(),
     }));
   };
 
   const getColorPickerValue = () => {
-    if (!crud.formData.hexCode.trim()) return "#000000";
-    const hex = crud.formData.hexCode.trim();
-    return hex.startsWith("#") ? hex : `#${hex}`;
+    const hex = sanitizeString(crud.formData.hexCode).replace("#", "");
+    return `#${hex || "000000"}`;
   };
 
+  // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (color) => {
     crud.openEdit(color, {
       colorName: color.colorName || "",
       hexCode: color.hexCode || "",
+      isActive: color.isActive !== false,
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // ------------------------------- Submit Handler ------------------------------------
+  const handleSubmit = async () => {
+    if (!validateColor(crud.formData)) return;
 
-    if (!crud.formData.colorName.trim()) {
-      toast.error("Color name is required", {
-        description: "Please enter a color name.",
-      });
-      return;
-    }
+    const payload = {
+      colorName: sanitizeString(crud.formData.colorName),
+      hexCode: sanitizeString(crud.formData.hexCode),
+      isActive: crud.formData.isActive,
+    };
 
-    if (!crud.formData.hexCode.trim()) {
-      toast.error("Hex code is required", {
-        description: "Please enter a hex color code.",
-      });
-      return;
-    }
-
-    const hexPattern = /^#?[0-9A-F]{6}$/i;
-    if (!hexPattern.test(crud.formData.hexCode.trim())) {
-      toast.error("Invalid hex code format", {
-        description:
-          "Hex code must be in format #RRGGBB or RRGGBB (e.g., #FF5733 or FF5733).",
-      });
-      return;
-    }
-
-    await crud.submitForm({
-      colorName: crud.formData.colorName.trim(),
-      hexCode: crud.formData.hexCode.trim(),
-    });
+    await crud.submitForm(payload);
   };
 
+  // ------------------------------- Handlers ------------------------------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // ------------------------------- Return ------------------------------------
   return {
-    // State
-    dialogOpen: crud.dialogOpen,
-    deleteDialogOpen: crud.deleteDialogOpen,
-    selectedColor: crud.selectedItem,
-    dialogMode: crud.dialogMode,
-    formData: crud.formData,
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search,
+    ...crud,
     colors,
     totalItems,
     totalPages,
     columns,
     isLoadingColors,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
-
-    // Handlers
-    handleChange,
     handleColorPickerChange,
     getColorPickerValue,
-    handleSubmit,
-    handleDialogClose: crud.handleDialogClose,
-    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete: crud.handleDelete,
-    handleConfirmDelete: crud.handleConfirmDelete,
-    handlePageChange: crud.handlePageChange,
-    handleLimitChange: crud.handleLimitChange,
-    handleSearchChange: crud.handleSearchChange,
-    setDeleteDialogOpen: crud.setDeleteDialogOpen,
+    handleSubmit,
+    handleChange,
+    handleValueChange,
   };
 };
 

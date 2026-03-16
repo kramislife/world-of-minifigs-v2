@@ -1,38 +1,20 @@
 import React from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Ellipsis } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import StatusBadge from "@/components/shared/StatusBadge";
+import { formatDate, formatCurrency } from "@/utils/formatting";
 
-// Helper function to extract text content from React children
-const getTextContent = (children) => {
-  if (typeof children === "string" || typeof children === "number") {
-    return String(children);
-  }
-  if (Array.isArray(children)) {
-    return children.map(getTextContent).join("").trim();
-  }
-  if (React.isValidElement(children)) {
-    if (children.props?.children) {
-      return getTextContent(children.props.children);
-    }
-    // If element has no children, try to get text from props (e.g., value, label)
-    return (
-      children.props?.value ||
-      children.props?.label ||
-      children.props?.title ||
-      ""
-    );
-  }
-  return "";
-};
+import { getTextContent } from "@/utils/uiHelpers";
 
-// Helper function to render table header
 export const TableHeader = ({ children }) => {
-  return (
-    <th className="px-4 py-3 text-center text-sm font-semibold">{children}</th>
-  );
+  return <th className="p-3 text-center text-sm font-semibold">{children}</th>;
 };
-
-// Helper function to render table cell with standard styling
 export const TableCell = ({
   children,
   className = "",
@@ -43,7 +25,7 @@ export const TableCell = ({
   const titleText = textContent || undefined;
 
   return (
-    <td className={`px-4 py-3 text-center text-sm ${className}`}>
+    <td className={`p-3 text-center text-sm ${className}`}>
       {truncate ? (
         <div
           className="truncate"
@@ -59,32 +41,91 @@ export const TableCell = ({
   );
 };
 
-// Actions Column Component
+// Standard Table Timestamp Cells
+export const TimestampCells = ({ createdAt, updatedAt }) => {
+  return (
+    <>
+      {createdAt && <TableCell>{formatDate(createdAt)}</TableCell>}
+      {updatedAt && <TableCell>{formatDate(updatedAt)}</TableCell>}
+    </>
+  );
+};
+
+// Standard Table Status Cell
+export const StatusCell = (props) => {
+  return (
+    <TableCell>
+      <StatusBadge {...props} />
+    </TableCell>
+  );
+};
+
+// Standard Table Price Cell
+export const PriceCell = ({ amount }) => {
+  return (
+    <TableCell className="text-success dark:text-accent font-bold">
+      {formatCurrency(amount)}
+    </TableCell>
+  );
+};
+
+// Actions for view, edit, and delete functions
 export const ActionsColumn = ({
+  onView,
   onEdit,
   onDelete,
-  editTitle = "Edit",
+  viewTitle = "View",
+  editTitle = "Update",
   deleteTitle = "Delete",
 }) => {
   return (
-    <td className="px-4 py-3">
-      <div className="flex items-center justify-center gap-2">
-        {onEdit && (
-          <Button size="icon" title={editTitle} onClick={onEdit}>
-            <Pencil className="size-4" />
-          </Button>
-        )}
-        {onDelete && (
+    <td className="p-3 flex items-center justify-center gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
           <Button
-            variant="destructive"
+            variant="outline"
             size="icon"
-            title={deleteTitle}
-            onClick={onDelete}
+            title="More actions"
+            className="mx-auto border-none shadow-none hover:bg-transparent focus:ring-0 focus:bg-transparent"
           >
-            <Trash2 className="size-4" />
+            <Ellipsis className="size-5" />
+            <span className="sr-only">Open actions menu</span>
           </Button>
-        )}
-      </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {onView && (
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                onView();
+              }}
+            >
+              {viewTitle}
+            </DropdownMenuItem>
+          )}
+          {onEdit && (
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                onEdit();
+              }}
+            >
+              {editTitle}
+            </DropdownMenuItem>
+          )}
+          {onDelete && (
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={(event) => {
+                event.preventDefault();
+                onDelete();
+              }}
+            >
+              {deleteTitle}
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </td>
   );
 };

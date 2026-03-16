@@ -1,9 +1,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import CommonImage from "@/components/shared/CommonImage";
 import MiscellaneousPreviewImage from "@/assets/media/MiscellaneousPreview.png";
 
 const MiscellaneousPreview = ({ miscQuantity }) => (
-  <div className="relative aspect-square select-none transition-all duration-300 hover:-translate-y-1">
+  <div className="relative aspect-4/3 select-none transition-all duration-300 hover:-translate-y-1">
     {/* Back Card 3 */}
     <div className="absolute inset-0 translate-x-4.5 translate-y-4.5 rotate-4">
       <Card className="h-full w-full dark:shadow-none" />
@@ -22,10 +23,10 @@ const MiscellaneousPreview = ({ miscQuantity }) => (
     {/* Front Card */}
     <Card className="relative h-full w-full overflow-hidden flex items-center justify-center text-center">
       {/* Background Image */}
-      <img
+      <CommonImage
         src={MiscellaneousPreviewImage}
-        alt=""
-        className="absolute inset-0 w-full h-full object-cover"
+        alt="Mystery Drop"
+        className="absolute inset-0"
       />
 
       {/* Overlay */}

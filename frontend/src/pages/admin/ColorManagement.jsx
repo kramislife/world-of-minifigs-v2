@@ -1,19 +1,27 @@
 import React from "react";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
-import DeleteDialog from "@/components/table/DeleteDialog";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+  StatusCell,
+} from "@/components/table/BaseColumn";
+import ColorSwatch from "@/components/shared/ColorSwatch";
+import { AdminFormInput } from "@/components/shared/AdminFormInput";
+import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
+import DeleteDialog from "@/components/table/DeleteDialog";
+import { display } from "@/utils/formatting";
 import useColorManagement from "@/hooks/admin/useColorManagement";
 
 const ColorManagement = () => {
   const {
     dialogOpen,
     deleteDialogOpen,
-    selectedColor,
+    selectedItem,
     dialogMode,
     formData,
     page,
@@ -22,13 +30,17 @@ const ColorManagement = () => {
     colors,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     columns,
     isLoadingColors,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
     handleChange,
     handleColorPickerChange,
+    handleValueChange,
     getColorPickerValue,
     handleSubmit,
     handleDialogClose,
@@ -44,20 +56,15 @@ const ColorManagement = () => {
 
   return (
     <div className="space-y-5">
-      {/* Header with Add Button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Color Management</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            Manage product colors in your store
-          </p>
-        </div>
-        <Button variant="accent" onClick={handleAdd}>
-          <Plus className="size-4" />
-          Add Color
-        </Button>
-      </div>
+      {/* Admin Page Header */}
+      <AdminManagementHeader
+        title="Color Management"
+        description="Manage product colors in your store"
+        actionLabel="Add Color"
+        onAction={handleAdd}
+      />
 
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search colors..."
         searchValue={search}
@@ -68,33 +75,38 @@ const ColorManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={colors}
         isLoading={isLoadingColors}
         renderRow={(color) => (
           <>
-            <TableCell maxWidth="200px">{color.colorName}</TableCell>
+            {/* Color Name */}
+            <TableCell maxWidth="200px">{display(color.colorName)}</TableCell>
+
+            {/* Hex Code */}
             <TableCell>
-              <div className="flex items-center justify-center gap-2">
-                {color.hexCode && (
-                  <div
-                    className="size-5 rounded-md shrink-0"
-                    style={{ backgroundColor: color.hexCode }}
-                  />
-                )}
-                <span>{color.hexCode || "-"}</span>
-              </div>
+              <ColorSwatch
+                color={color.hexCode}
+                label={display(color.hexCode)}
+                size="lg"
+                className="justify-center"
+              />
             </TableCell>
-            <TableCell>
-              {color.createdAt
-                ? new Date(color.createdAt).toLocaleString()
-                : "-"}
-            </TableCell>
-            <TableCell>
-              {color.updatedAt
-                ? new Date(color.updatedAt).toLocaleString()
-                : "-"}
-            </TableCell>
+
+            {/* Status */}
+            <StatusCell isActive={color.isActive} />
+
+            {/* Timestamps */}
+            <TimestampCells
+              createdAt={color.createdAt}
+              updatedAt={color.updatedAt}
+            />
+
+            {/* Actions */}
             <ActionsColumn
               onEdit={() => handleEdit(color)}
               onDelete={() => handleDelete(color)}
@@ -103,60 +115,61 @@ const ColorManagement = () => {
         )}
       />
 
-      {/* Add/Edit Color Dialog */}
+      {/* Add / Edit Color Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Color" : "Add New Color"}
-        description={
-          dialogMode === "edit"
-            ? "Update the color details."
-            : "Create a new color for your products."
-        }
+        entityName="Color"
         onSubmit={handleSubmit}
-        isLoading={dialogMode === "edit" ? isUpdating : isCreating}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Color" : "Create Color"
-        }
+        isLoading={isSubmitting}
       >
-        <div className="space-y-2">
-          <Label htmlFor="colorName">Color Name</Label>
-          <Input
-            id="colorName"
+        <div className="space-y-4">
+          {/* Color Name */}
+          <AdminFormInput
+            label="Color Name"
             name="colorName"
             type="text"
-            placeholder="e.g., Red, Blue, Forest Green"
+            placeholder="Red, Blue, Forest Green"
             value={formData.colorName}
             onChange={handleChange}
+            disabled={isSubmitting}
             required
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="hexCode">Hex Code</Label>
-          <div className="flex items-center gap-2">
-            <div className="flex-1">
+
+          {/* Hex Code */}
+          <div className="space-y-2">
+            <Label htmlFor="hexCode">Hex Code</Label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <Input
+                  id="hexCode"
+                  name="hexCode"
+                  type="text"
+                  placeholder="#000000"
+                  value={formData.hexCode}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                  required
+                />
+              </div>
               <Input
-                id="hexCode"
-                name="hexCode"
-                type="text"
-                placeholder="#000000"
-                value={formData.hexCode}
-                onChange={handleChange}
-                required
-                disabled={dialogMode === "edit" ? isUpdating : isCreating}
+                type="color"
+                value={getColorPickerValue()}
+                onChange={handleColorPickerChange}
+                disabled={isSubmitting}
+                className="w-12 p-1 cursor-pointer"
+                title="Pick a color"
               />
             </div>
-            <Input
-              type="color"
-              value={getColorPickerValue()}
-              onChange={handleColorPickerChange}
-              disabled={dialogMode === "edit" ? isUpdating : isCreating}
-              className="w-12 p-1 cursor-pointer"
-              title="Pick a color"
-            />
           </div>
+
+          {/* Visibility */}
+          <VisibilitySwitch
+            checked={formData.isActive}
+            onChange={handleValueChange("isActive")}
+            disabled={isSubmitting}
+          />
         </div>
       </AddUpdateItemDialog>
 
@@ -164,7 +177,7 @@ const ColorManagement = () => {
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedColor?.colorName || ""}
+        itemName={display(selectedItem?.colorName)}
         title="Delete Color"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

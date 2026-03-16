@@ -27,6 +27,11 @@ const collectionSchema = new mongoose.Schema(
       default: false,
     },
 
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -56,6 +61,8 @@ collectionSchema.index(
 collectionSchema.index({ createdAt: -1 });
 
 collectionSchema.index({ isFeatured: 1, createdAt: -1 });
+
+collectionSchema.index({ isActive: 1 });
 
 const Collection = mongoose.model("Collection", collectionSchema);
 

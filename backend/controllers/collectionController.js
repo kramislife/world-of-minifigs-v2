@@ -1,18 +1,22 @@
 import Collection from "../models/collection.model.js";
 import SubCollection from "../models/subCollection.model.js";
 import {
-  uploadImage,
-  deleteImage,
-  validateImage,
-} from "../utils/cloudinary.js";
+  uploadSingleImage,
+  replaceSingleImage,
+  deleteSingleImage,
+} from "../services/imageService.js";
 import {
   normalizePagination,
   buildSearchQuery,
   paginateQuery,
   createPaginationResponse,
 } from "../utils/pagination.js";
+import { onCollectionToggle } from "../utils/Products/visibilityUtils.js";
+import { checkNameConflict } from "../utils/commonUtils.js";
+import { AUDIT_POPULATE } from "../utils/populateHelpers.js";
 
 const FEATURED_COLLECTION_LIMIT = 2;
+const IMAGE_FOLDER = "world-of-minifigs-v2/collections";
 
 //------------------------------------------------ Create Collection ------------------------------------------
 export const createCollection = async (req, res) => {
@@ -36,16 +40,6 @@ export const createCollection = async (req, res) => {
       });
     }
 
-    // Validate image format and size
-    const imageValidation = validateImage(image, 5);
-    if (!imageValidation.isValid) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid image",
-        description: imageValidation.error,
-      });
-    }
-
     // Normalize collection name
     const collectionNameStr = String(collectionName).trim();
 
@@ -58,11 +52,11 @@ export const createCollection = async (req, res) => {
     }
 
     // Check if collection with same name already exists
-    const existingCollection = await Collection.findOne({
-      collectionName: collectionNameStr,
-    })
-      .collation({ locale: "en", strength: 2 })
-      .lean();
+    const existingCollection = await checkNameConflict(
+      Collection,
+      "collectionName",
+      collectionNameStr,
+    );
 
     if (existingCollection) {
       return res.status(409).json({
@@ -87,19 +81,16 @@ export const createCollection = async (req, res) => {
       }
     }
 
-    // Upload image to Cloudinary
+    // Upload image via imageService
     let uploadedImage;
     try {
-      uploadedImage = await uploadImage(
-        image,
-        "world-of-minifigs-v2/collections"
-      );
-    } catch (uploadError) {
-      console.error("Image upload error:", uploadError);
-      return res.status(500).json({
+      uploadedImage = await uploadSingleImage(image, IMAGE_FOLDER);
+    } catch (error) {
+      console.error("Image upload error:", error);
+      return res.status(400).json({
         success: false,
         message: "Failed to upload image",
-        description: "An error occurred while uploading the image.",
+        description: error.message,
       });
     }
 
@@ -110,10 +101,7 @@ export const createCollection = async (req, res) => {
     const collection = await Collection.create({
       collectionName: collectionNameStr,
       description: descriptionStr,
-      image: {
-        publicId: uploadedImage.public_id,
-        url: uploadedImage.url,
-      },
+      image: uploadedImage,
       isFeatured: isFeatured || false,
       createdBy: req.user._id,
     });
@@ -144,11 +132,7 @@ export const createCollection = async (req, res) => {
 export const getAllCollections = async (req, res) => {
   try {
     // Extract and normalize pagination parameters
-    const { page, limit, search } = normalizePagination({
-      page: req.query.page,
-      limit: req.query.limit,
-      search: req.query.search,
-    });
+    const { page, limit, search } = normalizePagination(req.query);
 
     // Build search query
     const searchFields = ["collectionName", "description"];
@@ -159,15 +143,12 @@ export const getAllCollections = async (req, res) => {
       page,
       limit,
       sort: { isFeatured: -1, createdAt: -1 }, // Featured first, then by date
-      populate: [
-        { path: "createdBy", select: "firstName lastName username" },
-        { path: "updatedBy", select: "firstName lastName username" },
-      ],
+      populate: AUDIT_POPULATE,
     });
 
-    return res.status(200).json(
-      createPaginationResponse(result, "collections")
-    );
+    return res
+      .status(200)
+      .json(createPaginationResponse(result, "collections"));
   } catch (error) {
     console.error("Get all collections error:", error);
     res.status(500).json({
@@ -240,12 +221,12 @@ export const updateCollection = async (req, res) => {
       }
 
       // Check if another collection with same name exists
-      const existingCollection = await Collection.findOne({
-        collectionName: collectionNameStr,
-        _id: { $ne: id },
-      })
-        .collation({ locale: "en", strength: 2 })
-        .lean();
+      const existingCollection = await checkNameConflict(
+        Collection,
+        "collectionName",
+        collectionNameStr,
+        id,
+      );
 
       if (existingCollection) {
         return res.status(409).json({
@@ -283,47 +264,42 @@ export const updateCollection = async (req, res) => {
       collection.isFeatured = isFeatured;
     }
 
-    // Update image if provided
+    // Replace image if provided via imageService
     if (image) {
-      // Validate image format and size
-      const imageValidation = validateImage(image, 5);
-      if (!imageValidation.isValid) {
+      try {
+        const uploaded = await replaceSingleImage(
+          image,
+          collection.image,
+          IMAGE_FOLDER,
+        );
+        if (uploaded) collection.image = uploaded;
+      } catch (error) {
+        console.error("Image update error:", error);
         return res.status(400).json({
           success: false,
-          message: "Invalid image",
-          description: imageValidation.error,
-        });
-      }
-
-      try {
-        // Delete old image from Cloudinary
-        if (collection.image?.publicId) {
-          await deleteImage(collection.image.publicId);
-        }
-
-        // Upload new image
-        const uploadedImage = await uploadImage(
-          image,
-          "world-of-minifigs-v2/collections"
-        );
-        collection.image = {
-          publicId: uploadedImage.public_id,
-          url: uploadedImage.url,
-        };
-      } catch (uploadError) {
-        console.error("Image update error:", uploadError);
-        return res.status(500).json({
-          success: false,
           message: "Failed to update image",
-          description: "An error occurred while updating the image.",
+          description: error.message,
         });
       }
+    }
+
+    // Update isActive if provided
+    const isActiveChanged =
+      req.body.isActive !== undefined &&
+      Boolean(req.body.isActive) !== collection.isActive;
+    if (req.body.isActive !== undefined) {
+      collection.isActive = Boolean(req.body.isActive);
     }
 
     // Update updatedBy
     collection.updatedBy = req.user._id;
 
     await collection.save();
+
+    // Cascade visibility recalculation when isActive changes
+    if (isActiveChanged) {
+      await onCollectionToggle(collection._id);
+    }
 
     return res.status(200).json({
       success: true,
@@ -334,6 +310,7 @@ export const updateCollection = async (req, res) => {
         description: collection.description,
         image: collection.image,
         isFeatured: collection.isFeatured,
+        isActive: collection.isActive,
         updatedAt: collection.updatedAt,
       },
     });
@@ -377,17 +354,10 @@ export const deleteCollection = async (req, res) => {
       });
     }
 
-    // Delete image from Cloudinary
-    try {
-      if (collection.image?.publicId) {
-        await deleteImage(collection.image.publicId);
-      }
-    } catch (deleteError) {
-      console.error("Image deletion error:", deleteError);
-      // Continue with collection deletion even if image deletion fails
-    }
-
     await Collection.findByIdAndDelete(id);
+
+    // Delete image in background (fire-and-forget)
+    deleteSingleImage(collection.image?.publicId);
 
     return res.status(200).json({
       success: true,

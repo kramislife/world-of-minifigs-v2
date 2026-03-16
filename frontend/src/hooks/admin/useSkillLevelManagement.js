@@ -1,19 +1,32 @@
-import { toast } from "sonner";
+import { useEffect } from "react";
 import {
   useCreateSkillLevelMutation,
   useUpdateSkillLevelMutation,
   useGetSkillLevelsQuery,
   useDeleteSkillLevelMutation,
 } from "@/redux/api/adminApi";
-import useAdminCrud from "@/hooks/admin/useAdminCrud";
 import { extractPaginatedData } from "@/utils/apiHelpers";
+import { sanitizeString } from "@/utils/formatting";
+import { validateSkillLevel } from "@/utils/validation";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const initialFormData = {
   skillLevelName: "",
   description: "",
+  isActive: true,
 };
 
+const columns = [
+  { key: "skillLevelName", label: "Skill Level" },
+  { key: "description", label: "Description" },
+  { key: "isActive", label: "Status" },
+  { key: "createdAt", label: "Created At" },
+  { key: "updatedAt", label: "Updated At" },
+  { key: "actions", label: "Actions" },
+];
+
 const useSkillLevelManagement = () => {
+  // ------------------------------- Mutations ------------------------------------
   const [createSkillLevel, { isLoading: isCreating }] =
     useCreateSkillLevelMutation();
   const [updateSkillLevel, { isLoading: isUpdating }] =
@@ -21,6 +34,7 @@ const useSkillLevelManagement = () => {
   const [deleteSkillLevel, { isLoading: isDeleting }] =
     useDeleteSkillLevelMutation();
 
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createSkillLevel,
@@ -29,8 +43,8 @@ const useSkillLevelManagement = () => {
     entityName: "skill level",
   });
 
-  // Fetch data
-  const { data: skillLevelsResponse, isLoading: isLoadingSkillLevels } =
+  // ------------------------------- Fetch ------------------------------------
+  const { data: skillLevelsData, isLoading: isLoadingSkillLevels } =
     useGetSkillLevelsQuery({
       page: crud.page,
       limit: crud.limit,
@@ -41,75 +55,63 @@ const useSkillLevelManagement = () => {
     items: skillLevels,
     totalItems,
     totalPages,
-  } = extractPaginatedData(skillLevelsResponse, "skillLevels");
+  } = extractPaginatedData(skillLevelsData, "skillLevels");
 
-  const columns = [
-    { key: "skillLevelName", label: "Skill Level" },
-    { key: "description", label: "Description" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-    { key: "actions", label: "Actions" },
-  ];
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    crud.setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
+  // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (skillLevel) => {
     crud.openEdit(skillLevel, {
       skillLevelName: skillLevel.skillLevelName || "",
       description: skillLevel.description || "",
+      isActive: skillLevel.isActive !== false,
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // ------------------------------- Submit Handler ------------------------------------
+  const handleSubmit = async () => {
+    if (!validateSkillLevel(crud.formData)) return;
 
-    if (!crud.formData.skillLevelName.trim()) {
-      toast.error("Skill level is required", {
-        description: "Please enter a skill level.",
-      });
-      return;
-    }
+    const payload = {
+      skillLevelName: sanitizeString(crud.formData.skillLevelName),
+      description: sanitizeString(crud.formData.description),
+      isActive: crud.formData.isActive,
+    };
 
-    await crud.submitForm({
-      skillLevelName: crud.formData.skillLevelName.trim(),
-      description: crud.formData.description.trim(),
-    });
+    await crud.submitForm(payload);
   };
 
+  // ------------------------------- Handlers ------------------------------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // ------------------------------- Return ------------------------------------
   return {
-    // State
-    dialogOpen: crud.dialogOpen,
-    deleteDialogOpen: crud.deleteDialogOpen,
-    selectedSkillLevel: crud.selectedItem,
-    dialogMode: crud.dialogMode,
-    formData: crud.formData,
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search,
+    ...crud,
     skillLevels,
     totalItems,
     totalPages,
     columns,
     isLoadingSkillLevels,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
-
-    // Handlers
-    handleChange,
-    handleSubmit,
-    handleDialogClose: crud.handleDialogClose,
-    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete: crud.handleDelete,
-    handleConfirmDelete: crud.handleConfirmDelete,
-    handlePageChange: crud.handlePageChange,
-    handleLimitChange: crud.handleLimitChange,
-    handleSearchChange: crud.handleSearchChange,
-    setDeleteDialogOpen: crud.setDeleteDialogOpen,
+    handleSubmit,
+    handleChange,
+    handleValueChange,
   };
 };
 

@@ -7,21 +7,25 @@ const DealerExtraBag = ({
   totalExtraBags,
   maxExtraBags,
   selectedBundle,
-  onIncrease,
-  onDecrease,
+  onQtyChange,
 }) => (
   <section id="step3" className="overflow-visible">
-    <div className="flex flex-col mb-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-2">
-        <h2 className="text-2xl font-bold tracking-tight">
-          Step 3 — Extra Part Bag Options
-        </h2>
+    <div className="flex flex-col mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-1.5">
+        <div className="flex items-center gap-2">
+          <h2 className="text-2xl font-bold tracking-tight">
+            Step 3 — Extra Part Bag Options
+          </h2>
+          <Badge variant="outline" className="text-[10px] uppercase tracking-wide shrink-0">
+            Optional
+          </Badge>
+        </div>
         {selectedBundle && (
-          <Badge variant="outline" className="flex items-center">
-            <div className="flex items-center gap-1">
-              <span className="text-sm font-bold">{totalExtraBags}</span>
+          <Badge variant="outline" className="flex items-center self-start md:self-auto">
+            <div className="flex items-center gap-1 text-primary">
+              <span className="text-lg font-bold">{totalExtraBags}</span>
               <span className="text-muted-foreground">/</span>
-              <span className="text-sm font-bold">
+              <span className="text-lg font-bold">
                 {maxExtraBags} extra bags
               </span>
             </div>
@@ -34,39 +38,43 @@ const DealerExtraBag = ({
     </div>
 
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-      {extraBags.map((bag) => (
-        <Card
-          key={bag._id}
-          className={`p-5 transition-all duration-300 group overflow-visible hover:shadow-2xl hover:-translate-y-2 flex flex-col gap-2 ${
-            bag.qty > 0 ? "border-accent ring-2 ring-accent ring-offset-2" : ""
-          }`}
-        >
-          <h3 className="text-xl font-bold text-left">
-            {bag.subCollectionId?.subCollectionName || "Extra Bag"}
-          </h3>
+      {extraBags.map((bag) => {
+        const handleQuantityChange = (newVal) => onQtyChange(bag._id, newVal);
 
-          <div className="w-full flex flex-col mt-3">
-            <span className="text-5xl font-extrabold text-success dark:text-accent">
-              ${bag.price}
-            </span>
-            <span className="text-xs text-muted-foreground mt-2">
-              per extra bag
-            </span>
-          </div>
+        return (
+          <Card
+            key={bag._id}
+            className={`p-5 transition-all duration-300 group overflow-visible hover:shadow-2xl hover:-translate-y-2 flex flex-col gap-2 ${
+              bag.qty > 0
+                ? "border-accent ring-2 ring-accent ring-offset-2"
+                : ""
+            }`}
+          >
+            <h3 className="text-lg font-bold text-left">
+              {bag.subCollectionId?.subCollectionName || "Extra Bag"}
+            </h3>
 
-          <div className="mt-3">
-            <QuantityControl
-              value={bag.qty}
-              onDecrement={() => onDecrease(bag._id)}
-              onIncrement={() => onIncrease(bag._id)}
-              min={0}
-              max={bag.qty + Math.max(0, maxExtraBags - totalExtraBags)}
-              className="rounded-md h-10"
-              valueClassName="flex-1"
-            />
-          </div>
-        </Card>
-      ))}
+            <div className="w-full flex flex-col mt-2">
+              <span className="text-4xl font-extrabold text-success dark:text-accent">
+                ${bag.price}
+              </span>
+              <span className="text-xs text-muted-foreground mt-1 uppercase tracking-wide font-semibold">
+                per extra bag
+              </span>
+            </div>
+
+            <div className="mt-2 w-full">
+              <QuantityControl
+                value={bag.qty}
+                onChange={handleQuantityChange}
+                min={0}
+                max={bag.max}
+                size="md"
+              />
+            </div>
+          </Card>
+        );
+      })}
     </div>
   </section>
 );

@@ -20,6 +20,11 @@ const subCategorySchema = new mongoose.Schema(
       index: true,
     },
 
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -47,6 +52,8 @@ subCategorySchema.index(
 
 // Fast sorting for getAllSubCategories
 subCategorySchema.index({ createdAt: -1 });
+
+subCategorySchema.index({ isActive: 1 });
 
 const SubCategory = mongoose.model("SubCategory", subCategorySchema);
 

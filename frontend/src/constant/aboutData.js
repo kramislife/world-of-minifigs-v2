@@ -88,5 +88,7 @@ export const aboutExplore = {
   highlight: "LEGO Adventures?",
   description:
     "Dive into our world of authentic LEGO parts and minifigures and start building your imagination — one brick at a time.",
+  buttonText: "Explore Products",
+  buttonLink: "/products",
   image: aboutExploreImage,
 };

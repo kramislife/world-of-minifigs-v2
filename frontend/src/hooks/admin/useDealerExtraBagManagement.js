@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from "react";
 import {
   useGetDealerExtraBagsQuery,
   useCreateDealerExtraBagMutation,
@@ -5,8 +6,10 @@ import {
   useDeleteDealerExtraBagMutation,
   useGetSubCollectionsQuery,
 } from "@/redux/api/adminApi";
-import useAdminCrud from "@/hooks/admin/useAdminCrud";
 import { extractPaginatedData } from "@/utils/apiHelpers";
+import { sanitizeString, sortByName } from "@/utils/formatting";
+import { validateDealerExtraBag } from "@/utils/validation";
+import useAdminCrud from "@/hooks/admin/useAdminCrud";
 
 const initialFormData = {
   subCollectionId: "",
@@ -14,7 +17,17 @@ const initialFormData = {
   isActive: true,
 };
 
+const columns = [
+  { key: "subCollectionId", label: "Part Type" },
+  { key: "price", label: "Price Per Bag" },
+  { key: "isActive", label: "Status" },
+  { key: "createdAt", label: "Created At" },
+  { key: "updatedAt", label: "Updated At" },
+  { key: "actions", label: "Actions" },
+];
+
 const useDealerExtraBagManagement = () => {
+  // ------------------------------- Mutations ------------------------------------
   const [createExtraBag, { isLoading: isCreating }] =
     useCreateDealerExtraBagMutation();
   const [updateExtraBag, { isLoading: isUpdating }] =
@@ -22,6 +35,7 @@ const useDealerExtraBagManagement = () => {
   const [deleteExtraBag, { isLoading: isDeleting }] =
     useDeleteDealerExtraBagMutation();
 
+  // ------------------------------- Core CRUD ------------------------------------
   const crud = useAdminCrud({
     initialFormData,
     createFn: createExtraBag,
@@ -30,84 +44,87 @@ const useDealerExtraBagManagement = () => {
     entityName: "bag pricing",
   });
 
-  // Fetch data
-  const { data: extraBagsResponse, isLoading: isLoadingExtraBags } =
+  // ------------------------------- Fetch ------------------------------------
+  const { data: extraBagsData, isLoading: isLoadingExtraBags } =
     useGetDealerExtraBagsQuery({
       page: crud.page,
       limit: crud.limit,
       search: crud.search || undefined,
     });
 
-  const { data: subCollectionsData } = useGetSubCollectionsQuery({
-    limit: 1000,
-  });
-  const subCollections = subCollectionsData?.subCollections || [];
+  const { data: subCollectionsData, isLoading: isLoadingSubCollections } =
+    useGetSubCollectionsQuery({
+      limit: 1000,
+    });
 
   const {
     items: extraBags,
     totalItems,
     totalPages,
-  } = extractPaginatedData(extraBagsResponse, "extraBags");
+  } = extractPaginatedData(extraBagsData, "extraBags");
 
-  const columns = [
-    { key: "subCollectionId", label: "Part Type" },
-    { key: "price", label: "Price Per Bag" },
-    { key: "isActive", label: "Status" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-    { key: "actions", label: "Actions" },
-  ];
+  const subCollections = useMemo(
+    () => sortByName(subCollectionsData?.subCollections, "subCollectionName"),
+    [subCollectionsData],
+  );
 
+  useEffect(() => {
+    crud.setTotalItems(totalItems);
+  }, [totalItems]);
+
+  const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
+
+  // ------------------------------- Edit Handler ------------------------------------
   const handleEdit = (bag) => {
     crud.openEdit(bag, {
       subCollectionId: bag.subCollectionId?._id || "",
-      price: bag.price,
-      isActive: bag.isActive,
+      price: bag.price || "",
+      isActive: bag.isActive !== false,
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // ------------------------------- Submit Handler ------------------------------------
+  const handleSubmit = async () => {
+    if (!validateDealerExtraBag(crud.formData)) return;
 
-    await crud.submitForm({
-      subCollectionId: (crud.formData.subCollectionId ?? "").trim(),
-      price: crud.formData.price ? Number(crud.formData.price) : undefined,
+    const payload = {
+      subCollectionId: sanitizeString(crud.formData.subCollectionId),
+      price: Number(crud.formData.price || 0),
       isActive: crud.formData.isActive,
-    });
+    };
+
+    await crud.submitForm(payload);
   };
 
+  // ------------------------------- Handlers ------------------------------------
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    crud.setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleValueChange = (field) => (value) => {
+    crud.setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // ------------------------------- Return ------------------------------------
   return {
-    // State
-    dialogOpen: crud.dialogOpen,
-    deleteDialogOpen: crud.deleteDialogOpen,
-    selectedBag: crud.selectedItem,
-    dialogMode: crud.dialogMode,
-    formData: crud.formData,
-    page: crud.page,
-    limit: crud.limit,
-    search: crud.search,
+    ...crud,
     subCollections,
     extraBags,
     totalItems,
     totalPages,
     columns,
     isLoadingExtraBags,
-    isCreating,
-    isUpdating,
+    isLoadingSubCollections,
+    isSubmitting,
     isDeleting,
-
-    // Handlers
-    handleDialogClose: crud.handleDialogClose,
-    setDeleteDialogOpen: crud.setDeleteDialogOpen,
-    setFormData: crud.setFormData,
-    handleAdd: crud.handleAdd,
     handleEdit,
-    handleDelete: crud.handleDelete,
     handleSubmit,
-    handleConfirmDelete: crud.handleConfirmDelete,
-    handlePageChange: crud.handlePageChange,
-    handleLimitChange: crud.handleLimitChange,
-    handleSearchChange: crud.handleSearchChange,
+    handleChange,
+    handleValueChange,
   };
 };
 

@@ -2,8 +2,9 @@ import React from "react";
 import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import Logo from "@/assets/media/Logo.png";
+import CommonImage from "@/components/shared/CommonImage";
 import { AddToCartButton } from "@/components/shared/OrderActionButton";
+import { formatCurrency } from "@/utils/formatting";
 import {
   useProductCard,
   useProductCardHoverImages,
@@ -29,71 +30,52 @@ const ProductCard = ({ product }) => {
       aria-label={`View product ${product.productName}`}
       onClick={handleNavigate}
       onKeyDown={(e) => e.key === "Enter" && handleNavigate()}
-      className={`group cursor-pointer hover:shadow-lg p-0 gap-2 transition-all duration-300 ${
+      className={`group cursor-pointer gap-0 py-2 transition-all duration-300 ${
         isSoldOut ? "opacity-75" : ""
       }`}
     >
-      <CardHeader className="p-0 gap-0">
-        <div
-          className="relative aspect-square overflow-hidden border-b border-border"
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
-          {imageUrls.length > 0 ? (
-            <div className={`relative h-full w-full`}>
-              {imageUrls.map((url, index) => (
-                <img
-                  key={`${product._id}-${url}-${index}`}
-                  src={url}
-                  alt={`${product.productName}${
-                    hasMultipleImages ? ` - Image ${index + 1}` : ""
-                  }`}
-                  title={`Go to ${product.productName}`}
-                  className={[
-                    "absolute inset-0 h-full w-full object-cover transition-opacity duration-500",
-                    index === currentImageIndex
-                      ? "opacity-100 z-10"
-                      : "opacity-0 z-0",
-                  ].join(" ")}
-                />
-              ))}
-            </div>
+      <CardHeader
+        className="relative aspect-square"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {imageUrls.map((url, index) => (
+          <CommonImage
+            key={`${product._id}-${index}`}
+            src={url}
+            alt={`${product.productName}${
+              hasMultipleImages ? ` - Image ${index + 1}` : ""
+            }`}
+            className={`absolute inset-0 transition-opacity duration-500 ${
+              index === currentImageIndex ? "opacity-100 z-10" : "opacity-0 z-0"
+            }`}
+          />
+        ))}
+
+        {/* Status Badges */}
+        <div className="absolute top-2 right-2 flex flex-col gap-1 z-20">
+          {isSoldOut ? (
+            <Badge variant="destructive">Sold Out</Badge>
           ) : (
-            <div className={`flex h-full w-full items-center justify-center`}>
-              <img
-                src={Logo}
-                alt="Product placeholder"
-                title={product.productName}
-                className="max-h-40 max-w-40 object-contain opacity-80"
-              />
-            </div>
-          )}
-
-          {/* Status Badges */}
-          <div className="absolute top-2 right-2 flex flex-col gap-1 z-20">
-            {isSoldOut ? (
-              <Badge variant="destructive">Sold Out</Badge>
-            ) : (
-              product.discount && (
-                <Badge variant="accent">{product.discount}% OFF</Badge>
-              )
-            )}
-          </div>
-
-          {/* Add to Cart Button Logic */}
-          {!isSoldOut && (
-            <div className="absolute inset-x-0 bottom-0 z-20 opacity-0 transition-opacity duration-300 group-hover:opacity-100 p-2">
-              <AddToCartButton
-                product={product}
-                variant="dark"
-                className="translate-y-2 group-hover:translate-y-0 transition-all duration-300"
-              />
-            </div>
+            product.discount && (
+              <Badge variant="accent">{product.discount}% OFF</Badge>
+            )
           )}
         </div>
+
+        {/* Add to Cart Button Logic */}
+        {!isSoldOut && (
+          <div className="absolute inset-x-0 bottom-0 z-20 opacity-0 transition-opacity duration-300 group-hover:opacity-100 p-2">
+            <AddToCartButton
+              product={product}
+              variant="dark"
+              className="translate-y-2 group-hover:translate-y-0 transition-all duration-300"
+            />
+          </div>
+        )}
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-2 px-3 pb-5">
+      <CardContent className="flex flex-col gap-2 px-3 py-3 border-t">
         {/* Product Name */}
         <h2
           className="text-lg font-semibold line-clamp-1"
@@ -105,11 +87,11 @@ const ProductCard = ({ product }) => {
         {/* Price */}
         <div className="flex items-center gap-2">
           <span className="text-2xl font-bold text-success dark:text-accent">
-            ${product.displayPrice?.toFixed(2) || "0.00"}
+            {formatCurrency(product.displayPrice)}
           </span>
           {product.hasDiscount && (
             <span className="text-sm text-muted-foreground line-through">
-              ${product.price?.toFixed(2)}
+              {formatCurrency(product.price)}
             </span>
           )}
         </div>

@@ -1,19 +1,21 @@
 import Banner from "../models/banner.model.js";
 import {
-  validateBannerMedia,
-  uploadBannerMedia,
-  deleteMedia,
-} from "../utils/cloudinary.js";
+  uploadSingleMedia,
+  deleteSingleMedia,
+} from "../services/imageService.js";
+import { validateMedia } from "../utils/cloudinary.js";
 import {
   normalizePagination,
   buildSearchQuery,
   paginateQuery,
   createPaginationResponse,
 } from "../utils/pagination.js";
+import { AUDIT_POPULATE } from "../utils/populateHelpers.js";
 
 //------------------------------------------------ Helpers ------------------------------------------
 
 const BANNER_VIDEO_MAX_SECONDS = 10;
+const IMAGE_FOLDER = "world-of-minifigs-v2/banners";
 
 const BANNER_VALID_PATHS = [
   "/products",
@@ -92,9 +94,8 @@ const validateBannerVideoDuration = async (uploadResult) => {
   if (uploadResult.duration <= BANNER_VIDEO_MAX_SECONDS) {
     return null;
   }
-  try {
-    await deleteMedia(uploadResult.publicId, uploadResult.resourceType);
-  } catch (e) {}
+  // Delete the uploaded video that's too long
+  deleteSingleMedia(uploadResult.publicId, uploadResult.resourceType);
   return {
     status: 400,
     message: "Video is too long",
@@ -155,7 +156,7 @@ export const createBanner = async (req, res) => {
     }
 
     // Validate media
-    const mediaValidation = validateBannerMedia(media);
+    const mediaValidation = validateMedia(media);
 
     if (!mediaValidation.isValid) {
       return res.status(400).json({
@@ -180,16 +181,13 @@ export const createBanner = async (req, res) => {
       }
     }
 
-    // Upload media
+    // Upload media via imageService
     let uploadedMedia = null;
 
     try {
-      const uploadResult = await uploadBannerMedia(
-        media,
-        "world-of-minifigs-v2/banners",
-      );
+      uploadedMedia = await uploadSingleMedia(media, IMAGE_FOLDER);
 
-      const videoError = await validateBannerVideoDuration(uploadResult);
+      const videoError = await validateBannerVideoDuration(uploadedMedia);
       if (videoError) {
         return res.status(videoError.status).json({
           success: false,
@@ -197,16 +195,13 @@ export const createBanner = async (req, res) => {
           description: videoError.description,
         });
       }
-
-      uploadedMedia = uploadResult;
     } catch (error) {
       console.error("Banner media upload error:", error);
 
-      return res.status(500).json({
+      return res.status(400).json({
         success: false,
         message: "Failed to upload banner media",
-        description:
-          "An error occurred while uploading the banner media. Please try again.",
+        description: error.message,
       });
     }
 
@@ -291,11 +286,7 @@ export const createBanner = async (req, res) => {
 export const getAllBanners = async (req, res) => {
   try {
     // Extract and normalize pagination parameters
-    const { page, limit, search } = normalizePagination({
-      page: req.query.page,
-      limit: req.query.limit,
-      search: req.query.search,
-    });
+    const { page, limit, search } = normalizePagination(req.query);
 
     // Build search query
     const searchFields = ["label", "badge", "description"];
@@ -306,10 +297,7 @@ export const getAllBanners = async (req, res) => {
       page,
       limit,
       sort: { order: 1 },
-      populate: [
-        { path: "createdBy", select: "firstName lastName username" },
-        { path: "updatedBy", select: "firstName lastName username" },
-      ],
+      populate: AUDIT_POPULATE,
     });
 
     return res.status(200).json(createPaginationResponse(result, "banners"));
@@ -446,7 +434,7 @@ export const updateBanner = async (req, res) => {
 
     // Replace media if new media is provided
     if (media) {
-      const mediaValidation = validateBannerMedia(media);
+      const mediaValidation = validateMedia(media);
 
       if (!mediaValidation.isValid) {
         return res.status(400).json({
@@ -459,10 +447,7 @@ export const updateBanner = async (req, res) => {
       let uploadResult = null;
 
       try {
-        uploadResult = await uploadBannerMedia(
-          media,
-          "world-of-minifigs-v2/banners",
-        );
+        uploadResult = await uploadSingleMedia(media, IMAGE_FOLDER);
 
         const videoError = await validateBannerVideoDuration(uploadResult);
         if (videoError) {
@@ -475,22 +460,15 @@ export const updateBanner = async (req, res) => {
       } catch (error) {
         console.error("Banner media upload error:", error);
 
-        return res.status(500).json({
+        return res.status(400).json({
           success: false,
           message: "Failed to upload banner media",
-          description:
-            "An error occurred while uploading the banner media. Please try again.",
+          description: error.message,
         });
       }
 
-      // Delete old media
-      if (banner.media?.publicId) {
-        try {
-          await deleteMedia(banner.media.publicId, banner.media.resourceType);
-        } catch (error) {
-          console.error("Error deleting old banner media:", error);
-        }
-      }
+      // Delete old media in background (fire-and-forget)
+      deleteSingleMedia(banner.media?.publicId, banner.media?.resourceType);
 
       banner.media = {
         publicId: uploadResult.publicId,
@@ -604,13 +582,8 @@ export const deleteBanner = async (req, res) => {
       });
     }
 
-    if (banner.media?.publicId) {
-      try {
-        await deleteMedia(banner.media.publicId, banner.media.resourceType);
-      } catch (error) {
-        console.error("Error deleting banner media:", error);
-      }
-    }
+    // Delete media in background (fire-and-forget)
+    deleteSingleMedia(banner.media?.publicId, banner.media?.resourceType);
 
     const deletedOrder = banner.order;
 

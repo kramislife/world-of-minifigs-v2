@@ -21,11 +21,7 @@ const Dealer = () => {
   const {
     // States & Setters
     setSelectedBundleId,
-    setSelectedAddonId,
-    selectedAddon,
-    setSelectedAddon,
-    extraBagQuantities,
-    selectedTorsoBagIds,
+    handleToggleAddon,
 
     // Data
     bundles,
@@ -44,13 +40,16 @@ const Dealer = () => {
     maxExtraBags,
     totalExtraBags,
     lastSelectedBag,
-    selectedAddonData,
-    totalOrderPrice,
+
+    // Order Summary
+    orderSummary,
 
     // Handlers
-    handleIncreaseBag,
-    handleDecreaseBag,
+    handleExtraBagQtyChange,
     handleSelectTorsoBag,
+
+    // Addon Preview Modal
+    addonPreview,
 
     // Reorder (Admin)
     localItems,
@@ -61,6 +60,10 @@ const Dealer = () => {
     handleReorderDragEnd,
     handleSaveReorder,
     handleResetReorder,
+
+    // Checkout
+    handleDealerCheckout,
+    isCheckoutLoading,
 
     // Status
     isAdmin,
@@ -95,6 +98,7 @@ const Dealer = () => {
   return (
     <>
       <PageHero
+        bannerPadding="py-20"
         title={dealerHero.title}
         highlight={dealerHero.highlight}
         description={dealerHero.description}
@@ -130,12 +134,12 @@ const Dealer = () => {
 
       <DealerBundle bundles={bundles} onSelect={setSelectedBundleId} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-5 px-5 py-10 items-start overflow-visible bg-input/50 dark:bg-card/50">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-5 px-5 items-start overflow-visible bg-input/50 dark:bg-card/50">
         <div className="space-y-10 overflow-visible">
           <DealerAddon
             addons={addons}
-            onSelect={setSelectedAddonId}
-            onPreview={setSelectedAddon}
+            onSelect={handleToggleAddon}
+            onPreview={addonPreview.onOpen}
           />
 
           <DealerExtraBag
@@ -143,8 +147,7 @@ const Dealer = () => {
             totalExtraBags={totalExtraBags}
             maxExtraBags={maxExtraBags}
             selectedBundle={selectedBundle}
-            onIncrease={handleIncreaseBag}
-            onDecrease={handleDecreaseBag}
+            onQtyChange={handleExtraBagQtyChange}
           />
 
           <DealerTorsoBag
@@ -169,27 +172,25 @@ const Dealer = () => {
 
         <DealerOrderSummary
           selectedBundle={selectedBundle}
-          selectedAddonData={selectedAddonData}
-          totalExtraBags={totalExtraBags}
-          extraBagQuantities={extraBagQuantities}
-          extraBags={extraBags}
-          selectedTorsoBagIds={selectedTorsoBagIds}
-          torsoBags={torsoBags}
-          isCustomBundle={isCustomBundle}
-          multiplier={multiplier}
-          miscQuantity={miscQuantity}
-          totalOrderPrice={totalOrderPrice}
+          {...orderSummary}
+          onCheckout={handleDealerCheckout}
+          isCheckoutLoading={isCheckoutLoading}
         />
       </div>
 
-      <AddonPreviewModal
-        addon={selectedAddon}
-        onClose={() => setSelectedAddon(null)}
-        onSelect={(id) => {
-          setSelectedAddonId(id);
-          setSelectedAddon(null);
-        }}
-      />
+      {addonPreview.addon && (
+        <AddonPreviewModal
+          addon={addonPreview.addon}
+          items={addonPreview.items}
+          totalBags={addonPreview.totalBags}
+          totalPrice={addonPreview.totalPrice}
+          canSubmit={addonPreview.canSubmit}
+          isUpdate={addonPreview.isUpdate}
+          onClose={addonPreview.onClose}
+          onConfirm={addonPreview.onConfirm}
+          onValueChange={addonPreview.onValueChange}
+        />
+      )}
     </>
   );
 };

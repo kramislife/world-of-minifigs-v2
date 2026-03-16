@@ -1,45 +1,46 @@
 import React from "react";
-import { Plus } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  AdminFormInput,
+  AdminFormSelect,
+} from "@/components/shared/AdminFormInput";
+import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import TableLayout from "@/components/table/TableLayout";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+  StatusCell,
+} from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
+import { formatCurrency, display } from "@/utils/formatting";
 import useDealerExtraBagManagement from "@/hooks/admin/useDealerExtraBagManagement";
 
 const DealerExtraBagManagement = () => {
   const {
-    search,
-    limit,
-    page,
     dialogOpen,
     deleteDialogOpen,
+    selectedItem,
     dialogMode,
-    selectedBag,
     formData,
     subCollections,
     extraBags,
     totalItems,
     totalPages,
+    page,
+    limit,
+    search,
+    startItem,
+    endItem,
     columns,
     isLoadingExtraBags,
-    isCreating,
-    isUpdating,
+    isLoadingSubCollections,
+    isSubmitting,
     isDeleting,
+    handleChange,
+    handleValueChange,
     handleDialogClose,
-    setDeleteDialogOpen,
-    setFormData,
     handleAdd,
     handleEdit,
     handleDelete,
@@ -48,23 +49,22 @@ const DealerExtraBagManagement = () => {
     handlePageChange,
     handleLimitChange,
     handleSearchChange,
+    handlePrevious,
+    handleNext,
+    setDeleteDialogOpen,
   } = useDealerExtraBagManagement();
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Extra Part Bags</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            Configure pricing for additional part bags in Step 3
-          </p>
-        </div>
-        <Button variant="accent" onClick={handleAdd}>
-          <Plus className="size-4 mr-2" />
-          Set Bag Price
-        </Button>
-      </div>
+      {/* Admin Page Header */}
+      <AdminManagementHeader
+        title="Extra Part Bags"
+        description="Configure pricing for additional part bags in Step 3"
+        actionLabel="Set Bag Price"
+        onAction={handleAdd}
+      />
 
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search bags..."
         searchValue={search}
@@ -75,28 +75,35 @@ const DealerExtraBagManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={extraBags}
         isLoading={isLoadingExtraBags}
         renderRow={(bag) => (
           <>
+            {/* Part Type */}
             <TableCell maxWidth="200px">
-              {bag.subCollectionId?.subCollectionName}
+              {display(bag.subCollectionId?.subCollectionName)}
             </TableCell>
+
+            {/* Price Per Bag */}
             <TableCell className="font-bold text-success dark:text-accent">
-              ${bag.price?.toFixed(2)}
+              {formatCurrency(bag.price)}
             </TableCell>
-            <TableCell>
-              <Badge variant={bag.isActive ? "success" : "destructive"}>
-                {bag.isActive ? "Active" : "Inactive"}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              {bag.createdAt ? new Date(bag.createdAt).toLocaleString() : "-"}
-            </TableCell>
-            <TableCell>
-              {bag.updatedAt ? new Date(bag.updatedAt).toLocaleString() : "-"}
-            </TableCell>
+
+            {/* Status */}
+            <StatusCell isActive={bag.isActive} />
+
+            {/* Timestamps */}
+            <TimestampCells
+              createdAt={bag.createdAt}
+              updatedAt={bag.updatedAt}
+            />
+
+            {/* Actions */}
             <ActionsColumn
               onEdit={() => handleEdit(bag)}
               onDelete={() => handleDelete(bag)}
@@ -105,78 +112,59 @@ const DealerExtraBagManagement = () => {
         )}
       />
 
-      {/* Add/Edit Extra Bag Dialog */}
+      {/* Add/Update Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title="Extra Bag Pricing"
-        description={
-          dialogMode === "edit"
-            ? "Update the extra bag details."
-            : "Create a new extra bag for your products."
-        }
+        entityName="Bag Pricing"
         onSubmit={handleSubmit}
-        isLoading={isCreating || isUpdating}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Extra Bag" : "Create Extra Bag"
-        }
+        isLoading={isSubmitting}
       >
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Category</Label>
-            <Select
-              value={formData.subCollectionId}
-              onValueChange={(v) =>
-                setFormData({ ...formData, subCollectionId: v })
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Sub-Collection" />
-              </SelectTrigger>
-              <SelectContent>
-                {subCollections.map((sc) => (
-                  <SelectItem key={sc._id} value={sc._id}>
-                    {sc.subCollectionName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Price</Label>
-            <Input
-              type="number"
-              step="0.01"
-              placeholder="50.00"
-              value={formData.price}
-              onChange={(e) =>
-                setFormData({ ...formData, price: e.target.value })
-              }
-              required
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="extraBagActive"
-              checked={formData.isActive}
-              onCheckedChange={(checked) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  isActive: Boolean(checked),
-                }))
-              }
-            />
-            <Label htmlFor="extraBagActive">Available to Dealers</Label>
-          </div>
+          {/* Sub-Collection Select */}
+          <AdminFormSelect
+            label="Sub-Collection"
+            name="subCollection"
+            value={formData.subCollection}
+            onValueChange={handleValueChange("subCollection")}
+            options={subCollections}
+            getValue={(item) => item._id}
+            getLabel={(item) => item.subCollectionName}
+            placeholder="Select Sub-Collection"
+            isLoading={isLoadingSubCollections}
+            disabled={isSubmitting}
+          />
+
+          {/* Price */}
+          <AdminFormInput
+            label="Price Per Bag"
+            name="price"
+            type="number"
+            step="0.01"
+            placeholder="0.00"
+            value={formData.price}
+            onChange={handleChange}
+            disabled={isSubmitting}
+            required
+          />
+
+          {/* Visibility */}
+          <VisibilitySwitch
+            checked={formData.isActive}
+            onChange={handleValueChange("isActive")}
+            disabled={isSubmitting}
+          />
         </div>
       </AddUpdateItemDialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={`${selectedBag?.subCollectionId?.subCollectionName || ""} Pricing`}
+        itemName={`${display(
+          selectedItem?.subCollectionId?.subCollectionName,
+        )} Pricing`}
         title="Delete Bag Pricing"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

@@ -7,10 +7,15 @@ import SubCollection from "../models/subCollection.model.js";
 import Color from "../models/color.model.js";
 import SkillLevel from "../models/skillLevel.model.js";
 import {
-  uploadImage,
-  deleteImage,
-  validateImage,
-} from "../utils/cloudinary.js";
+  uploadSingleImage,
+  uploadMultipleImages,
+  processImagesForUpdate,
+  processItemsForCreate,
+  processItemsForUpdate,
+  cleanupItemImages,
+  deleteMultipleImages,
+  rollbackUploads,
+} from "../services/imageService.js";
 import {
   normalizePagination,
   paginateQuery,
@@ -44,6 +49,10 @@ import {
   validatePublicProductLimit,
   DEFAULT_PUBLIC_PRODUCT_LIMIT,
 } from "../utils/Products/productQueryValidator.js";
+import { onProductToggle } from "../utils/Products/visibilityUtils.js";
+
+const IMAGE_FOLDER = "world-of-minifigs-v2/products";
+const VARIANT_FOLDER = "world-of-minifigs-v2/products/variants";
 
 //------------------------------------------------ Helpers ------------------------------------------
 
@@ -290,142 +299,50 @@ export const createProduct = async (req, res) => {
       });
     }
 
-    // Upload images for standalone products
+    // Upload images for standalone products (parallel batched)
     let uploadedImages = [];
     if (isStandalone && images) {
       try {
-        for (const image of images) {
-          const validation = validateImage(image);
-          if (!validation.isValid) {
-            return res.status(400).json({
-              success: false,
-              message: "Invalid image",
-              description: validation.error,
-            });
-          }
-
-          const uploadResult = await uploadImage(
-            image,
-            "world-of-minifigs-v2/products",
-          );
-          uploadedImages.push({
-            publicId: uploadResult.public_id,
-            url: uploadResult.url,
-          });
-        }
+        uploadedImages = await uploadMultipleImages(images, IMAGE_FOLDER);
       } catch (error) {
         console.error("Image upload error:", error);
-        // Clean up any uploaded images
-        for (const img of uploadedImages) {
-          try {
-            await deleteImage(img.publicId);
-          } catch (deleteError) {
-            console.error("Error deleting image:", deleteError);
-          }
-        }
-        return res.status(500).json({
+        return res.status(400).json({
           success: false,
           message: "Failed to upload images",
-          description:
-            "An error occurred while uploading images. Please try again.",
+          description: error.message,
         });
       }
     }
 
-    // Process variants and upload their images
+    // Process variants and upload their images (parallel batched)
     let processedVariants = [];
     if (hasVariants && variants) {
       try {
-        for (const variant of variants) {
-          let variantImage = null;
-
-          // Upload variant image
-          if (variant.image) {
-            // Check if it's an existing image (object) or new image (base64 string)
-            if (typeof variant.image === "object" && variant.image.publicId) {
-              // Existing image
-              variantImage = variant.image;
-            } else if (typeof variant.image === "string") {
-              // New image - upload it
-              const validation = validateImage(variant.image);
-              if (!validation.isValid) {
-                // Clean up any uploaded variant images
-                for (const v of processedVariants) {
-                  if (v.image && v.image.publicId) {
-                    try {
-                      await deleteImage(v.image.publicId);
-                    } catch (deleteError) {
-                      console.error(
-                        "Error deleting variant image:",
-                        deleteError,
-                      );
-                    }
-                  }
-                }
-                // Clean up standalone images if any were uploaded
-                for (const img of uploadedImages) {
-                  try {
-                    await deleteImage(img.publicId);
-                  } catch (deleteError) {
-                    console.error("Error deleting image:", deleteError);
-                  }
-                }
-                return res.status(400).json({
-                  success: false,
-                  message: "Invalid variant image",
-                  description: validation.error,
-                });
-              }
-
-              const uploadResult = await uploadImage(
-                variant.image,
-                "world-of-minifigs-v2/products/variants",
-              );
-              variantImage = {
-                publicId: uploadResult.public_id,
-                url: uploadResult.url,
-              };
-            }
-          }
-
-          processedVariants.push({
-            colorId: variant.colorId,
-            secondaryColorId: variant.secondaryColorId || undefined,
-            itemId: variant.itemId.trim(),
-            stock:
-              variant.stock !== undefined &&
-              variant.stock !== "" &&
-              variant.stock !== null
-                ? Number(variant.stock)
-                : 0,
-            image: variantImage,
-          });
-        }
+        processedVariants = await processItemsForCreate(
+          variants,
+          VARIANT_FOLDER,
+          {
+            getImage: (v) => v.image,
+            transform: (v, uploadedImage) => ({
+              colorId: v.colorId,
+              secondaryColorId: v.secondaryColorId || undefined,
+              itemId: v.itemId.trim(),
+              stock:
+                v.stock !== undefined && v.stock !== "" && v.stock !== null
+                  ? Number(v.stock)
+                  : 0,
+              image: uploadedImage,
+            }),
+          },
+        );
       } catch (error) {
         console.error("Variant image upload error:", error);
-        // Clean up any uploaded variant images
-        for (const v of processedVariants) {
-          if (v.image && v.image.publicId) {
-            try {
-              await deleteImage(v.image.publicId);
-            } catch (deleteError) {
-              console.error("Error deleting variant image:", deleteError);
-            }
-          }
-        }
-        // Clean up standalone images if any were uploaded
-        for (const img of uploadedImages) {
-          try {
-            await deleteImage(img.publicId);
-          } catch (deleteError) {
-            console.error("Error deleting image:", deleteError);
-          }
-        }
-        return res.status(500).json({
+        // Rollback standalone images if variants fail
+        rollbackUploads(uploadedImages);
+        return res.status(400).json({
           success: false,
           message: "Failed to upload variant images",
-          description:
-            "An error occurred while uploading variant images. Please try again.",
+          description: error.message,
         });
       }
     }
@@ -568,11 +485,7 @@ export const createProduct = async (req, res) => {
 export const getAllProducts = async (req, res) => {
   try {
     // Extract and normalize pagination parameters
-    const { page, limit, search } = normalizePagination({
-      page: req.query.page,
-      limit: req.query.limit,
-      search: req.query.search,
-    });
+    const { page, limit, search } = normalizePagination(req.query);
 
     // Build search query using utility function
     const searchQuery = await buildProductSearchQuery(search);
@@ -837,182 +750,64 @@ export const updateProduct = async (req, res) => {
       }
     }
 
-    // Handle image updates for standalone products
+    // Handle image updates for standalone products (parallel batched)
     let uploadedImages = [];
-    let imagesToDelete = [];
 
     if (isStandalone && images) {
-      // Separate existing images (objects with publicId) from new images (base64 strings)
-      const existingImages = images.filter(
-        (img) => typeof img === "object" && img.publicId,
-      );
-      const newImages = images.filter((img) => typeof img === "string");
-
-      // Find images to delete (images that were in product but not in the update)
-      if (product.images && product.images.length > 0) {
-        imagesToDelete = product.images.filter(
-          (existingImg) =>
-            !existingImages.some(
-              (img) => String(img.publicId) === String(existingImg.publicId),
-            ),
+      try {
+        uploadedImages = await processImagesForUpdate(
+          images,
+          product.images,
+          IMAGE_FOLDER,
         );
+      } catch (error) {
+        console.error("Image upload error:", error);
+        return res.status(400).json({
+          success: false,
+          message: "Failed to upload images",
+          description: error.message,
+        });
       }
-
-      // Upload new images
-      if (newImages.length > 0) {
-        try {
-          for (const image of newImages) {
-            const validation = validateImage(image);
-            if (!validation.isValid) {
-              return res.status(400).json({
-                success: false,
-                message: "Invalid image",
-                description: validation.error,
-              });
-            }
-
-            const uploadResult = await uploadImage(
-              image,
-              "world-of-minifigs-v2/products",
-            );
-            uploadedImages.push({
-              publicId: uploadResult.public_id,
-              url: uploadResult.url,
-            });
-          }
-        } catch (error) {
-          console.error("Image upload error:", error);
-          // Clean up uploaded images
-          for (const img of uploadedImages) {
-            try {
-              await deleteImage(img.publicId);
-            } catch (deleteError) {
-              console.error("Error deleting image:", deleteError);
-            }
-          }
-          return res.status(500).json({
-            success: false,
-            message: "Failed to upload images",
-            description:
-              "An error occurred while uploading images. Please try again.",
-          });
-        }
-      }
-
-      // Combine existing and new images
-      uploadedImages = [...existingImages, ...uploadedImages];
     }
 
-    // Handle variant image updates
+    // Handle variant image updates (parallel batched)
     let processedVariants = [];
-    let variantImagesToDelete = [];
 
     if (hasVariants || product.variants?.length) {
       const variantsToProcess = hasVariants ? variants : product.variants;
 
-      // Collect old variant images for deletion if switching types
-      if (isChangingToVariants && product.images && product.images.length > 0) {
-        variantImagesToDelete = [...product.images];
-      }
-
-      // Collect ALL existing variant images first - they'll be removed from deletion list if kept
-      const allOldVariantImages = [];
-      if (product.variants && product.variants.length > 0) {
-        for (const oldVariant of product.variants) {
-          if (oldVariant.image && oldVariant.image.publicId) {
-            allOldVariantImages.push(oldVariant.image);
-          }
-        }
-      }
-
-      // Track which old images are being kept
-      const keptImagePublicIds = new Set();
-
       try {
-        for (let i = 0; i < variantsToProcess.length; i++) {
-          const variant = variantsToProcess[i];
-          let variantImage = null;
-
-          // Handle variant image (single image)
-          if (variant.image) {
-            // Check if it's an existing image (object) or new image (base64 string)
-            if (typeof variant.image === "object" && variant.image.publicId) {
-              // Existing image - mark as kept
-              variantImage = variant.image;
-              keptImagePublicIds.add(String(variant.image.publicId));
-            } else if (typeof variant.image === "string") {
-              // New image - upload it
-              const validation = validateImage(variant.image);
-              if (!validation.isValid) {
-                // Clean up any uploaded variant images
-                for (const v of processedVariants) {
-                  if (v.image && v.image.publicId) {
-                    try {
-                      await deleteImage(v.image.publicId);
-                    } catch (deleteError) {
-                      console.error(
-                        "Error deleting variant image:",
-                        deleteError,
-                      );
-                    }
-                  }
-                }
-                return res.status(400).json({
-                  success: false,
-                  message: `Variant ${i + 1}: Invalid image`,
-                  description: validation.error,
-                });
-              }
-
-              const uploadResult = await uploadImage(
-                variant.image,
-                "world-of-minifigs-v2/products/variants",
-              );
-              variantImage = {
-                publicId: uploadResult.public_id,
-                url: uploadResult.url,
-              };
-            }
-          }
-
-          processedVariants.push({
-            colorId: variant.colorId,
-            secondaryColorId: variant.secondaryColorId || undefined,
-            itemId: variant.itemId.trim(),
-            stock:
-              variant.stock !== undefined &&
-              variant.stock !== "" &&
-              variant.stock !== null
-                ? Number(variant.stock)
-                : 0,
-            image: variantImage,
-          });
-        }
-
-        // Add all old variant images that aren't being kept to the delete list
-        for (const oldImage of allOldVariantImages) {
-          if (!keptImagePublicIds.has(String(oldImage.publicId))) {
-            variantImagesToDelete.push(oldImage);
-          }
-        }
+        processedVariants = await processItemsForUpdate(
+          variantsToProcess,
+          product.variants || [],
+          VARIANT_FOLDER,
+          {
+            isExisting: (v) => typeof v.image === "object" && v.image?.publicId,
+            getImage: (v) => (typeof v.image === "string" ? v.image : null),
+            transform: (v, uploadedImage) => ({
+              colorId: v.colorId,
+              secondaryColorId: v.secondaryColorId || undefined,
+              itemId: v.itemId.trim(),
+              stock:
+                v.stock !== undefined && v.stock !== "" && v.stock !== null
+                  ? Number(v.stock)
+                  : 0,
+              image: uploadedImage,
+            }),
+          },
+        );
       } catch (error) {
         console.error("Variant image upload error:", error);
-        // Clean up uploaded variant images
-        for (const v of processedVariants) {
-          if (v.image && v.image.publicId) {
-            try {
-              await deleteImage(v.image.publicId);
-            } catch (deleteError) {
-              console.error("Error deleting variant image:", deleteError);
-            }
-          }
-        }
-        return res.status(500).json({
+        return res.status(400).json({
           success: false,
           message: "Failed to upload variant images",
-          description:
-            "An error occurred while uploading variant images. Please try again.",
+          description: error.message,
         });
+      }
+
+      // Clean up standalone images if switching to variants
+      if (isChangingToVariants && product.images?.length > 0) {
+        cleanupItemImages(product.images);
       }
     }
 
@@ -1101,18 +896,8 @@ export const updateProduct = async (req, res) => {
       }
       // Clear variants if switching to standalone
       if (isChangingToStandalone) {
-        // Delete old variant images
-        if (product.variants && product.variants.length > 0) {
-          for (const variant of product.variants) {
-            if (variant.image && variant.image.publicId) {
-              try {
-                await deleteImage(variant.image.publicId);
-              } catch (deleteError) {
-                console.error("Error deleting variant image:", deleteError);
-              }
-            }
-          }
-        }
+        // Delete old variant images in background
+        cleanupItemImages(product.variants);
         product.variants = undefined;
       }
     }
@@ -1124,16 +909,8 @@ export const updateProduct = async (req, res) => {
       }
       // Set partId at product level and clear standalone fields if switching to variants
       if (isChangingToVariants || (hasVariants && !isChangingToStandalone)) {
-        // Delete old standalone images
-        if (product.images && product.images.length > 0) {
-          for (const img of product.images) {
-            try {
-              await deleteImage(img.publicId);
-            } catch (deleteError) {
-              console.error("Error deleting image:", deleteError);
-            }
-          }
-        }
+        // Delete old standalone images in background
+        deleteMultipleImages((product.images || []).map((img) => img.publicId));
         if (partId !== undefined) {
           product.partId = partId?.trim() ? partId.trim() : null;
         }
@@ -1152,22 +929,10 @@ export const updateProduct = async (req, res) => {
 
     await product.save();
 
-    // Delete old images that are no longer needed
-    for (const img of imagesToDelete) {
-      try {
-        await deleteImage(img.publicId);
-      } catch (deleteError) {
-        console.error("Error deleting image:", deleteError);
-      }
-    }
+    await onProductToggle(product._id);
 
-    for (const img of variantImagesToDelete) {
-      try {
-        await deleteImage(img.publicId);
-      } catch (deleteError) {
-        console.error("Error deleting variant image:", deleteError);
-      }
-    }
+    // NOTE: Image cleanup is now handled by processImagesForUpdate and
+    // processItemsForUpdate in imageService (fire-and-forget background deletes).
 
     // Populate references
     await product.populate(PRODUCT_DETAILS_POPULATE_WITH_UPDATED);
@@ -1240,31 +1005,11 @@ export const deleteProduct = async (req, res) => {
       });
     }
 
-    // Delete standalone product images
-    if (product.images && product.images.length > 0) {
-      for (const img of product.images) {
-        try {
-          await deleteImage(img.publicId);
-        } catch (error) {
-          console.error("Error deleting image:", error);
-        }
-      }
-    }
-
-    // Delete variant images
-    if (product.variants && product.variants.length > 0) {
-      for (const variant of product.variants) {
-        if (variant.image && variant.image.publicId) {
-          try {
-            await deleteImage(variant.image.publicId);
-          } catch (error) {
-            console.error("Error deleting variant image:", error);
-          }
-        }
-      }
-    }
-
     await Product.findByIdAndDelete(id);
+
+    // Delete all images in background (fire-and-forget)
+    cleanupItemImages(product.images);
+    cleanupItemImages(product.variants);
 
     return res.status(200).json({
       success: true,
@@ -1421,7 +1166,7 @@ export const getPublicProductById = async (req, res) => {
     }
 
     const product = await applyPublicPopulate(
-      Product.findOne({ _id: id, isActive: true })
+      Product.findOne({ _id: id, isVisible: true })
         .select("-__v -createdBy -updatedBy")
         .lean(),
     );
@@ -1466,7 +1211,7 @@ export const getPublicRelatedProducts = async (req, res) => {
     }
 
     // Fetch current product to extract taxonomy and name
-    const currentProduct = await Product.findOne({ _id: id, isActive: true })
+    const currentProduct = await Product.findOne({ _id: id, isVisible: true })
       .select(
         "productName categoryIds subCategoryIds collectionIds subCollectionIds",
       )
@@ -1481,7 +1226,7 @@ export const getPublicRelatedProducts = async (req, res) => {
       });
     }
 
-    const baseFilter = { _id: { $ne: id }, isActive: true };
+    const baseFilter = { _id: { $ne: id }, isVisible: true };
     const collectedIds = new Set();
     let relatedProducts = [];
 
@@ -1623,12 +1368,12 @@ export const getPublicRelatedProducts = async (req, res) => {
 // Get public categories with nested subcategories and product counts
 export const getPublicCategories = async (req, res) => {
   try {
-    const categories = await Category.find()
+    const categories = await Category.find({ isActive: { $ne: false } })
       .select("_id categoryName")
       .sort({ categoryName: 1 })
       .lean();
 
-    const subCategories = await SubCategory.find()
+    const subCategories = await SubCategory.find({ isActive: { $ne: false } })
       .select("_id subCategoryName categoryId")
       .sort({ subCategoryName: 1 })
       .lean();
@@ -1671,12 +1416,14 @@ export const getPublicCategories = async (req, res) => {
 // Get public collections with nested subcollections and product counts
 export const getPublicCollections = async (req, res) => {
   try {
-    const collections = await Collection.find()
+    const collections = await Collection.find({ isActive: { $ne: false } })
       .select("_id collectionName description image isFeatured createdAt")
       .sort({ createdAt: -1 })
       .lean();
 
-    const subCollections = await SubCollection.find()
+    const subCollections = await SubCollection.find({
+      isActive: { $ne: false },
+    })
       .select("_id subCollectionName image collectionId createdAt")
       .sort({ createdAt: -1 })
       .lean();
@@ -1726,7 +1473,7 @@ export const getPublicCollections = async (req, res) => {
 // Get public colors with product counts
 export const getPublicColors = async (req, res) => {
   try {
-    const colors = await Color.find()
+    const colors = await Color.find({ isActive: { $ne: false } })
       .select("_id colorName hexCode")
       .sort({ colorName: 1 })
       .lean();
@@ -1757,7 +1504,7 @@ export const getPublicColors = async (req, res) => {
 // Get public skill levels with product counts
 export const getPublicSkillLevels = async (req, res) => {
   try {
-    const skillLevels = await SkillLevel.find()
+    const skillLevels = await SkillLevel.find({ isActive: { $ne: false } })
       .select("_id skillLevelName")
       .sort({ skillLevelName: 1 })
       .lean();

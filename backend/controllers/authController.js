@@ -11,6 +11,7 @@ import {
   paginateQuery,
   createPaginationResponse,
 } from "../utils/pagination.js";
+import { validatePassword } from "../utils/commonUtils.js";
 import { setAuthCookies, clearAuthCookies } from "../utils/cookieConfig.js";
 
 const MIN_RESPONSE_TIME_MS = 3000; // minimum response time
@@ -47,47 +48,11 @@ export const register = async (req, res) => {
     const passwordStr = String(password);
 
     // Password strength validation
-    const hasMinLength = passwordStr.length >= 6;
-    const hasUppercase = /[A-Z]/.test(passwordStr);
-    const hasLowercase = /[a-z]/.test(passwordStr);
-    const hasNumber = /[0-9]/.test(passwordStr);
-    const hasSpecialChar = /[!@#$%^&*_]/.test(passwordStr);
-
-    if (
-      !hasMinLength ||
-      !hasUppercase ||
-      !hasLowercase ||
-      !hasNumber ||
-      !hasSpecialChar
-    ) {
-      let message = "Weak password";
-      let description =
-        "Your password does not meet the minimum security requirements.";
-
-      if (!hasMinLength) {
-        message = "Password too short";
-        description = "Password must be at least 6 characters long.";
-      } else if (!hasUppercase) {
-        message = "Missing uppercase letter";
-        description =
-          "Password must contain at least one uppercase letter (A-Z).";
-      } else if (!hasLowercase) {
-        message = "Missing lowercase letter";
-        description =
-          "Password must contain at least one lowercase letter (a-z).";
-      } else if (!hasNumber) {
-        message = "Missing number";
-        description = "Password must contain at least one number (0-9).";
-      } else if (!hasSpecialChar) {
-        message = "Missing special character";
-        description =
-          "Password must contain at least one special character (!@#$%^&*_).";
-      }
-
+    const passwordError = validatePassword(passwordStr);
+    if (passwordError) {
       return res.status(400).json({
         success: false,
-        message,
-        description,
+        ...passwordError,
       });
     }
 
@@ -810,25 +775,11 @@ export const resetPassword = async (req, res) => {
     }
 
     // Password validation
-    const passwordStr = String(password);
-    const hasMinLength = passwordStr.length >= 6;
-    const hasUppercase = /[A-Z]/.test(passwordStr);
-    const hasLowercase = /[a-z]/.test(passwordStr);
-    const hasNumber = /[0-9]/.test(passwordStr);
-    const hasSpecialChar = /[!@#$%^&*_]/.test(passwordStr);
-
-    if (
-      !hasMinLength ||
-      !hasUppercase ||
-      !hasLowercase ||
-      !hasNumber ||
-      !hasSpecialChar
-    ) {
+    const passwordError = validatePassword(password);
+    if (passwordError) {
       return res.status(400).json({
         success: false,
-        message: "Weak password",
-        description:
-          "Password must be at least 6 characters with uppercase, lowercase, number, and special character.",
+        ...passwordError,
       });
     }
 
@@ -859,11 +810,7 @@ export const resetPassword = async (req, res) => {
 export const getAllUsers = async (req, res) => {
   try {
     // Extract and normalize pagination parameters
-    const { page, limit, search } = normalizePagination({
-      page: req.query.page,
-      limit: req.query.limit,
-      search: req.query.search,
-    });
+    const { page, limit, search } = normalizePagination(req.query);
 
     // Build search query
     const searchFields = [

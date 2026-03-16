@@ -1,78 +1,81 @@
 import React from "react";
-import { Plus, Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  AdminFormInput,
+  AdminFormSelect,
+} from "@/components/shared/AdminFormInput";
+import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
 import TableLayout from "@/components/table/TableLayout";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+  StatusCell,
+} from "@/components/table/BaseColumn";
 import DeleteDialog from "@/components/table/DeleteDialog";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
+import MediaUpload from "@/components/shared/MediaUpload";
+import { display } from "@/utils/formatting";
 import useDealerTorsoBagManagement from "@/hooks/admin/useDealerTorsoBagManagement";
 
 const DealerTorsoBagManagement = () => {
   const {
-    search,
-    limit,
-    page,
     dialogOpen,
     deleteDialogOpen,
+    selectedItem,
     dialogMode,
-    selectedBag,
-    itemPreviews,
     formData,
+    filePreview,
+    page,
+    limit,
+    search,
     bags,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
     columns,
     targetBundleSizeOptions,
     adminTarget,
     miscQuantity,
-    isLoadingBags,
-    isCreating,
-    isUpdating,
-    isDeleting,
     currentTotal,
-    fileInputRef,
+    isLoadingBags,
+    isLoadingBundles,
+    isSubmitting,
+    isDeleting,
+    handleChange,
+    handleValueChange,
     handleDialogClose,
-    setDeleteDialogOpen,
-    setFormData,
-    handleItemImageChange,
-    handleUpdateItemQuantity,
-    handleRemoveItem,
     handleAdd,
     handleEdit,
     handleDelete,
+    handleDealerTorsoBagFileChange,
+    handleDealerTorsoBagFileRemove,
+    handleUpdateItemQuantity,
     handleSubmit,
     handleConfirmDelete,
     handlePageChange,
     handleLimitChange,
     handleSearchChange,
+    handlePrevious,
+    handleNext,
+    setDeleteDialogOpen,
   } = useDealerTorsoBagManagement();
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Torso Bags</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            Group torso designs into selectable themes or bags
-          </p>
-        </div>
-        <Button variant="accent" onClick={handleAdd}>
-          <Plus className="size-4 mr-2" />
-          Add Bag
-        </Button>
-      </div>
+      {/* Admin Page Header */}
+      <AdminManagementHeader
+        title="Torso Bag Management"
+        description="Configure torso design bags for dealer bundles"
+        actionLabel="Add Bag"
+        onAction={handleAdd}
+      />
 
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search bags..."
         searchValue={search}
@@ -83,29 +86,36 @@ const DealerTorsoBagManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={bags}
         isLoading={isLoadingBags}
         renderRow={(bag) => (
           <>
-            <TableCell maxWidth="250px">{bag.bagName}</TableCell>
-            <TableCell>
-              <Badge variant="outline">
-                {bag.targetBundleSize || 100} Minifigs
-              </Badge>
+            {/* Bag Name */}
+            <TableCell maxWidth="200px" className="font-medium">
+              {display(bag.bagName)}
             </TableCell>
-            <TableCell>{bag.items?.length || 0} Designs</TableCell>
-            <TableCell>
-              <Badge variant={bag.isActive ? "success" : "destructive"}>
-                {bag.isActive ? "Active" : "Inactive"}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              {bag.createdAt ? new Date(bag.createdAt).toLocaleString() : "-"}
-            </TableCell>
-            <TableCell>
-              {bag.updatedAt ? new Date(bag.updatedAt).toLocaleString() : "-"}
-            </TableCell>
+
+            {/* Target Size */}
+            <TableCell>{bag.targetBundleSize} Minifigs</TableCell>
+
+            {/* Designs Count */}
+            <TableCell>{bag.items?.length} Designs</TableCell>
+
+            {/* Status */}
+            <StatusCell isActive={bag.isActive} />
+
+            {/* Timestamps */}
+            <TimestampCells
+              createdAt={bag.createdAt}
+              updatedAt={bag.updatedAt}
+            />
+
+            {/* Actions */}
             <ActionsColumn
               onEdit={() => handleEdit(bag)}
               onDelete={() => handleDelete(bag)}
@@ -114,134 +124,74 @@ const DealerTorsoBagManagement = () => {
         )}
       />
 
-      {/* Add/Edit Dialog */}
+      {/* Add/Update Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={dialogMode === "edit" ? "Edit Torso Bag" : "Add New Bag"}
-        description={
-          dialogMode === "edit"
-            ? "Update the torso bag details and designs."
-            : "Define a folder/bag to group your torso designs."
-        }
+        entityName="Torso Bag"
         onSubmit={handleSubmit}
-        isLoading={isCreating || isUpdating}
-        submitButtonText={dialogMode === "edit" ? "Update Bag" : "Create Bag"}
+        isLoading={isSubmitting}
         className="sm:max-w-4xl"
       >
         <div className="space-y-5">
-          {/* Metadata Section */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="bagName">Bag Name</Label>
-              <Input
-                id="bagName"
-                placeholder="Bag 1001"
-                value={formData.bagName}
-                onChange={(e) =>
-                  setFormData({ ...formData, bagName: e.target.value })
-                }
-                required
-              />
-            </div>
-            <div className="space-y-2 col-span-1">
-              <Label htmlFor="targetBundleSize">Target Bundle Size</Label>
-              <Select
-                value={String(formData.targetBundleSize)}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, targetBundleSize: Number(value) })
-                }
-              >
-                <SelectTrigger id="targetBundleSize" className="w-full">
-                  <SelectValue placeholder="Select target" />
-                </SelectTrigger>
-                <SelectContent>
-                  {targetBundleSizeOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={String(opt.value)}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Bag Name */}
+            <AdminFormInput
+              label="Bag Name"
+              name="bagName"
+              placeholder="Bag 1001"
+              value={formData.bagName}
+              onChange={handleChange}
+              disabled={isSubmitting}
+              className="col-span-2"
+              required
+            />
+
+            {/* Target Size */}
+            <AdminFormSelect
+              label="Target Size"
+              name="targetBundleSize"
+              value={formData.targetBundleSize.toString()}
+              onValueChange={handleValueChange("targetBundleSize")}
+              options={targetBundleSizeOptions}
+              getValue={(item) => item.value.toString()}
+              getLabel={(item) => item.label}
+              placeholder="Size"
+              isLoading={isLoadingBundles}
+              disabled={isSubmitting}
+            />
           </div>
 
-          {/* Torso Designs Section */}
-          <div className="space-y-3">
-            <Label>Torso Designs Attachment</Label>
-            <div
-              className={`grid gap-4 ${
-                itemPreviews.length > 0
-                  ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-                  : "grid-cols-1"
-              }`}
-            >
-              {itemPreviews.map((item, index) => (
-                <div
-                  key={index}
-                  className="relative group border rounded-lg overflow-hidden"
-                >
-                  <div className="aspect-square relative border-b">
-                    <img
-                      src={item.url}
-                      className="w-full h-full object-cover"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2"
-                      onClick={() => handleRemoveItem(index)}
-                      disabled={isUpdating || isCreating}
-                    >
-                      <X className="size-4" />
-                    </Button>
-                  </div>
-
-                  {/* Quantity Input */}
-                  <div className="p-3 space-y-2">
-                    <Label className="text-xs font-semibold">Quantity</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      placeholder="1"
-                      value={item.quantity}
-                      onChange={(e) =>
-                        handleUpdateItemQuantity(index, e.target.value)
-                      }
-                      className="h-8 text-xs"
-                    />
-                  </div>
-                </div>
-              ))}
-
-              <Label
-                htmlFor="multi-upload"
-                className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors flex flex-col items-center justify-center min-h-[150px]"
-              >
-                <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground mb-1">
-                  Add designs
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  PNG, JPG, WEBP (5MB max)
-                </p>
+          {/* Torso Designs Upload */}
+          <MediaUpload
+            label="Torso Designs Attachment"
+            multiple
+            previews={formData.items}
+            onChange={handleDealerTorsoBagFileChange}
+            onRemove={handleDealerTorsoBagFileRemove}
+            accept="image/*"
+            description="PNG, JPG, WEBP (Multiple)"
+            disabled={isSubmitting}
+            renderItem={(item, index) => (
+              <div className="p-2 space-y-2">
+                <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Quantity
+                </Label>
                 <Input
-                  id="multi-upload"
-                  type="file"
-                  multiple
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleItemImageChange}
-                  disabled={isUpdating || isCreating}
-                  ref={fileInputRef}
+                  type="number"
+                  min="1"
+                  placeholder="1"
+                  value={item.quantity}
+                  onChange={handleUpdateItemQuantity(index)}
+                  className="h-9 text-xs"
+                  disabled={isSubmitting}
                 />
-              </Label>
-            </div>
-          </div>
+              </div>
+            )}
+          />
 
-          {/* Quantity Status Summary */}
+          {/* Quantity Summary */}
           <div className="p-4 rounded-lg border flex">
             <div className="space-y-2 flex-1 text-sm">
               <div className="flex items-center gap-1">
@@ -249,6 +199,7 @@ const DealerTorsoBagManagement = () => {
                 <span className="opacity-50">/</span>
                 <span className="font-bold">{adminTarget}</span>
                 <span className="text-xs ml-1">designs configured</span>
+
                 {currentTotal === adminTarget ? (
                   <Badge variant="success" className="ml-auto">
                     MATCHED
@@ -263,6 +214,7 @@ const DealerTorsoBagManagement = () => {
                   </Badge>
                 )}
               </div>
+
               <p className="text-xs text-muted-foreground">
                 * Admin designs must total {adminTarget} + {miscQuantity}{" "}
                 miscellaneous = {adminTarget + miscQuantity} minifigs.
@@ -270,25 +222,20 @@ const DealerTorsoBagManagement = () => {
             </div>
           </div>
 
-          {/* Status Checkbox */}
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="bagActive"
-              checked={formData.isActive}
-              onCheckedChange={(checked) =>
-                setFormData({ ...formData, isActive: !!checked })
-              }
-            />
-            <Label htmlFor="bagActive">Available to Dealers</Label>
-          </div>
+          {/* Visibility */}
+          <VisibilitySwitch
+            checked={formData.isActive}
+            onChange={handleValueChange("isActive")}
+            disabled={isSubmitting}
+          />
         </div>
       </AddUpdateItemDialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedBag?.bagName || ""}
+        itemName={display(selectedItem?.bagName)}
         title="Delete Torso Bag"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}

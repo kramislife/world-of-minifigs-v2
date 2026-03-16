@@ -1,20 +1,27 @@
 import React from "react";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
-import { ActionsColumn, TableCell } from "@/components/table/BaseColumn";
+import {
+  ActionsColumn,
+  TableCell,
+  TimestampCells,
+  StatusCell,
+} from "@/components/table/BaseColumn";
+import VisibilitySwitch from "@/components/shared/VisibilitySwitch";
+import {
+  AdminFormInput,
+  AdminFormTextarea,
+} from "@/components/shared/AdminFormInput";
 import AddUpdateItemDialog from "@/components/table/AddUpdateItemDialog";
 import DeleteDialog from "@/components/table/DeleteDialog";
+import { display } from "@/utils/formatting";
 import useSkillLevelManagement from "@/hooks/admin/useSkillLevelManagement";
 
 const SkillLevelManagement = () => {
   const {
     dialogOpen,
     deleteDialogOpen,
-    selectedSkillLevel,
+    selectedItem,
     dialogMode,
     formData,
     page,
@@ -23,12 +30,16 @@ const SkillLevelManagement = () => {
     skillLevels,
     totalItems,
     totalPages,
+    startItem,
+    endItem,
+    handlePrevious,
+    handleNext,
     columns,
     isLoadingSkillLevels,
-    isCreating,
-    isUpdating,
+    isSubmitting,
     isDeleting,
     handleChange,
+    handleValueChange,
     handleSubmit,
     handleDialogClose,
     handleAdd,
@@ -43,20 +54,15 @@ const SkillLevelManagement = () => {
 
   return (
     <div className="space-y-5">
-      {/* Header with Add Button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Skill Level Management</h1>
-          <p className="text-sm text-popover-foreground/80 mt-2">
-            Manage product skill levels in your store
-          </p>
-        </div>
-        <Button variant="accent" onClick={handleAdd}>
-          <Plus className="size-4" />
-          Add Skill Level
-        </Button>
-      </div>
+      {/* Admin Page Header */}
+      <AdminManagementHeader
+        title="Skill Level Management"
+        description="Manage product skill levels in your store"
+        actionLabel="Add Skill Level"
+        onAction={handleAdd}
+      />
 
+      {/* Table Layout */}
       <TableLayout
         searchPlaceholder="Search skill levels..."
         searchValue={search}
@@ -67,25 +73,35 @@ const SkillLevelManagement = () => {
         onPageChange={handlePageChange}
         totalItems={totalItems}
         totalPages={totalPages}
+        startItem={startItem}
+        endItem={endItem}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
         columns={columns}
         data={skillLevels}
         isLoading={isLoadingSkillLevels}
         renderRow={(skillLevel) => (
           <>
-            <TableCell maxWidth="200px">{skillLevel.skillLevelName}</TableCell>
+            {/* Skill Level Name */}
+            <TableCell maxWidth="200px">
+              {display(skillLevel.skillLevelName)}
+            </TableCell>
+
+            {/* Description */}
             <TableCell maxWidth="300px">
-              {skillLevel.description || "-"}
+              {display(skillLevel.description)}
             </TableCell>
-            <TableCell>
-              {skillLevel.createdAt
-                ? new Date(skillLevel.createdAt).toLocaleString()
-                : "-"}
-            </TableCell>
-            <TableCell>
-              {skillLevel.updatedAt
-                ? new Date(skillLevel.updatedAt).toLocaleString()
-                : "-"}
-            </TableCell>
+
+            {/* Status */}
+            <StatusCell isActive={skillLevel.isActive} />
+
+            {/* Timestamps */}
+            <TimestampCells
+              createdAt={skillLevel.createdAt}
+              updatedAt={skillLevel.updatedAt}
+            />
+
+            {/* Actions */}
             <ActionsColumn
               onEdit={() => handleEdit(skillLevel)}
               onDelete={() => handleDelete(skillLevel)}
@@ -94,57 +110,51 @@ const SkillLevelManagement = () => {
         )}
       />
 
-      {/* Add/Edit Skill Level Dialog */}
+      {/* Add/Update Dialog */}
       <AddUpdateItemDialog
         open={dialogOpen}
         onOpenChange={handleDialogClose}
         mode={dialogMode}
-        title={
-          dialogMode === "edit" ? "Edit Skill Level" : "Add New Skill Level"
-        }
-        description={
-          dialogMode === "edit"
-            ? "Update the skill level details."
-            : "Create a new skill level for your products."
-        }
+        entityName="Skill Level"
         onSubmit={handleSubmit}
-        isLoading={dialogMode === "edit" ? isUpdating : isCreating}
-        submitButtonText={
-          dialogMode === "edit" ? "Update Skill Level" : "Create Skill Level"
-        }
+        isLoading={isSubmitting}
       >
-        <div className="space-y-2">
-          <Label htmlFor="skillLevelName">Skill Level</Label>
-          <Input
-            id="skillLevelName"
+        <div className="space-y-4">
+          {/* Skill Level Name */}
+          <AdminFormInput
+            label="Skill Level"
             name="skillLevelName"
-            type="text"
-            placeholder="e.g., Beginner, Intermediate, Advanced"
+            placeholder="Beginner, Intermediate, Advanced"
             value={formData.skillLevelName}
             onChange={handleChange}
+            disabled={isSubmitting}
             required
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            id="description"
+
+          {/* Description */}
+          <AdminFormTextarea
+            label="Description"
             name="description"
-            placeholder="Enter skill level description (optional)"
+            placeholder="Enter skill level description..."
             value={formData.description}
             onChange={handleChange}
-            disabled={dialogMode === "edit" ? isUpdating : isCreating}
-            rows={4}
+            disabled={isSubmitting}
+          />
+
+          {/* Visibility */}
+          <VisibilitySwitch
+            checked={formData.isActive}
+            onChange={handleValueChange("isActive")}
+            disabled={isSubmitting}
           />
         </div>
       </AddUpdateItemDialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        itemName={selectedSkillLevel?.skillLevelName || ""}
+        itemName={display(selectedItem?.skillLevelName)}
         title="Delete Skill Level"
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}
