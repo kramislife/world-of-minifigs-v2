@@ -21,6 +21,7 @@ import {
   restockOrderItemsSafely,
   buildCancellationSuccessResponse,
   validateStatusTransition,
+  syncRefundStatus,
 } from "../services/orderService.js";
 
 //------------------------------------------------ Helpers ------------------------------------------
@@ -108,11 +109,9 @@ export const getUserOrderById = async (req, res) => {
       });
     }
 
-    const order = await Order.findOne({ _id: id, userId })
-      .select(
-        "-payment.stripeSessionId -__v -cancellation.isLocked -cancellation.lockExpiresAt -cancellation.cancelledById -refund.arn",
-      )
-      .lean();
+    const order = await Order.findOne({ _id: id, userId }).select(
+      "-payment.stripeSessionId -__v -cancellation.isLocked -cancellation.lockExpiresAt -cancellation.cancelledById -refund.arn",
+    );
 
     if (!order) {
       return res.status(404).json({
@@ -121,6 +120,9 @@ export const getUserOrderById = async (req, res) => {
         description: "The requested order does not exist.",
       });
     }
+
+    // Sync refund status from Stripe if still pending
+    await syncRefundStatus(order);
 
     return res.status(200).json({ success: true, order });
   } catch (error) {
@@ -194,7 +196,7 @@ export const cancelOrder = async (req, res) => {
       stripeRefundId: stripeRefund.id,
     });
 
-    await restockOrderItemsSafely(order._id, order.items);
+    await restockOrderItemsSafely(order);
 
     await order.save();
 
@@ -266,12 +268,10 @@ export const getOrderById = async (req, res) => {
       });
     }
 
-    const order = await Order.findById(id)
-      .populate({
-        path: "userId",
-        select: "firstName lastName",
-      })
-      .lean();
+    const order = await Order.findById(id).populate({
+      path: "userId",
+      select: "firstName lastName",
+    });
 
     if (!order) {
       return res.status(404).json({
@@ -280,6 +280,9 @@ export const getOrderById = async (req, res) => {
         description: "The requested order does not exist.",
       });
     }
+
+    // Sync refund status from Stripe if still pending
+    await syncRefundStatus(order);
 
     return res.status(200).json({
       success: true,
@@ -368,7 +371,7 @@ export const updateOrderStatus = async (req, res) => {
         stripeRefundId: stripeRefund.id,
       });
 
-      await restockOrderItemsSafely(order._id, order.items);
+      await restockOrderItemsSafely(order);
 
       await order.save();
 

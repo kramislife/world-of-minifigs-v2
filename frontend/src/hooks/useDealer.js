@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
 import {
   KeyboardSensor,
@@ -15,6 +15,7 @@ import {
 } from "@/redux/api/authApi";
 import { sortByName } from "@/utils/formatting";
 import { useReorderTorsoBagItemsMutation } from "@/redux/api/adminApi";
+import { useCheckout } from "@/hooks/useCheckout";
 
 export const useDealer = () => {
   const { user } = useSelector((state) => state.auth);
@@ -77,48 +78,73 @@ export const useDealer = () => {
   // ==================== Bundle Type & Multiplier ====================
 
   // Find the smallest "regular" bundle = the base
-  const baseBundleSize = useMemo(() => {
-    const regularBundles = bundles.filter(
-      (b) => (b.torsoBagType || "regular") === "regular",
-    );
-    if (regularBundles.length === 0) return 100;
-    return Math.min(...regularBundles.map((b) => b.minifigQuantity));
-  }, [bundles]);
 
   const isCustomBundle = selectedBundle?.torsoBagType === "custom";
-
-  // The multiplier for regular bundles (e.g. 200 / 100 = x2)
-  const multiplier = useMemo(() => {
-    if (!selectedBundle || isCustomBundle) return 1;
-    return Math.round(selectedBundle.minifigQuantity / baseBundleSize);
-  }, [selectedBundle, isCustomBundle, baseBundleSize]);
 
   // Misc quantity from API (backend computes using MISC_RATIO)
   const miscQuantity = selectedBundle?.miscQuantity ?? 0;
 
   // ==================== Torso Bag Fetching ====================
 
-  // For regular bundles: fetch base bags. For custom: fetch bags matching the bundle size.
-  const torsoBagQueryParam = useMemo(() => {
-    if (!selectedBundle) return {};
-    return {
-      targetBundleSize: isCustomBundle
-        ? selectedBundle.minifigQuantity
-        : baseBundleSize,
-    };
-  }, [selectedBundle, isCustomBundle, baseBundleSize]);
-
+  // Fetch all active bags to allow intelligent filtering in frontend
   const {
     data: torsoBagData,
     isLoading: isLoadingTorsoBags,
     isError: isErrorTorsoBags,
-  } = useGetDealerTorsoBagsQuery(torsoBagQueryParam, {
-    skip: !selectedBundle,
-  });
+  } = useGetDealerTorsoBagsQuery(
+    {}, // Fetch all active
+    { skip: !selectedBundle },
+  );
 
-  const torsoBags = Array.isArray(torsoBagData?.torsoBags)
+  const rawTorsoBags = Array.isArray(torsoBagData?.torsoBags)
     ? torsoBagData.torsoBags
     : [];
+
+  // Helper to determine if a bag size fits this bundle perfectly or via multiplier
+  const getBagMultiplier = useCallback(
+    (bagSize) => {
+      if (!selectedBundle || isCustomBundle) return 1;
+      if (!bagSize || bagSize <= 0) return 1;
+
+      const bundleQty = selectedBundle.minifigQuantity;
+
+      // 1. Must be a divisor
+      if (bundleQty % bagSize !== 0) return null;
+
+      const multiplier = bundleQty / bagSize;
+
+      // 2. Misc Ratio Check (Ensure bag designs + misc match bundle totals)
+      // Standard rule: 100-499: 10 misc per 100. 500+: 10 misc per 500.
+      const bundleMisc = selectedBundle.miscQuantity || 0;
+      const getSingleBagMisc = (size) => {
+        if (size >= 500) return 10 * Math.floor(size / 500);
+        return 10 * Math.floor(size / 100);
+      };
+
+      if (bundleMisc !== getSingleBagMisc(bagSize) * multiplier) {
+        return null;
+      }
+
+      return multiplier;
+    },
+    [selectedBundle, isCustomBundle],
+  );
+
+  const torsoBags = useMemo(() => {
+    if (!selectedBundle) return [];
+    if (isCustomBundle) {
+      return rawTorsoBags.filter(
+        (b) => b.targetBundleSize === selectedBundle.minifigQuantity,
+      );
+    }
+
+    return rawTorsoBags
+      .map((bag) => {
+        const mult = getBagMultiplier(bag.targetBundleSize);
+        return mult ? { ...bag, multiplier: mult } : null;
+      })
+      .filter(Boolean);
+  }, [rawTorsoBags, selectedBundle, isCustomBundle, getBagMultiplier]);
 
   // ==================== Computed Selections ====================
 
@@ -130,12 +156,28 @@ export const useDealer = () => {
   }, [bundles, selectedBundleId]);
 
   const addonsWithSelection = useMemo(() => {
-    return addons.map((addon) => ({
-      ...addon,
-      isSelected: selectedAddonIds.includes(addon._id),
-      hasItems:
-        addon.addonType === "bundle" && (addon.bundleItems?.length || 0) > 0,
-    }));
+    return addons.map((addon) => {
+      let isOutOfStock = false;
+      if (addon.addonType === "bundle") {
+        const items = addon.bundleItems || [];
+        // An addon bundle is out of stock if it has items and ALL of them have no bags available
+        isOutOfStock =
+          items.length > 0 &&
+          items.every((item) => {
+            const stock = Number(item.inventoryItemId?.stock || 0);
+            const limit = Number(item.quantityPerBag || 0);
+            return limit > 0 && stock < limit;
+          });
+      }
+
+      return {
+        ...addon,
+        isSelected: selectedAddonIds.includes(addon._id),
+        hasItems:
+          addon.addonType === "bundle" && (addon.bundleItems?.length || 0) > 0,
+        isOutOfStock,
+      };
+    });
   }, [addons, selectedAddonIds]);
 
   const maxExtraBags = selectedBundle
@@ -186,6 +228,13 @@ export const useDealer = () => {
   useEffect(() => {
     setSelectedTorsoBagIds([]);
   }, [selectedBundleId]);
+
+  // Auto-select torso bag if only one is available
+  useEffect(() => {
+    if (torsoBags.length === 1 && selectedTorsoBagIds.length === 0) {
+      setSelectedTorsoBagIds([torsoBags[0]._id]);
+    }
+  }, [torsoBags, selectedTorsoBagIds]);
 
   // ==================== Handlers ====================
 
@@ -270,20 +319,6 @@ export const useDealer = () => {
     setModalBagQuantities(quantities);
   }, [modalItems, selectedAddon?._id, selectedAddonConfigs]);
 
-  const handleModalBagDecrement = (inventoryItemId) => {
-    setModalBagQuantities((prev) => ({
-      ...prev,
-      [inventoryItemId]: (prev[inventoryItemId] || 0) - 1,
-    }));
-  };
-
-  const handleModalBagIncrement = (inventoryItemId) => {
-    setModalBagQuantities((prev) => ({
-      ...prev,
-      [inventoryItemId]: (prev[inventoryItemId] || 0) + 1,
-    }));
-  };
-
   const handleModalBagValueChange = (inventoryItemId, value) => {
     setModalBagQuantities((prev) => ({
       ...prev,
@@ -303,6 +338,8 @@ export const useDealer = () => {
         const usedPercent =
           item.maxBags > 0 ? (selectedBags / item.maxBags) * 100 : 0;
 
+        const isOutOfStock = item.maxBags === 0;
+
         return {
           ...item,
           selectedBags,
@@ -311,6 +348,7 @@ export const useDealer = () => {
           bagPrice,
           isActive,
           usedPercent,
+          isOutOfStock,
         };
       }),
     [modalItems, modalBagQuantities],
@@ -355,6 +393,8 @@ export const useDealer = () => {
   const lastSelectedBag =
     torsoBags.find((b) => b._id === selectedTorsoBagIds[0]) || null;
 
+  const currentMultiplier = lastSelectedBag?.multiplier || 1;
+
   // Build display items (apply multiplier for regular bundles)
   const displayItems = useMemo(() => {
     if (!lastSelectedBag?.items) return [];
@@ -362,9 +402,9 @@ export const useDealer = () => {
       ...item,
       displayQuantity: isCustomBundle
         ? item.quantity
-        : item.quantity * multiplier,
+        : item.quantity * currentMultiplier,
     }));
-  }, [lastSelectedBag, isCustomBundle, multiplier]);
+  }, [lastSelectedBag, isCustomBundle, currentMultiplier]);
 
   // ==================== Reorder Logic ====================
 
@@ -437,19 +477,25 @@ export const useDealer = () => {
           if (!base) return null;
           const config = selectedAddonConfigs[id];
           const price = config?.price ?? base.price ?? 0;
+          const items = (config?.selectedItems || [])
+            .filter((item) => (item.selectedQuantity || 0) > 0)
+            .map((item) => ({
+              inventoryItemId: item.inventoryItemId,
+              itemName: item.itemName,
+              selectedBags: item.selectedBags || 0,
+              selectedTotal: item.selectedTotal || 0,
+            }));
+
           return {
             _id: base._id,
             addonName: base.addonName,
+            addonType: base.addonType,
             isFree: !price || Number(price) === 0,
             price,
-            items: (config?.selectedItems || [])
-              .filter((item) => (item.selectedQuantity || 0) > 0)
-              .map((item) => ({
-                inventoryItemId: item.inventoryItemId,
-                itemName: item.itemName,
-                selectedBags: item.selectedBags || 0,
-                selectedTotal: item.selectedTotal || 0,
-              })),
+            items,
+            totalBags: items.reduce((s, i) => s + i.selectedBags, 0),
+            itemCount: items.length,
+            hasSubItems: items.length > 1,
           };
         })
         .filter(Boolean),
@@ -491,6 +537,45 @@ export const useDealer = () => {
   const isError =
     isErrorBundles || isErrorAddons || isErrorExtraBags || isErrorTorsoBags;
 
+  // ==================== Dealer Checkout ====================
+
+  const { checkout, isCheckoutLoading } = useCheckout();
+
+  const handleDealerCheckout = useCallback(() => {
+    if (!canCheckout) return;
+
+    const addonPayload = selectedAddonIds.map((id) => {
+      const config = selectedAddonConfigs[id];
+      return {
+        addonId: id,
+        selectedItems: config?.selectedItems?.map((item) => ({
+          inventoryItemId: item.inventoryItemId,
+          selectedBags: item.selectedBags,
+        })),
+      };
+    });
+
+    const extraBagPayload = Object.entries(extraBagQuantities)
+      .filter(([, qty]) => qty > 0)
+      .map(([id, qty]) => ({ extraBagId: id, quantity: qty }));
+
+    checkout({
+      orderType: "dealer",
+      bundleId: selectedBundleId,
+      torsoBagId: selectedTorsoBagIds[0] || null,
+      addons: addonPayload.length > 0 ? addonPayload : undefined,
+      extraBags: extraBagPayload.length > 0 ? extraBagPayload : undefined,
+    });
+  }, [
+    canCheckout,
+    checkout,
+    selectedBundleId,
+    selectedTorsoBagIds,
+    selectedAddonIds,
+    selectedAddonConfigs,
+    extraBagQuantities,
+  ]);
+
   return {
     // States & Setters
     setSelectedBundleId,
@@ -503,7 +588,7 @@ export const useDealer = () => {
 
     // Bundle Type Info
     isCustomBundle,
-    multiplier,
+    multiplier: currentMultiplier,
     miscQuantity,
     displayItems,
 
@@ -539,8 +624,6 @@ export const useDealer = () => {
       onOpen: setSelectedAddon,
       onClose: handleModalClose,
       onConfirm: handleModalConfirm,
-      onDecrement: handleModalBagDecrement,
-      onIncrement: handleModalBagIncrement,
       onValueChange: handleModalBagValueChange,
     },
 
@@ -553,6 +636,10 @@ export const useDealer = () => {
     handleReorderDragEnd,
     handleSaveReorder,
     handleResetReorder,
+
+    // Checkout
+    handleDealerCheckout,
+    isCheckoutLoading,
 
     // Status
     isAdmin,

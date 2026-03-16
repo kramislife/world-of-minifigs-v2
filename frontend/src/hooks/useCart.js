@@ -10,7 +10,7 @@ import {
   useClearCartMutation,
   useSyncCartMutation,
 } from "@/redux/api/authApi";
-import { useCreateCheckoutSessionMutation } from "@/redux/api/paymentApi";
+import { useCheckout } from "@/hooks/useCheckout";
 import {
   setCartItems,
   addToCartLocal,
@@ -86,9 +86,7 @@ export const useProductCheckout = ({
   variantIndex = null,
   quantity = 1,
 }) => {
-  const { isAuthenticated } = useSelector((state) => state.auth);
-  const [createCheckoutSession, { isLoading: isCheckoutLoading }] =
-    useCreateCheckoutSessionMutation();
+  const { checkout, isCheckoutLoading, isAuthenticated } = useCheckout();
 
   const { isSoldOut, label } = useMemo(
     () => getAddToCartStatus(product, variantIndex),
@@ -101,41 +99,14 @@ export const useProductCheckout = ({
     isSoldOut ||
     (product.productType === "variant" && variantIndex === null);
 
-  const handleProductCheckout = useCallback(async () => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to checkout", {
-        description: "You need to be signed in to complete your purchase",
-      });
-      return;
-    }
+  const handleProductCheckout = useCallback(() => {
     if (isDisabled) return;
-
-    try {
-      const res = await createCheckoutSession({
-        productId: product._id,
-        variantIndex: product.productType === "variant" ? variantIndex : null,
-        quantity,
-      }).unwrap();
-      if (res?.url) {
-        window.location.href = res.url;
-      } else {
-        handleApiError(
-          null,
-          "Checkout failed",
-          "Could not start checkout, please try again",
-        );
-      }
-    } catch (err) {
-      handleApiError(err, "Checkout failed", "Please try again");
-    }
-  }, [
-    isAuthenticated,
-    isDisabled,
-    product,
-    variantIndex,
-    quantity,
-    createCheckoutSession,
-  ]);
+    checkout({
+      productId: product._id,
+      variantIndex: product.productType === "variant" ? variantIndex : null,
+      quantity,
+    });
+  }, [isDisabled, product, variantIndex, quantity, checkout]);
 
   const buttonLabel =
     isDisabled && !isAuthenticated
@@ -263,8 +234,7 @@ export const useCart = () => {
     useRemoveCartItemMutation();
   const [clearCartServer] = useClearCartMutation();
   const [syncCartServer] = useSyncCartMutation();
-  const [createCheckoutSession, { isLoading: isCheckoutLoading }] =
-    useCreateCheckoutSessionMutation();
+  const { checkout, isCheckoutLoading } = useCheckout();
 
   // Sync server data to local state for authenticated users
   // Also persist to localStorage so cart survives logout (unified cart experience)
@@ -543,28 +513,8 @@ export const useCart = () => {
   }, [isAuthenticated, localItems, syncCartServer, dispatch]);
 
   const handleCheckout = useCallback(async () => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to checkout", {
-        description: "You need to be signed in to complete your purchase",
-      });
-      dispatch(closeSheet());
-      return;
-    }
-    try {
-      const res = await createCheckoutSession().unwrap();
-      if (res?.url) {
-        window.location.href = res.url;
-      } else {
-        handleApiError(
-          null,
-          "Checkout failed",
-          "Could not start checkout, please try again",
-        );
-      }
-    } catch (err) {
-      handleApiError(err, "Checkout failed", "Please try again");
-    }
-  }, [isAuthenticated, createCheckoutSession, dispatch]);
+    await checkout();
+  }, [checkout]);
 
   return {
     items,

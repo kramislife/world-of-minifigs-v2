@@ -436,29 +436,133 @@ const OrderManagement = () => {
         {/* ── Order Items ── */}
         <section className="space-y-2">
           <Label className="font-semibold text-xs uppercase">
-            Items ({viewOrder?.items?.length || 0})
+            {viewOrder?.orderType === "dealer" ? "Order Manifest" : "Items"}
           </Label>
-          <div className="rounded-lg border divide-y text-sm">
-            {viewOrder?.items?.map((item, index) => (
-              <div
-                key={index}
-                className="grid grid-cols-[1fr_auto_auto] gap-4 items-center p-3"
-              >
-                <span className="text-xs truncate">{item.productName}</span>
-                <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                  {item.quantity} × {formatCurrency(item.unitPrice)}
-                  {item.unitPrice < item.basePrice && (
-                    <span className="text-[10px] line-through text-muted-foreground/50 ml-1">
-                      {formatCurrency(item.basePrice)}
+
+          {/* Standard Product View */}
+          {(viewOrder?.orderType === "product" || viewOrder?.productItems) && (
+            <div className="rounded-lg border divide-y text-sm">
+              {(viewOrder.productItems || viewOrder.items || []).map(
+                (item, index) => (
+                  <div
+                    key={index}
+                    className="grid grid-cols-[1fr_auto_auto] gap-4 items-center p-3"
+                  >
+                    <span className="text-xs truncate">{item.productName}</span>
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                      {item.quantity} × {formatCurrency(item.unitPrice)}
+                      {item.unitPrice < item.basePrice && (
+                        <span className="text-[10px] line-through text-muted-foreground/50 ml-1">
+                          {formatCurrency(item.basePrice)}
+                        </span>
+                      )}
                     </span>
-                  )}
-                </span>
-                <span className="text-xs font-semibold whitespace-nowrap">
-                  {formatCurrency(item.totalPrice)}
-                </span>
+                    <span className="text-xs font-semibold whitespace-nowrap">
+                      {formatCurrency(item.totalPrice)}
+                    </span>
+                  </div>
+                ),
+              )}
+            </div>
+          )}
+
+          {/* Dealer Manifest View */}
+          {viewOrder?.orderType === "dealer" && viewOrder.dealerItems && (
+            <div className="space-y-4">
+              {/* Bundle */}
+              <div className="rounded-lg border bg-muted/30">
+                <div className="p-3 border-b bg-muted/50 font-bold text-[10px] uppercase tracking-wider">
+                  Selected Bundle
+                </div>
+                <div className="p-3 grid grid-cols-[1fr_auto] items-center">
+                  <span className="text-xs">
+                    {viewOrder.dealerItems.bundle?.name}
+                  </span>
+                  <span className="text-xs font-semibold">
+                    {formatCurrency(viewOrder.dealerItems.bundle?.price)}
+                  </span>
+                </div>
               </div>
-            ))}
-          </div>
+
+              {/* Torso Bag */}
+              {viewOrder.dealerItems.torsoBag && (
+                <div className="rounded-lg border border-dashed">
+                  <div className="p-3 border-b font-bold text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Included Torso Bag
+                  </div>
+                  <div className="p-3 grid grid-cols-[1fr_auto] items-center">
+                    <span className="text-xs">
+                      {viewOrder.dealerItems.torsoBag.name}
+                    </span>
+                    <span className="text-xs font-bold text-success capitalize">
+                      {viewOrder.dealerItems.torsoBag.multiplier}x Included
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Addons */}
+              {viewOrder.dealerItems.addons?.length > 0 && (
+                <div className="rounded-lg border">
+                  <div className="p-3 border-b bg-muted/20 font-bold text-[10px] uppercase tracking-wider">
+                    Add-on Selections
+                  </div>
+                  <div className="divide-y">
+                    {viewOrder.dealerItems.addons.map((addon, idx) => (
+                      <div key={idx} className="p-3 space-y-2">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-semibold">{addon.name}</span>
+                          <span className="font-bold text-success dark:text-accent">
+                            {addon.totalPrice > 0
+                              ? formatCurrency(addon.totalPrice)
+                              : "Free"}
+                          </span>
+                        </div>
+                        {addon.subItems?.length > 0 && (
+                          <div className="pl-4 border-l-2 border-muted space-y-1">
+                            {addon.subItems.map((sub, sIdx) => (
+                              <div
+                                key={sIdx}
+                                className="text-[11px] text-muted-foreground grid grid-cols-[1fr_auto] gap-2"
+                              >
+                                <span>↳ {sub.name}</span>
+                                <span>{sub.qty} bags</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Extra Bags */}
+              {viewOrder.dealerItems.extraBags?.length > 0 && (
+                <div className="rounded-lg border border-accent/20">
+                  <div className="p-3 border-b bg-accent/5 font-bold text-[10px] uppercase tracking-wider text-accent">
+                    Extra Part Bags
+                  </div>
+                  <div className="divide-y">
+                    {viewOrder.dealerItems.extraBags.map((bag, idx) => (
+                      <div
+                        key={idx}
+                        className="p-3 grid grid-cols-[1fr_auto_auto] gap-4 items-center"
+                      >
+                        <span className="text-xs">{bag.name}</span>
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          {bag.quantity} × {formatCurrency(bag.price)}
+                        </span>
+                        <span className="text-xs font-semibold">
+                          {formatCurrency(bag.quantity * bag.price)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         {/* ── Payment Summary ── */}

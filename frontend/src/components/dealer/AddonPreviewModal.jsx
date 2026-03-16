@@ -7,6 +7,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import CommonImage from "@/components/shared/CommonImage";
 import QuantityControl from "@/components/shared/QuantityControl";
 import { formatCurrency } from "@/utils/formatting";
@@ -26,22 +27,27 @@ const AddonPreviewModal = ({
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="sm:max-w-4xl overflow-hidden flex flex-col gap-0">
         <DialogHeader>
-          <DialogTitle>{addon.addonName}</DialogTitle>
-          <DialogDescription className="text-sm font-semibold text-success dark:text-accent">
-            {totalBags} bag{totalBags === 1 ? "" : "s"} selected {" · "}
-            {formatCurrency(totalPrice)} total
-          </DialogDescription>
+          <DialogTitle className="text-xl">{addon.addonName}</DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1">
             {items.map((item) => (
               <div
                 key={item.key}
-                className={`rounded-md border p-2 transition-colors ${
+                className={`relative rounded-md border p-2 transition-all duration-300 ${
                   item.isActive ? "border-accent border-l-4" : "border"
-                }`}
+                } ${item.isOutOfStock ? "opacity-60 grayscale-[0.5]" : ""}`}
               >
+                {/* Out of Stock Badge */}
+                {item.isOutOfStock && (
+                  <div className="absolute top-2 right-2 z-10">
+                    <Badge variant="destructive" className="uppercase text-[10px] px-1.5 py-0">
+                      Out of Stock
+                    </Badge>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2">
                   {/* Image */}
                   <CommonImage
@@ -88,7 +94,8 @@ const AddonPreviewModal = ({
                         }
                         min={0}
                         max={item.maxBags}
-                        allowInput
+                        disabled={item.isOutOfStock}
+                        allowInput={!item.isOutOfStock}
                         size="xs"
                       />
                     </div>
@@ -99,13 +106,21 @@ const AddonPreviewModal = ({
           </div>
         </div>
 
-        <DialogFooter className="pt-3">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="accent" disabled={!canSubmit} onClick={onConfirm}>
-            {isUpdate ? "Update Order" : "Add to Order"}
-          </Button>
+        <DialogFooter className="pt-3 sm:justify-between items-center">
+          <div className="font-bold text-sm">
+            Total:{" "}
+            <span className="text-success dark:text-accent">
+              {formatCurrency(totalPrice)}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button variant="accent" disabled={!canSubmit} onClick={onConfirm}>
+              {isUpdate ? "Update Order" : "Add to Order"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -78,6 +78,89 @@ export const getOrderStatusConfig = (order) => {
   return STATUS_CONFIG[status] || STATUS_CONFIG.paid;
 };
 
+/**
+ * Extracts a flat list of display-friendly items from any order type.
+ * Used for thumbnails, order cards, and basic lists.
+ * @param {Object} order - The order object
+ * @param {Boolean} summarize - If true, groups large item lists (e.g., dealer addons) into single summary items.
+ */
+export const getDisplayItems = (order, summarize = false) => {
+  if (!order) return [];
+
+  // 1. Standard Product Items
+  if (order.orderType === "product" || order.productItems) {
+    return order.productItems || order.items || [];
+  }
+
+  // 2. Dealer Items (Manifest)
+  if (order.orderType === "dealer" && order.dealerItems) {
+    const { bundle, torsoBag, addons, extraBags } = order.dealerItems;
+    const items = [];
+
+    // 1. Bundle + Torso Bag (Integrated)
+    if (bundle) {
+      items.push({
+        _id: bundle.id,
+        productName: bundle.name,
+        quantity: 1,
+        totalPrice: bundle.price,
+        // Add torso bag info directly to bundle description
+        description: torsoBag
+          ? `${torsoBag.name}${torsoBag.multiplier > 1 ? ` (${torsoBag.multiplier}x)` : ""}`
+          : undefined,
+      });
+    }
+
+    // 2. Addons (Always Integrated)
+    if (addons && Array.isArray(addons)) {
+      addons.forEach((addon) => {
+        const addonQty = addon.quantity || 1;
+
+        // Build a detailed description of sub-items
+        const subItemDesc =
+          addon.subItems?.length > 0
+            ? addon.subItems.map((sub) => `${sub.name} (${sub.qty})`).join(", ")
+            : undefined;
+
+        items.push({
+          _id: addon.id,
+          productName: addon.name,
+          quantity: addonQty,
+          totalPrice: addon.totalPrice,
+          description: subItemDesc,
+        });
+      });
+    }
+
+    // 3. Extra Bags (Always Grouped)
+    if (extraBags && Array.isArray(extraBags) && extraBags.length > 0) {
+      const totalQty = extraBags.reduce((sum, b) => sum + b.quantity, 0);
+      const totalPrice = extraBags.reduce(
+        (sum, b) => sum + (b.price || 0) * b.quantity,
+        0,
+      );
+      const names = extraBags.map((b) => `${b.quantity}x ${b.name}`).join(", ");
+
+      items.push({
+        productName: `Extra Bags (${totalQty})`,
+        quantity: 1,
+        totalPrice: totalPrice,
+        description: names,
+      });
+    }
+
+    return items;
+  }
+
+  // 3. Reward Items (Future)
+  if (order.orderType === "reward" && order.rewardItems) {
+    return order.rewardItems;
+  }
+
+  // Fallback for transition period
+  return order.items || [];
+};
+
 // Derive order tabs from fetched statuses (backend source of truth)
 export const buildOrderTabs = (statuses) => {
   const base = [{ value: "all", label: "All Orders" }];

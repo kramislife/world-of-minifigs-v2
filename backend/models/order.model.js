@@ -4,14 +4,13 @@ import {
   REFUND_STATUSES,
 } from "../constants/orderConstants.js";
 
-/* ------------------------------------------- Item Schema ---------------------------------------- */
+/* ------------------------------------------- Product Schema --------------------------------------- */
 
-const orderItemSchema = new mongoose.Schema(
+const productItemSchema = new mongoose.Schema(
   {
     productId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
-      required: true,
     },
     productName: { type: String, required: true },
     variantIndex: { type: Number },
@@ -21,6 +20,53 @@ const orderItemSchema = new mongoose.Schema(
     unitPrice: { type: Number, required: true, min: 0 },
     totalPrice: { type: Number, required: true, min: 0 },
     imageUrl: { type: String },
+  },
+  { _id: false },
+);
+
+/* ----------------------------------------- Dealer Schema ------------------------------------------ */
+
+const dealerItemSchema = new mongoose.Schema(
+  {
+    bundle: {
+      id: { type: mongoose.Schema.Types.ObjectId, ref: "Bundle" },
+      name: { type: String },
+      price: { type: Number },
+    },
+    torsoBag: {
+      id: { type: mongoose.Schema.Types.ObjectId, ref: "DealerTorsoBag" },
+      name: { type: String },
+      multiplier: { type: Number },
+    },
+    addons: [
+      {
+        _id: false,
+        id: { type: mongoose.Schema.Types.ObjectId, ref: "DealerAddon" },
+        name: { type: String },
+        type: { type: String },
+        totalPrice: { type: Number },
+        subItems: [
+          {
+            _id: false,
+            invId: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: "MinifigInventory",
+            },
+            name: { type: String },
+            qty: { type: Number },
+          },
+        ],
+      },
+    ],
+    extraBags: [
+      {
+        _id: false,
+        id: { type: mongoose.Schema.Types.ObjectId, ref: "DealerExtraBag" },
+        name: { type: String },
+        quantity: { type: Number },
+        price: { type: Number },
+      },
+    ],
   },
   { _id: false },
 );
@@ -45,9 +91,13 @@ const orderSchema = new mongoose.Schema(
       enum: Object.values(ORDER_STATUSES),
       default: ORDER_STATUSES.PAID,
     },
-    items: {
-      type: [orderItemSchema],
-      required: true,
+    productItems: {
+      type: [productItemSchema],
+      default: undefined,
+    },
+    dealerItems: {
+      type: dealerItemSchema,
+      default: undefined,
     },
     payment: {
       subtotal: { type: Number, required: true, min: 0 },
@@ -67,10 +117,10 @@ const orderSchema = new mongoose.Schema(
         default: REFUND_STATUSES.NONE,
       },
       amount: { type: Number, min: 0 },
-      initiatedAt: { type: Date },
-      completedAt: { type: Date },
       stripeRefundId: { type: String },
       arn: { type: String }, // Acquirer Reference Number (admin-only)
+      initiatedAt: { type: Date },
+      completedAt: { type: Date },
     },
     shipping: {
       address: {
@@ -114,6 +164,7 @@ const orderSchema = new mongoose.Schema(
 
 orderSchema.index({ userId: 1, createdAt: -1 });
 orderSchema.index({ status: 1 });
+orderSchema.index({ orderType: 1 });
 orderSchema.index({ "refund.status": 1 });
 orderSchema.index({ "payment.stripePaymentIntentId": 1 });
 orderSchema.index({ "payment.stripeSessionId": 1 });

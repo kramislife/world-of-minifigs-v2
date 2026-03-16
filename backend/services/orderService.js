@@ -5,7 +5,7 @@ import {
   CANCELLATION_REASONS,
 } from "../constants/orderConstants.js";
 import { getStripe } from "../utils/stripe.js";
-import { incrementProductStockForItems } from "../utils/paymentHelpers.js";
+import { restockOrder } from "../utils/payment/index.js";
 
 // ------------------------ Constants --------------------------------
 
@@ -120,15 +120,58 @@ export const applyCancellationMetadata = (
 
 // ------------------------ Restock --------------------------------
 
-export const restockOrderItemsSafely = async (orderId, items) => {
+export const restockOrderItemsSafely = async (order) => {
   try {
-    await incrementProductStockForItems(items);
+    await restockOrder(order);
   } catch (stockErr) {
     console.error(
-      `Inventory restock failed for order ${orderId}:`,
+      `Inventory restock failed for order ${order._id}:`,
       stockErr.message,
     );
   }
+};
+
+// ------------------------ Refund Status Sync (Fallback) --------------------------------
+
+export const syncRefundStatus = async (order) => {
+  // Only sync if refund is pending and we have a Stripe refund ID
+  if (
+    order.refund?.status !== REFUND_STATUSES.PENDING ||
+    !order.refund?.stripeRefundId
+  ) {
+    return order;
+  }
+
+  try {
+    const stripe = getStripe();
+    const refund = await stripe.refunds.retrieve(order.refund.stripeRefundId);
+
+    if (refund.status === "succeeded") {
+      order.refund.status = REFUND_STATUSES.COMPLETED;
+      order.refund.completedAt = new Date();
+      order.refund.amount = refund.amount / 100;
+      order.cancellation.isLocked = false;
+
+      // Store ARN if available
+      const cardDetails = refund.destination_details?.card;
+      if (
+        cardDetails?.reference_status === "available" &&
+        cardDetails?.reference &&
+        !order.refund.arn
+      ) {
+        order.refund.arn = cardDetails.reference;
+      }
+
+      await order.save();
+    }
+  } catch (err) {
+    console.error(
+      `syncRefundStatus: Failed to sync refund for order ${order._id}:`,
+      err.message,
+    );
+  }
+
+  return order;
 };
 
 // ------------------------ Response Builder --------------------------------

@@ -2,25 +2,39 @@ import { getStripe } from "../utils/stripe.js";
 import Order from "../models/order.model.js";
 import {
   createOrderFromStripeSession,
+  createDealerOrderFromStripeSession,
   buildLineItemsForDirectProduct,
+  buildLineItemsForDealer,
   buildCartLineItems,
   handleRefundUpdated,
   FRONTEND_URL,
   STRIPE_SESSION_CONFIG,
-} from "../services/paymentService.js";
+} from "../services/payment/index.js";
 
 //----------------------------------- Create Checkout Session ------------------------------------------
 export const createCheckoutSession = async (req, res) => {
   try {
     const userId = req.user._id;
     const body = req.body || {};
-    const { productId } = body;
+    const { productId, orderType } = body;
 
     let lineItems;
     let metadata = { orderType: "product" };
 
-    if (productId) {
-      const result = await buildLineItemsForDirectProduct(body);
+    if (orderType === "dealer") {
+      // Dealer checkout flow
+      const result = await buildLineItemsForDealer(body, userId);
+      if (result.error) {
+        return res.status(result.error.status).json({
+          success: false,
+          message: result.error.message,
+          description: result.error.description,
+        });
+      }
+      lineItems = result.lineItems;
+      metadata = result.metadata;
+    } else if (productId) {
+      const result = await buildLineItemsForDirectProduct(body, userId);
       if (result.error) {
         return res.status(result.error.status).json({
           success: false,
@@ -43,11 +57,14 @@ export const createCheckoutSession = async (req, res) => {
       metadata = result.metadata;
     }
 
+    const cancelUrl =
+      orderType === "dealer" ? `${FRONTEND_URL}/dealers` : FRONTEND_URL;
+
     const session = await getStripe().checkout.sessions.create({
       ...STRIPE_SESSION_CONFIG,
       line_items: lineItems,
       success_url: `${FRONTEND_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: FRONTEND_URL,
+      cancel_url: cancelUrl,
       client_reference_id: userId.toString(),
       customer_email: req.user.email,
       payment_intent_data: {
@@ -84,20 +101,48 @@ export const confirmOrder = async (req, res) => {
       });
     }
 
-    const order = await Order.findOne({
+    // 1. Check if the webhook already created the order
+    const existingOrder = await Order.findOne({
       "payment.stripeSessionId": sessionId,
     });
 
-    if (!order) {
-      return res.status(404).json({
+    if (existingOrder) {
+      return res.status(200).json({ success: true, order: existingOrder });
+    }
+
+    // 2. Webhook hasn't arrived yet — retrieve session from Stripe as fallback
+    const stripe = getStripe();
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ["invoice"],
+    });
+
+    if (session.payment_status !== "paid") {
+      return res.status(402).json({
         success: false,
-        message: "Order not found yet. Please refresh.",
+        message: "Payment not confirmed yet. Please wait or refresh.",
+      });
+    }
+
+    // 3. Create the order from the session (same logic as webhook)
+    let result;
+    const orderType = session.metadata?.orderType;
+
+    if (orderType === "dealer") {
+      result = await createDealerOrderFromStripeSession(session);
+    } else {
+      result = await createOrderFromStripeSession(session);
+    }
+
+    if (!result?.order) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to create order. Please contact support.",
       });
     }
 
     return res.status(200).json({
       success: true,
-      order,
+      order: result.order,
     });
   } catch (error) {
     console.error("Confirm order error:", error);
@@ -129,7 +174,12 @@ export const stripeWebhook = async (req, res) => {
         });
 
         try {
-          await createOrderFromStripeSession(session);
+          const orderType = session.metadata?.orderType;
+          if (orderType === "dealer") {
+            await createDealerOrderFromStripeSession(session);
+          } else {
+            await createOrderFromStripeSession(session);
+          }
         } catch (err) {
           console.error("Webhook: error creating order:", err);
           return res.status(500).json({ received: false });

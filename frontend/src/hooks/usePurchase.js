@@ -4,10 +4,12 @@ import {
   useGetOrderConfigQuery,
 } from "@/redux/api/authApi";
 import { extractPaginatedData } from "@/utils/apiHelpers";
-import { getOrderStatusConfig, buildOrderTabs } from "@/constant/orderData";
+import {
+  getOrderStatusConfig,
+  buildOrderTabs,
+  getDisplayItems,
+} from "@/constant/orderData";
 import { formatDate, formatCurrency } from "@/utils/formatting";
-
-const MAX_ORDER_THUMBNAILS = 5;
 
 const usePurchase = () => {
   const [page, setPage] = useState(1);
@@ -54,27 +56,13 @@ const usePurchase = () => {
         const showRefundInitiatedInfo = order.refund?.status === "pending";
         const showRefundedInfo = order.refund?.status === "completed";
 
-        const orderItems = order.items ?? [];
-        const thumbnails = orderItems
-          .slice(0, MAX_ORDER_THUMBNAILS)
-          .map((item, index) => ({
-            id: item._id ?? `${order._id}-${index}`,
-            productName: item.productName,
-            imageUrl: item.imageUrl,
-          }));
-        const overflowCount = Math.max(
-          0,
-          orderItems.length - MAX_ORDER_THUMBNAILS,
-        );
-
+        const orderItems = getDisplayItems(order, true);
         return {
           orderId: order._id,
           detailUrl: `/checkout/success?order_id=${order._id}`,
           statusConfig,
           invoiceLabel,
           createdAt,
-          thumbnails,
-          overflowCount,
           itemCount: orderItems.length,
           totalAmount: formatCurrency(order.payment?.totalAmount),
           showTrackingInfo,

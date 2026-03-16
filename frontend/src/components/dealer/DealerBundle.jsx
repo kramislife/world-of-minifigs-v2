@@ -5,9 +5,9 @@ import { formatCurrency } from "@/utils/formatting";
 
 const DealerBundle = ({ bundles, onSelect }) => (
   <section className="px-5 py-10 bg-input/50 dark:bg-card/50">
-    <div className="text-left mb-12">
+    <div className="text-left mb-10">
       <h2 className="text-2xl font-bold mb-2 tracking-tight">
-        Step 1 — Select Your Bag Quantity
+        Select Your Bag Quantity
       </h2>
       <p className="text-muted-foreground text-sm">
         Choose up to 1000+ top-quality, 100% genuine LEGO minifigures

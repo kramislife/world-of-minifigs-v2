@@ -61,6 +61,10 @@ const Dealer = () => {
     handleSaveReorder,
     handleResetReorder,
 
+    // Checkout
+    handleDealerCheckout,
+    isCheckoutLoading,
+
     // Status
     isAdmin,
     isLoading,
@@ -130,7 +134,7 @@ const Dealer = () => {
 
       <DealerBundle bundles={bundles} onSelect={setSelectedBundleId} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-5 px-5 py-10 items-start overflow-visible bg-input/50 dark:bg-card/50">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-5 px-5 items-start overflow-visible bg-input/50 dark:bg-card/50">
         <div className="space-y-10 overflow-visible">
           <DealerAddon
             addons={addons}
@@ -166,7 +170,12 @@ const Dealer = () => {
           />
         </div>
 
-        <DealerOrderSummary selectedBundle={selectedBundle} {...orderSummary} />
+        <DealerOrderSummary
+          selectedBundle={selectedBundle}
+          {...orderSummary}
+          onCheckout={handleDealerCheckout}
+          isCheckoutLoading={isCheckoutLoading}
+        />
       </div>
 
       {addonPreview.addon && (
@@ -179,8 +188,6 @@ const Dealer = () => {
           isUpdate={addonPreview.isUpdate}
           onClose={addonPreview.onClose}
           onConfirm={addonPreview.onConfirm}
-          onDecrement={addonPreview.onDecrement}
-          onIncrement={addonPreview.onIncrement}
           onValueChange={addonPreview.onValueChange}
         />
       )}

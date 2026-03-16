@@ -10,6 +10,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import AdminManagementHeader from "@/components/shared/AdminManagementHeader";
 import TableLayout from "@/components/table/TableLayout";
 import ColorSwatch from "@/components/shared/ColorSwatch";
@@ -54,7 +55,6 @@ const DealerAddonManagement = () => {
     bundleItems,
     bundleDisplayItems,
     selectedBundleItemIds,
-    computedBundlePrice,
     isBundleType,
     isUpgradeType,
     isLoadingAddons,
@@ -121,7 +121,13 @@ const DealerAddonManagement = () => {
 
             {/* Price */}
             <TableCell>
-              {addon.price === 0 ? "Free" : formatCurrency(addon.price)}
+              {addon.addonType === "bundle" ? (
+                <span>Per Item Picking</span>
+              ) : addon.price === 0 ? (
+                "Free"
+              ) : (
+                formatCurrency(addon.price)
+              )}
             </TableCell>
 
             {/* Status */}
@@ -252,10 +258,20 @@ const DealerAddonManagement = () => {
                             }
                             onSelect={(e) => e.preventDefault()}
                           >
-                            <ColorSwatch
-                              color={inv.colorId?.hexCode}
-                              label={inv.minifigName}
-                            />
+                            <div className="flex items-center justify-between gap-4 w-full">
+                              <ColorSwatch
+                                color={inv.colorId?.hexCode}
+                                label={inv.minifigName}
+                              />
+                              {(inv.stock === 0 || !inv.stock) && (
+                                <Badge
+                                  variant="destructive"
+                                  className="uppercase text-[8px] px-1 leading-none"
+                                >
+                                  Out of Stock
+                                </Badge>
+                              )}
+                            </div>
                           </DropdownMenuCheckboxItem>
                         ))
                       )}
@@ -279,19 +295,37 @@ const DealerAddonManagement = () => {
                         <CommonImage
                           src={item.inventory.image?.url}
                           alt={item.inventory.minifigName}
-                          className="w-16 aspect-4/3"
+                          className="w-20 aspect-4/3"
                         />
 
                         {/* Name + Color & Price */}
                         <div className="flex flex-col min-w-0 flex-1 space-y-1">
-                          <span className="text-sm font-semibold line-clamp-1">
-                            {item.inventory.minifigName}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold line-clamp-1">
+                              {item.inventory.minifigName}
+                            </span>
+                            {(Number(item.inventory.stock || 0) <
+                              Number(item.quantityPerBag || 1) ||
+                              !item.inventory.stock) && (
+                              <Badge
+                                variant="destructive"
+                                className="uppercase text-[9px] px-1.5 py-0"
+                              >
+                                Out of Stock
+                              </Badge>
+                            )}
+                          </div>
                           <span className="text-xs text-muted-foreground">
                             {item.inventory.colorId?.colorName || "—"}
                             {" · "}
                             <span className="text-success dark:text-accent font-bold">
                               {formatCurrency(item.inventory.price)}
+                            </span>
+                          </span>
+                          <span className="text-xs font-semibold">
+                            Price per Bag:{" "}
+                            <span className="text-success dark:text-accent font-semibold">
+                              {formatCurrency(item.pricePerBag)}
                             </span>
                           </span>
                         </div>
@@ -326,14 +360,6 @@ const DealerAddonManagement = () => {
                       </div>
                     );
                   })}
-
-                  {/* Computed total price */}
-                  <div className="flex justify-end items-center gap-2 pt-2">
-                    <span className="text-sm font-medium">Total Price:</span>
-                    <span className="text-sm font-bold text-success dark:text-accent">
-                      {formatCurrency(computedBundlePrice)}
-                    </span>
-                  </div>
                 </div>
               )}
             </div>

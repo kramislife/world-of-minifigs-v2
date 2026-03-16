@@ -11,7 +11,7 @@ import {
 import { publicApi } from "@/redux/api/publicApi";
 import { clearCartLocal } from "@/redux/slices/cartSlice";
 import { handleApiError, handleApiSuccess } from "@/utils/apiHelpers";
-import { getOrderStatusConfig } from "@/constant/orderData";
+import { getOrderStatusConfig, getDisplayItems } from "@/constant/orderData";
 
 const useCheckoutSuccess = () => {
   const dispatch = useDispatch();
@@ -48,6 +48,7 @@ const useCheckoutSuccess = () => {
   const isError = sessionId ? isSessionError : isOrderError;
 
   const order = data?.order;
+  const displayItems = getDisplayItems(order);
   const invoiceLabel =
     order?.payment?.stripeInvoiceNumber || order?._id?.substring(0, 7);
   const invoiceValue = order?.payment?.stripeInvoiceNumber || order?._id;
@@ -70,16 +71,36 @@ const useCheckoutSuccess = () => {
   // Clear cart and invalidate caches on successful checkout (session flow only)
   useEffect(() => {
     if (sessionId && data?.success && data?.order) {
-      dispatch(authApi.util.invalidateTags(["Cart"]));
+      dispatch(authApi.util.invalidateTags(["Cart", "Order"]));
       dispatch(clearCartLocal());
 
-      const productIds =
-        data.order.items?.map((item) => ({
-          type: "Product",
-          id: item.productId?.toString?.() ?? item.productId,
-        })) ?? [];
-      if (productIds.length > 0) {
-        dispatch(publicApi.util.invalidateTags([...productIds, "Product"]));
+      const order = data.order;
+      const tags = [];
+
+      // Standards Products
+      if (order.productItems) {
+        order.productItems.forEach((item) => {
+          tags.push({
+            type: "Product",
+            id: item.productId?.toString?.() ?? item.productId,
+          });
+        });
+      }
+
+      // Dealer Addons
+      if (order.dealerItems?.addons) {
+        order.dealerItems.addons.forEach((addon) => {
+          addon.subItems?.forEach((sub) => {
+            tags.push({
+              type: "MinifigInventory",
+              id: sub.invId?.toString?.() ?? sub.invId,
+            });
+          });
+        });
+      }
+
+      if (tags.length > 0) {
+        dispatch(publicApi.util.invalidateTags([...tags, "Product"]));
       }
     }
   }, [sessionId, data, dispatch]);
@@ -131,6 +152,7 @@ const useCheckoutSuccess = () => {
     sessionId,
     orderId,
     order,
+    displayItems,
     invoiceLabel,
     invoiceValue,
     status,

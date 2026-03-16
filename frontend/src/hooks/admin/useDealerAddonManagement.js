@@ -113,17 +113,13 @@ const useDealerAddonManagement = () => {
 
   const isSubmitting = crud.isEditMode ? isUpdating : isCreating;
 
-  // ------------------------------- Computed Bundle Price ------------------------------------
-  const computedBundlePrice = bundleItems.reduce((sum, item) => {
-    const unitPrice = item._item?.price || 0;
-    return sum + unitPrice * (Number(item.quantityPerBag) || 0);
-  }, 0);
-
   const bundleDisplayItems = bundleItems
     .filter((item) => item._item)
     .map((item) => ({
       ...item,
       inventory: item._item,
+      pricePerBag:
+        (item._item?.price || 0) * (Number(item.quantityPerBag) || 0),
     }));
 
   // ------------------------------- Bundle Item Handlers ------------------------------------
@@ -148,30 +144,6 @@ const useDealerAddonManagement = () => {
       prev.filter((i) => i.inventoryItemId !== inventoryItemId),
     );
   }, []);
-
-  const handleBundleItemQuantity = useCallback((inventoryItemId, delta) => {
-    setBundleItems((prev) =>
-      prev.map((item) => {
-        if (item.inventoryItemId !== inventoryItemId) return item;
-        const newQty = Math.max(1, (Number(item.quantityPerBag) || 1) + delta);
-        return { ...item, quantityPerBag: newQty };
-      }),
-    );
-  }, []);
-
-  const handleBundleItemDecrement = useCallback(
-    (inventoryItemId) => {
-      handleBundleItemQuantity(inventoryItemId, -1);
-    },
-    [handleBundleItemQuantity],
-  );
-
-  const handleBundleItemIncrement = useCallback(
-    (inventoryItemId) => {
-      handleBundleItemQuantity(inventoryItemId, 1);
-    },
-    [handleBundleItemQuantity],
-  );
 
   const handleBundleItemQuantityValue = useCallback(
     (inventoryItemId, value) => {
@@ -231,7 +203,7 @@ const useDealerAddonManagement = () => {
         inventoryItemId: item.inventoryItemId,
         quantityPerBag: Number(item.quantityPerBag),
       }));
-      payload.price = computedBundlePrice;
+      payload.price = 0;
     } else {
       payload.price = Number(crud.formData.price || 0);
     }
@@ -267,7 +239,6 @@ const useDealerAddonManagement = () => {
     bundleItems,
     bundleDisplayItems,
     selectedBundleItemIds,
-    computedBundlePrice,
     isBundleType,
     isUpgradeType,
     isLoadingAddons,
@@ -278,9 +249,6 @@ const useDealerAddonManagement = () => {
     handleItemSearchChange,
     handleToggleBundleItem,
     handleRemoveBundleItem,
-    handleBundleItemQuantity,
-    handleBundleItemDecrement,
-    handleBundleItemIncrement,
     handleBundleItemQuantityValue,
     handleEdit,
     handleSubmit,

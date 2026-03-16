@@ -42,6 +42,92 @@ const checkExtraBagConflict = async (subCollectionId, excludeId = null) => {
 
 const getStandardPopulateOptions = () => AUDIT_POPULATE;
 
+const validateAddonBundleItems = async (bundleItems) => {
+  if (!bundleItems || !Array.isArray(bundleItems) || bundleItems.length === 0) {
+    return {
+      isValid: false,
+      error: {
+        status: 400,
+        message: "Bundle items are required",
+        description: "Please add at least one inventory item to the bundle.",
+      },
+    };
+  }
+
+  const itemIds = bundleItems.map((i) => i.inventoryItemId);
+  if (new Set(itemIds).size !== itemIds.length) {
+    return {
+      isValid: false,
+      error: {
+        status: 400,
+        message: "Duplicate items found",
+        description: "Each inventory item can only appear once in a bundle.",
+      },
+    };
+  }
+
+  const validatedItems = [];
+
+  for (const item of bundleItems) {
+    if (!item.inventoryItemId) {
+      return {
+        isValid: false,
+        error: {
+          status: 400,
+          message: "Inventory item is required",
+          description: "Each bundle item must reference an inventory item.",
+        },
+      };
+    }
+
+    const qty = Number(item.quantityPerBag);
+    if (!Number.isInteger(qty) || qty < 1) {
+      return {
+        isValid: false,
+        error: {
+          status: 400,
+          message: "Valid quantity is required",
+          description: "Each bundle item must have a quantity of at least 1.",
+        },
+      };
+    }
+
+    const inventoryItem = await MinifigInventory.findById(
+      item.inventoryItemId,
+    ).lean();
+    if (!inventoryItem) {
+      return {
+        isValid: false,
+        error: {
+          status: 404,
+          message: "Inventory item not found",
+          description: `The inventory item "${item.inventoryItemId}" does not exist.`,
+        },
+      };
+    }
+
+    if (qty > Number(inventoryItem.stock || 0)) {
+      return {
+        isValid: false,
+        error: {
+          status: 400,
+          message: "Insufficient stock for bundle item",
+          description: `"${inventoryItem.minifigName}" has only ${inventoryItem.stock} in stock, but ${qty} per bag was provided.`,
+        },
+      };
+    }
+
+    const itemPricePerBag = inventoryItem.price * qty;
+    validatedItems.push({
+      inventoryItemId: item.inventoryItemId,
+      quantityPerBag: qty,
+      pricePerBag: itemPricePerBag,
+    });
+  }
+
+  return { isValid: true, validatedItems };
+};
+
 // -------------------------------- Create Dealer Bundle ----------------------------------
 
 export const createDealerBundle = async (req, res) => {
@@ -297,78 +383,13 @@ export const createDealerAddon = async (req, res) => {
     };
 
     if (addonType === "bundle") {
-      if (
-        !bundleItems ||
-        !Array.isArray(bundleItems) ||
-        bundleItems.length === 0
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Bundle items are required",
-          description: "Please add at least one inventory item to the bundle.",
-        });
+      const validation = await validateAddonBundleItems(bundleItems);
+      if (!validation.isValid) {
+        return res.status(validation.error.status).json(validation.error);
       }
 
-      // Check for duplicate inventory items
-      const itemIds = bundleItems.map((i) => i.inventoryItemId);
-      if (new Set(itemIds).size !== itemIds.length) {
-        return res.status(400).json({
-          success: false,
-          message: "Duplicate items found",
-          description: "Each inventory item can only appear once in a bundle.",
-        });
-      }
-
-      // Validate each item exists and has valid quantity
-      let computedPrice = 0;
-      const validatedItems = [];
-
-      for (const item of bundleItems) {
-        if (!item.inventoryItemId) {
-          return res.status(400).json({
-            success: false,
-            message: "Inventory item is required",
-            description: "Each bundle item must reference an inventory item.",
-          });
-        }
-
-        const qty = Number(item.quantityPerBag);
-        if (!Number.isInteger(qty) || qty < 1) {
-          return res.status(400).json({
-            success: false,
-            message: "Valid quantity is required",
-            description: "Each bundle item must have a quantity of at least 1.",
-          });
-        }
-
-        const inventoryItem = await MinifigInventory.findById(
-          item.inventoryItemId,
-        ).lean();
-        if (!inventoryItem) {
-          return res.status(404).json({
-            success: false,
-            message: "Inventory item not found",
-            description: `The inventory item "${item.inventoryItemId}" does not exist.`,
-          });
-        }
-
-        if (qty > Number(inventoryItem.stock || 0)) {
-          return res.status(400).json({
-            success: false,
-            message: "Insufficient stock for bundle item",
-            description: `"${inventoryItem.minifigName}" has only ${inventoryItem.stock} in stock, but ${qty} per bag was provided.`,
-          });
-        }
-
-        computedPrice += inventoryItem.price * qty;
-        validatedItems.push({
-          inventoryItemId: item.inventoryItemId,
-          quantityPerBag: qty,
-        });
-      }
-
-      addonData.bundleItems = validatedItems;
-      addonData.price = computedPrice;
+      addonData.bundleItems = validation.validatedItems;
+      addonData.price = 0; // Price set on individual items for bundles
     } else {
       // Upgrade
       const hasProvidedPrice =
@@ -480,75 +501,13 @@ export const updateDealerAddon = async (req, res) => {
     // Type-specific updates (type cannot be changed)
     if (addon.addonType === "bundle") {
       if (bundleItems !== undefined) {
-        if (!Array.isArray(bundleItems) || bundleItems.length === 0) {
-          return res.status(400).json({
-            success: false,
-            message: "Bundle items are required",
-            description:
-              "Please add at least one inventory item to the bundle.",
-          });
+        const validation = await validateAddonBundleItems(bundleItems);
+        if (!validation.isValid) {
+          return res.status(validation.error.status).json(validation.error);
         }
 
-        const itemIds = bundleItems.map((i) => i.inventoryItemId);
-        if (new Set(itemIds).size !== itemIds.length) {
-          return res.status(400).json({
-            success: false,
-            message: "Duplicate items found",
-            description:
-              "Each inventory item can only appear once in a bundle.",
-          });
-        }
-
-        let computedPrice = 0;
-        const validatedItems = [];
-
-        for (const item of bundleItems) {
-          if (!item.inventoryItemId) {
-            return res.status(400).json({
-              success: false,
-              message: "Inventory item is required",
-              description: "Each bundle item must reference an inventory item.",
-            });
-          }
-
-          const qty = Number(item.quantityPerBag);
-          if (!Number.isInteger(qty) || qty < 1) {
-            return res.status(400).json({
-              success: false,
-              message: "Valid quantity is required",
-              description:
-                "Each bundle item must have a quantity of at least 1.",
-            });
-          }
-
-          const inventoryItem = await MinifigInventory.findById(
-            item.inventoryItemId,
-          ).lean();
-          if (!inventoryItem) {
-            return res.status(404).json({
-              success: false,
-              message: "Inventory item not found",
-              description: `The inventory item "${item.inventoryItemId}" does not exist.`,
-            });
-          }
-
-          if (qty > Number(inventoryItem.stock || 0)) {
-            return res.status(400).json({
-              success: false,
-              message: "Insufficient stock for bundle item",
-              description: `"${inventoryItem.minifigName}" has only ${inventoryItem.stock} in stock, but ${qty} per bag was provided.`,
-            });
-          }
-
-          computedPrice += inventoryItem.price * qty;
-          validatedItems.push({
-            inventoryItemId: item.inventoryItemId,
-            quantityPerBag: qty,
-          });
-        }
-
-        addon.bundleItems = validatedItems;
-        addon.price = computedPrice;
+        addon.bundleItems = validation.validatedItems;
+        addon.price = 0; // Price set on individual items for bundles
       }
     } else {
       // Upgrade — manual price

@@ -17,6 +17,7 @@ const CheckoutSuccess = () => {
     sessionId,
     orderId,
     order,
+    displayItems,
     isLoading,
     isError,
     copied,
@@ -53,12 +54,22 @@ const CheckoutSuccess = () => {
   if (isError) {
     return (
       <ErrorState
-        title="Payment Confirmation Failed"
-        description="Something went wrong while confirming your payment. Please contact support."
+        title="Order Information Unavailable"
+        description={
+          <div className="space-y-4 max-w-xl mx-auto">
+            <p>
+              We encountered a temporary issue while retrieving the latest
+              status of your order request. Please try refreshing this page in a
+              few moments.
+            </p>
+          </div>
+        }
         minHeight="min-h-screen"
       />
     );
   }
+
+  const isDealer = order?.orderType === "dealer";
 
   return (
     <div className="px-5 py-10">
@@ -97,12 +108,13 @@ const CheckoutSuccess = () => {
           </Badge>
         </div>
       </div>
+
       {/* Header for Items */}
-      <div className="my-5">
+      <div className="my-5 flex flex-wrap gap-4 items-end justify-between">
         <h2 className="text-2xl font-bold flex items-center">
           {status === "cancelled" ? "Cancelled Items" : "Order Details"}
           <sup className=" font-bold text-muted-foreground ml-2">
-            {order?.items?.length}
+            {displayItems?.length}
           </sup>
         </h2>
       </div>
@@ -113,40 +125,60 @@ const CheckoutSuccess = () => {
         <div className="lg:col-span-8 space-y-5">
           <div className="space-y-5">
             <div className="space-y-3">
-              {order?.items?.map((item, index) => (
-                <Card key={index}>
+              {displayItems?.map((item, index) => (
+                <Card
+                  key={index}
+                  className={`${item.isSubItem ? "ml-8 border-dashed bg-muted/20" : ""}`}
+                >
                   <CardContent className="flex gap-3 items-center">
-                    <CommonImage
-                      src={item.imageUrl}
-                      alt={item.productName}
-                      className="size-20"
-                    />
+                    {item.imageUrl && (
+                      <CommonImage
+                        src={item.imageUrl}
+                        alt={item.productName}
+                        className={item.isSubItem ? "size-12" : "size-20"}
+                      />
+                    )}
                     <div className="flex-1 flex flex-col justify-between self-stretch">
                       <div className="grid grid-cols-[1fr_auto] items-start">
-                        <Link
-                          to={`/products/${item.productId}`}
-                          className="font-bold text-md line-clamp-2 hover:text-success transition-colors"
-                        >
-                          {item.productName}
-                        </Link>
-                        <span className="font-bold text-lg text-success dark:text-accent whitespace-nowrap">
-                          {formatCurrency(item.totalPrice)}
-                        </span>
+                        {item.productId ? (
+                          <Link
+                            to={`/products/${item.productId}`}
+                            className="font-bold text-md line-clamp-2 hover:text-success transition-colors"
+                          >
+                            {item.productName}
+                          </Link>
+                        ) : (
+                          <span className="font-bold text-md line-clamp-2">
+                            {item.productName}
+                          </span>
+                        )}
+                        {!item.isSubItem && (
+                          <span className="font-bold text-lg text-success dark:text-accent whitespace-nowrap">
+                            {formatCurrency(item.totalPrice)}
+                          </span>
+                        )}
                       </div>
-                      <div className="space-y-2">
-                        <div className="text-md font-bold">
+                      <div className="space-y-1">
+                        {item.description && (
+                          <p className="text-xs text-muted-foreground font-medium">
+                            {item.description}
+                          </p>
+                        )}
+                        <div className="text-xs font-bold text-muted-foreground">
                           Qty: {item.quantity}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-md font-bold text-success dark:text-accent">
-                            {formatCurrency(item.unitPrice)}
-                          </span>
-                          {item.unitPrice < item.basePrice && (
-                            <span className="text-xs text-muted-foreground line-through">
-                              {formatCurrency(item.basePrice)}
+                        {item.unitPrice > 0 && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-md font-bold text-success dark:text-accent">
+                              {formatCurrency(item.unitPrice)}
                             </span>
-                          )}
-                        </div>
+                            {item.unitPrice < item.basePrice && (
+                              <span className="text-xs text-muted-foreground line-through">
+                                {formatCurrency(item.basePrice)}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -392,7 +424,6 @@ const CheckoutSuccess = () => {
                       : "text-success dark:text-accent"
                   }`}
                 >
-                  $
                   {formatCurrency(
                     status === "cancelled"
                       ? order?.refund?.amount || order?.payment?.totalAmount

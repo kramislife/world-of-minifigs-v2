@@ -12,9 +12,9 @@ import { Button } from "@/components/ui/button";
 import ColorSwatch from "@/components/shared/ColorSwatch";
 import { PRICE_RANGES } from "@/constant/productFilters";
 
-// --------------------------------------------------------------- Components ----------------------------------------------------
+// -----------------------------Reusable Components ---------------------------------
 
-// Reusable Filter Item Component
+// Filter Item Component
 const FilterItem = ({ checked, onToggle, label, count, colorSwatch }) => (
   <Label className="p-2 hover:bg-muted-foreground/10 rounded-md cursor-pointer flex items-center justify-between group transition-colors">
     <div className="flex items-center space-x-2 flex-1 min-w-0">
@@ -30,7 +30,7 @@ const FilterItem = ({ checked, onToggle, label, count, colorSwatch }) => (
   </Label>
 );
 
-// Reusable Filter Item with Sub-items Component
+// Filter Item with Sub-items Component
 const FilterItemWithSubItems = ({
   checked,
   onToggle,
@@ -100,7 +100,7 @@ const FilterItemWithSubItems = ({
   );
 };
 
-// Reusable Filter Section Component
+// Filter Section Component
 const FilterSection = ({ value, title, children }) => (
   <AccordionItem value={value} className="border border-border rounded-md">
     <AccordionTrigger className="p-3 text-base font-semibold">
@@ -112,7 +112,7 @@ const FilterSection = ({ value, title, children }) => (
   </AccordionItem>
 );
 
-// --------------------------------------------------------------- Main Component ----------------------------------------------------
+// --------------------------------- Main Component ---------------------------------
 
 const ProductFilters = ({
   priceRange,

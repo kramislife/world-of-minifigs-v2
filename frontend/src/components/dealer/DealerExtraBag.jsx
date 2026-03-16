@@ -10,13 +10,18 @@ const DealerExtraBag = ({
   onQtyChange,
 }) => (
   <section id="step3" className="overflow-visible">
-    <div className="flex flex-col mb-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-2">
-        <h2 className="text-2xl font-bold tracking-tight">
-          Step 3 — Extra Part Bag Options
-        </h2>
+    <div className="flex flex-col mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-1.5">
+        <div className="flex items-center gap-2">
+          <h2 className="text-2xl font-bold tracking-tight">
+            Step 3 — Extra Part Bag Options
+          </h2>
+          <Badge variant="outline" className="text-[10px] uppercase tracking-wide shrink-0">
+            Optional
+          </Badge>
+        </div>
         {selectedBundle && (
-          <Badge variant="outline" className="flex items-center">
+          <Badge variant="outline" className="flex items-center self-start md:self-auto">
             <div className="flex items-center gap-1 text-primary">
               <span className="text-lg font-bold">{totalExtraBags}</span>
               <span className="text-muted-foreground">/</span>
@@ -45,20 +50,20 @@ const DealerExtraBag = ({
                 : ""
             }`}
           >
-            <h3 className="text-xl font-bold text-left">
+            <h3 className="text-lg font-bold text-left">
               {bag.subCollectionId?.subCollectionName || "Extra Bag"}
             </h3>
 
-            <div className="w-full flex flex-col mt-3">
-              <span className="text-5xl font-extrabold text-success dark:text-accent">
+            <div className="w-full flex flex-col mt-2">
+              <span className="text-4xl font-extrabold text-success dark:text-accent">
                 ${bag.price}
               </span>
-              <span className="text-xs text-muted-foreground mt-2">
+              <span className="text-xs text-muted-foreground mt-1 uppercase tracking-wide font-semibold">
                 per extra bag
               </span>
             </div>
 
-            <div className="mt-3 w-full">
+            <div className="mt-2 w-full">
               <QuantityControl
                 value={bag.qty}
                 onChange={handleQuantityChange}

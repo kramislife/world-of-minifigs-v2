@@ -74,7 +74,6 @@ const Products = () => {
       />
     );
   }
-
   // Filter sidebar content (used in both desktop and mobile)
   const filterContent = (
     <ProductFilters
