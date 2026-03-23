@@ -578,7 +578,8 @@ const ProductManagement = () => {
                       onRemove={() => handleRemoveVariantImage(variantIndex)}
                       accept="image/*"
                       description="PNG, JPG, WEBP"
-                      imageClassName="h-48 object-contain"
+                      previewClassName="h-48"
+                      imageClassName="object-contain"
                       disabled={isSubmitting}
                     />
                   </div>
@@ -923,7 +924,7 @@ const ProductManagement = () => {
               onRemove={handleRemoveImage}
               accept="image/*"
               description="PNG, JPG, WEBP (10 images)"
-              previewClassName="aspect-square"
+              previewClassName="aspect-4/3"
               disabled={isSubmitting}
             />
           )}

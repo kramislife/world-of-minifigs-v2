@@ -35,7 +35,7 @@ const ProductCard = ({ product }) => {
       }`}
     >
       <CardHeader
-        className="relative aspect-square"
+        className="relative aspect-4/3"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
@@ -43,6 +43,7 @@ const ProductCard = ({ product }) => {
           <CommonImage
             key={`${product._id}-${index}`}
             src={url}
+            objectFit="object-contain"
             alt={`${product.productName}${
               hasMultipleImages ? ` - Image ${index + 1}` : ""
             }`}
